@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "seed:growth": "tsx scripts/seed_growth_data.ts",
-    "postinstall": "echo '✅ Dependências instaladas com sucesso!'"
+    "postinstall": "echo '✅ Dependências instaladas com sucesso!'",
+    "git:commit": "node git-commit.mjs",
+    "git:push": "node git-push.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
