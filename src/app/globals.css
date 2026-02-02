@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* --- TEMA CLARO: "DIA NO PARQUE" --- */
+    /* Fundo Creme/Off-white quente (menos clínico que o branco puro) */
+    --background: 253 251 247; 
+    --foreground: 71 85 105;   /* Texto Cinza Chumbo Suave */
+
+    /* Superfícies (Cards, Sidebar) */
+    --card: 255 255 255;
+    --card-foreground: 71 85 105;
+    --border: 241 245 249;     /* Bordas sutis */
+
+    /* Cores de Acento */
+    --primary: 255 138 165;    /* Rosa Chiclete Suave */
+    --primary-foreground: 255 255 255;
+    
+    --secondary: 167 243 208;  /* Verde Menta (Detalhes) */
+    --secondary-foreground: 22 101 52;
+
+    --accent: 254 249 195;     /* Amarelo Pastel (Destaques) */
+    --accent-foreground: 161 98 7;
+
+    --muted: 248 250 252;
+    --muted-foreground: 148 163 184;
+
+    /* Status */
+    --success: 134 239 172;    /* Verde Pastel */
+    --warning: 253 224 71;     /* Amarelo Pastel */
+    --destructive: 252 165 165;/* Vermelho Pastel */
+  }
+
+  /* --- TEMA ESCURO: "NOITE SUAVE" --- */
+  /* Para ativar, adicione a classe 'dark' na tag <html> ou <body> */
+  .dark {
+    /* Fundo: Um cinza-azulado profundo e aveludado (não preto) */
+    --background: 30 32 40;     /* #1e2028 */
+    --foreground: 220 220 230;  /* Off-white lavanda suave */
+
+    /* Superfícies: Ligeiramente mais claras que o fundo para criar profundidade */
+    --card: 38 40 50;           /* #262832 */
+    --card-foreground: 226 232 240;
+    --border: 45 48 60;         /* Bordas suaves, quase invisíveis */
+
+    /* Cores de Acento (Pastel Sophisticated) */
+    /* Primary: Rosa Quartz Suave */
+    --primary: 240 160 180;     
+    --primary-foreground: 40 20 30;
+
+    /* Secondary: Menta Gelada */
+    --secondary: 160 210 200;   
+    --secondary-foreground: 20 50 45;
+
+    /* Accent: Lavanda/Roxo Pastel para hovers e detalhes */
+    --accent: 60 62 75;         
+    --accent-foreground: 230 230 240;
+
+    --muted: 35 37 45;
+    --muted-foreground: 140 145 160;
+    
+    /* Status em tons pastel para não agredir a vista no escuro */
+    --success: 130 200 150;     /* Verde Salvia */
+    --warning: 230 200 120;     /* Amarelo Creme */
+    --destructive: 230 120 120; /* Vermelho Coral Suave */
+  }
+  
+  body {
+    @apply bg-[rgb(var(--background))] text-[rgb(var(--foreground))] min-h-screen antialiased transition-colors duration-500 ease-in-out;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* --- ANIMAÇÕES E EFEITOS --- */
+
+/* Scrollbar Arredondada e Fofa */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--primary), 0.3);
+  border-radius: 99px;
+  transition: all 0.3s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--primary), 0.6);
+}
+
+/* Painel de Vidro (Funciona no Dark Mode também) */
+.glass-panel {
+  @apply bg-white/70 dark:bg-[rgb(var(--card))]/70 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-sm;
+}
+
+/* Botão "Gummy" (Parece uma bala de goma ao clicar) */
+.btn-gummy {
+  @apply active:scale-95 transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)];
+}
+
+/* Animação Suave de Entrada */
+@keyframes floatUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float-up {
+  animation: floatUp 0.5s ease-out forwards;
+}
+
+/* Animação Fade In */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Animação Scale In */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+/* Transição suave de largura para sidebar */
+.sidebar-transition {
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              min-width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+}
+
+/* Transições de conteúdo interno da sidebar */
+.sidebar-content-transition {
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              margin 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animação de entrada de mensagens - suave e responsiva */
+@keyframes messageSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes messageSlideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Animação de entrada do menu dropdown - mais rápida e suave */
+@keyframes menuSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

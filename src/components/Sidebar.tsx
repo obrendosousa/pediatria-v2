@@ -1,0 +1,382 @@
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { 
+  Search, Plus, MoreVertical, Archive, 
+  Trash2, Filter, User, X,
+  Settings, ArrowLeft, Tag, Loader2, Pause, Play
+} from 'lucide-react';
+
+import { Chat } from '@/types';
+import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
+
+// --- IMPORTANTE: Verifique se este arquivo existe exatamente neste caminho ---
+import { useChatList } from './sidebar/useChatList';import ChatListItem from './sidebar/ChatListItem';
+import TagsManager from './sidebar/TagsManager';
+import TagSelector from './sidebar/TagSelector';
+
+// Modais existentes
+import NewChatModal from './chat/modals/NewChatModal';
+import EditContactModal from './chat/modals/EditContactModal';
+import PauseServiceModal from './sidebar/PauseServiceModal';
+
+// Hooks e utilitários
+import { useAutoPauseMessages } from '@/hooks/useAutoPauseMessages';
+import { activatePause, deactivatePause, isPauseActive } from '@/utils/pauseService';
+
+interface SidebarProps {
+  onSelectChat?: (chat: Chat) => void;
+  selectedChatId?: number;
+}
+
+export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) {
+  // --- ESTADOS DE UI ---
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isViewingArchived, setIsViewingArchived] = useState(false);
+  
+  // Seleção Múltipla
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedChatIds, setSelectedChatIds] = useState<number[]>([]);
+  
+  // Menus e Modais
+  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
+  const [isTagsManagerOpen, setIsTagsManagerOpen] = useState(false);
+  const [tagSelectorChat, setTagSelectorChat] = useState<Chat | null>(null);
+  
+  // Modais de Chat
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Chat | null>(null);
+  const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isCheckingPause, setIsCheckingPause] = useState(true);
+
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  // Hook para disparo automático de mensagens
+  useAutoPauseMessages();
+
+  // Verificar status da pausa ao montar e quando modal fecha
+  useEffect(() => {
+    const checkPauseStatus = async () => {
+      try {
+        setIsCheckingPause(true);
+        const active = await isPauseActive();
+        setIsPaused(active);
+      } catch (error) {
+        // Ignorar erros silenciosamente - as colunas podem não existir ainda
+        setIsPaused(false);
+      } finally {
+        setIsCheckingPause(false);
+      }
+    };
+    
+    checkPauseStatus();
+    
+    // Verificar a cada 3 segundos
+    const interval = setInterval(checkPauseStatus, 3000);
+    return () => clearInterval(interval);
+  }, [isPauseModalOpen]);
+
+  // --- DADOS E AÇÕES (HOOK) ---
+  const { chats, tags, isLoading, actions, fetchTags } = useChatList(isViewingArchived, searchTerm);
+
+  // --- EFEITOS DE UI ---
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      // Fecha menu do chat se clicar fora
+      if (activeMenuId !== null && !(event.target as Element).closest('.group')) {
+        setActiveMenuId(null);
+      }
+      // Fecha menu do header
+      if (headerMenuRef.current && !headerMenuRef.current.contains(event.target as Node)) {
+        setIsHeaderMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [activeMenuId]);
+
+  // --- HANDLERS ---
+
+  const handleSelectChat = (chat: Chat) => {
+    actions.select(chat);
+    if (onSelectChat) onSelectChat(chat);
+  };
+
+  const toggleSelectionMode = () => {
+    if (isSelectionMode) {
+      setSelectedChatIds([]);
+      setIsSelectionMode(false);
+    } else {
+      setIsSelectionMode(true);
+    }
+  };
+
+  const toggleChatSelection = (chatId: number) => {
+    setSelectedChatIds(prev => 
+      prev.includes(chatId) ? prev.filter(id => id !== chatId) : [...prev, chatId]
+    );
+  };
+
+  const handlePauseConfirm = async (message: string) => {
+    await activatePause(message);
+    setIsPaused(true);
+  };
+
+  const handleDeactivatePause = async () => {
+    if (window.confirm('Deseja realmente desativar o modo de pausa?')) {
+      await deactivatePause();
+      setIsPaused(false);
+    }
+  };
+
+  const handleItemAction = (e: React.MouseEvent, action: string, chat: Chat) => {
+    e.stopPropagation();
+    setActiveMenuId(null);
+
+    // Ações que abrem modais locais
+    if (action === 'tags') {
+      setTagSelectorChat(chat);
+      return;
+    }
+    if (action === 'edit_contact') {
+      setEditingContact(chat);
+      return;
+    }
+
+    // Ações de dados (delegadas ao hook)
+    actions.singleAction(action, chat);
+  };
+
+  return (
+    <div className="w-[400px] flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1e2028] h-full relative z-20 transition-colors duration-300">
+      
+      {/* --- MODAIS --- */}
+      <TagsManager 
+        isOpen={isTagsManagerOpen} 
+        onClose={() => setIsTagsManagerOpen(false)} 
+        tags={tags || []} 
+        onUpdate={fetchTags} 
+      />
+      
+      <TagSelector 
+        isOpen={!!tagSelectorChat} 
+        onClose={() => setTagSelectorChat(null)} 
+        chat={tagSelectorChat} 
+        allTags={tags || []} 
+        onToggleTag={actions.toggleTag} 
+      />
+
+      <NewChatModal 
+        isOpen={isNewChatModalOpen} 
+        onClose={() => setIsNewChatModalOpen(false)}
+        onStartChat={(chatData: any) => {
+           const newChat = chatData as Chat;
+           const createdChat = actions.create(newChat);
+           setIsNewChatModalOpen(false);
+           handleSelectChat(createdChat);
+        }}
+      />
+
+      {editingContact && (
+        <EditContactModal
+          isOpen={true}
+          onClose={() => setEditingContact(null)}
+          chat={editingContact}
+          onUpdate={(updated: Chat) => {
+            actions.updateContact(updated);
+            setEditingContact(null);
+          }}
+        />
+      )}
+
+      {/* Modal de Pausa */}
+      <PauseServiceModal
+        isOpen={isPauseModalOpen}
+        onClose={() => setIsPauseModalOpen(false)}
+        onConfirm={handlePauseConfirm}
+      />
+
+      {/* --- HEADER (3 ESTADOS) --- */}
+      
+      {/* 1. MODO ARQUIVADOS */}
+      {isViewingArchived ? (
+        <div className="flex flex-col animate-in fade-in duration-200 bg-[#f0f2f5] dark:bg-[#2a2d36]">
+            <div className="h-[60px] flex items-center px-4 gap-4 border-b border-gray-200/50 dark:border-gray-700">
+                <button 
+                  onClick={() => setIsViewingArchived(false)} 
+                  className="hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors -ml-2 text-[#54656f] dark:text-gray-300"
+                >
+                    <ArrowLeft size={20} />
+                </button>
+                <h2 className="text-[19px] font-medium text-[#111b21] dark:text-gray-100">Arquivadas</h2>
+            </div>
+            <div className="py-4 px-8 text-center bg-gray-50/50 dark:bg-transparent border-b border-gray-100 dark:border-gray-800">
+               <p className="text-[13px] text-[#54656f] dark:text-gray-400 leading-relaxed">
+                 Todas as suas conversas arquivadas estão aqui.
+               </p>
+            </div>
+        </div>
+
+      /* 2. MODO SELEÇÃO */
+      ) : isSelectionMode ? (
+        <div className="h-[60px] bg-primary/15 dark:bg-primary/20 flex items-center justify-between px-4 shrink-0 border-b border-primary/20 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+               <button onClick={toggleSelectionMode} className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-full text-primary-foreground/70 dark:text-gray-200">
+                 <X size={20} />
+               </button>
+               <span className="font-bold text-primary-foreground/90 dark:text-gray-100 text-sm">
+                 {selectedChatIds.length} selecionados
+               </span>
+            </div>
+            <div className="flex gap-2">
+               <button onClick={() => { actions.bulkAction('archive', selectedChatIds); toggleSelectionMode(); }} className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-full text-primary-foreground dark:text-gray-200" title="Arquivar">
+                 <Archive size={20} />
+               </button>
+               <button onClick={() => { actions.bulkAction('delete', selectedChatIds); toggleSelectionMode(); }} className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-full text-red-500 dark:text-red-400" title="Excluir">
+                 <Trash2 size={20} />
+               </button>
+            </div>
+        </div>
+
+      /* 3. MODO PADRÃO */
+      ) : (
+        <>
+          <div className="h-[60px] bg-[#f0f2f5] dark:bg-[#2a2d36] flex items-center justify-between px-4 shrink-0 border-b border-gray-200 dark:border-gray-700">
+            <div 
+              className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ backgroundColor: getAvatarColorHex(0) }}
+            >
+              <User 
+                className="w-6 h-6" 
+                style={{ color: getAvatarTextColor(0) }}
+              />
+            </div>
+            <div className="flex gap-2 text-[#54656f] dark:text-gray-300">
+               <button 
+                 onClick={() => setIsNewChatModalOpen(true)}
+                 className="hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors"
+                 title="Nova Conversa"
+               >
+                 <Plus size={22} />
+               </button>
+               
+               {/* Botão de Pausar Atendimento */}
+               <button
+                 onClick={() => isPaused ? handleDeactivatePause() : setIsPauseModalOpen(true)}
+                 className={`relative hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors ${
+                   isPaused ? 'text-red-500 dark:text-red-400' : ''
+                 }`}
+                 title={isPaused ? 'Desativar Pausa' : 'Pausar Atendimento'}
+               >
+                 {isPaused ? <Play size={20} /> : <Pause size={20} />}
+                 {isPaused && (
+                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-[#1e2028] animate-pulse" />
+                 )}
+               </button>
+               
+               <div className="relative" ref={headerMenuRef}>
+                   <button 
+                     onClick={() => setIsHeaderMenuOpen(!isHeaderMenuOpen)} 
+                     className={`hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors ${isHeaderMenuOpen ? 'bg-gray-200 dark:bg-white/10' : ''}`}
+                   >
+                     <MoreVertical size={20} />
+                   </button>
+                   
+                   {isHeaderMenuOpen && (
+                     <div className="absolute right-0 top-12 w-56 bg-white dark:bg-[#2a2d36] rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] py-2 z-[60] border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200 origin-top-right transition-all">
+                        <button 
+                          onClick={() => { setIsTagsManagerOpen(true); setIsHeaderMenuOpen(false); }} 
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-3 text-[14.5px] text-[#3b4a54] dark:text-gray-200"
+                        >
+                          <Tag size={18} className="text-[#54656f] dark:text-gray-400"/> Gerenciar Etiquetas
+                        </button>
+                        <button className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-3 text-[14.5px] text-[#3b4a54] dark:text-gray-200">
+                          <Settings size={18} className="text-[#54656f] dark:text-gray-400"/> Configurações
+                        </button>
+                     </div>
+                   )}
+               </div>
+            </div>
+          </div>
+
+          <div className="p-2 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1e2028] relative transition-colors duration-300">
+            <div className="bg-[#f0f2f5] dark:bg-[#2a2d36] rounded-lg flex items-center px-4 py-1.5 h-[35px] transition-colors duration-300">
+              <Search size={18} className="text-[#54656f] dark:text-gray-400 mr-4 shrink-0" />
+              <input 
+                type="text" 
+                placeholder="Pesquisar ou começar uma nova conversa" 
+                className="bg-transparent outline-none text-[14px] w-full placeholder-[#54656f] dark:placeholder-gray-500 text-[#3b4a54] dark:text-gray-200" 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+              />
+            </div>
+            <button className="absolute right-5 top-1/2 -translate-y-1/2 text-[#54656f] dark:text-gray-400">
+              <Filter size={18} />
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* --- LISTAGEM --- */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin hover:scrollbar-thumb-gray-300 dark:hover:scrollbar-thumb-gray-600 bg-white dark:bg-[#1e2028] transition-colors duration-300">
+        
+        {/* Botão de Arquivados */}
+        {!isViewingArchived && !isSelectionMode && !searchTerm && (
+            <div 
+              onClick={() => setIsViewingArchived(true)} 
+              className="flex items-center px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 text-[#111b21] dark:text-gray-200 border-b border-gray-50 dark:border-gray-800 transition-all duration-200 ease-in-out"
+            >
+                <div className="w-8 flex justify-center">
+                  <Archive size={18} className="text-[#00a884] dark:text-primary" />
+                </div>
+                <span className="font-medium text-[15px] ml-2">Arquivadas</span>
+            </div>
+        )}
+        
+        {/* ESTADO: CARREGANDO */}
+        {isLoading && (!chats || chats.length === 0) ? (
+           <div className="p-10 flex justify-center text-gray-400">
+              <Loader2 className="animate-spin"/>
+           </div>
+        ) : (
+          /* ESTADO: LISTA DE CHATS */
+          /* O uso de (chats || []) previne o erro de 'map' undefined */
+          (chats || []).length > 0 ? (
+            (chats || []).map((chat: Chat) => (
+              <ChatListItem 
+                key={chat.id}
+                chat={chat}
+                isSelected={selectedChatId === chat.id}
+                isSelectionMode={isSelectionMode}
+                isSelectedInMode={selectedChatIds.includes(chat.id)}
+                isMenuOpen={activeMenuId === chat.id}
+                allTags={tags || []}
+                
+                onSelect={handleSelectChat}
+                onToggleSelection={toggleChatSelection}
+                onToggleMenu={(e, id) => {
+                   e.stopPropagation();
+                   setActiveMenuId(activeMenuId === id ? null : id);
+                }}
+                onAction={handleItemAction}
+              />
+            ))
+          ) : (
+            /* ESTADO: VAZIO */
+            <div className="p-10 text-center text-gray-400 text-sm flex flex-col items-center gap-2">
+                {isViewingArchived ? (
+                    <>Nenhuma conversa arquivada.</>
+                ) : searchTerm ? (
+                    <>Nenhuma conversa encontrada para "{searchTerm}".</>
+                ) : (
+                    <>Nenhuma conversa.</>
+                )}
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
