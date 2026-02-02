@@ -26,7 +26,7 @@ async function main() {
       http,
       dir,
       remote: 'origin',
-      ref: 'main',
+      ref: 'master',
       onAuth: () => ({
         username: 'obrendosousa',
         password: token
