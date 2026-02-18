@@ -11,6 +11,6 @@ export default function SidebarWrapper({ children }: { children: ReactNode }) {
     return null;
   }
 
-  // Se não, retorna os filhos (Navigation) normalmente
-  return <>{children}</>;
+  // Wrapper com shrink-0 para evitar que Navigation encolha e sobreponha outros elementos
+  return <div className="shrink-0">{children}</div>;
 }

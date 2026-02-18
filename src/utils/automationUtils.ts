@@ -1,6 +1,7 @@
 // src/utils/automationUtils.ts
 import { differenceInMonths, differenceInDays, parseISO, isValid, addDays, startOfDay, isSameDay } from 'date-fns';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Patient } from '@/types/patient';
 import { AutomationRule, MedicalCheckout } from '@/types';
 import { Appointment } from '@/types/medical';

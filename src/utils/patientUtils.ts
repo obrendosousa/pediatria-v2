@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 
 /**
  * Busca paciente por telefone no banco de dados

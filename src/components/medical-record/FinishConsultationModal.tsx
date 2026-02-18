@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Product } from '@/types';
 import { 
   X, CheckCircle2, Calendar, ShoppingBag, 
@@ -11,6 +12,7 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { saveAppointmentDateTime } from '@/utils/dateUtils';
+import { useToast } from '@/contexts/ToastContext';
 
 interface FinishConsultationModalProps {
   isOpen: boolean;
@@ -38,6 +40,7 @@ export default function FinishConsultationModal({
   patientName,
   onSaveAllData
 }: FinishConsultationModalProps) {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [savingData, setSavingData] = useState(false);
   
@@ -167,7 +170,7 @@ export default function FinishConsultationModal({
       // 1. Salvar todos os dados do prontuário primeiro
       const saved = await onSaveAllData();
       if (!saved) {
-        alert('Erro ao salvar dados do prontuário. Tente novamente.');
+        toast.error('Erro ao salvar dados do prontuário. Tente novamente.');
         return;
       }
 
@@ -186,49 +189,31 @@ export default function FinishConsultationModal({
 
       // 4. Criar medical_checkout se houver produtos ou valor de consulta
       if (hasProducts || hasConsultationValue || hasReturn || hasNotes) {
-        // Preparar dados do checkout
-        // Primeiro tentar com todos os campos, se falhar, tentar sem os opcionais
-        const checkoutData: any = {
-          chat_id: chatId,
+        // Observações: unificar notes + returnObs em um único texto (evita dependência da coluna return_obs)
+        const secretaryNotesText = [notes, returnObs ? `Retorno: ${returnObs}` : ''].filter(Boolean).join(' • ') || null;
+
+        // Payload mínimo compatível com a tabela (apenas colunas que existem no schema base)
+        const minimalCheckoutData: Record<string, unknown> = {
           return_date: returnDate || null,
-          return_obs: returnObs || null,
-          secretary_notes: notes || null,
+          secretary_notes: secretaryNotesText,
           status: 'pending'
         };
-
-        // Adicionar campos que podem não existir no schema ainda
-        // Tentar adicionar consultation_value, patient_id e appointment_id
-        // Se der erro, tentaremos novamente sem esses campos
-        try {
-          if (hasConsultationValue) {
-            checkoutData.consultation_value = consultationValueNum;
-          }
-          if (patientId) {
-            checkoutData.patient_id = patientId;
-          }
-          if (appointmentId) {
-            checkoutData.appointment_id = appointmentId;
-          }
-        } catch (e) {
-          // Ignorar erro de preparação
-        }
+        if (chatId != null) minimalCheckoutData.chat_id = chatId;
 
         let { data: checkout, error: checkoutError } = await supabase
           .from('medical_checkouts')
-          .insert(checkoutData)
+          .insert(minimalCheckoutData)
           .select()
           .single();
 
-        // Se falhar por causa de colunas que não existem, tentar sem elas
-        if (checkoutError && checkoutError.message?.includes('column') && checkoutError.message?.includes('does not exist')) {
-          // Tentar novamente sem os campos opcionais
-          const fallbackData: any = {
-            chat_id: chatId,
-            return_date: returnDate || null,
-            return_obs: returnObs || null,
-            secretary_notes: notes || null,
+        // Se falhar (coluna inexistente, constraint, etc.), tentar só com campos essenciais
+        if (checkoutError) {
+          const fallbackData: Record<string, unknown> = {
+            secretary_notes: secretaryNotesText,
             status: 'pending'
           };
+          if (chatId != null) fallbackData.chat_id = chatId;
+          if (returnDate) fallbackData.return_date = returnDate;
 
           const retry = await supabase
             .from('medical_checkouts')
@@ -239,18 +224,30 @@ export default function FinishConsultationModal({
           if (retry.error) throw retry.error;
           checkout = retry.data;
           checkoutError = null;
-          
-          // Avisar que a migration precisa ser executada
-          console.warn('⚠️ Migration pendente: Execute o script database/add_consultation_value_to_checkouts.sql no Supabase para adicionar os campos consultation_value, patient_id e appointment_id');
         }
 
         if (checkoutError) throw checkoutError;
-        checkoutId = checkout.id;
+        checkoutId = checkout?.id ?? null;
 
-        if (checkoutError) throw checkoutError;
-        checkoutId = checkout.id;
+        // Atualizar com campos opcionais se a tabela tiver (consultation_value, patient_id, appointment_id)
+        if (checkoutId && (hasConsultationValue || patientId || appointmentId)) {
+          const updatePayload: Record<string, unknown> = {};
+          if (hasConsultationValue) updatePayload.consultation_value = consultationValueNum;
+          if (patientId) updatePayload.patient_id = patientId;
+          if (appointmentId) updatePayload.appointment_id = appointmentId;
+          if (Object.keys(updatePayload).length > 0) {
+            const { error: updateErr } = await supabase
+              .from('medical_checkouts')
+              .update(updatePayload)
+              .eq('id', checkoutId);
+            if (updateErr) {
+              // Colunas podem não existir; não falhar a finalização por isso
+              console.warn('Não foi possível atualizar campos opcionais do checkout:', updateErr.message);
+            }
+          }
+        }
 
-        // 5. Inserir produtos no checkout
+        // 5. Inserir produtos no checkout (checkout_items pode usar checkout_id ou medical_checkout_id)
         if (hasProducts && checkoutId) {
           const itemsPayload = selectedProducts.map(p => ({
             checkout_id: checkoutId,
@@ -259,17 +256,22 @@ export default function FinishConsultationModal({
             type: 'product' as const
           }));
 
-          const { error: itemsError } = await supabase
-            .from('checkout_items')
-            .insert(itemsPayload);
-
+          let itemsError = (await supabase.from('checkout_items').insert(itemsPayload)).error;
+          if (itemsError && itemsError.message?.toLowerCase().includes('column')) {
+            const altPayload = selectedProducts.map(p => ({
+              medical_checkout_id: checkoutId,
+              product_id: p.id,
+              quantity: p.quantity,
+              type: 'product' as const
+            }));
+            itemsError = (await supabase.from('checkout_items').insert(altPayload)).error;
+          }
           if (itemsError) throw itemsError;
         }
       }
 
       // 6. Criar appointment de retorno se houver data
       if (hasReturn && returnDate) {
-        // Buscar informações do appointment atual para usar como base
         if (appointmentId) {
           const { data: currentAppointment } = await supabase
             .from('appointments')
@@ -278,11 +280,9 @@ export default function FinishConsultationModal({
             .single();
 
           if (currentAppointment) {
-            // Criar novo appointment para retorno usando função utilitária
-            // returnDate está no formato YYYY-MM-DD
             const start_time = saveAppointmentDateTime(returnDate, '09:00');
 
-            await supabase
+            const { error: returnAptError } = await supabase
               .from('appointments')
               .insert({
                 doctor_id: currentAppointment.doctor_id,
@@ -294,33 +294,30 @@ export default function FinishConsultationModal({
                 status: 'scheduled',
                 notes: returnObs || `Retorno agendado na consulta de ${format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}`
               });
+
+            if (returnAptError) throw returnAptError;
           }
         }
       }
 
-      // 7. Atualizar appointment atual para 'finished'
+      // 7. Atualizar appointment atual para 'waiting_payment' (Enviar para Recepção)
       if (appointmentId) {
-        console.log('[DEBUG] Finalizando appointment no FinishConsultationModal:', { 
+        console.log('[DEBUG] Enviando para checkout da recepção:', { 
           appointmentId, 
           patientId,
           hasCheckout: !!checkoutId
         });
         
-        const { data, error } = await supabase
+        // MUDANÇA CRUCIAL: Status vai para waiting_payment, não finished
+        const { error } = await supabase
           .from('appointments')
-          .update({ status: 'finished' })
-          .eq('id', appointmentId)
-          .select();
+          .update({ status: 'waiting_payment', finished_at: new Date().toISOString() })
+          .eq('id', appointmentId);
         
         if (error) {
           console.error('[DEBUG] Erro ao atualizar appointment:', error);
           throw error;
         }
-        
-        console.log('[DEBUG] Appointment finalizado com sucesso:', { 
-          updatedCount: data?.length || 0,
-          appointmentId 
-        });
       }
 
       // 8. Atualizar medical_records para 'signed'
@@ -334,33 +331,40 @@ export default function FinishConsultationModal({
         .single();
 
       if (currentRecord?.id) {
-        await supabase
+        const { error: recordError } = await supabase
           .from('medical_records')
           .update({ 
             status: 'signed',
             finished_at: new Date().toISOString()
           })
           .eq('id', currentRecord.id);
+
+        if (recordError) throw recordError;
       }
 
-      // 9. Se não houver checkout, atualizar chat diretamente
-      // (Appointment já foi atualizado no passo 7, não precisa atualizar novamente)
-      if (!checkoutId && chatId) {
-        await supabase
+      // 9. Atualizar chat se necessário
+      if (chatId) {
+        const { error: chatError } = await supabase
           .from('chats')
           .update({ 
-            reception_status: 'finished',
             last_interaction_at: new Date().toISOString()
           })
           .eq('id', chatId);
+
+        if (chatError) throw chatError;
       }
 
       onSuccess();
       onClose();
       
     } catch (error: any) {
+      const message =
+        (error && typeof error === 'object' && (error.message || error.error_description || error.msg)) ||
+        (typeof error === 'string' ? error : null) ||
+        (error && JSON.stringify(error) !== '{}' ? JSON.stringify(error) : null) ||
+        'Tente novamente.';
       console.error('Erro ao finalizar consulta:', error);
-      alert('Erro ao finalizar consulta: ' + (error.message || 'Tente novamente.'));
+      toast.error('Erro ao finalizar consulta: ' + message);
     } finally {
       setLoading(false);
       setSavingData(false);
@@ -399,14 +403,14 @@ export default function FinishConsultationModal({
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Anotações Finais
+              Anotações Finais para Recepção
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-4 py-3 bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
               rows={3}
-              placeholder="Observações finais sobre a consulta..."
+              placeholder="Observações para a secretária (ex: cobrar vacina X, agendar retorno com urgência...)"
             />
           </div>
 
@@ -463,11 +467,11 @@ export default function FinishConsultationModal({
             />
           </div>
 
-          {/* Valor da Consulta */}
+          {/* Valor da Consulta (Extra) */}
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
-              Valor da Consulta (R$)
+              Valor Adicional da Consulta (Opcional)
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-500 dark:text-gray-400 pointer-events-none">
@@ -478,16 +482,11 @@ export default function FinishConsultationModal({
                 value={consultationValue}
                 onChange={(e) => {
                   let value = e.target.value;
-                  // Remove tudo exceto números, vírgula e ponto
                   value = value.replace(/[^\d,.]/g, '');
-                  
-                  // Garante apenas uma vírgula ou ponto
                   const parts = value.split(/[,.]/);
                   if (parts.length > 2) {
                     value = parts[0] + ',' + parts.slice(1).join('');
                   }
-                  
-                  // Limita a 2 casas decimais
                   if (value.includes(',') || value.includes('.')) {
                     const separator = value.includes(',') ? ',' : '.';
                     const parts = value.split(separator);
@@ -495,11 +494,9 @@ export default function FinishConsultationModal({
                       value = parts[0] + separator + parts[1].substring(0, 2);
                     }
                   }
-                  
                   setConsultationValue(value);
                 }}
                 onBlur={(e) => {
-                  // Formatar ao sair do campo
                   const numValue = parseCurrency(e.target.value);
                   if (numValue > 0) {
                     setConsultationValue(formatCurrency(numValue));
@@ -508,7 +505,6 @@ export default function FinishConsultationModal({
                   }
                 }}
                 onFocus={(e) => {
-                  // Remover formatação ao focar para facilitar edição
                   const numValue = parseCurrency(e.target.value);
                   if (numValue > 0) {
                     setConsultationValue(numValue.toString().replace('.', ','));
@@ -525,7 +521,7 @@ export default function FinishConsultationModal({
             <div className="flex items-center justify-between mb-3">
               <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4" />
-                Produtos da Lojinha
+                Produtos / Vacinas
               </label>
               <button
                 type="button"
@@ -546,7 +542,7 @@ export default function FinishConsultationModal({
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                  placeholder="Buscar produto..."
+                  placeholder="Buscar produto ou vacina..."
                   autoFocus
                 />
                 {productSearch && filteredProducts.length > 0 && (
@@ -625,16 +621,11 @@ export default function FinishConsultationModal({
           {(selectedProducts.length > 0 || consultationValueNum > 0) && (
             <div className="bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 p-5 rounded-xl border-2 border-rose-200 dark:border-rose-900/30">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-bold text-slate-700 dark:text-gray-300">Total a Cobrar:</span>
+                <span className="text-lg font-bold text-slate-700 dark:text-gray-300">Total Adicional:</span>
                 <span className="text-3xl font-black text-rose-600 dark:text-rose-400">
                   R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
-              {consultationValueNum > 0 && (
-                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-                  Consulta: R$ {consultationValueNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedProducts.length > 0 ? `+ Produtos: R$ ${productsTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
-                </p>
-              )}
             </div>
           )}
         </div>
@@ -661,12 +652,12 @@ export default function FinishConsultationModal({
             ) : loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Finalizando...
+                Enviando para Recepção...
               </>
             ) : (
               <>
                 <CheckCircle2 className="w-5 h-5" />
-                Finalizar Consulta
+                Finalizar e Enviar para Checkout
               </>
             )}
           </button>

@@ -1,7 +1,8 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useChatAutomation } from '@/hooks/useChatAutomation';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Chat } from '@/types';
 import { User } from 'lucide-react';
 
@@ -18,15 +19,29 @@ import ConfirmModal from './chat/modals/ConfirmModal';
 import ImagePreviewModal from './chat/modals/ImagePreviewModal';
 import CreateScheduleModal from './chat/modals/CreateScheduleModal';
 import AppointmentModal, { PreScheduleData } from './medical/AppointmentModal';
-
-// Configuração do Webhook
-const N8N_MEDIA_WEBHOOK = "https://n8n-n8n.rozhd7.easypanel.host/webhook/enviar-midia-app"; 
+import { useToast } from '@/contexts/ToastContext';
 
 export default function ChatWindow({ chat }: { chat: Chat | null }) {
-  // Hooks
-  const { messages, loading: loadingMsgs, isSendingMsg, sendMessage, deleteMessage, setMessages } = useChatMessages(chat);
+  const { toast } = useToast();
+  const [pendingMessages, setPendingMessages] = useState<any[]>([]);
+  const onRemovePending = useCallback((tempId: string) => {
+    setPendingMessages((prev) => prev.filter((p) => p.id !== tempId));
+  }, []);
+  const onRemovePendingForRevoked = useCallback((createdAt: string) => {
+    const revokedTime = new Date(createdAt).getTime();
+    setPendingMessages((prev) =>
+      prev.filter(
+        (p) =>
+          Math.abs(new Date(p.created_at || 0).getTime() - revokedTime) >= 10000
+      )
+    );
+  }, []);
+  const { messages, loading: loadingMsgs, isSendingMsg, sendMessage, deleteMessage, editMessage, setMessages } = useChatMessages(chat, {
+    onRemovePending,
+    onRemovePendingForRevoked
+  });
   const { 
-    macros, funnels, scheduledMessages, activeTab, setActiveTab, isProcessingMacro, executions,
+    macros, funnels, scheduledMessages, activeTab, setActiveTab, isProcessingMacro, processingActionId, executions,
     handleRunFunnel, handleRunScriptStep, handleMacroSend, handleSaveMacro, handleSaveSequence, 
     handleDeleteItem, handleScheduleItem, handleScheduleAdHoc, handleCancelSchedule 
   } = useChatAutomation(chat);
@@ -35,38 +50,39 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedItemId, setExpandedItemId] = useState<string | number | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [pendingMessages, setPendingMessages] = useState<any[]>([]);
   
-  // Effect para remover pendingMessages quando a mensagem real chegar
+  // Effect para remover pendingMessages quando a mensagem real chegar OU quando for apagada
+  // IMPORTANTE: Só depende de messages. Incluir pendingMessages causaria loop infinito
   useEffect(() => {
-    if (messages.length === 0 || pendingMessages.length === 0) return;
-    
-    // Para cada mensagem real recente, verifica se há uma pending com o mesmo texto e remove
-    const recentRealMessages = messages.slice(-5); // Últimas 5 mensagens
-    recentRealMessages.forEach(realMsg => {
-      if (realMsg && realMsg.sender === 'HUMAN_AGENT') {
-        setPendingMessages(prev => {
-          return prev.filter(pending => {
-            // Remove se o texto e timestamp forem próximos (dentro de 3 segundos)
-            const timeDiff = Math.abs(
-              new Date(realMsg.created_at).getTime() - 
-              new Date(pending.created_at).getTime()
-            );
-            const isSameText = pending.message_text?.trim() === realMsg.message_text?.trim();
-            
-            // Se for a mesma mensagem (mesmo texto e tempo próximo), remove a pending
-            return !(isSameText && timeDiff < 3000);
-          });
+    if (messages.length === 0) return;
+
+    const recentRealMessages = messages.slice(-10).filter((m): m is NonNullable<typeof m> => m != null && m.sender === 'HUMAN_AGENT');
+    if (recentRealMessages.length === 0) return;
+
+    setPendingMessages(prev => {
+      if (prev.length === 0) return prev;
+      return prev.filter(pending => {
+        const shouldRemove = recentRealMessages.some(realMsg => {
+          const timeDiff = Math.abs(
+            new Date(realMsg.created_at).getTime() - new Date(pending.created_at || 0).getTime()
+          );
+          const isRevoked = (realMsg as any).message_type === 'revoked';
+          // Remove se: mesmo texto no mesmo horário OU se a mensagem foi apagada (revoked) no mesmo horário
+          const isSameText = pending.message_text?.trim() === realMsg.message_text?.trim();
+          const isSameRevoked = isRevoked && timeDiff < 10000;
+          return (isSameText && timeDiff < 3000) || isSameRevoked;
         });
-      }
+        return !shouldRemove;
+      });
     });
-  }, [messages, pendingMessages]);
+  }, [messages]);
 
   // Modais
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isMacroModalOpen, setIsMacroModalOpen] = useState(false);
   const [isSequenceModalOpen, setIsSequenceModalOpen] = useState(false);
   const [isCreateScheduleOpen, setIsCreateScheduleOpen] = useState(false);
+  const [schedulePrefill, setSchedulePrefill] = useState<{ item: any | null; type: 'macro' | 'funnel' } | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmData, setConfirmData] = useState<any>(null);
   const [sequenceMode, setSequenceMode] = useState<'script'|'funnel'>('funnel');
@@ -79,6 +95,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   // Estados do ChatInput
   // REMOVIDO: isRecording e recordingDuration (agora gerenciados internamente pelo ChatInput)
   const [replyTo, setReplyTo] = useState<any>(null);
+  const [editingMessage, setEditingMessage] = useState<any>(null);
 
   // --- LÓGICA DE ENVIO DE ARQUIVO/ÁUDIO ---
   // Atualizado para aceitar 'metadata' (onde vem a duração do áudio)
@@ -109,11 +126,18 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         id: tempId,
         message_text: caption || finalFile.name,
         message_type: evolutionMediaType,
-        media_url: evolutionMediaType === 'audio' || evolutionMediaType === 'image' ? URL.createObjectURL(finalFile) : undefined,
+        media_url: evolutionMediaType === 'audio' || evolutionMediaType === 'image' || evolutionMediaType === 'video'
+          ? URL.createObjectURL(finalFile)
+          : undefined,
         created_at: new Date().toISOString(),
         sender: 'HUMAN_AGENT',
         status: 'uploading',
-        tool_data: metadata || {} // Salva duração na UI otimista
+        tool_data: {
+          ...(metadata || {}),
+          mime_type: finalFile.type,
+          file_name: finalFile.name,
+          file_size: finalFile.size,
+        }
     };
     setPendingMessages(prev => [...prev, optimisticMsg]);
 
@@ -147,47 +171,37 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         
         const { data: { publicUrl } } = supabase.storage.from('midia').getPublicUrl(`uploads/${fileName}`);
 
-        // 4. Envio API
-        if (evolutionMediaType === 'document') {
-            await fetch(N8N_MEDIA_WEBHOOK, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chatId: realChatId,
-                    number: chat.phone.replace(/\D/g, ''),
-                    mediatype: evolutionMediaType,
-                    mimetype: finalFile.type,
-                    media: encodeURI(publicUrl),
-                    fileName: finalFile.name,
-                    caption: caption || ''
-                }),
-            });
-        } else {
-            // Salva no banco com metadata (duração)
-            const { data: dbMsg } = await supabase.from('chat_messages').insert({
-                chat_id: realChatId,
-                phone: chat.phone,
-                message_text: caption || finalFile.name,
-                message_type: evolutionMediaType,
-                media_url: publicUrl,
-                sender: 'HUMAN_AGENT',
-                tool_data: metadata || {} // Salva duração no banco
-            }).select().single();
+        // 4. Salva no banco com metadata (duração + arquivo) e envia pela API oficial
+        const enrichedMetadata = {
+          ...(metadata || {}),
+          mime_type: finalFile.type,
+          file_name: finalFile.name,
+          file_size: finalFile.size,
+        };
+        const { data: dbMsg } = await supabase.from('chat_messages').insert({
+            chat_id: realChatId,
+            phone: chat.phone,
+            message_text: caption || finalFile.name,
+            message_type: evolutionMediaType,
+            media_url: publicUrl,
+            sender: 'HUMAN_AGENT',
+            status: 'sent',
+            tool_data: enrichedMetadata
+        }).select().single();
 
-            await fetch('/api/whatsapp/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chatId: realChatId,
-                    phone: chat.phone,
-                    message: caption,
-                    type: evolutionMediaType,
-                    mediaUrl: publicUrl,
-                    dbMessageId: dbMsg?.id,
-                    options: metadata // Passa opções extras se a API suportar
-                }),
-            });
-        }
+        await fetch('/api/whatsapp/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chatId: realChatId,
+                phone: chat.phone,
+                message: caption,
+                type: evolutionMediaType,
+                mediaUrl: publicUrl,
+                dbMessageId: dbMsg?.id,
+                options: enrichedMetadata
+            }),
+        });
 
         if (isNewChat) {
              const { data: updatedMsgs } = await supabase.from('chat_messages').select('*').eq('chat_id', realChatId).order('created_at', { ascending: true });
@@ -217,7 +231,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   // Função para agendamento com IA - memoizada
   const handleAISchedule = useCallback(async () => {
     if (!chat || messages.length === 0) {
-      alert('Não há mensagens na conversa para analisar.');
+      toast.error('Não há mensagens na conversa para analisar.');
       return;
     }
 
@@ -331,13 +345,11 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
       
       console.error('Erro ao processar agendamento com IA:', errorMessage, error);
       
-      // Perguntar se deseja continuar com formulário vazio
-      const shouldContinue = window.confirm(
-        `Erro ao processar com IA: ${errorMessage}\n\nDeseja abrir o formulário de agendamento vazio mesmo assim?`
+      const shouldContinue = await toast.confirm(
+        `Erro ao processar com IA: ${errorMessage}. Deseja abrir o formulário de agendamento vazio mesmo assim?`,
+        'Continuar mesmo assim?'
       );
-      
       if (shouldContinue) {
-        // Abrir modal vazio mesmo em caso de erro
         setAppointmentData(null);
         setIsAppointmentModalOpen(true);
       }
@@ -370,14 +382,26 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   }, []);
 
   // Memoizar callbacks do MessageList
-  const handleSaveMacroFromMessage = useCallback((txt: string) => {
-    setEditingItem({ title: '', content: txt, type: 'text' });
+  const handleSaveMacroFromMessage = useCallback((macro: { title: string; type: 'text' | 'audio' | 'image' | 'video' | 'document'; content: string }) => {
+    setEditingItem({
+      title: macro.title || '',
+      content: macro.content || '',
+      type: macro.type || 'text',
+    });
     setIsMacroModalOpen(true);
   }, []);
 
   // Memoizar callbacks do ChatInput
-  const handleSendMessage = useCallback(async (txt: string) => {
+  const handleSendMessage = useCallback(async (txt: string, _type?: string, _file?: File, metadata?: any) => {
     if (!txt.trim() || !chat) return;
+
+    if (metadata?.editingMessage) {
+      await editMessage(metadata.editingMessage, txt);
+      setEditingMessage(null);
+      return;
+    }
+
+    const replyMeta = metadata?.replyTo ?? null;
     
     // Optimistic UI: Adiciona mensagem imediatamente
     const tempId = `pending_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -389,14 +413,27 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
       sender: 'HUMAN_AGENT',
       status: 'sending',
       chat_id: chat.id,
-      phone: chat.phone
+      phone: chat.phone,
+      ...(replyMeta?.wpp_id
+        ? {
+            tool_data: {
+              reply_to: {
+                wpp_id: replyMeta.wpp_id,
+                sender: replyMeta.sender || '',
+                message_type: replyMeta.message_type || 'text',
+                message_text: replyMeta.message_text || '',
+              },
+            },
+          }
+        : {}),
     };
     
     // Adiciona imediatamente na UI (instantâneo)
     setPendingMessages(prev => [...prev, optimisticMsg]);
     
     // Envia em background (não bloqueia UI)
-    sendMessage(txt).then(() => {
+    sendMessage(txt, { replyTo: replyMeta }).then(() => {
+      setReplyTo(null);
       // Remove a mensagem otimista quando a real chegar (via subscription)
       // A subscription do useChatMessages vai adicionar a mensagem real
       // Usamos um timeout curto para remover a pending quando a real chegar
@@ -410,13 +447,27 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
       // Limpa o timeout se a mensagem real já chegou
       // Isso será feito pela subscription que detecta a mensagem real
     }).catch((error) => {
-      console.error('Erro ao enviar mensagem:', error);
+      const errorMessage =
+        (error && typeof error === 'object' && 'message' in error && typeof (error as any).message === 'string'
+          ? (error as any).message
+          : 'Falha ao enviar mensagem');
+      console.error('Erro ao enviar mensagem:', errorMessage, error);
       // Marca como erro na UI
       setPendingMessages(prev => prev.map(m => 
-        m.id === tempId ? { ...m, status: 'error', errorDetail: error.message } : m
+        m.id === tempId ? { ...m, status: 'error', errorDetail: errorMessage } : m
       ));
     });
-  }, [sendMessage, chat]);
+  }, [sendMessage, editMessage, chat]);
+
+  const handleReplyMessage = useCallback((msg: any) => {
+    setReplyTo(msg);
+    setEditingMessage(null);
+  }, []);
+
+  const handleEditMessage = useCallback((msg: any) => {
+    setEditingMessage(msg);
+    setReplyTo(null);
+  }, []);
 
   const handleSendAudio = useCallback((blob: Blob, duration: number) => {
     handleSendFile(blob, '', 'audio', { duration });
@@ -439,8 +490,54 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   }, []);
 
   const handleOpenScheduleModal = useCallback((item?: any, type?: 'macro' | 'funnel') => {
+    setSchedulePrefill({
+      item: item || null,
+      type: type || 'macro',
+    });
     setIsCreateScheduleOpen(true);
   }, []);
+
+  useEffect(() => {
+    const onShortcut = (e: KeyboardEvent) => {
+      if (!chat) return;
+      const key = e.key.toLowerCase();
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+
+      if (isCmdOrCtrl && key === 'k') {
+        e.preventDefault();
+        setActiveTab('text');
+        return;
+      }
+
+      if (e.altKey && key === '1') {
+        e.preventDefault();
+        setActiveTab('text');
+        return;
+      }
+      if (e.altKey && key === '2') {
+        e.preventDefault();
+        setActiveTab('script');
+        return;
+      }
+      if (e.altKey && key === '3') {
+        e.preventDefault();
+        setActiveTab('funnels');
+        return;
+      }
+      if (e.altKey && key === '4') {
+        e.preventDefault();
+        setActiveTab('schedule');
+        return;
+      }
+      if (e.altKey && key === '5') {
+        e.preventDefault();
+        setActiveTab('executions');
+      }
+    };
+
+    window.addEventListener('keydown', onShortcut);
+    return () => window.removeEventListener('keydown', onShortcut);
+  }, [chat, setActiveTab]);
 
   if (!chat) {
     return (
@@ -453,8 +550,27 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   return (
     <div className="flex-1 flex h-full overflow-hidden bg-[#efeae2] dark:bg-[#0b141a] relative transition-colors duration-300 min-w-0">
         <MacroModal isOpen={isMacroModalOpen} onClose={() => setIsMacroModalOpen(false)} onSave={(d) => handleSaveMacro(d, editingItem?.id)} initialData={editingItem} typeOverride={activeTab} />
-        <SequenceEditorModal isOpen={isSequenceModalOpen} onClose={() => setIsSequenceModalOpen(false)} onSave={(d) => handleSaveSequence(d, editingItem?.id)} initialData={editingItem} mode={sequenceMode} macros={macros} />
-        <CreateScheduleModal isOpen={isCreateScheduleOpen} onClose={() => setIsCreateScheduleOpen(false)} macros={macros} funnels={funnels} onConfirmAdHoc={handleScheduleAdHoc} onConfirmSaved={handleScheduleItem} />
+        <SequenceEditorModal
+          isOpen={isSequenceModalOpen}
+          onClose={() => setIsSequenceModalOpen(false)}
+          onSave={(d) => handleSaveSequence(d, editingItem?.id)}
+          initialData={editingItem}
+          mode={sequenceMode}
+          macros={macros}
+          funnels={funnels}
+        />
+        <CreateScheduleModal
+          isOpen={isCreateScheduleOpen}
+          onClose={() => {
+            setIsCreateScheduleOpen(false);
+            setSchedulePrefill(null);
+          }}
+          macros={macros}
+          funnels={funnels}
+          preselectedItem={schedulePrefill}
+          onConfirmAdHoc={handleScheduleAdHoc}
+          onConfirmSaved={handleScheduleItem}
+        />
         <ConfirmModal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)} onConfirm={confirmData?.onConfirm || (() => {})} title={confirmData?.title || ''} message={confirmData?.message || ''} />
         <ImagePreviewModal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} src={previewImage} />
         <AppointmentModal
@@ -466,7 +582,8 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           onSave={handleSaveAppointment}
         />
 
-        <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
+        {/* Área do chat: reserva 70px à direita para a barra de ícones do ChatSidebar */}
+        <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden w-full pr-[58px] sm:pr-[70px]">
             <ChatHeader 
               chat={chat} 
               loadingMsgs={loadingMsgs} 
@@ -480,10 +597,11 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
                 chat={chat} 
                 onDelete={deleteMessage} 
                 onSaveMacro={handleSaveMacroFromMessage}
+                onReply={handleReplyMessage}
+                onEdit={handleEditMessage}
                 onPreviewImage={setPreviewImage}
             />
             
-            {/* CORREÇÃO AQUI: Props atualizadas para a nova versão do ChatInput */}
             <ChatInput 
                 onSendMessage={handleSendMessage}
                 onSendAudio={handleSendAudio}
@@ -491,21 +609,38 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
                 onTyping={handleTyping}
                 replyTo={replyTo}
                 onCancelReply={() => setReplyTo(null)}
+                editingMessage={editingMessage}
+                onCancelEdit={() => setEditingMessage(null)}
             />
         </div>
 
-        <ChatSidebar 
-            activeTab={activeTab} setActiveTab={setActiveTab}
-            macros={macros} funnels={funnels} scheduledMessages={scheduledMessages}
-            searchTerm={searchTerm} setSearchTerm={setSearchTerm}
-            expandedItemId={expandedItemId} setExpandedItemId={setExpandedItemId}
-            isProcessingMacro={isProcessingMacro} executions={executions}
-            onOpenMacroModal={handleOpenMacroModal}
-            onOpenSequenceModal={handleOpenSequenceModal}
-            onOpenScheduleModal={handleOpenScheduleModal}
-            onRunFunnel={handleRunFunnel} onRunScriptStep={handleRunScriptStep} onMacroSend={handleMacroSend}
-            onDelete={confirmDeleteAction} onCancelSchedule={handleCancelSchedule}
-        />
+        {/* Backdrop: clicar fora do sidebar fecha o painel */}
+        {activeTab && (
+          <button
+            type="button"
+            aria-label="Fechar menu lateral"
+            className="absolute inset-0 z-30 bg-black/20 dark:bg-black/40 transition-opacity"
+            onClick={() => setActiveTab(null)}
+          />
+        )}
+
+        {/* Sidebar como popup sobrepondo o chat (não participa do flex) */}
+        <div className="absolute right-0 top-0 bottom-0 z-40 flex flex-row-reverse pointer-events-none">
+          <div className="pointer-events-auto h-full">
+            <ChatSidebar 
+                activeTab={activeTab} setActiveTab={setActiveTab}
+                macros={macros} funnels={funnels} scheduledMessages={scheduledMessages}
+                searchTerm={searchTerm} setSearchTerm={setSearchTerm}
+                expandedItemId={expandedItemId} setExpandedItemId={setExpandedItemId}
+                isProcessingMacro={isProcessingMacro} processingActionId={processingActionId} executions={executions}
+                onOpenMacroModal={handleOpenMacroModal}
+                onOpenSequenceModal={handleOpenSequenceModal}
+                onOpenScheduleModal={handleOpenScheduleModal}
+                onRunFunnel={handleRunFunnel} onRunScriptStep={handleRunScriptStep} onMacroSend={handleMacroSend}
+                onDelete={confirmDeleteAction} onCancelSchedule={handleCancelSchedule}
+            />
+          </div>
+        </div>
     </div>
   );
 }

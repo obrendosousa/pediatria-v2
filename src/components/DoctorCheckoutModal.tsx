@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Chat, Product } from '@/types';
 import { 
   X, CheckCircle2, ShoppingBag, Search, Plus, Pill, 
   Stethoscope, Calendar, MessageSquare, ArrowRight, Minus,
   Activity, ClipboardList, Clock
 } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
 
 interface DoctorCheckoutModalProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ interface SelectedItem {
 }
 
 export default function DoctorCheckoutModal({ isOpen, onClose, onSuccess, chat }: DoctorCheckoutModalProps) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'products' | 'services' | 'final'>('products');
   const [loading, setLoading] = useState(false);
   
@@ -161,7 +164,7 @@ export default function DoctorCheckoutModal({ isOpen, onClose, onSuccess, chat }
 
     } catch (err) {
       console.error('Erro no checkout:', err);
-      alert("Ocorreu um erro ao finalizar o atendimento. Tente novamente.");
+      toast.toast.error("Ocorreu um erro ao finalizar o atendimento. Tente novamente.");
     } finally {
       setLoading(false);
     }

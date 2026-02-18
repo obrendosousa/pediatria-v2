@@ -1,7 +1,11 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { MoreHorizontal, Phone, Calendar, Search, Plus, Loader2, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { useToast } from '@/contexts/ToastContext';
 
 interface PatientListTableProps {
   patients: any[];
@@ -22,7 +26,7 @@ export function PatientListTable({
   onSearchChange,
   onPatientDeleted
 }: PatientListTableProps) {
-  
+  const { toast } = useToast();
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; patient: any | null }>({
     isOpen: false,
     patient: null
@@ -210,7 +214,7 @@ export function PatientListTable({
         
         console.error('Erro ao deletar paciente:', logInfo);
         
-        alert(`Erro ao deletar paciente: ${errorMessage}`);
+        toast.toast.error(`Erro ao deletar paciente: ${errorMessage}`);
         setIsDeleting(false);
         return;
       }
@@ -218,7 +222,7 @@ export function PatientListTable({
       // Verificar se realmente deletou
       if (!data || data.length === 0) {
         console.warn('Nenhum registro foi deletado. Pode haver restrições de chave estrangeira.');
-        alert('Não foi possível deletar o paciente. Ele pode estar vinculado a outros registros (consultas, prontuários, checkouts, etc.).');
+        toast.toast.error('Não foi possível deletar o paciente. Ele pode estar vinculado a outros registros (consultas, prontuários, checkouts, etc.).');
         setIsDeleting(false);
         return;
       }
@@ -247,7 +251,7 @@ export function PatientListTable({
         errorMessage = 'Não foi possível deletar o paciente. Ele pode estar vinculado a outros registros.';
       }
       
-      alert(`Erro ao deletar paciente: ${errorMessage}`);
+      toast.toast.error(`Erro ao deletar paciente: ${errorMessage}`);
       setIsDeleting(false);
     }
   };

@@ -2,7 +2,8 @@
 
 import { useState, use } from 'react';
 import { useZxing } from 'react-zxing';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Scan, CheckCircle2, XCircle } from 'lucide-react';
 
 interface PageProps {

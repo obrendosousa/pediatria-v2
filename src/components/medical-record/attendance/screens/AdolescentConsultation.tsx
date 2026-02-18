@@ -9,7 +9,9 @@ import { ModelTemplateModal } from '../ModelTemplateModal';
 import { AttendanceScreenProps } from '@/types/attendance';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
+import { useToast } from '@/contexts/ToastContext';
 
 interface AdolescentConsultationFormData {
   companions: string;
@@ -26,6 +28,7 @@ interface AdolescentConsultationFormData {
 }
 
 export function AdolescentConsultation({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
+  const { toast } = useToast();
   const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<AdolescentConsultationFormData>({
     defaultValues: {
@@ -112,7 +115,7 @@ export function AdolescentConsultation({ patientId, patientData, onRefresh, appo
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Erro ao salvar:', error);
-      alert('Erro ao salvar o formulário. Tente novamente.');
+      toast.toast.error('Erro ao salvar o formulário. Tente novamente.');
     }
   };
 
@@ -345,10 +348,10 @@ export function AdolescentConsultation({ patientId, patientData, onRefresh, appo
               });
             if (error) throw error;
             setModelModalOpen(false);
-            alert('Modelo salvo com sucesso!');
+            toast.toast.success('Modelo salvo com sucesso!');
           } catch (err: any) {
             console.error('Erro ao salvar modelo:', err);
-            alert('Erro ao salvar modelo: ' + err.message);
+            toast.toast.error('Erro ao salvar modelo: ' + err.message);
           }
         }}
         type={modelModalType}

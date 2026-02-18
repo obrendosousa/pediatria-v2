@@ -10,11 +10,13 @@ import {
   ChevronLeft, ChevronRight, Zap
 } from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadChatsCount } from '@/hooks/useUnreadChatsCount';
 
 export default function Navigation() {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar } = useSidebar();
+  const { signOut, profile } = useAuth();
   const { unreadCount, totalChats } = useUnreadChatsCount();
   const isActive = (path: string) => path === '/' ? pathname === '/' : pathname.startsWith(path);
 
@@ -56,7 +58,7 @@ export default function Navigation() {
 
   return (
     <div 
-      className="flex flex-col bg-white dark:bg-[#1e2028] border-r border-pink-100 dark:border-gray-800 shadow-[4px_0_24px_rgba(249,168,212,0.1)] dark:shadow-none relative z-50 h-screen overflow-hidden sidebar-transition"
+      className="flex shrink-0 flex-col bg-white dark:bg-[#1e2028] border-r border-pink-100 dark:border-gray-800 shadow-[4px_0_24px_rgba(249,168,212,0.1)] dark:shadow-none relative z-10 h-screen overflow-hidden sidebar-transition"
       style={{ 
         width: isCollapsed ? '80px' : '256px',
         minWidth: isCollapsed ? '80px' : '256px',
@@ -137,7 +139,9 @@ export default function Navigation() {
 
         <MenuGroup title="Sistema">
             <NavItem icon={Zap} label="Automações" path="/automatizacoes" active={isActive('/automatizacoes')} color="indigo" />
-            <NavItem icon={Settings} label="Configurações" path="/configuracoes" active={isActive('/configuracoes')} color="slate" />
+            {profile?.role === 'admin' && (
+              <NavItem icon={Settings} label="Configurações" path="/configuracoes" active={isActive('/configuracoes')} color="slate" />
+            )}
         </MenuGroup>
 
       </nav>
@@ -180,33 +184,30 @@ export default function Navigation() {
             )}
         </button>
 
-        {/* Botão de Logout */}
-        <div 
-          className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors group cursor-pointer relative`}
-          title={isCollapsed ? 'Sistema Online' : undefined}
+        {/* Botão de Sair */}
+        <button
+          type="button"
+          onClick={() => signOut()}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors group cursor-pointer relative`}
+          title={isCollapsed ? 'Sair' : undefined}
         >
             <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse shrink-0"></div>
+                <LogOut className="w-4 h-4 text-slate-400 dark:text-gray-500 group-hover:text-red-500 dark:group-hover:text-red-400 shrink-0" />
                 <span 
                   className={`text-xs font-bold text-slate-500 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
                   style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
                 >
-                  Sistema Online
+                  Sair
                 </span>
             </div>
-            <LogOut 
-              className={`w-4 h-4 text-slate-300 dark:text-gray-600 group-hover:text-red-400 sidebar-content-transition shrink-0 ${isCollapsed ? 'opacity-0 scale-0 w-0' : 'opacity-100 scale-100 w-4'}`}
-              style={{ transitionDelay: isCollapsed ? '0ms' : '250ms' }}
-            />
-            
             {/* Tooltip quando minimizado */}
             {isCollapsed && (
               <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
-                Sistema Online
+                Sair
                 <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900 dark:border-r-slate-800"></div>
               </div>
             )}
-        </div>
+        </button>
       </div>
     </div>
   );

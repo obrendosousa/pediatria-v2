@@ -1,19 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Appointment } from '@/types/medical';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getLocalDateRange, formatAppointmentTime, getTodayDateString } from '@/utils/dateUtils';
 import { 
-  Clock, MessageCircle, CheckCircle, AlertCircle, Play, 
-  DollarSign, MapPin, Megaphone, Loader2, User, Stethoscope
+  Clock, MessageCircle, CheckCircle, Play, 
+  DollarSign, MapPin, Megaphone, Loader2
 } from 'lucide-react';
 import QuickChatModal from '@/components/chat/QuickChatModal';
 import ReceptionCheckoutModal from '@/components/medical/ReceptionCheckoutModal';
+import { useToast } from '@/contexts/ToastContext';
 
 export default function DailyReceptionList() {
+  const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
@@ -46,7 +49,7 @@ export default function DailyReceptionList() {
   useEffect(() => {
     fetchToday();
     
-    // Realtime para atualizar status se o médico mexer lá dentro
+    // Realtime para atualizar status
     const channel = supabase
       .channel('reception_view')
       .on('postgres_changes', { 
@@ -66,20 +69,29 @@ export default function DailyReceptionList() {
   const updateStatus = async (id: number, newStatus: string) => {
     setIsUpdating(id);
     try {
+      const updatePayload: Record<string, string | null> = { status: newStatus };
+      if (newStatus === 'waiting') {
+        updatePayload.queue_entered_at = new Date().toISOString();
+      } else if (newStatus === 'in_service') {
+        updatePayload.in_service_at = new Date().toISOString();
+      } else if (newStatus === 'finished' || newStatus === 'waiting_payment') {
+        updatePayload.finished_at = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from('appointments')
-        .update({ status: newStatus })
+        .update(updatePayload)
         .eq('id', id);
 
       if (error) throw error;
       
       // Atualiza localmente para feedback imediato
       setAppointments(prev => 
-        prev.map(apt => apt.id === id ? { ...apt, status: newStatus as any } : apt)
+        prev.map(apt => apt.id === id ? { ...apt, ...updatePayload, status: newStatus as any } : apt)
       );
     } catch (error: any) {
       console.error('Erro ao atualizar status:', error);
-      alert('Erro ao atualizar status: ' + (error.message || 'Tente novamente.'));
+      toast.error('Erro ao atualizar status: ' + (error.message || 'Tente novamente.'));
     } finally {
       setIsUpdating(null);
     }
@@ -103,6 +115,12 @@ export default function DailyReceptionList() {
         return (
           <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1">
             <Play size={12}/> Em Atendimento
+          </span>
+        );
+      case 'waiting_payment': 
+        return (
+          <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1">
+            <DollarSign size={12}/> Checkout / Pagamento
           </span>
         );
       case 'finished': 
@@ -242,17 +260,26 @@ export default function DailyReceptionList() {
                         </button>
                       )}
                       {apt.status === 'in_service' && (
-                        <div className="text-purple-600 dark:text-purple-400 text-xs font-medium flex items-center gap-1">
+                        <div className="text-purple-600 dark:text-purple-400 text-xs font-medium flex items-center gap-1 justify-end">
                           <Loader2 size={14} className="animate-spin" />
                           Em andamento...
                         </div>
                       )}
-                      {apt.status === 'finished' && (
+                      
+                      {/* Lógica para Checkout ou Ver Pagamento */}
+                      {(apt.status === 'waiting_payment' || apt.status === 'finished') && (
                         <button
                           onClick={() => setSelectedAppointmentId(apt.id)}
-                          className="text-gray-400 hover:text-green-600 dark:hover:text-green-400 p-2 rounded-full border border-gray-200 dark:border-gray-700 hover:border-green-200 dark:hover:border-green-800 transition-all"
+                          className={`
+                            flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ml-auto
+                            ${apt.status === 'waiting_payment' 
+                              ? 'bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 dark:text-amber-400 border border-amber-200 dark:border-amber-800' 
+                              : 'text-gray-400 hover:text-green-600 dark:hover:text-green-400 border border-transparent hover:border-green-200 dark:hover:border-green-800'
+                            }
+                          `}
                         >
-                          <DollarSign size={16}/>
+                          <DollarSign size={14}/>
+                          {apt.status === 'waiting_payment' && 'Realizar Checkout'}
                         </button>
                       )}
                     </td>

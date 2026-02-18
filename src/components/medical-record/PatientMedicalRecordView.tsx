@@ -3,14 +3,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { ClinicalSummary } from '@/types/medical';
 import { PatientStickyHeader } from './PatientStickyHeader';
 import { ClinicalSummaryGrid } from './ClinicalSummaryGrid';
 import { ClinicalTimeline } from './ClinicalTimeline';
 import { AttendanceLayout } from './attendance/AttendanceLayout';
 import { PatientPhonesManager } from './PatientPhonesManager';
-import { QuickChatModal } from '../chat/QuickChatModal';
+import QuickChatModal from '../chat/QuickChatModal';
 import { getPatientPhones } from '@/utils/patientRelations';
 import { Stethoscope, Activity, FileText, LayoutDashboard, Phone, X } from 'lucide-react';
 import { useMedicalRecord } from '@/hooks/useMedicalRecord';
@@ -20,11 +21,12 @@ import { NewPatientModal } from './NewPatientModal';
 interface PatientMedicalRecordViewProps {
   patientId: number;
   appointmentId?: number | null;
+  currentDoctorId?: number | null;
   onRefresh?: () => void;
   onBack?: () => void;
 }
 
-export function PatientMedicalRecordView({ patientId, appointmentId, onRefresh, onBack }: PatientMedicalRecordViewProps) {
+export function PatientMedicalRecordView({ patientId, appointmentId, currentDoctorId, onRefresh, onBack }: PatientMedicalRecordViewProps) {
   const [patientData, setPatientData] = useState<any | null>(null);
   const [summaryData, setSummaryData] = useState<ClinicalSummary | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
@@ -96,9 +98,20 @@ export function PatientMedicalRecordView({ patientId, appointmentId, onRefresh, 
     return () => clearInterval(interval);
   }, [isConsultationActive]);
 
-  const { record, saveAllData } = useMedicalRecord(patientId, appointmentId);
+  const { record, saveAllData, startConsultationTimer } = useMedicalRecord(patientId, appointmentId, currentDoctorId);
 
-  const handleStartConsultation = async () => setIsConsultationActive(true);
+  useEffect(() => {
+    setIsConsultationActive(Boolean(record?.started_at && !record?.finished_at));
+  }, [record?.started_at, record?.finished_at]);
+
+  const handleStartConsultation = async () => {
+    try {
+      await startConsultationTimer();
+      setIsConsultationActive(true);
+    } catch (error) {
+      console.error('Erro ao iniciar atendimento:', error);
+    }
+  };
   
   const handleFinishConsultation = () => {
     setShowFinishModal(true);

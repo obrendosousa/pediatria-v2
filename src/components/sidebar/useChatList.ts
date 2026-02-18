@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
+import { get, set, TTL_CHATS_LIST_MS, TTL_TAGS_MS } from '@/lib/chatCache';
 import { Chat } from '@/types';
 import { TagData } from '@/utils/sidebarUtils';
 
-export function useChatList(isViewingArchived: boolean, searchTerm: string) {
+export interface UseChatListOptions {
+  confirm?: (message: string, title?: string) => Promise<boolean>;
+}
+
+export function useChatList(isViewingArchived: boolean, searchTerm: string, options?: UseChatListOptions) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [tags, setTags] = useState<TagData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,10 +34,22 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string) {
     });
   };
 
+  const chatsListCacheKey = `chats_list_${isViewingArchived}_${searchTerm || ''}`;
+  const tagsCacheKey = 'chats_tags';
+
+  // Mantém o cache quente quando realtime atualiza chats/tags
+  useEffect(() => {
+    set(chatsListCacheKey, chats, TTL_CHATS_LIST_MS);
+  }, [chats, chatsListCacheKey]);
+
+  useEffect(() => {
+    set(tagsCacheKey, tags, TTL_TAGS_MS);
+  }, [tags]);
+
   // --- BUSCA INICIAL E FILTROS ---
-  const fetchChats = async () => {
+  const fetchChats = async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       let query = supabase
         .from('chats')
         .select('*')
@@ -42,9 +60,9 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string) {
       }
 
       const { data } = await query;
-      // Ordenar usando a função de ordenação customizada
       const sortedChats = sortChats(data || []);
       setChats(sortedChats);
+      set(chatsListCacheKey, sortedChats, TTL_CHATS_LIST_MS);
     } catch (e) {
       console.error(e);
     } finally {
@@ -54,12 +72,21 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string) {
 
   const fetchTags = async () => {
     const { data } = await supabase.from('tags').select('*').order('name');
-    if (data) setTags(data);
+    if (data) {
+      setTags(data);
+      set(tagsCacheKey, data, TTL_TAGS_MS);
+    }
   };
 
   // --- REALTIME SUBSCRIPTIONS ---
   useEffect(() => {
-    fetchChats();
+    const cachedChats = get<Chat[]>(chatsListCacheKey);
+    const cachedTags = get<TagData[]>(tagsCacheKey);
+    const hasValidChatsCache = cachedChats && Array.isArray(cachedChats);
+    if (hasValidChatsCache) setChats(cachedChats);
+    if (Array.isArray(cachedTags)) setTags(cachedTags);
+
+    fetchChats(!hasValidChatsCache);
     fetchTags();
 
     // Canal de Tags
@@ -78,12 +105,27 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string) {
         const chatId = newMessage.chat_id;
         const sender = newMessage.sender;
 
-        // Ignorar mensagens enviadas pelo sistema
-        if (sender === 'HUMAN_AGENT' || sender === 'AI_AGENT' || sender === 'me') {
+        const isFromUs = sender === 'HUMAN_AGENT' || sender === 'AI_AGENT' || sender === 'me';
+        if (isFromUs) {
+          // Mensagem enviada por nós: atualiza preview (checks) na sidebar
+          setChats(currentChats => {
+            const chatIndex = currentChats.findIndex(c => c.id === chatId);
+            if (chatIndex === -1) return currentChats;
+            const updatedChats = [...currentChats];
+            updatedChats[chatIndex] = {
+              ...updatedChats[chatIndex],
+              last_message: newMessage.message_text || (newMessage.message_type === 'audio' ? 'Áudio' : 'Mídia'),
+              last_message_type: newMessage.message_type || 'text',
+              last_message_sender: 'me',
+              last_message_status: (newMessage.status as 'sent' | 'delivered' | 'read') || 'sent',
+              last_interaction_at: newMessage.created_at || new Date().toISOString(),
+            };
+            return sortChats(updatedChats);
+          });
           return;
         }
 
-        // Atualizar unread_count e last_interaction_at do chat
+        // Atualizar unread_count e last_interaction_at do chat (mensagem do cliente)
         setChats(currentChats => {
           const chatIndex = currentChats.findIndex(c => c.id === chatId);
           if (chatIndex === -1) return currentChats;
@@ -115,17 +157,17 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string) {
           .then(({ data }) => {
             if (data) {
               const currentUnread = data.unread_count || 0;
-              supabase
+              void supabase
                 .from('chats')
                 .update({ 
                   unread_count: currentUnread + 1,
                   last_interaction_at: newMessage.created_at || new Date().toISOString()
                 })
                 .eq('id', chatId)
-                .catch(console.error);
+                .then(({ error }) => { if (error) console.error(error); });
             }
           })
-          .catch(console.error);
+          .then(undefined, console.error);
       })
       .subscribe();
 
@@ -232,6 +274,18 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string) {
     return { ...chat, tags: newTags };
   };
 
+  const setTagsOnChat = async (chat: Chat, tagIds: number[]) => {
+    const newTags = tagIds.map(id => id.toString());
+    setChats(prev => prev.map(c => c.id === chat.id ? { ...c, tags: newTags } : c));
+    await supabase.from('chats').update({ tags: newTags }).eq('id', chat.id);
+    return { ...chat, tags: newTags };
+  };
+
+  const askConfirm = async (message: string, title?: string): Promise<boolean> => {
+    if (options?.confirm) return options.confirm(message, title);
+    return window.confirm(message);
+  };
+
   const performAction = async (action: string, chat: Chat) => {
     try {
         const updates: any = {};
@@ -240,12 +294,12 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string) {
         if (action === 'archive') updates.is_archived = !chat.is_archived;
         if (action === 'unread') updates.unread_count = (chat.unread_count || 0) > 0 ? 0 : 1;
         if (action === 'block') {
-            if (!confirm("Bloquear contato?")) return;
+            if (!(await askConfirm("Bloquear contato?", "Bloquear contato"))) return;
             updates.is_blocked = !chat.is_blocked;
         }
 
         if (action === 'delete') {
-            if (!confirm("Apagar permanentemente esta conversa?")) return;
+            if (!(await askConfirm("Apagar permanentemente esta conversa?", "Excluir conversa"))) return;
             setChats(prev => prev.filter(c => c.id !== chat.id)); // Remove da UI
             await supabase.from('chat_messages').delete().eq('chat_id', chat.id);
             await supabase.from('chats').delete().eq('id', chat.id);
@@ -269,7 +323,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string) {
   const handleBulkAction = async (action: 'archive' | 'delete', selectedIds: number[]) => {
       if (selectedIds.length === 0) return;
       const confirmText = action === 'archive' ? 'arquivar' : 'excluir permanentemente';
-      if (!confirm(`Deseja ${confirmText} as ${selectedIds.length} conversas?`)) return;
+      if (!(await askConfirm(`Deseja ${confirmText} as ${selectedIds.length} conversas?`, 'Confirmar ação'))) return;
 
       try {
         // Otimista
@@ -297,6 +351,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string) {
         updateContact: handleUpdateContact,
         select: handleSelectChat,
         toggleTag: toggleTagOnChat,
+        setTagsOnChat,
         singleAction: performAction,
         bulkAction: handleBulkAction
     }

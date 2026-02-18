@@ -171,6 +171,17 @@
   }
 }
 
+/* Entrada de mensagem - só opacity, sem movimento (evita conflito com scroll) */
+@keyframes messageFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-message-fade-in {
+  animation: messageFadeIn 0.18s ease-out forwards;
+  opacity: 0;
+}
+
 /* Animação de entrada do menu dropdown - mais rápida e suave */
 @keyframes menuSlideIn {
   from {
@@ -181,4 +192,113 @@
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+/* Animação de entrada do popup do chat - menu abaixo (vem de cima) */
+@keyframes chatMenuIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Animação de entrada quando menu está acima - vem de baixo (do trigger) */
+@keyframes chatMenuInUpward {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Animação de saída do popup do chat - menu abaixo (retrai pra cima) */
+@keyframes chatMenuOut {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.98) translateY(-4px);
+  }
+}
+
+/* Animação de saída quando menu está acima - retrai pra baixo (evita piscada) */
+@keyframes chatMenuOutUpward {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.98) translateY(4px);
+  }
+}
+
+.animate-chat-menu-in {
+  animation: chatMenuIn 0.28s cubic-bezier(0.34, 1.15, 0.64, 1) forwards;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.animate-chat-menu-in-upward {
+  animation: chatMenuInUpward 0.28s cubic-bezier(0.34, 1.15, 0.64, 1) forwards;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.animate-chat-menu-out {
+  animation: chatMenuOut 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.animate-chat-menu-out-upward {
+  animation: chatMenuOutUpward 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Animação da etiqueta: pulinho + gradiente da esquerda para direita */
+@keyframes tagBounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(6px);
+  }
+  45% {
+    transform: scale(1.12) translateY(-4px);
+  }
+  65% {
+    transform: scale(0.96) translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes tagGradientSweep {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.tag-bounce-in {
+  opacity: 0;
+  animation: tagBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.tag-gradient-sweep {
+  transform-origin: left;
+  animation: tagGradientSweep 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }

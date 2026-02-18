@@ -1,14 +1,30 @@
+import { redirect } from 'next/navigation';
+
+export default function PDVPage() {
+  redirect('/loja?tab=pos');
+}
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { Product, Chat } from '@/types';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
+import { Product } from '@/types';
 import { 
   Search, ShoppingCart, Trash2, User, CreditCard, 
   ArrowLeft, Minus, Plus, ScanBarcode, CheckCircle2, 
-  AlertCircle, Stethoscope, ArrowDown 
+  AlertCircle, Stethoscope, ArrowDown, X 
 } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+
+// Paciente cadastrado para seleção no PDV
+interface PDVPatient {
+  id: number;
+  name: string;
+  phone: string | null;
+  chat_id: number | null;
+}
 
 // Tipo local para o item do carrinho
 interface CartItem extends Product {
@@ -23,21 +39,35 @@ interface Indication {
 
 export default function PDVPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [confirmCheckoutNoClient, setConfirmCheckoutNoClient] = useState(false);
   
   // Estados de Dados
   const [products, setProducts] = useState<Product[]>([]);
-  const [clients, setClients] = useState<Chat[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   
   // Estados de Controle
   const [search, setSearch] = useState('');
-  const [selectedClient, setSelectedClient] = useState<Chat | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<PDVPatient | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'cash' | 'credit_card' | 'debit_card' | 'mixed'>('cash');
+  const [mixedPayments, setMixedPayments] = useState({
+    pix: '',
+    cash: '',
+    credit_card: '',
+    debit_card: ''
+  });
 
-  // NOVO: Indicações Médicas
+  // Busca de pacientes (cadastrados)
+  const [patientSearchTerm, setPatientSearchTerm] = useState('');
+  const [patientSearchResults, setPatientSearchResults] = useState<PDVPatient[]>([]);
+  const [patientSearchLoading, setPatientSearchLoading] = useState(false);
+  const patientSearchRef = useRef<HTMLDivElement>(null);
+
+  // Indicações Médicas (por chat_id do paciente, quando existir)
   const [indications, setIndications] = useState<Indication[]>([]);
 
   useEffect(() => {
@@ -45,14 +75,44 @@ export default function PDVPage() {
     setTimeout(() => searchInputRef.current?.focus(), 100);
   }, []);
 
-  // Monitora seleção de cliente para buscar indicações
+  // Busca de pacientes sob demanda (debounce)
   useEffect(() => {
-    if (selectedClient) {
-        fetchIndications(selectedClient.id);
-    } else {
-        setIndications([]);
+    const term = patientSearchTerm.trim();
+    if (!term) {
+      setPatientSearchResults([]);
+      return;
     }
-  }, [selectedClient]);
+    const t = setTimeout(async () => {
+      setPatientSearchLoading(true);
+      const { data, error } = await supabase
+        .from('patients')
+        .select('id, name, phone, chat_id')
+        .or(`name.ilike.%${term}%,phone.ilike.%${term}%`)
+        .limit(20)
+        .order('name');
+      setPatientSearchLoading(false);
+      if (error) {
+        setPatientSearchResults([]);
+        return;
+      }
+      setPatientSearchResults((data || []).map((p: any) => ({
+        id: p.id,
+        name: p.name || '',
+        phone: p.phone || null,
+        chat_id: p.chat_id ?? null
+      })));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [patientSearchTerm]);
+
+  // Indicações: quando o paciente tem chat_id
+  useEffect(() => {
+    if (selectedPatient?.chat_id) {
+      fetchIndications(selectedPatient.chat_id);
+    } else {
+      setIndications([]);
+    }
+  }, [selectedPatient]);
 
   // Filtro em tempo real
   useEffect(() => {
@@ -67,24 +127,16 @@ export default function PDVPage() {
 
   async function fetchData() {
     setLoading(true);
-    // 1. Produtos com estoque > 0
     const { data: prods } = await supabase
-        .from('products')
-        .select('*')
-        .eq('active', true)
-        .gt('stock', 0)
-        .order('name');
-    
-    // 2. Clientes (Chats recentes)
-    const { data: chats } = await supabase
-        .from('chats')
-        .select('id, phone, contact_name, updated_at')
-        .order('last_interaction_at', { ascending: false })
-        .limit(50);
-
-    if (prods) setProducts(prods as Product[]);
-    if (prods) setFilteredProducts(prods as Product[]);
-    if (chats) setClients(chats as Chat[]);
+      .from('products')
+      .select('*')
+      .eq('active', true)
+      .gt('stock', 0)
+      .order('name');
+    if (prods) {
+      setProducts(prods as Product[]);
+      setFilteredProducts(prods as Product[]);
+    }
     setLoading(false);
   }
 
@@ -121,7 +173,7 @@ export default function PDVPage() {
     if (existingIndex >= 0) {
         const currentQty = cart[existingIndex].qty;
         if (currentQty + 1 > product.stock) {
-            alert(`Estoque insuficiente! Disponível: ${product.stock}`);
+            toast.toast.error(`Estoque insuficiente! Disponível: ${product.stock}`);
             return;
         }
         const newCart = [...cart];
@@ -175,54 +227,82 @@ export default function PDVPage() {
   const totalItems = cart.reduce((acc, item) => acc + item.qty, 0);
   const totalPrice = cart.reduce((acc, item) => acc + (item.price_sale * item.qty), 0);
 
-  // --- FINALIZAR VENDA ---
-  async function handleCheckout() {
-      if (cart.length === 0) return alert("Carrinho vazio.");
-      if (!selectedClient) {
-          if(!confirm("Fechar venda sem identificar o paciente?")) return;
-      }
+  const doCheckout = async () => {
+    setConfirmCheckoutNoClient(false);
+    setProcessing(true);
+    try {
+      const payload = {
+        patient_id: selectedPatient?.id ?? null,
+        chat_id: selectedPatient?.chat_id ?? null,
+        items: cart.map(i => ({ id: i.id, qty: i.qty, price: i.price_sale })),
+        payment_method: paymentMethod !== 'mixed' ? paymentMethod : undefined,
+        payments: paymentMethod === 'mixed'
+          ? [
+              { method: 'pix', amount: Number(mixedPayments.pix || 0) },
+              { method: 'cash', amount: Number(mixedPayments.cash || 0) },
+              { method: 'credit_card', amount: Number(mixedPayments.credit_card || 0) },
+              { method: 'debit_card', amount: Number(mixedPayments.debit_card || 0) }
+            ].filter((payment) => payment.amount > 0)
+          : undefined,
+        origin: 'loja'
+      };
 
-      setProcessing(true);
-      
-      try {
-        const payload = {
-            chat_id: selectedClient?.id || null,
-            items: cart.map(i => ({ id: i.id, qty: i.qty, price: i.price_sale })),
-            payment_method: 'DINHEIRO/PIX'
-        };
-
-        const response = await fetch('/api/sales', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) throw new Error(await response.text());
-
-        // SE SUCESSO: Atualizar status das indicações para 'bought'
-        if (selectedClient && indications.length > 0) {
-            // Marca como comprado todas as indicações deste cliente que estavam no carrinho
-            // Simplificação: marca todas pendentes do cliente
-            await supabase
-                .from('product_indications')
-                .update({ status: 'bought' })
-                .eq('chat_id', selectedClient.id);
+      if (paymentMethod === 'mixed') {
+        const mixedTotal =
+          Number(mixedPayments.pix || 0) +
+          Number(mixedPayments.cash || 0) +
+          Number(mixedPayments.credit_card || 0) +
+          Number(mixedPayments.debit_card || 0);
+        if (Number(mixedTotal.toFixed(2)) !== Number(totalPrice.toFixed(2))) {
+          throw new Error('No pagamento misto, a soma deve ser igual ao total da venda.');
         }
-
-        alert("Venda realizada com sucesso!");
-        setCart([]);
-        setSelectedClient(null);
-        setIndications([]);
-        fetchData();
-      } catch (err) {
-          console.error(err);
-          alert("Erro ao processar venda.");
-      } finally {
-          setProcessing(false);
       }
+
+      const response = await fetch('/api/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error(await response.text());
+
+      if (selectedPatient?.chat_id && indications.length > 0) {
+        await supabase
+          .from('product_indications')
+          .update({ status: 'bought' })
+          .eq('chat_id', selectedPatient.chat_id);
+      }
+
+      toast.success("Venda realizada com sucesso!");
+      setCart([]);
+      setSelectedPatient(null);
+      setPatientSearchTerm('');
+      setIndications([]);
+      setPaymentMethod('cash');
+      setMixedPayments({ pix: '', cash: '', credit_card: '', debit_card: '' });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao processar venda.");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  async function handleCheckout() {
+    if (cart.length === 0) {
+      toast.error("Carrinho vazio.");
+      return;
+    }
+    if (!selectedPatient) {
+      setConfirmCheckoutNoClient(true);
+      return;
+    }
+    await doCheckout();
   }
 
   return (
+    <>
     <div className="h-screen flex bg-slate-100 overflow-hidden font-sans">
       
       {/* === COLUNA ESQUERDA: CATÁLOGO === */}
@@ -299,26 +379,62 @@ export default function PDVPage() {
       {/* === COLUNA DIREITA: CARRINHO & CLIENTE === */}
       <div className="w-[450px] bg-white border-l border-slate-200 shadow-2xl flex flex-col z-20">
         
-        {/* 1. Seleção de Cliente */}
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+        {/* 1. Seleção de Cliente / Paciente cadastrado */}
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50 relative" ref={patientSearchRef}>
             <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                 <User className="w-4 h-4" /> Cliente / Paciente
             </h2>
-            <select 
-                value={selectedClient?.id || ''}
-                onChange={e => {
-                    const client = clients.find(c => c.id === Number(e.target.value));
-                    setSelectedClient(client || null);
-                }}
-                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-blue-500 shadow-sm"
-            >
-                <option value="">Consumidor Final (Não identificado)</option>
-                {clients.map(c => (
-                    <option key={c.id} value={c.id}>
-                        {c.contact_name || c.phone}
-                    </option>
-                ))}
-            </select>
+            {selectedPatient ? (
+              <div className="flex items-center justify-between gap-2 p-3 bg-white border border-slate-200 rounded-xl">
+                <span className="text-sm font-medium text-slate-700 truncate">{selectedPatient.name}</span>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedPatient(null); setPatientSearchTerm(''); }}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 shrink-0"
+                  aria-label="Limpar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value={patientSearchTerm}
+                  onChange={e => setPatientSearchTerm(e.target.value)}
+                  placeholder="Buscar paciente por nome ou telefone..."
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-blue-500 shadow-sm placeholder:text-slate-400"
+                />
+                {patientSearchTerm.trim() && (
+                  <div className="absolute left-6 right-6 top-full mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50 custom-scrollbar">
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPatient(null); setPatientSearchTerm(''); }}
+                      className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-50 border-b border-slate-100"
+                    >
+                      Consumidor Final (Não identificado)
+                    </button>
+                    {patientSearchLoading ? (
+                      <div className="px-4 py-3 text-sm text-slate-500">Buscando...</div>
+                    ) : patientSearchResults.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-slate-500">Nenhum paciente encontrado.</div>
+                    ) : (
+                      patientSearchResults.map(p => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => { setSelectedPatient(p); setPatientSearchTerm(''); setPatientSearchResults([]); }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-0"
+                        >
+                          <span className="text-sm font-medium text-slate-700 block truncate">{p.name}</span>
+                          {p.phone && <span className="text-xs text-slate-500">{p.phone}</span>}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </>
+            )}
         </div>
 
         {/* 1.5 ALERTA DE PRESCRIÇÃO (O Grand Finale) */}
@@ -386,6 +502,93 @@ export default function PDVPage() {
                 <span>Total</span>
                 <span>R$ {totalPrice.toFixed(2)}</span>
             </div>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash')}
+                className={`rounded-lg px-3 py-2 text-xs font-bold transition-colors ${paymentMethod === 'cash' ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}
+              >
+                Dinheiro
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('pix')}
+                className={`rounded-lg px-3 py-2 text-xs font-bold transition-colors ${paymentMethod === 'pix' ? 'bg-teal-500 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}
+              >
+                Pix
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('credit_card')}
+                className={`rounded-lg px-3 py-2 text-xs font-bold transition-colors ${paymentMethod === 'credit_card' ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}
+              >
+                Crédito
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('debit_card')}
+                className={`rounded-lg px-3 py-2 text-xs font-bold transition-colors ${paymentMethod === 'debit_card' ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}
+              >
+                Débito
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('mixed')}
+                className={`rounded-lg px-3 py-2 text-xs font-bold transition-colors ${paymentMethod === 'mixed' ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}
+              >
+                Misto
+              </button>
+            </div>
+            {paymentMethod === 'mixed' && (
+              <div className="mb-4 rounded-xl bg-slate-800 p-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={mixedPayments.pix}
+                    onChange={(e) => setMixedPayments((prev) => ({ ...prev, pix: e.target.value }))}
+                    placeholder="Pix"
+                    className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-semibold text-white outline-none"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={mixedPayments.cash}
+                    onChange={(e) => setMixedPayments((prev) => ({ ...prev, cash: e.target.value }))}
+                    placeholder="Dinheiro"
+                    className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-semibold text-white outline-none"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={mixedPayments.credit_card}
+                    onChange={(e) => setMixedPayments((prev) => ({ ...prev, credit_card: e.target.value }))}
+                    placeholder="Crédito"
+                    className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-semibold text-white outline-none"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={mixedPayments.debit_card}
+                    onChange={(e) => setMixedPayments((prev) => ({ ...prev, debit_card: e.target.value }))}
+                    placeholder="Débito"
+                    className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-semibold text-white outline-none"
+                  />
+                </div>
+                <div className="mt-2 text-[11px] font-semibold text-slate-300">
+                  Soma: R$ {(
+                    Number(mixedPayments.pix || 0) +
+                    Number(mixedPayments.cash || 0) +
+                    Number(mixedPayments.credit_card || 0) +
+                    Number(mixedPayments.debit_card || 0)
+                  ).toFixed(2)}
+                </div>
+              </div>
+            )}
             <button 
                 onClick={handleCheckout}
                 disabled={processing || cart.length === 0}
@@ -396,5 +599,15 @@ export default function PDVPage() {
         </div>
       </div>
     </div>
+    <ConfirmModal
+      isOpen={confirmCheckoutNoClient}
+      onClose={() => setConfirmCheckoutNoClient(false)}
+      onConfirm={doCheckout}
+      title="Fechar venda"
+      message="Fechar venda sem identificar o paciente?"
+      type="warning"
+      confirmText="Sim, finalizar"
+    />
+    </>
   );
 }

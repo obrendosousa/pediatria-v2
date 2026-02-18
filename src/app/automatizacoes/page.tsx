@@ -1,16 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Zap, Plus, Calendar, RotateCcw, TrendingUp, Users, Clock, Hash } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { Zap, Plus, Calendar, RotateCcw, TrendingUp, Hash, CircleDashed } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { AutomationRule } from '@/types';
 import AutomationCard from '@/components/automation/AutomationCard';
 import AutomationModal from '@/components/automation/AutomationModal';
-
-type TabType = 'milestones' | 'appointment' | 'return';
+import AutomationOverviewCards from '@/components/automation/AutomationOverviewCards';
+import AutomationNavRail, { AutomationSection } from '@/components/automation/AutomationNavRail';
+import AutomationWorkspaceHeader from '@/components/automation/AutomationWorkspaceHeader';
+import { useToast } from '@/contexts/ToastContext';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 export default function AutomationsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('milestones');
+  const { toast } = useToast();
+  const [activeSection, setActiveSection] = useState<AutomationSection>('milestones');
+  const [confirmDelete, setConfirmDelete] = useState<AutomationRule | null>(null);
   const [milestoneAutomations, setMilestoneAutomations] = useState<AutomationRule[]>([]);
   const [appointmentAutomation, setAppointmentAutomation] = useState<AutomationRule | null>(null);
   const [returnAutomation, setReturnAutomation] = useState<AutomationRule | null>(null);
@@ -19,8 +25,8 @@ export default function AutomationsPage() {
   const [editingAutomation, setEditingAutomation] = useState<AutomationRule | null>(null);
   const [modalType, setModalType] = useState<'milestone' | 'appointment_reminder' | 'return_reminder'>('milestone');
   const [modalAgeMonths, setModalAgeMonths] = useState<number | undefined>();
-  const [showCustomAgeInput, setShowCustomAgeInput] = useState(false);
   const [customAgeMonths, setCustomAgeMonths] = useState<number>(0);
+  const [selectedMilestoneAge, setSelectedMilestoneAge] = useState<number>(1);
 
   useEffect(() => {
     fetchAutomations();
@@ -58,12 +64,19 @@ export default function AutomationsPage() {
     setModalAgeMonths(ageMonths);
     setEditingAutomation(null);
     setIsModalOpen(true);
-    setShowCustomAgeInput(false);
+    setSelectedMilestoneAge(ageMonths);
   };
 
   const handleCreateCustomAge = () => {
     if (customAgeMonths > 0) {
-      handleCreateMilestone(customAgeMonths);
+      const existingAutomation = milestoneAutomations.find(
+        (automation) => automation.age_months === customAgeMonths
+      );
+      if (existingAutomation) {
+        handleEdit(existingAutomation);
+      } else {
+        handleCreateMilestone(customAgeMonths);
+      }
       setCustomAgeMonths(0);
     }
   };
@@ -75,9 +88,14 @@ export default function AutomationsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (automation: AutomationRule) => {
-    if (!confirm(`Deseja realmente excluir a automação "${automation.name}"?`)) return;
+  const handleDeleteClick = (automation: AutomationRule) => {
+    setConfirmDelete(automation);
+  };
 
+  const handleDeleteConfirm = async () => {
+    const automation = confirmDelete;
+    if (!automation) return;
+    setConfirmDelete(null);
     try {
       const { error } = await supabase
         .from('automation_rules')
@@ -89,7 +107,7 @@ export default function AutomationsPage() {
       fetchAutomations();
     } catch (error) {
       console.error('Erro ao excluir automação:', error);
-      alert('Erro ao excluir automação');
+      toast.toast.error('Erro ao excluir automação');
     }
   };
 
@@ -105,7 +123,7 @@ export default function AutomationsPage() {
       fetchAutomations();
     } catch (error) {
       console.error('Erro ao alterar status:', error);
-      alert('Erro ao alterar status da automação');
+      toast.toast.error('Erro ao alterar status da automação');
     }
   };
 
@@ -121,37 +139,49 @@ export default function AutomationsPage() {
     setIsModalOpen(true);
   };
 
-  const getStatsForAutomation = async (automation: AutomationRule) => {
-    try {
-      const { data: logs } = await supabase
-        .from('automation_logs')
-        .select('sent_at, patient_id')
-        .eq('automation_rule_id', automation.id)
-        .eq('status', 'sent')
-        .order('sent_at', { ascending: false });
-
-      if (!logs) return { totalSent: 0 };
-
-      const totalSent = logs.length;
-      const lastSent = logs[0]?.sent_at;
-      const uniquePatients = new Set(logs.map(l => l.patient_id).filter(Boolean)).size;
-
-      return {
-        totalSent,
-        lastSent,
-        patientsReached: uniquePatients
-      };
-    } catch (error) {
-      console.error('Erro ao buscar estatísticas:', error);
-      return { totalSent: 0 };
-    }
-  };
-
   const milestoneAges = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24];
+  const allMilestoneAges = Array.from(
+    new Set([
+      ...milestoneAges,
+      ...milestoneAutomations
+        .map((automation) => automation.age_months)
+        .filter((age): age is number => typeof age === 'number'),
+    ])
+  ).sort((a, b) => a - b);
+
+  const selectedMilestoneAutomation = milestoneAutomations.find(
+    (automation) => automation.age_months === selectedMilestoneAge
+  );
+
+  const navItems = [
+    {
+      id: 'milestones' as const,
+      label: 'Marcos de Desenvolvimento',
+      description: 'Disparos baseados em idade para relacionamento continuo.',
+      icon: TrendingUp,
+      badge: `${milestoneAutomations.length} configurada${milestoneAutomations.length === 1 ? '' : 's'}`,
+      activeCount: milestoneAutomations.filter((automation) => automation.active).length,
+    },
+    {
+      id: 'appointment' as const,
+      label: 'Lembrete de Consulta',
+      description: 'Mensagem automatica no dia anterior ao agendamento.',
+      icon: Calendar,
+      badge: appointmentAutomation ? 'Configurada' : 'Nao configurada',
+      activeCount: appointmentAutomation?.active ? 1 : 0,
+    },
+    {
+      id: 'return' as const,
+      label: 'Lembrete de Retorno',
+      description: 'Reengajamento automatico para retornos ja agendados.',
+      icon: RotateCcw,
+      badge: returnAutomation ? 'Configurada' : 'Nao configurada',
+      activeCount: returnAutomation?.active ? 1 : 0,
+    },
+  ];
 
   return (
     <div className="flex flex-col h-screen bg-[#f8fafc] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300">
-      {/* Header */}
       <div className="bg-white dark:bg-[#1e2028] px-8 py-5 border-b border-slate-200 dark:border-gray-800 flex justify-between items-center shrink-0 transition-colors">
         <div>
           <h1 className="text-2xl font-black text-slate-800 dark:text-gray-100 flex items-center gap-2">
@@ -163,250 +193,235 @@ export default function AutomationsPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white dark:bg-[#1e2028] border-b border-slate-200 dark:border-gray-800 px-8">
-        <div className="flex gap-1">
-          {[
-            { id: 'milestones' as TabType, label: 'Marcos de Desenvolvimento', icon: TrendingUp },
-            { id: 'appointment' as TabType, label: 'Lembrete de Consulta', icon: Calendar },
-            { id: 'return' as TabType, label: 'Lembrete de Retorno', icon: RotateCcw },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-3 border-b-2 transition-colors font-bold text-sm ${
-                activeTab === tab.id
-                  ? 'border-rose-500 text-rose-600 dark:text-rose-400'
-                  : 'border-transparent text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>
           </div>
         ) : (
-          <>
-            {/* Aba: Marcos de Desenvolvimento */}
-            {activeTab === 'milestones' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100">
-                      Automações por Idade
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
-                      Configure mensagens automáticas quando pacientes completam determinada idade
-                    </p>
-                  </div>
-                </div>
+          <div className="space-y-6">
+            <AutomationOverviewCards
+              milestoneAutomations={milestoneAutomations}
+              appointmentAutomation={appointmentAutomation}
+              returnAutomation={returnAutomation}
+            />
 
-                {/* Input de idade personalizada */}
-                <div className="mb-6 p-4 bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700">
-                  {!showCustomAgeInput ? (
-                    <button
-                      onClick={() => setShowCustomAgeInput(true)}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-[#2a2d36] hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-gray-700 rounded-lg text-sm font-medium text-slate-700 dark:text-gray-300 transition-colors"
-                    >
-                      <Hash className="w-4 h-4" />
-                      Adicionar Idade Personalizada
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <label className="block text-xs font-bold text-slate-600 dark:text-gray-400 mb-2">
-                          Idade em Meses
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={customAgeMonths || ''}
-                          onChange={(e) => setCustomAgeMonths(parseInt(e.target.value) || 0)}
-                          placeholder="Ex: 120 (10 anos)"
-                          className="w-full px-4 py-2 bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-lg text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                          autoFocus
-                        />
-                        {customAgeMonths > 0 && (
-                          <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-                            {customAgeMonths} meses = {Math.floor(customAgeMonths / 12)} {Math.floor(customAgeMonths / 12) === 1 ? 'ano' : 'anos'} e {customAgeMonths % 12} {customAgeMonths % 12 === 1 ? 'mês' : 'meses'}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-end gap-2">
-                        <button
-                          onClick={handleCreateCustomAge}
-                          disabled={customAgeMonths <= 0}
-                          className="px-4 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 dark:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Criar
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowCustomAgeInput(false);
-                            setCustomAgeMonths(0);
-                          }}
-                          className="px-4 py-2 bg-slate-100 dark:bg-[#2a2d36] text-slate-700 dark:text-gray-300 rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+            <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-6">
+              <AutomationNavRail
+                items={navItems}
+                activeSection={activeSection}
+                onSectionChange={setActiveSection}
+              />
 
-                {/* Grid de idades */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8">
-                  {milestoneAges.map(age => {
-                    const automation = milestoneAutomations.find(a => a.age_months === age);
-                    return (
-                      <div
-                        key={age}
-                        className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                          automation
-                            ? automation.active
-                              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800'
-                              : 'bg-slate-50 dark:bg-[#2a2d36] border-slate-300 dark:border-gray-700'
-                            : 'bg-white dark:bg-[#1e2028] border-slate-200 dark:border-gray-700 hover:border-rose-300 dark:hover:border-rose-700'
-                        }`}
-                        onClick={() => automation ? handleEdit(automation) : handleCreateMilestone(age)}
-                      >
-                        <div className="text-center">
-                          <div className="text-2xl font-black text-slate-800 dark:text-gray-100 mb-1">
-                            {age}
-                          </div>
-                          <div className="text-xs font-bold text-slate-500 dark:text-gray-400">
-                            {age === 1 ? 'mês' : 'meses'}
-                          </div>
-                          {automation && (
-                            <div className="mt-2 text-xs font-medium">
-                              {automation.active ? (
-                                <span className="text-emerald-600 dark:text-emerald-400">✓ Ativo</span>
-                              ) : (
-                                <span className="text-slate-400">Inativo</span>
-                              )}
-                            </div>
-                          )}
+              <section className="rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e2028] p-5 lg:p-6 space-y-6">
+                {activeSection === 'milestones' && (
+                  <>
+                    <AutomationWorkspaceHeader
+                      title="Automações por idade"
+                      description="Escolha uma faixa de idade para configurar o fluxo. O painel mostra claramente o que ja existe e o proximo passo."
+                      action={
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            value={customAgeMonths || ''}
+                            onChange={(e) => setCustomAgeMonths(parseInt(e.target.value, 10) || 0)}
+                            placeholder="Idade em meses"
+                            className="w-36 px-3 py-2 bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                          />
+                          <button
+                            onClick={handleCreateCustomAge}
+                            disabled={customAgeMonths <= 0}
+                            className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Hash className="w-4 h-4" />
+                            Nova idade
+                          </button>
+                        </div>
+                      }
+                    />
+
+                    <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5">
+                      <div className="rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50/80 dark:bg-[#252833] p-4">
+                        <p className="text-xs uppercase tracking-wide font-semibold text-slate-400 dark:text-gray-500 mb-3">
+                          Faixas sugeridas
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {allMilestoneAges.map((age) => {
+                            const automation = milestoneAutomations.find((item) => item.age_months === age);
+                            const isSelected = age === selectedMilestoneAge;
+                            return (
+                              <button
+                                key={age}
+                                onClick={() => setSelectedMilestoneAge(age)}
+                                className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
+                                  isSelected
+                                    ? 'border-rose-300 dark:border-rose-700 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300'
+                                    : automation?.active
+                                      ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
+                                      : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200'
+                                }`}
+                              >
+                                {age}m
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
 
-                {/* Lista de automações criadas */}
-                {milestoneAutomations.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-4">
-                      Automações Configuradas ({milestoneAutomations.length})
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {milestoneAutomations
-                        .sort((a, b) => (a.age_months || 0) - (b.age_months || 0))
-                        .map(automation => (
+                      <div className="rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50/80 dark:bg-[#252833] p-4">
+                        <p className="text-xs uppercase tracking-wide font-semibold text-slate-400 dark:text-gray-500 mb-3">
+                          Detalhe da faixa selecionada
+                        </p>
+                        {selectedMilestoneAutomation ? (
                           <AutomationCard
-                            key={automation.id}
-                            automation={automation}
-                            onEdit={() => handleEdit(automation)}
-                            onDelete={() => handleDelete(automation)}
-                            onToggle={() => handleToggle(automation)}
+                            automation={selectedMilestoneAutomation}
+                            onEdit={() => handleEdit(selectedMilestoneAutomation)}
+                            onDelete={() => handleDeleteClick(selectedMilestoneAutomation)}
+                            onToggle={() => handleToggle(selectedMilestoneAutomation)}
                           />
-                        ))}
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-slate-300 dark:border-gray-600 bg-white dark:bg-[#1e2028] p-6 text-center">
+                            <CircleDashed className="w-10 h-10 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
+                            <p className="text-slate-700 dark:text-gray-200 font-semibold">
+                              Nenhuma automacao para {selectedMilestoneAge} {selectedMilestoneAge === 1 ? 'mes' : 'meses'}
+                            </p>
+                            <p className="text-sm text-slate-500 dark:text-gray-400 mt-1 mb-4">
+                              Crie agora um fluxo para manter relacionamento no marco certo.
+                            </p>
+                            <button
+                              onClick={() => handleCreateMilestone(selectedMilestoneAge)}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Criar automacao
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+
+                    <div>
+                      <h3 className="text-base font-black text-slate-800 dark:text-gray-100 mb-3">
+                        Todas as automacoes por idade ({milestoneAutomations.length})
+                      </h3>
+                      {milestoneAutomations.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                          {milestoneAutomations
+                            .slice()
+                            .sort((a, b) => (a.age_months || 0) - (b.age_months || 0))
+                            .map((automation) => (
+                              <AutomationCard
+                                key={automation.id}
+                                automation={automation}
+                                onEdit={() => handleEdit(automation)}
+                                onDelete={() => handleDeleteClick(automation)}
+                                onToggle={() => handleToggle(automation)}
+                              />
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-slate-500 dark:text-gray-400 py-8 text-center">
+                          Nenhuma automacao de marco configurada ainda.
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
-              </div>
-            )}
 
-            {/* Aba: Lembrete de Consulta */}
-            {activeTab === 'appointment' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100">
-                      Lembrete de Consulta
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
-                      Mensagem automática enviada 1 dia antes da consulta agendada
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleCreateAppointmentReminder}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 dark:shadow-none transition-all"
-                  >
-                    <Plus className="w-4 h-4" />
-                    {appointmentAutomation ? 'Editar' : 'Criar'} Automação
-                  </button>
-                </div>
+                {activeSection === 'appointment' && (
+                  <>
+                    <AutomationWorkspaceHeader
+                      title="Lembrete de consulta"
+                      description="Automacao enviada um dia antes da consulta. Mantenha pacientes informados e reduza faltas."
+                      action={
+                        <button
+                          onClick={handleCreateAppointmentReminder}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          {appointmentAutomation ? 'Editar automacao' : 'Criar automacao'}
+                        </button>
+                      }
+                    />
 
-                {appointmentAutomation ? (
-                  <AutomationCard
-                    automation={appointmentAutomation}
-                    onEdit={() => handleEdit(appointmentAutomation)}
-                    onDelete={() => handleDelete(appointmentAutomation)}
-                    onToggle={() => handleToggle(appointmentAutomation)}
-                  />
-                ) : (
-                  <div className="text-center py-12 bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-200 dark:border-gray-700">
-                    <Calendar className="w-12 h-12 text-slate-300 dark:text-gray-600 mx-auto mb-4" />
-                    <p className="text-slate-500 dark:text-gray-400">
-                      Nenhuma automação configurada. Clique em "Criar Automação" para começar.
-                    </p>
-                  </div>
+                    {appointmentAutomation ? (
+                      <AutomationCard
+                        automation={appointmentAutomation}
+                        onEdit={() => handleEdit(appointmentAutomation)}
+                        onDelete={() => handleDeleteClick(appointmentAutomation)}
+                        onToggle={() => handleToggle(appointmentAutomation)}
+                      />
+                    ) : (
+                      <div className="text-center py-12 bg-slate-50 dark:bg-[#252833] rounded-2xl border border-dashed border-slate-300 dark:border-gray-600">
+                        <Calendar className="w-12 h-12 text-slate-300 dark:text-gray-600 mx-auto mb-4" />
+                        <p className="text-slate-700 dark:text-gray-200 font-semibold">
+                          Nenhum lembrete de consulta configurado
+                        </p>
+                        <p className="text-sm text-slate-500 dark:text-gray-400 mt-1 mb-4">
+                          Crie uma automacao para enviar mensagem 1 dia antes da consulta.
+                        </p>
+                        <button
+                          onClick={handleCreateAppointmentReminder}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Criar automacao
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
-              </div>
-            )}
 
-            {/* Aba: Lembrete de Retorno */}
-            {activeTab === 'return' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100">
-                      Lembrete de Retorno
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
-                      Mensagem automática enviada 1 dia antes do retorno agendado
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleCreateReturnReminder}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 dark:shadow-none transition-all"
-                  >
-                    <Plus className="w-4 h-4" />
-                    {returnAutomation ? 'Editar' : 'Criar'} Automação
-                  </button>
-                </div>
+                {activeSection === 'return' && (
+                  <>
+                    <AutomationWorkspaceHeader
+                      title="Lembrete de retorno"
+                      description="Mensagens para consultas de retorno, disparadas no dia anterior ao compromisso."
+                      action={
+                        <button
+                          onClick={handleCreateReturnReminder}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          {returnAutomation ? 'Editar automacao' : 'Criar automacao'}
+                        </button>
+                      }
+                    />
 
-                {returnAutomation ? (
-                  <AutomationCard
-                    automation={returnAutomation}
-                    onEdit={() => handleEdit(returnAutomation)}
-                    onDelete={() => handleDelete(returnAutomation)}
-                    onToggle={() => handleToggle(returnAutomation)}
-                  />
-                ) : (
-                  <div className="text-center py-12 bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-200 dark:border-gray-700">
-                    <RotateCcw className="w-12 h-12 text-slate-300 dark:text-gray-600 mx-auto mb-4" />
-                    <p className="text-slate-500 dark:text-gray-400">
-                      Nenhuma automação configurada. Clique em "Criar Automação" para começar.
-                    </p>
-                  </div>
+                    {returnAutomation ? (
+                      <AutomationCard
+                        automation={returnAutomation}
+                        onEdit={() => handleEdit(returnAutomation)}
+                        onDelete={() => handleDeleteClick(returnAutomation)}
+                        onToggle={() => handleToggle(returnAutomation)}
+                      />
+                    ) : (
+                      <div className="text-center py-12 bg-slate-50 dark:bg-[#252833] rounded-2xl border border-dashed border-slate-300 dark:border-gray-600">
+                        <RotateCcw className="w-12 h-12 text-slate-300 dark:text-gray-600 mx-auto mb-4" />
+                        <p className="text-slate-700 dark:text-gray-200 font-semibold">
+                          Nenhum lembrete de retorno configurado
+                        </p>
+                        <p className="text-sm text-slate-500 dark:text-gray-400 mt-1 mb-4">
+                          Crie uma automacao para reforcar o comparecimento em retornos.
+                        </p>
+                        <button
+                          onClick={handleCreateReturnReminder}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-bold hover:bg-rose-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Criar automacao
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
-              </div>
-            )}
-          </>
+              </section>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Modal */}
       <AutomationModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -417,6 +432,15 @@ export default function AutomationsPage() {
         automation={editingAutomation}
         type={modalType}
         ageMonths={modalAgeMonths}
+      />
+      <ConfirmModal
+        isOpen={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Excluir automação"
+        message={confirmDelete ? `Deseja realmente excluir a automação "${confirmDelete.name}"?` : ''}
+        type="danger"
+        confirmText="Excluir"
       />
     </div>
   );

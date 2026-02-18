@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { X, Baby, Calendar, FileText, Save, Phone } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
 
 interface PatientModalProps {
   isOpen: boolean;
@@ -12,6 +14,7 @@ interface PatientModalProps {
 }
 
 export default function PatientModal({ isOpen, onClose, chatId, onSuccess }: PatientModalProps) {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -27,7 +30,7 @@ export default function PatientModal({ isOpen, onClose, chatId, onSuccess }: Pat
     
     // Validação Básica
     if (!formData.name || !formData.birth_date || !formData.phone) {
-      alert('Nome, Telefone e Data de Nascimento são obrigatórios.');
+      toast.toast.error('Nome, Telefone e Data de Nascimento são obrigatórios.');
       return;
     }
 
@@ -57,9 +60,9 @@ export default function PatientModal({ isOpen, onClose, chatId, onSuccess }: Pat
       console.error('Erro ao cadastrar paciente:', error);
       // Tratamento para duplicidade (caso o telefone já exista e a constraint unique esteja ativa)
       if (error.code === '23505') {
-        alert('Já existe um paciente cadastrado com este telefone.');
+        toast.toast.error('Já existe um paciente cadastrado com este telefone.');
       } else {
-        alert('Erro ao salvar paciente. Verifique os dados.');
+        toast.toast.error('Erro ao salvar paciente. Verifique os dados.');
       }
     } finally {
       setLoading(false);

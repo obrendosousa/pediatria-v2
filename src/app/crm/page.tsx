@@ -1,36 +1,29 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Chat, Patient } from '@/types';
 import { 
-  LayoutList, Clock, Users, 
-  BarChart3, Megaphone, DoorOpen, Calendar, 
-  ChevronLeft, ChevronRight, UserPlus, GripVertical, 
-  TrendingUp, TrendingDown, Activity, 
-  Baby, Timer, Eye, EyeOff, MessageSquare,
-  MoreHorizontal, AlertCircle, X, Undo2, Loader2
+  LayoutList, Users, DollarSign,
+  BarChart3, Calendar, 
+  ChevronLeft, ChevronRight, UserPlus, MessageSquare, X
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-  AreaChart, Area, LineChart, Line, Cell
-} from 'recharts';
 
 // Importamos a Janela de Chat
 import ChatWindow from '@/components/ChatWindow';
 // Importamos o novo layout de fluxo de recepção
 import ReceptionFlowColumns from '@/components/dashboard/ReceptionFlowColumns';
+import ReceptionAppointmentModal from '@/components/medical/ReceptionAppointmentModal';
+import ReceptionCheckoutModal from '@/components/medical/ReceptionCheckoutModal';
 import { Appointment } from '@/types/medical';
-import { NewPatientModal } from '@/components/medical-record/NewPatientModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import { useRouter } from 'next/navigation';
-import { findOrCreatePatientByPhone } from '@/utils/patientUtils';
 import CallMessageModal from '@/components/crm/CallMessageModal';
+import NewSlotModal from '@/components/NewSlotModal';
 import { getLocalDateRange, getTodayDateString, addDaysToDate } from '@/utils/dateUtils';
-import { fetchCRMMetrics, CRMMetrics } from '@/utils/crmMetrics';
-
-// --- CORES & CONFIGURAÇÃO VISUAL ---
-const COLORS_FUNNEL = ['#3b82f6', '#a855f7', '#f43f5e', '#10b981'];
+import { useToast } from '@/contexts/ToastContext';
+import type { CRMMetricsPayload } from '@/lib/crm/metrics';
+import CRMMetricsDashboard from '@/components/crm/CRMMetricsDashboard';
 
 const TABS = [
   { id: 'reception', label: 'Recepção (Fila)', icon: Users },
@@ -46,7 +39,7 @@ const COLUMNS = [
 ];
 
 export default function CRMPage() {
-  const router = useRouter();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('reception');
   const [chats, setChats] = useState<Chat[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -55,9 +48,14 @@ export default function CRMPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayDateString());
   const [hideFinished, setHideFinished] = useState(true);
   
-  // Estado para armazenar as métricas calculadas
-  const [crmMetrics, setCrmMetrics] = useState<CRMMetrics | null>(null);
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  // Estado para armazenar as métricas calculadas via API server-side
+  const [crmMetrics, setCrmMetrics] = useState<CRMMetricsPayload | null>(null);
+  const [crmMetricsLoading, setCrmMetricsLoading] = useState(false);
+  const [crmMetricsError, setCrmMetricsError] = useState<string | null>(null);
+  const [analyticsGranularity, setAnalyticsGranularity] = useState<'day' | 'month' | 'custom'>('day');
+  const [analyticsDate, setAnalyticsDate] = useState(getTodayDateString());
+  const [analyticsStartDate, setAnalyticsStartDate] = useState(getTodayDateString());
+  const [analyticsEndDate, setAnalyticsEndDate] = useState(getTodayDateString());
 
   // Estados do Chat Lateral
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
@@ -71,20 +69,25 @@ export default function CRMPage() {
   // Modais
   const [callingChat, setCallingChat] = useState<Chat | null>(null);
   const [callingAppointment, setCallingAppointment] = useState<Appointment | null>(null);
-  const [isAddingManual, setIsAddingManual] = useState(false);
+  const [isNewSlotModalOpen, setIsNewSlotModalOpen] = useState(false);
   
   // Forms
-  const [manualForm, setManualForm] = useState({ phone: '', name: '', time: '', notes: '' });
   const [callMessage, setCallMessage] = useState("Olá! Sua vez chegou. Por favor, dirija-se ao consultório.");
   
   // Appointments para recepção
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [calledAppointmentId, setCalledAppointmentId] = useState<number | null>(null);
-  const [needsPatientRegistration, setNeedsPatientRegistration] = useState(false);
-  const [pendingAppointment, setPendingAppointment] = useState<Appointment | null>(null);
+  const [sendingCallAppointmentId, setSendingCallAppointmentId] = useState<number | null>(null);
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
   const [isSendingCall, setIsSendingCall] = useState(false);
-  
+  const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState<Appointment | null>(null);
+  const [receptionFlowTab, setReceptionFlowTab] = useState<'flow' | 'checkout'>('flow');
+  const [receptionCheckoutAppointmentId, setReceptionCheckoutAppointmentId] = useState<number | null>(null);
+  /** Hub checkout: paciente selecionado no painel de fechamento (lista 30% + painel 70%) */
+  const [selectedCheckoutAppointmentId, setSelectedCheckoutAppointmentId] = useState<number | null>(null);
+  /** Data sugerida ao abrir "Agendar agora" a partir do painel de checkout */
+  const [newSlotInitialDate, setNewSlotInitialDate] = useState<string | null>(null);
+
   // Modal de confirmação
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -117,6 +120,11 @@ export default function CRMPage() {
     return () => { supabase.removeChannel(channel); };
   }, [selectedDate]);
 
+  useEffect(() => {
+    if (activeTab !== 'analytics') return;
+    fetchCrmMetrics();
+  }, [activeTab, analyticsGranularity, analyticsDate, analyticsStartDate, analyticsEndDate]);
+
   async function fetchData() {
     setLoading(true);
     
@@ -140,13 +148,7 @@ export default function CRMPage() {
       .neq('status', 'blocked')
       .order('start_time', { ascending: true });
     
-    // 4. Busca Chat Messages para cálculo de tempo de resposta
-    const { data: messagesData } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .order('created_at', { ascending: true });
-    
-    // Log para debug: verificar quantos appointments foram retornados
+    // 4. Log para debug: verificar quantos appointments foram retornados
     if (appointmentsData) {
       console.log('[DEBUG] Appointments carregados no CRM:', {
         total: appointmentsData.length,
@@ -162,26 +164,37 @@ export default function CRMPage() {
       });
     }
     
-    // 5. Calcular métricas do CRM
-    if (chatsData && appointmentsData && messagesData) {
-      try {
-        const metrics = await fetchCRMMetrics(
-          chatsData as Chat[],
-          appointmentsData as Appointment[],
-          messagesData as any[],
-          selectedDate
-        );
-        setCrmMetrics(metrics);
-      } catch (error) {
-        console.error('Erro ao calcular métricas do CRM:', error);
-      }
-    }
-
     if (chatsData) setChats(chatsData as Chat[]);
     if (patientsData) setPatients(patientsData);
     if (appointmentsData) setAppointments(appointmentsData as Appointment[]);
-    if (messagesData) setChatMessages(messagesData);
     setLoading(false);
+  }
+
+  async function fetchCrmMetrics() {
+    setCrmMetricsLoading(true);
+    setCrmMetricsError(null);
+    try {
+      const params = new URLSearchParams({
+        granularity: analyticsGranularity,
+      });
+      if (analyticsGranularity === 'custom') {
+        params.set('startDate', analyticsStartDate);
+        params.set('endDate', analyticsEndDate);
+      } else {
+        params.set('date', analyticsDate);
+      }
+      const response = await fetch(`/api/crm/metrics?${params.toString()}`, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`Falha ao carregar métricas (${response.status})`);
+      }
+      const metrics = (await response.json()) as CRMMetricsPayload;
+      setCrmMetrics(metrics);
+    } catch (error) {
+      console.error('Erro ao calcular métricas do CRM:', error);
+      setCrmMetricsError(error instanceof Error ? error.message : 'Erro inesperado');
+    } finally {
+      setCrmMetricsLoading(false);
+    }
   }
 
   const getChatPatients = (chatId: number) => patients.filter(p => p.chat_id === chatId);
@@ -304,7 +317,7 @@ export default function CRMPage() {
         setCallingChat(null);
       } catch (error: any) {
         console.error('Erro ao enviar mensagem:', error);
-        alert('Erro ao enviar mensagem: ' + (error.message || 'Tente novamente.'));
+        toast.error('Erro ao enviar mensagem: ' + (error.message || 'Tente novamente.'));
       } finally {
         setIsSendingCall(false);
       }
@@ -312,12 +325,16 @@ export default function CRMPage() {
 
   // Função para enviar mensagem WhatsApp para appointment
   const handleSendAppointmentCall = async (message: string, audioBlob?: Blob) => {
-    if (!callingAppointment || !callingAppointment.patient_phone || isSendingCall) return;
-    
+    const appointment = callingAppointment;
+    if (!appointment || !appointment.patient_phone || isSendingCall || sendingCallAppointmentId != null) return;
+
+    // Fecha o modal imediatamente para liberar a recepção enquanto envia em segundo plano
+    setCallingAppointment(null);
+    setSendingCallAppointmentId(appointment.id);
     setIsSendingCall(true);
-    
+
     try {
-      const cleanPhone = callingAppointment.patient_phone.replace(/\D/g, '');
+      const cleanPhone = appointment.patient_phone.replace(/\D/g, '');
       
       // Buscar ou criar chat
       const { data: existingChat } = await supabase
@@ -334,7 +351,7 @@ export default function CRMPage() {
           .from('chats')
           .insert({
             phone: cleanPhone,
-            contact_name: callingAppointment.patient_name || cleanPhone,
+            contact_name: appointment.patient_name || cleanPhone,
             status: 'ACTIVE',
             created_at: new Date().toISOString(),
             last_interaction_at: new Date().toISOString()
@@ -406,73 +423,37 @@ export default function CRMPage() {
       const { error: updateError } = await supabase
         .from('appointments')
         .update({ status: 'called' })
-        .eq('id', callingAppointment.id);
+        .eq('id', appointment.id);
       
       if (updateError) {
         console.error('Erro ao atualizar status:', updateError);
         throw updateError;
       }
       
-      // Fechar modal e atualizar dados
-      setCallingAppointment(null);
+      // Atualizar dados após envio finalizado
       setCalledAppointmentId(null);
       fetchData();
     } catch (error: any) {
       console.error('Erro ao enviar mensagem:', error);
-      alert('Erro ao enviar mensagem: ' + (error.message || 'Tente novamente.'));
+      toast.error('Erro ao enviar mensagem: ' + (error.message || 'Tente novamente.'));
     } finally {
+      setSendingCallAppointmentId(null);
       setIsSendingCall(false);
     }
   };
   
 
-  // Função para confirmar entrada e abrir prontuário
+  // Confirma entrada na recepção sem redirecionar automaticamente.
+  // O prontuário ficará disponível no painel médico quando a doutora abrir.
   const handleConfirmEntry = async (appointment: Appointment) => {
-    if (!appointment.patient_phone) {
-      alert('Paciente não possui telefone cadastrado.');
-      return;
-    }
-    
     try {
-      // Buscar paciente por telefone
-      const patientId = await findOrCreatePatientByPhone(appointment.patient_phone);
-      
-      if (!patientId) {
-        // Paciente não existe, precisa cadastrar
-        setNeedsPatientRegistration(true);
-        setPendingAppointment(appointment);
-        return;
-      }
-      
-      // Paciente existe, navegar para prontuário
-      router.push(`/doctor?patientId=${patientId}&appointmentId=${appointment.id}`);
+      toast.success(`Entrada confirmada para ${appointment.patient_name || 'paciente'}.`);
     } catch (error: any) {
       console.error('Erro ao confirmar entrada:', error);
-      alert('Erro ao confirmar entrada: ' + (error.message || 'Tente novamente.'));
+      toast.error('Erro ao confirmar entrada: ' + (error.message || 'Tente novamente.'));
     }
   };
 
-  const handleAddManualPatient = async () => { 
-      if (!manualForm.phone) return alert("Digite um nome."); 
-      const nowTime = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}); 
-      const maxOrder = Math.max(...chats.map(c => c.queue_order || 0), 0); 
-      
-      const { data } = await supabase.from('chats').insert({ 
-          phone: manualForm.phone, 
-          contact_name: manualForm.phone, 
-          stage: 'agendando', 
-          reception_status: 'waiting', 
-          appointment_date: selectedDate, 
-          appointment_time: manualForm.time || nowTime, 
-          queue_order: maxOrder + 1, 
-          ai_summary: 'Paciente Manual', 
-          notes: manualForm.notes, 
-          last_interaction_at: new Date().toISOString() 
-      }).select().single(); 
-      
-      if (data) { setChats([...chats, data]); setIsAddingManual(false); setManualForm({ phone: '', name: '', time: '', notes: '' }); } 
-  };
-  
   // Usar função utilitária para adicionar/subtrair dias mantendo timezone local
   const changeDate = (days: number) => {
     setSelectedDate(addDaysToDate(selectedDate, days));
@@ -491,51 +472,6 @@ export default function CRMPage() {
       });
   };
 
-  // --- PREPARAÇÃO DE DADOS (MÉTRICAS REAIS) ---
-  const dashboardData = useMemo(() => {
-    // Se temos métricas calculadas, usamos elas
-    if (crmMetrics) {
-      return {
-        averageQueueTime: crmMetrics.averageQueueTime,
-        averageServiceTime: crmMetrics.averageServiceTime,
-        averageResponseTime: crmMetrics.averageResponseTime,
-        leadToConsultationRate: crmMetrics.leadToConsultationRate,
-        queueTimeTrend: crmMetrics.queueTimeTrend,
-        serviceTimeTrend: crmMetrics.serviceTimeTrend,
-        responseTimeTrend: crmMetrics.responseTimeTrend,
-        conversionTrend: crmMetrics.conversionTrend,
-        funnelData: crmMetrics.funnelData,
-        trendData: crmMetrics.trendData,
-      };
-    }
-
-    // Senão, retornamos estrutura zerada para visualização
-    return { 
-      averageQueueTime: 0,
-      averageServiceTime: 0,
-      averageResponseTime: 0,
-      leadToConsultationRate: 0,
-      queueTimeTrend: { value: 0, isPositive: true },
-      serviceTimeTrend: { value: 0, isPositive: true },
-      responseTimeTrend: { value: 0, isPositive: true },
-      conversionTrend: { value: 0, isPositive: true },
-      funnelData: [
-        { name: 'Novos Chats', value: 0, fill: '#3b82f6' },
-        { name: 'Agendamentos', value: 0, fill: '#a855f7' },
-        { name: 'Consultas Realizadas', value: 0, fill: '#10b981' },
-      ], 
-      trendData: [
-        { name: 'Dom', queueTime: 0, conversionRate: 0 },
-        { name: 'Seg', queueTime: 0, conversionRate: 0 },
-        { name: 'Ter', queueTime: 0, conversionRate: 0 },
-        { name: 'Qua', queueTime: 0, conversionRate: 0 },
-        { name: 'Qui', queueTime: 0, conversionRate: 0 },
-        { name: 'Sex', queueTime: 0, conversionRate: 0 },
-        { name: 'Sáb', queueTime: 0, conversionRate: 0 },
-      ],
-    };
-  }, [crmMetrics]);
-
   return (
     <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#0b141a] relative overflow-hidden transition-colors duration-300">
       
@@ -547,10 +483,32 @@ export default function CRMPage() {
                 Central de Controle
             </h1>
             <div className="flex bg-slate-100/80 dark:bg-[#111b21] p-1 rounded-xl shadow-inner border border-transparent dark:border-gray-800">
-                {TABS.map(tab => (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white dark:bg-[#2a2d36] text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'}`}>
-                        <tab.icon className="w-4 h-4" /> {tab.label}
-                    </button>
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('reception'); setReceptionFlowTab('flow'); }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    activeTab === 'reception' && receptionFlowTab === 'flow'
+                      ? 'bg-white dark:bg-[#2a2d36] text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-slate-500 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <Users className="w-4 h-4" /> Recepção (Fila)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('reception'); setReceptionFlowTab('checkout'); }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    activeTab === 'reception' && receptionFlowTab === 'checkout'
+                      ? 'bg-white dark:bg-[#2a2d36] text-purple-600 dark:text-purple-400 shadow-sm'
+                      : 'text-slate-500 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <DollarSign className="w-4 h-4" /> Checkout / Finalização
+                </button>
+                {TABS.filter(t => t.id === 'analytics').map(tab => (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white dark:bg-[#2a2d36] text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'}`}>
+                    <tab.icon className="w-4 h-4" /> {tab.label}
+                  </button>
                 ))}
             </div>
         </div>
@@ -568,12 +526,20 @@ export default function CRMPage() {
                         <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-rose-500" /><input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="text-sm font-bold text-slate-700 dark:text-gray-200 bg-transparent outline-none uppercase" /></div>
                         <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-gray-400"><ChevronRight className="w-5 h-5"/></button>
                     </div>
-                    <button onClick={() => setIsAddingManual(true)} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-rose-200 dark:shadow-none transition-all hover:-translate-y-0.5"><UserPlus className="w-4 h-4" /> Novo Paciente</button>
+                    <button onClick={() => setIsNewSlotModalOpen(true)} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-rose-200 dark:shadow-none transition-all hover:-translate-y-0.5"><UserPlus className="w-4 h-4" /> Novo Paciente</button>
                 </div>
 
                 <ReceptionFlowColumns
                   selectedDate={selectedDate}
                   appointments={appointments}
+                  callingAppointmentId={sendingCallAppointmentId}
+                  activeTab={receptionFlowTab}
+                  onOpenCheckout={(apt) => setReceptionCheckoutAppointmentId(apt.id)}
+                  selectedCheckoutAppointmentId={receptionFlowTab === 'checkout' ? selectedCheckoutAppointmentId : null}
+                  onSelectCheckoutAppointment={receptionFlowTab === 'checkout' ? (apt) => setSelectedCheckoutAppointmentId(apt.id) : undefined}
+                  onCheckoutSuccess={receptionFlowTab === 'checkout' ? () => { fetchData(); setSelectedCheckoutAppointmentId(null); } : undefined}
+                  onScheduleReturn={receptionFlowTab === 'checkout' ? (suggestedDate) => { setNewSlotInitialDate(suggestedDate); setIsNewSlotModalOpen(true); } : undefined}
+                  onEditAppointment={(apt) => setSelectedAppointmentForEdit(apt)}
                   onCallAppointment={(apt) => {
                     setCallingAppointment(apt);
                     setCalledAppointmentId(apt.id);
@@ -583,14 +549,14 @@ export default function CRMPage() {
                     try {
                       const { error } = await supabase
                         .from('appointments')
-                        .update({ status: 'waiting' })
+                        .update({ status: 'waiting', queue_entered_at: new Date().toISOString() })
                         .eq('id', apt.id);
                       
                       if (error) throw error;
                       fetchData();
                     } catch (error: any) {
                       console.error('Erro ao fazer check-in:', error);
-                      alert('Erro ao fazer check-in: ' + (error.message || 'Tente novamente.'));
+                      toast.error('Erro ao fazer check-in: ' + (error.message || 'Tente novamente.'));
                     } finally {
                       setIsUpdating(null);
                     }
@@ -600,7 +566,7 @@ export default function CRMPage() {
                     try {
                       const { error } = await supabase
                         .from('appointments')
-                        .update({ status: 'waiting' })
+                        .update({ status: 'waiting', queue_entered_at: new Date().toISOString() })
                         .eq('id', apt.id);
                       
                       if (error) throw error;
@@ -610,7 +576,7 @@ export default function CRMPage() {
                       fetchData();
                     } catch (error: any) {
                       console.error('Erro ao confirmar chegada:', error);
-                      alert('Erro ao confirmar chegada: ' + (error.message || 'Tente novamente.'));
+                      toast.error('Erro ao confirmar chegada: ' + (error.message || 'Tente novamente.'));
                     } finally {
                       setIsUpdating(null);
                     }
@@ -633,41 +599,57 @@ export default function CRMPage() {
 
                       if (checkError) {
                         console.error('Erro ao verificar atendimentos em andamento:', checkError);
-                        alert('Erro ao verificar atendimentos. Tente novamente.');
+                        toast.error('Erro ao verificar atendimentos. Tente novamente.');
                         setIsUpdating(null);
                         return;
                       }
 
-                      // Se houver qualquer paciente em atendimento, finalizar automaticamente
+                      // Se houver qualquer paciente em atendimento, pedir confirmação para finalizar
                       if (currentInServiceList && currentInServiceList.length > 0) {
-                        const currentInService = currentInServiceList[0];
-                        const shouldFinalize = window.confirm(
-                          `Há ${currentInServiceList.length} paciente(s) em atendimento. ` +
-                          `O sistema permite apenas 1 paciente por vez. ` +
-                          `Deseja finalizar o(s) atendimento(s) anterior(es) e iniciar o atendimento de ${apt.patient_name || 'este paciente'}?`
-                        );
-                        
-                        if (!shouldFinalize) {
-                          // Usuário cancelou, não prosseguir
-                          setIsUpdating(null);
-                          return;
-                        }
-                        
-                        // Finalizar todos os atendimentos em andamento
-                        const appointmentIdsToFinalize = currentInServiceList.map(a => a.id);
-                        const { error: finalizeError } = await supabase
-                          .from('appointments')
-                          .update({ status: 'finished' })
-                          .in('id', appointmentIdsToFinalize);
-                        
-                        if (finalizeError) {
-                          console.error('Erro ao finalizar atendimentos anteriores:', finalizeError);
-                          alert('Erro ao finalizar atendimentos anteriores. Tente novamente.');
-                          setIsUpdating(null);
-                          return;
-                        }
-                        
-                        console.log(`[DEBUG] ${appointmentIdsToFinalize.length} atendimento(s) finalizado(s) para permitir novo atendimento`);
+                        setConfirmModal({
+                          isOpen: true,
+                          title: 'Finalizar atendimentos anteriores?',
+                          message: `Há ${currentInServiceList.length} paciente(s) em atendimento. O sistema permite apenas 1 por vez. Deseja finalizar o(s) atendimento(s) anterior(es) e iniciar o atendimento de ${apt.patient_name || 'este paciente'}?`,
+                          type: 'warning',
+                          onConfirm: async () => {
+                            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                            const appointmentIdsToFinalize = currentInServiceList!.map((a: Appointment) => a.id);
+                            const { error: finalizeError } = await supabase
+                              .from('appointments')
+                              .update({ status: 'finished', finished_at: new Date().toISOString() })
+                              .in('id', appointmentIdsToFinalize);
+                            if (finalizeError) {
+                              toast.error('Erro ao finalizar atendimentos anteriores. Tente novamente.');
+                              setIsUpdating(null);
+                              return;
+                            }
+                            console.log(`[DEBUG] ${appointmentIdsToFinalize.length} atendimento(s) finalizado(s) para permitir novo atendimento`);
+                            try {
+                              if (!apt.patient_id) {
+                                const { createBasicPatientFromAppointment } = await import('@/utils/patientRelations');
+                                const newPatientId = await createBasicPatientFromAppointment(apt);
+                                if (newPatientId) {
+                                  const { linkAppointmentToPatient } = await import('@/utils/patientRelations');
+                                  await linkAppointmentToPatient(apt.id, newPatientId);
+                                }
+                              }
+                              const { error } = await supabase
+                                .from('appointments')
+                                .update({ status: 'in_service', in_service_at: new Date().toISOString() })
+                                .eq('id', apt.id)
+                                .select();
+                              if (error) throw error;
+                              await handleConfirmEntry(apt);
+                              fetchData();
+                            } catch (err: any) {
+                              toast.error('Erro ao entrar em atendimento: ' + (err.message || 'Tente novamente.'));
+                            } finally {
+                              setIsUpdating(null);
+                            }
+                          }
+                        });
+                        setIsUpdating(null);
+                        return;
                       }
 
                       // Verificar se appointment tem patient_id antes de entrar em atendimento
@@ -683,7 +665,7 @@ export default function CRMPage() {
                       
                       const { data, error } = await supabase
                         .from('appointments')
-                        .update({ status: 'in_service' })
+                        .update({ status: 'in_service', in_service_at: new Date().toISOString() })
                         .eq('id', apt.id)
                         .select();
                       
@@ -703,7 +685,7 @@ export default function CRMPage() {
                       fetchData();
                     } catch (error: any) {
                       console.error('Erro ao entrar em atendimento:', error);
-                      alert('Erro ao entrar em atendimento: ' + (error.message || 'Tente novamente.'));
+                      toast.error('Erro ao entrar em atendimento: ' + (error.message || 'Tente novamente.'));
                     } finally {
                       setIsUpdating(null);
                     }
@@ -719,7 +701,7 @@ export default function CRMPage() {
                       
                       const { data, error } = await supabase
                         .from('appointments')
-                        .update({ status: 'finished' })
+                        .update({ status: 'finished', finished_at: new Date().toISOString() })
                         .eq('id', apt.id)
                         .select();
                       
@@ -733,7 +715,7 @@ export default function CRMPage() {
                       fetchData();
                     } catch (error: any) {
                       console.error('Erro ao finalizar:', error);
-                      alert('Erro ao finalizar: ' + (error.message || 'Tente novamente.'));
+                      toast.error('Erro ao finalizar: ' + (error.message || 'Tente novamente.'));
                     } finally {
                       setIsUpdating(null);
                     }
@@ -754,9 +736,21 @@ export default function CRMPage() {
                             newStatus 
                           });
                           
+                          const updatePayload: Record<string, string | null> = { status: newStatus };
+                          if (newStatus === 'scheduled') {
+                            updatePayload.queue_entered_at = null;
+                            updatePayload.in_service_at = null;
+                            updatePayload.finished_at = null;
+                          }
+                          if (newStatus === 'waiting') {
+                            updatePayload.queue_entered_at = new Date().toISOString();
+                            updatePayload.in_service_at = null;
+                            updatePayload.finished_at = null;
+                          }
+
                           const { data, error } = await supabase
                             .from('appointments')
-                            .update({ status: newStatus })
+                            .update(updatePayload)
                             .eq('id', apt.id)
                             .select();
                           
@@ -775,7 +769,7 @@ export default function CRMPage() {
                           fetchData();
                         } catch (error: any) {
                           console.error('Erro ao reverter:', error);
-                          alert('Erro ao reverter: ' + (error.message || 'Tente novamente.'));
+                          toast.error('Erro ao reverter: ' + (error.message || 'Tente novamente.'));
                         } finally {
                           setIsUpdating(null);
                         }
@@ -789,134 +783,20 @@ export default function CRMPage() {
 
         {/* === ABA 2: GESTÃO & MÉTRICAS === */}
         {activeTab === 'analytics' && (
-            <div className="h-full overflow-y-auto p-8 custom-scrollbar">
-                
-                {/* 1. SMART CARDS */}
-                <div className="grid grid-cols-4 gap-6 mb-8 animate-fade-in-up">
-                    <SmartCard 
-                        title="Tempo Médio na Fila" 
-                        value={`${dashboardData.averageQueueTime}min`} 
-                        trendValue={dashboardData.queueTimeTrend.isPositive ? `-${dashboardData.queueTimeTrend.value}min` : `+${dashboardData.queueTimeTrend.value}min`}
-                        trendLabel="vs. ontem"
-                        isPositive={dashboardData.queueTimeTrend.isPositive} 
-                        icon={Timer} 
-                        color="blue" 
-                        sparkData={dashboardData.trendData.map(d => d.queueTime)}
-                    />
-                    <SmartCard 
-                        title="Tempo Médio de Atendimento" 
-                        value={`${dashboardData.averageServiceTime}min`} 
-                        trendValue={dashboardData.serviceTimeTrend.isPositive ? `-${dashboardData.serviceTimeTrend.value}min` : `+${dashboardData.serviceTimeTrend.value}min`}
-                        trendLabel="vs. ontem"
-                        isPositive={dashboardData.serviceTimeTrend.isPositive} 
-                        icon={Clock}
-                        color="emerald"
-                        sparkData={dashboardData.trendData.map(d => d.queueTime)}
-                    />
-                    <SmartCard 
-                        title="Tempo Médio de Resposta" 
-                        value={`${dashboardData.averageResponseTime}min`} 
-                        trendValue={dashboardData.responseTimeTrend.isPositive ? `-${dashboardData.responseTimeTrend.value}min` : `+${dashboardData.responseTimeTrend.value}min`}
-                        trendLabel="vs. ontem"
-                        isPositive={dashboardData.responseTimeTrend.isPositive} 
-                        icon={MessageSquare} 
-                        color="rose" 
-                        sparkData={dashboardData.trendData.map(d => d.queueTime)}
-                    />
-                    <SmartCard 
-                        title="Taxa de Conversão" 
-                        value={`${dashboardData.leadToConsultationRate.toFixed(1)}%`} 
-                        trendValue={dashboardData.conversionTrend.isPositive ? `+${dashboardData.conversionTrend.value.toFixed(1)}%` : `-${dashboardData.conversionTrend.value.toFixed(1)}%`}
-                        trendLabel="vs. ontem"
-                        isPositive={dashboardData.conversionTrend.isPositive} 
-                        icon={TrendingUp} 
-                        color="purple" 
-                        sparkData={dashboardData.trendData.map(d => d.conversionRate)}
-                    />
-                </div>
-
-                {/* 2. GRÁFICO DE FUNIL */}
-                <div className="mb-8">
-                    <div className="bg-white dark:bg-[#1e2028] p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800 flex flex-col h-[400px] transition-colors">
-                        <div className="flex justify-between items-center mb-2">
-                            <h3 className="font-bold text-slate-800 dark:text-gray-100 flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-rose-500" /> Funil de Conversão
-                            </h3>
-                            <button className="p-1 hover:bg-slate-50 dark:hover:bg-white/5 rounded-lg text-slate-400"><MoreHorizontal className="w-5 h-5"/></button>
-                        </div>
-                        <div className="flex-1 w-full">
-                           <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={dashboardData.funnelData} layout="vertical" margin={{top: 20, right: 30, left: 20, bottom: 5}}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" strokeOpacity={0.2} />
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" width={120} tick={{fontSize: 12, fill: '#94a3b8', fontWeight: 'bold'}} axisLine={false} tickLine={false} />
-                                <Tooltip 
-                                  cursor={{fill: '#f8fafc', opacity: 0.1}}
-                                  contentStyle={{borderRadius: '12px', border: 'none', backgroundColor: '#1e293b', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)'}}
-                                />
-                                <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={32}>
-                                  {dashboardData.funnelData.map((entry: any, index: number) => (
-                                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                                  ))}
-                                </Bar>
-                              </BarChart>
-                           </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 3. GRÁFICO DE TENDÊNCIA */}
-                <div className="mb-8">
-                    <div className="bg-white dark:bg-[#1e2028] p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800 h-[300px] flex flex-col transition-colors">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-slate-800 dark:text-gray-100 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-emerald-500"/> Evolução Semanal</h3>
-                        </div>
-                        <div className="flex-1 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={dashboardData.trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                <defs>
-                                <linearGradient id="colorQueueTime" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                </linearGradient>
-                                <linearGradient id="colorConversion" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                </linearGradient>
-                                </defs>
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.2} />
-                                <Tooltip contentStyle={{borderRadius: '12px', border: 'none', backgroundColor: '#1e293b', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)'}} />
-                                <Legend />
-                                <Area 
-                                    yAxisId="left"
-                                    type="monotone" 
-                                    dataKey="queueTime" 
-                                    stroke="#3b82f6" 
-                                    strokeWidth={3} 
-                                    fillOpacity={1} 
-                                    fill="url(#colorQueueTime)" 
-                                    name="Tempo na Fila (min)"
-                                />
-                                <Area 
-                                    yAxisId="right"
-                                    type="monotone" 
-                                    dataKey="conversionRate" 
-                                    stroke="#10b981" 
-                                    strokeWidth={3} 
-                                    fillOpacity={1} 
-                                    fill="url(#colorConversion)" 
-                                    name="Taxa de Conversão (%)"
-                                />
-                            </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+          <CRMMetricsDashboard
+            metrics={crmMetrics}
+            loading={crmMetricsLoading}
+            error={crmMetricsError}
+            granularity={analyticsGranularity}
+            date={analyticsDate}
+            startDate={analyticsStartDate}
+            endDate={analyticsEndDate}
+            onGranularityChange={setAnalyticsGranularity}
+            onDateChange={setAnalyticsDate}
+            onStartDateChange={setAnalyticsStartDate}
+            onEndDateChange={setAnalyticsEndDate}
+            onRefresh={fetchCrmMetrics}
+          />
         )}
       </div>
 
@@ -955,30 +835,44 @@ export default function CRMPage() {
         defaultMessage={callMessage}
       />
 
-      {isAddingManual && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-3xl shadow-2xl p-6 border border-transparent dark:border-gray-700">
-                <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-gray-100">Adicionar Paciente Manual</h3>
-                <input placeholder="Telefone ou Nome" className="w-full p-3 bg-slate-50 dark:bg-[#111b21] rounded-xl mb-3 border border-slate-200 dark:border-gray-700 text-slate-800 dark:text-gray-200 outline-none focus:border-rose-500" value={manualForm.phone} onChange={e => setManualForm({...manualForm, phone: e.target.value})} />
-                <input type="time" className="w-full p-3 bg-slate-50 dark:bg-[#111b21] rounded-xl mb-3 border border-slate-200 dark:border-gray-700 text-slate-800 dark:text-gray-200 outline-none focus:border-rose-500" value={manualForm.time} onChange={e => setManualForm({...manualForm, time: e.target.value})} />
-                <button onClick={handleAddManualPatient} className="w-full bg-rose-600 text-white py-3 rounded-xl font-bold hover:bg-rose-700">Adicionar à Fila</button>
-                <button onClick={() => setIsAddingManual(false)} className="w-full mt-2 text-slate-400 hover:text-slate-600 dark:hover:text-gray-300 py-2 transition-colors">Cancelar</button>
-            </div>
-        </div>
-      )}
+      <NewSlotModal
+        isOpen={isNewSlotModalOpen}
+        onClose={() => { setIsNewSlotModalOpen(false); setNewSlotInitialDate(null); }}
+        onSuccess={fetchData}
+        initialDate={newSlotInitialDate || selectedDate}
+        initialTime={new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })}
+      />
+
+      <ReceptionAppointmentModal
+        isOpen={!!selectedAppointmentForEdit}
+        appointment={selectedAppointmentForEdit}
+        onClose={() => setSelectedAppointmentForEdit(null)}
+        onSave={(updated) => {
+          setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
+          fetchData();
+        }}
+      />
+
+      <ReceptionCheckoutModal
+        isOpen={!!receptionCheckoutAppointmentId}
+        onClose={() => setReceptionCheckoutAppointmentId(null)}
+        appointmentId={receptionCheckoutAppointmentId ?? 0}
+        onSuccess={() => {
+          setReceptionCheckoutAppointmentId(null);
+          fetchData();
+        }}
+      />
 
       <CallMessageModal
         isOpen={!!callingAppointment}
         onClose={() => {
-          if (!isSendingCall) {
-            setCallingAppointment(null);
-            setCalledAppointmentId(null);
-          }
+          setCallingAppointment(null);
+          setCalledAppointmentId(null);
         }}
         onSend={handleSendAppointmentCall}
         title="Chamar Paciente"
         subtitle={callingAppointment?.patient_name || 'Sem nome'}
-        isLoading={isSendingCall}
+        isLoading={!!callingAppointment && sendingCallAppointmentId === callingAppointment.id}
         defaultMessage={callMessage}
       />
 
@@ -993,58 +887,4 @@ export default function CRMPage() {
       />
     </div>
   );
-}
-
-// --- COMPONENTE: SMART CARD (DARK MODE) ---
-function SmartCard({ title, value, trendValue, trendLabel, isPositive, icon: Icon, color, sparkData }: any) {
-    const colorMap: any = {
-        blue: { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-500 dark:text-blue-300', hex: '#3b82f6' },
-        emerald: { bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-500 dark:text-emerald-300', hex: '#10b981' },
-        rose: { bg: 'bg-rose-50 dark:bg-rose-900/20', text: 'text-rose-500 dark:text-rose-300', hex: '#f43f5e' },
-        purple: { bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-500 dark:text-purple-300', hex: '#a855f7' },
-    };
-    
-    const theme = colorMap[color] || colorMap.blue;
-    const chartData = sparkData ? sparkData.map((val: number, i: number) => ({ i, val })) : [];
-
-    return (
-        <div className="bg-white dark:bg-[#1e2028] p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800 hover:shadow-md transition-all relative overflow-hidden group h-[140px] flex flex-col justify-between">
-            {/* Cabeçalho */}
-            <div className="flex justify-between items-start z-10">
-                <div>
-                    <p className="text-slate-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">{title}</p>
-                    <h3 className="text-2xl font-black text-slate-800 dark:text-gray-100">{value}</h3>
-                </div>
-                <div className={`p-2 rounded-xl ${theme.bg} ${theme.text}`}>
-                    <Icon className="w-5 h-5" />
-                </div>
-            </div>
-
-            {/* Rodapé e Sparkline */}
-            <div className="flex items-end justify-between z-10 mt-2">
-                <div className="flex items-center gap-2">
-                    <span className={`flex items-center text-xs font-bold px-1.5 py-0.5 rounded-md ${isPositive ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400'}`}>
-                        {isPositive ? <TrendingUp className="w-3 h-3 mr-1"/> : <TrendingDown className="w-3 h-3 mr-1"/>}
-                        {trendValue}
-                    </span>
-                    <span className="text-[10px] text-slate-400 dark:text-gray-500 font-medium">{trendLabel}</span>
-                </div>
-                
-                {/* Mini Gráfico (Sparkline) */}
-                <div className="w-20 h-10 absolute bottom-2 right-2 opacity-30 group-hover:opacity-100 transition-opacity">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                            <Line 
-                                type="monotone" 
-                                dataKey="val" 
-                                stroke={theme.hex} 
-                                strokeWidth={3} 
-                                dot={false} 
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-        </div>
-    );
 }

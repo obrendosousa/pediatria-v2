@@ -11,7 +11,8 @@
 
 import { Appointment } from '@/types/medical';
 import { Chat } from '@/types';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 
 export interface DashboardMetrics {
   // Métricas Principais

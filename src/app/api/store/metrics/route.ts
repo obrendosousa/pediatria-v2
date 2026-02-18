@@ -1,25 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('[Store Metrics API] Variáveis de ambiente do Supabase não configuradas');
-}
-
-const supabase = supabaseUrl && supabaseKey 
-  ? createClient(supabaseUrl, supabaseKey)
-  : null;
+import { createClient } from '@/lib/supabase/server';
+import { requireApprovedProfile } from '@/lib/auth/requireApprovedProfile';
 
 export async function GET(request: Request) {
   try {
-    if (!supabase) {
-      return NextResponse.json(
-        { error: 'Configuração do Supabase não encontrada. Verifique as variáveis de ambiente.' },
-        { status: 500 }
-      );
-    }
+    const supabase = await createClient();
+    await requireApprovedProfile(supabase, {
+      allowedRoles: ['admin', 'secretary']
+    });
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '7');
 
@@ -40,7 +28,7 @@ export async function GET(request: Request) {
       .select('total, created_at')
       .gte('created_at', todayISO)
       .lt('created_at', tomorrowISO)
-      .eq('status', 'completed');
+      .in('status', ['completed', 'paid']);
 
     if (salesError) throw salesError;
 
@@ -53,7 +41,7 @@ export async function GET(request: Request) {
       .from('sales')
       .select('total, created_at')
       .gte('created_at', startDateISO)
-      .eq('status', 'completed')
+      .in('status', ['completed', 'paid'])
       .order('created_at', { ascending: true });
 
     if (weekError) throw weekError;
@@ -61,9 +49,19 @@ export async function GET(request: Request) {
     // Agrupar por dia
     const salesByDay: Record<string, number> = {};
     salesWeek?.forEach(sale => {
-      const date = new Date(sale.created_at).toLocaleDateString('pt-BR', { weekday: 'short' });
-      salesByDay[date] = (salesByDay[date] || 0) + Number(sale.total || 0);
+      const dateKey = new Date(sale.created_at).toISOString().slice(0, 10);
+      salesByDay[dateKey] = (salesByDay[dateKey] || 0) + Number(sale.total || 0);
     });
+    const salesByDayEntries = Object.entries(salesByDay)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateKey, val]) => ({
+        date: dateKey,
+        name: new Date(`${dateKey}T00:00:00`).toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit'
+        }),
+        val: Number(val.toFixed(2))
+      }));
 
     // 3. Estoque baixo (produtos com stock < 5)
     const { data: products, error: productsError } = await supabase
@@ -129,15 +127,16 @@ export async function GET(request: Request) {
       .select('total')
       .gte('created_at', previousStart.toISOString())
       .lt('created_at', previousEnd.toISOString())
-      .eq('status', 'completed');
+      .in('status', ['completed', 'paid']);
 
     const previousRevenue = previousSales?.reduce((acc, s) => acc + Number(s.total || 0), 0) || 0;
     const revenueChange = previousRevenue > 0 
       ? ((revenueToday - previousRevenue) / previousRevenue) * 100 
       : 0;
 
-    const previousTicket = previousSales?.length > 0 
-      ? previousSales.reduce((acc, s) => acc + Number(s.total || 0), 0) / previousSales.length 
+    const prevLen = previousSales?.length ?? 0;
+    const previousTicket = prevLen > 0 
+      ? (previousSales!.reduce((acc, s) => acc + Number(s.total || 0), 0) / prevLen)
       : 0;
     const ticketChange = previousTicket > 0 
       ? ((ticketAverage - previousTicket) / previousTicket) * 100 
@@ -150,14 +149,21 @@ export async function GET(request: Request) {
       expiringItems,
       revenueChange: revenueChange > 0 ? `+${revenueChange.toFixed(1)}%` : `${revenueChange.toFixed(1)}%`,
       ticketChange: ticketChange > 0 ? `+${ticketChange.toFixed(1)}%` : `${ticketChange.toFixed(1)}%`,
-      salesByDay: Object.entries(salesByDay).map(([name, val]) => ({ name, val })),
+      salesByDay: salesByDayEntries,
       expiringList,
     });
   } catch (error: any) {
     console.error('[Store Metrics API Error]', error);
+    const message = error?.message || 'Erro ao buscar métricas da loja';
+    const status =
+      message === 'Usuário não autenticado.'
+        ? 401
+        : message === 'Acesso negado para perfil não aprovado.' || message === 'Perfil sem permissão para esta ação.'
+          ? 403
+          : 500;
     return NextResponse.json(
-      { error: error.message || 'Erro ao buscar métricas da loja' },
-      { status: 500 }
+      { error: message },
+      { status }
     );
   }
 }

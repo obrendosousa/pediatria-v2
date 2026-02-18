@@ -1,10 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Task, Sale, SaleItem } from '@/types';
 // ADICIONADO: AlertCircle na importação abaixo
 import { X, DollarSign, CreditCard, Wallet, Banknote, ShoppingBag, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { normalizePaymentSplits, resolveSalePaymentMethodFromSplits } from '@/lib/finance';
+import { createFinancialTransaction } from '@/lib/financialTransactions';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -14,6 +19,8 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ isOpen, onClose, task, onSuccess }: PaymentModalProps) {
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [sale, setSale] = useState<Sale | null>(null);
   const [items, setItems] = useState<SaleItem[]>([]);
@@ -59,11 +66,22 @@ export default function PaymentModal({ isOpen, onClose, task, onSuccess }: Payme
 
     try {
         // 1. Atualiza a Venda para PAGO
+        const paymentSplits = normalizePaymentSplits(total, paymentMethod);
+        const salePaymentMethod = resolveSalePaymentMethodFromSplits(paymentSplits);
         await supabase.from('sales' as any).update({
-            status: 'paid',
+            status: 'completed',
             total: total,
-            payment_method: paymentMethod
+            payment_method: salePaymentMethod,
+            created_by: user?.id ?? null
         }).eq('id', sale.id);
+
+        await createFinancialTransaction(supabase, {
+          amount: total,
+          origin: 'loja',
+          createdBy: user?.id ?? null,
+          saleId: sale.id,
+          payments: paymentSplits
+        });
 
         // 2. Baixa o Estoque (Opcional)
         for (const item of items) {
@@ -80,7 +98,7 @@ export default function PaymentModal({ isOpen, onClose, task, onSuccess }: Payme
         onClose();
     } catch (error) {
         console.error(error);
-        alert('Erro ao processar pagamento.');
+        toast.toast.error('Erro ao processar pagamento.');
     } finally {
         setLoading(false);
     }

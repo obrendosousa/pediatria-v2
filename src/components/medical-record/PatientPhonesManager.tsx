@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Phone, Plus, Trash2, Star, StarOff, Loader2, X } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { PatientPhone, getPatientPhones, addPhoneToPatient, removePhoneFromPatient, setPrimaryPhone } from '@/utils/patientRelations';
+import { useToast } from '@/contexts/ToastContext';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { formatPhone, cleanPhone } from '@/utils/formatUtils';
 
 interface PatientPhonesManagerProps {
@@ -13,11 +16,13 @@ interface PatientPhonesManagerProps {
 }
 
 export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }: PatientPhonesManagerProps) {
+  const { toast } = useToast();
   const [phones, setPhones] = useState<PatientPhone[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [newPhone, setNewPhone] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState<{ phoneId: number; phone: string } | null>(null);
 
   useEffect(() => {
     fetchPhones();
@@ -49,15 +54,20 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
       }
     } catch (error) {
       console.error('Erro ao adicionar número:', error);
-      alert('Erro ao adicionar número. Verifique se o telefone é válido.');
+      toast.toast.error('Erro ao adicionar número. Verifique se o telefone é válido.');
     } finally {
       setIsAdding(false);
     }
   };
 
-  const handleRemovePhone = async (phoneId: number, phone: string) => {
-    if (!confirm(`Deseja remover o número ${formatPhone(phone)}?`)) return;
-    
+  const handleRemovePhoneClick = (phoneId: number, phone: string) => {
+    setConfirmRemove({ phoneId, phone });
+  };
+
+  const handleRemovePhoneConfirm = async () => {
+    if (!confirmRemove) return;
+    const { phone } = confirmRemove;
+    setConfirmRemove(null);
     try {
       const success = await removePhoneFromPatient(patientId, phone);
       if (success) {
@@ -66,7 +76,7 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
       }
     } catch (error) {
       console.error('Erro ao remover número:', error);
-      alert('Erro ao remover número.');
+      toast.toast.error('Erro ao remover número.');
     }
   };
 
@@ -78,7 +88,7 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
       }
     } catch (error) {
       console.error('Erro ao definir número principal:', error);
-      alert('Erro ao definir número principal.');
+      toast.toast.error('Erro ao definir número principal.');
     }
   };
 
@@ -91,6 +101,7 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
   }
 
   return (
+    <>
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-700 dark:text-gray-300 flex items-center gap-2">
@@ -204,7 +215,7 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
                     </button>
                   )}
                   <button
-                    onClick={() => handleRemovePhone(phone.id, phone.phone)}
+                    onClick={() => handleRemovePhoneClick(phone.id, phone.phone)}
                     className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                     title="Remover número"
                   >
@@ -217,5 +228,15 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
         </div>
       )}
     </div>
+    <ConfirmModal
+      isOpen={!!confirmRemove}
+      onClose={() => setConfirmRemove(null)}
+      onConfirm={handleRemovePhoneConfirm}
+      title="Remover número"
+      message={confirmRemove ? `Deseja remover o número ${formatPhone(confirmRemove.phone)}?` : ''}
+      type="danger"
+      confirmText="Sim, remover"
+    />
+    </>
   );
 }

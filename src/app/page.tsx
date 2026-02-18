@@ -4,29 +4,24 @@ import { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import ChatWindow from '@/components/ChatWindow';
 import SecretaryCheckoutDrawer from '@/components/SecretaryCheckoutDrawer';
-// REMOVIDO: import NewChatModal... (O modal agora vive dentro da Sidebar)
 import { Chat } from '@/types';
 import { MessageCircleHeart, ShieldCheck, Zap, Activity } from 'lucide-react';
 
 export default function Home() {
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-  // REMOVIDO: const [isNewChatModalOpen...] (Não é mais necessário aqui)
 
   return (
     // Fundo ajustado: Claro (#fffafa) | Escuro (#0b141a - tom profundo)
-    <div className="flex h-screen bg-[#fffafa] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300 relative">
+    <div className="flex h-screen min-w-0 bg-[#fffafa] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300 relative">
       
-      {/* REMOVIDO: <NewChatModal /> (O modal já está embutido na Sidebar) */}
-
       {/* Sidebar de Navegação */}
       <Sidebar 
         onSelectChat={setSelectedChat} 
         selectedChatId={selectedChat?.id}
-        // REMOVIDO: onNewChat={...} (Essa prop não existe mais, pois o botão está dentro da Sidebar)
       />
 
       {/* Área Principal */}
-      <div className="flex-1 flex flex-col h-full relative">
+      <div className="flex-1 min-w-0 flex flex-col h-full relative">
         
         {selectedChat ? (
           <ChatWindow chat={selectedChat} />
@@ -88,6 +83,8 @@ export default function Home() {
       {/* Módulo da Secretária */}
       <SecretaryCheckoutDrawer />
 
+      {/* Container para modais (TagSelector) - último filho para ficar acima de tudo */}
+      <div id="modal-root" className="fixed inset-0 z-[99999] pointer-events-none" aria-hidden="true" />
     </div>
   );
 }

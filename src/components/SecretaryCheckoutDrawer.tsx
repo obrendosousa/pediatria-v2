@@ -1,14 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { MedicalCheckout, Product } from '@/types';
 import { 
   Bell, X, CheckCircle2, Calendar, DollarSign, 
   ShoppingBag, Activity, ChevronRight, CreditCard, Clock 
 } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { normalizePaymentSplits, resolveSalePaymentMethodFromSplits } from '@/lib/finance';
+import { createFinancialTransaction } from '@/lib/financialTransactions';
 
 export default function SecretaryCheckoutDrawer() {
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [checkouts, setCheckouts] = useState<MedicalCheckout[]>([]);
   const [selectedCheckout, setSelectedCheckout] = useState<MedicalCheckout | null>(null);
@@ -56,15 +63,21 @@ export default function SecretaryCheckoutDrawer() {
       // 1. Calcular Total
       const items = selectedCheckout.items || [];
       const total = items.reduce((acc: number, item: any) => acc + (item.products.price_sale * item.quantity), 0);
+      const paymentSplits = normalizePaymentSplits(total, 'cash');
+      const salePaymentMethod = resolveSalePaymentMethodFromSplits(paymentSplits);
 
       // 2. Registrar Venda (Financeiro)
       const { data: sale, error: saleError } = await supabase
         .from('sales')
         .insert({
           chat_id: selectedCheckout.chat_id,
+          patient_id: selectedCheckout.patient_id ?? null,
           total: total,
-          status: 'paid', // Assumimos recebimento imediato no balcão
-          payment_method: 'BALCÃO/MISTO' 
+          status: 'completed',
+          payment_method: salePaymentMethod,
+          created_by: user?.id ?? null,
+          origin: 'atendimento',
+          appointment_id: selectedCheckout.appointment_id ?? null
         })
         .select()
         .single();
@@ -102,6 +115,16 @@ export default function SecretaryCheckoutDrawer() {
         }
       }
 
+      await createFinancialTransaction(supabase, {
+        amount: total,
+        origin: 'atendimento',
+        createdBy: user?.id ?? null,
+        appointmentId: selectedCheckout.appointment_id ?? null,
+        medicalCheckoutId: selectedCheckout.id,
+        saleId: sale.id,
+        payments: paymentSplits
+      });
+
       // 4. Se tiver retorno, criar Lembrete/Tarefa para a Secretária
       if (selectedCheckout.return_date) {
         await supabase.from('tasks').insert({
@@ -120,13 +143,28 @@ export default function SecretaryCheckoutDrawer() {
         .update({ status: 'completed', completed_at: new Date().toISOString() })
         .eq('id', selectedCheckout.id);
 
+      if (selectedCheckout.appointment_id && selectedCheckout.consultation_value) {
+        const { data: currentAppointment } = await supabase
+          .from('appointments')
+          .select('amount_paid')
+          .eq('id', selectedCheckout.appointment_id)
+          .maybeSingle();
+
+        await supabase
+          .from('appointments')
+          .update({
+            amount_paid: Number(currentAppointment?.amount_paid || 0) + Number(selectedCheckout.consultation_value || 0)
+          })
+          .eq('id', selectedCheckout.appointment_id);
+      }
+
       // Limpeza
-      alert("Recebimento registrado com sucesso! Estoque atualizado.");
+      toast.toast.success("Recebimento registrado com sucesso! Estoque atualizado.");
       setSelectedCheckout(null);
       // fetchCheckouts(); // Desativado
     } catch (error) {
       console.error(error);
-      alert("Erro ao processar pagamento.");
+      toast.toast.error("Erro ao processar pagamento.");
     } finally {
       setLoading(false);
     }

@@ -1,22 +1,25 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { 
   LayoutGrid, ShoppingCart, Package, 
   TrendingUp, AlertTriangle, Calendar, 
   Search, Plus, Filter, Smartphone, 
   Trash2, CreditCard, Banknote, QrCode,
   ArrowUpRight, ArrowDownRight, MoreHorizontal,
-  History, Barcode, Scan, RefreshCw, X, CheckCircle2
+  History, Barcode, Scan, RefreshCw, X, CheckCircle2, Wallet, ShieldCheck, FileText
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer 
 } from 'recharts';
 import ProductModal from '@/components/ProductModal';
+import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // --- TIPOS ---
 type Product = {
@@ -31,9 +34,32 @@ type Product = {
 };
 
 type CartItem = Product & { quantity: number };
+type StoreCashData = {
+  date: string;
+  isClosed: boolean;
+  totals: {
+    totalsByMethod: {
+      pix: number;
+      cash: number;
+      credit_card: number;
+      debit_card: number;
+    };
+    totalAmount: number;
+  };
+  transactions: Array<{
+    id: number;
+    amount: number;
+    occurred_at: string;
+    notes: string | null;
+  }>;
+};
 
 export default function StorePage() {
-  const [activeTab, setActiveTab] = useState<'dash' | 'pos' | 'catalog'>('dash');
+  const { toast } = useToast();
+  const { profile } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'dash' | 'pos' | 'catalog' | 'cash'>('dash');
   
   // --- CONFIGURAÇÃO DO SCANNER ---
   const sessionId = useMemo(() => `pos-${Math.random().toString(36).substring(7)}`, []);
@@ -50,11 +76,22 @@ export default function StorePage() {
   const [showScanner, setShowScanner] = useState(false);
   const [patients, setPatients] = useState<any[]>([]);
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'pix' | 'credit_card' | 'debit_card' | 'mixed'>('cash');
   const [cashAmount, setCashAmount] = useState('');
+  const [mixedAmounts, setMixedAmounts] = useState({
+    pix: '',
+    cash: '',
+    credit_card: '',
+    debit_card: ''
+  });
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [catalogSearchTerm, setCatalogSearchTerm] = useState('');
+  const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<string>('all');
+  const [catalogStockFilter, setCatalogStockFilter] = useState<'all' | 'low' | 'critical'>('all');
+  const [storeCashData, setStoreCashData] = useState<StoreCashData | null>(null);
+  const [loadingStoreCash, setLoadingStoreCash] = useState(false);
+  const [closingStoreCash, setClosingStoreCash] = useState(false);
 
   // Estados do Dashboard
   const [metrics, setMetrics] = useState({
@@ -69,6 +106,13 @@ export default function StorePage() {
   });
   const [loadingMetrics, setLoadingMetrics] = useState(true);
 
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'dash' || tab === 'pos' || tab === 'catalog' || tab === 'cash') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   // 1. Carrega Produtos, Pacientes e Métricas
   useEffect(() => {
     fetchData();
@@ -81,6 +125,13 @@ export default function StorePage() {
       fetchMetrics();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'cash') {
+      fetchStoreCash();
+    }
+  }, [activeTab]);
+
 
   // 2. ESCUTA O CELULAR (Realtime)
   useEffect(() => {
@@ -107,7 +158,7 @@ export default function StorePage() {
     // Buscar todos os pacientes
     const { data: allPats } = await supabase
       .from('patients')
-      .select('id, name')
+      .select('id, name, chat_id')
       .limit(100);
     
     if (prods) setProducts(prods as any);
@@ -172,7 +223,7 @@ export default function StorePage() {
           // Se não conseguir parsear JSON, usa a mensagem de status
           throw new Error(`Erro ${response.status}: ${response.statusText || 'Erro ao buscar métricas'}`);
         }
-        throw new Error(errorData.error || `Erro ${response.status}: ${response.statusText || 'Erro ao buscar métricas'}`);
+        throw new Error((errorData as { error?: string }).error || `Erro ${response.status}: ${response.statusText || 'Erro ao buscar métricas'}`);
       }
 
       const data = await response.json();
@@ -192,6 +243,191 @@ export default function StorePage() {
       });
     } finally {
       setLoadingMetrics(false);
+    }
+  }
+
+  async function exportOperationalReport() {
+    try {
+      const response = await fetch('/api/store/reports/operational?days=7');
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({ error: 'Falha ao gerar relatório.' }));
+        throw new Error(payload.error || 'Falha ao gerar relatório.');
+      }
+      const data = (await response.json()) as {
+        generated_at: string;
+        period: { days: number; start: string; end: string };
+        summary: {
+          sales_count: number;
+          total_revenue: number;
+          average_ticket: number;
+          stock_entries: number;
+          stock_exits: number;
+        };
+        sales: Array<{
+          id: number;
+          created_at: string;
+          total: number;
+          status: string;
+          payment_method: string | null;
+          origin: string | null;
+          patient_id: number | null;
+        }>;
+        stock_movements: Array<{
+          id: number;
+          created_at: string;
+          movement_type: string;
+          quantity_change: number;
+          reason: string;
+          product_id: number;
+          created_by: string | null;
+          reference_type: string | null;
+          reference_id: string | null;
+        }>;
+        audit_events: Array<{
+          id: number;
+          created_at: string;
+          action: string;
+          entity_type: string;
+          entity_id: string | null;
+          user_id: string | null;
+          details: unknown;
+        }>;
+      };
+
+      const escapeCsv = (value: unknown) => {
+        const text = String(value ?? '');
+        if (text.includes(';') || text.includes('"') || text.includes('\n')) {
+          return `"${text.replace(/"/g, '""')}"`;
+        }
+        return text;
+      };
+
+      const lines: string[] = [];
+      const pushRow = (columns: unknown[]) => lines.push(columns.map(escapeCsv).join(';'));
+
+      lines.push('RELATORIO OPERACIONAL DA LOJA');
+      pushRow(['gerado_em', data.generated_at]);
+      pushRow(['periodo_inicio', data.period.start]);
+      pushRow(['periodo_fim', data.period.end]);
+      pushRow(['periodo_dias', data.period.days]);
+      lines.push('');
+
+      lines.push('RESUMO');
+      pushRow(['vendas', data.summary.sales_count]);
+      pushRow(['faturamento_total', data.summary.total_revenue]);
+      pushRow(['ticket_medio', data.summary.average_ticket]);
+      pushRow(['entradas_estoque', data.summary.stock_entries]);
+      pushRow(['saidas_estoque', data.summary.stock_exits]);
+      lines.push('');
+
+      lines.push('VENDAS');
+      pushRow(['id', 'data_hora', 'total', 'status', 'pagamento', 'origem', 'patient_id']);
+      data.sales.forEach((sale) => {
+        pushRow([
+          sale.id,
+          sale.created_at,
+          sale.total,
+          sale.status,
+          sale.payment_method,
+          sale.origin,
+          sale.patient_id
+        ]);
+      });
+      lines.push('');
+
+      lines.push('MOVIMENTACOES_ESTOQUE');
+      pushRow([
+        'id',
+        'data_hora',
+        'tipo',
+        'quantidade',
+        'motivo',
+        'product_id',
+        'created_by',
+        'reference_type',
+        'reference_id'
+      ]);
+      data.stock_movements.forEach((movement) => {
+        pushRow([
+          movement.id,
+          movement.created_at,
+          movement.movement_type,
+          movement.quantity_change,
+          movement.reason,
+          movement.product_id,
+          movement.created_by,
+          movement.reference_type,
+          movement.reference_id
+        ]);
+      });
+      lines.push('');
+
+      lines.push('AUDITORIA');
+      pushRow(['id', 'data_hora', 'acao', 'entidade', 'entity_id', 'user_id', 'details']);
+      data.audit_events.forEach((event) => {
+        pushRow([
+          event.id,
+          event.created_at,
+          event.action,
+          event.entity_type,
+          event.entity_id,
+          event.user_id,
+          JSON.stringify(event.details ?? {})
+        ]);
+      });
+
+      // BOM para compatibilidade com Excel em UTF-8
+      const csvContent = `\uFEFF${lines.join('\n')}`;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `relatorio-operacional-loja-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      toast.error('Nao foi possivel exportar o relatório operacional.');
+    }
+  }
+
+  async function fetchStoreCash() {
+    try {
+      setLoadingStoreCash(true);
+      const response = await fetch('/api/store/cash');
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({ error: 'Erro ao carregar caixa da lojinha.' }));
+        throw new Error(payload.error || 'Erro ao carregar caixa da lojinha.');
+      }
+      setStoreCashData(await response.json());
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro ao carregar caixa da lojinha.';
+      toast.error(message);
+    } finally {
+      setLoadingStoreCash(false);
+    }
+  }
+
+  async function closeStoreCash() {
+    if (!storeCashData) return;
+    try {
+      setClosingStoreCash(true);
+      const response = await fetch('/api/store/cash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: storeCashData.date })
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({ error: 'Falha ao fechar caixa da lojinha.' }));
+        throw new Error(payload.error || 'Falha ao fechar caixa da lojinha.');
+      }
+      toast.success('Caixa da lojinha fechado com sucesso.');
+      await fetchStoreCash();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro ao fechar caixa da lojinha.';
+      toast.error(message);
+    } finally {
+      setClosingStoreCash(false);
     }
   }
 
@@ -215,14 +451,48 @@ export default function StorePage() {
       }));
   };
 
+  const handleTabChange = (tab: 'dash' | 'pos' | 'catalog' | 'cash') => {
+    setActiveTab(tab);
+    router.replace(`/loja?tab=${tab}`, { scroll: false });
+  };
+
+  const catalogCategories = useMemo(() => {
+    const categories = Array.from(new Set(products.map((product) => product.category || 'Geral')));
+    return ['all', ...categories];
+  }, [products]);
+
+  const filteredCatalogProducts = useMemo(() => {
+    return products.filter((product) => {
+      const bySearch =
+        catalogSearchTerm.trim().length === 0 ||
+        product.name.toLowerCase().includes(catalogSearchTerm.toLowerCase()) ||
+        (product.barcode || '').toLowerCase().includes(catalogSearchTerm.toLowerCase());
+      const byCategory = catalogCategoryFilter === 'all' || (product.category || 'Geral') === catalogCategoryFilter;
+      const byStock =
+        catalogStockFilter === 'all' ||
+        (catalogStockFilter === 'low' && (product.stock || 0) < 10) ||
+        (catalogStockFilter === 'critical' && (product.stock || 0) < 5);
+      return bySearch && byCategory && byStock;
+    });
+  }, [products, catalogSearchTerm, catalogCategoryFilter, catalogStockFilter]);
+
   const cartTotal = cart.reduce((acc, item) => acc + (item.price_sale * item.quantity), 0);
+
+  useEffect(() => {
+    if (selectedPaymentMethod === 'cash') {
+      setCashAmount(cartTotal.toFixed(2));
+    }
+  }, [selectedPaymentMethod, cartTotal]);
 
   // --- FUNÇÃO DE FINALIZAR VENDA ---
   const handleCheckout = async (method: string, cashReceived?: number) => {
-      if (cart.length === 0) return alert('Carrinho vazio!');
-      
-      if (method === 'money' && (!cashReceived || cashReceived < cartTotal)) {
-        return alert('Valor recebido deve ser maior ou igual ao total da venda!');
+      if (cart.length === 0) {
+        toast.error('Carrinho vazio!');
+        return;
+      }
+      if (method === 'cash' && (!cashReceived || cashReceived < cartTotal)) {
+        toast.error('Valor recebido deve ser maior ou igual ao total da venda!');
+        return;
       }
 
       try {
@@ -233,13 +503,39 @@ export default function StorePage() {
           name: item.name
         }));
 
+        const selectedPatientData = patients.find((patient) => patient.id === selectedPatient) as { id: number; chat_id?: number | null } | undefined;
+        const chatId = selectedPatientData?.chat_id ?? null;
+        let payloadPayments: Array<{ method: string; amount: number }> | undefined;
+
+        if (method === 'mixed') {
+          const pixAmount = Number(mixedAmounts.pix || 0);
+          const cashSplitAmount = Number(mixedAmounts.cash || 0);
+          const creditAmount = Number(mixedAmounts.credit_card || 0);
+          const debitAmount = Number(mixedAmounts.debit_card || 0);
+          payloadPayments = [
+            { method: 'pix', amount: pixAmount },
+            { method: 'cash', amount: cashSplitAmount },
+            { method: 'credit_card', amount: creditAmount },
+            { method: 'debit_card', amount: debitAmount }
+          ].filter((payment) => payment.amount > 0);
+
+          const paymentsTotal = payloadPayments.reduce((acc, payment) => acc + payment.amount, 0);
+          if (payloadPayments.length === 0 || Number(paymentsTotal.toFixed(2)) !== Number(cartTotal.toFixed(2))) {
+            toast.error('No pagamento misto, a soma das formas deve ser igual ao total.');
+            return;
+          }
+        }
+
         const response = await fetch('/api/sales', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id: selectedPatient || null,
+            chat_id: chatId,
+            patient_id: selectedPatient || null,
             items,
-            payment_method: method
+            payment_method: method !== 'mixed' ? method : undefined,
+            payments: payloadPayments,
+            origin: 'loja'
           })
         });
 
@@ -248,16 +544,14 @@ export default function StorePage() {
           throw new Error(error.error || 'Erro ao finalizar venda');
         }
 
-        const result = await response.json();
+        await response.json();
         
-        // Mostrar modal de sucesso
-        setShowPaymentModal(false);
-        setSelectedPaymentMethod(null);
-        setCashAmount('');
+        // Fluxo inline: mantém método selecionado e limpa inputs
+        setCashAmount(cartTotal.toFixed(2));
+        setMixedAmounts({ pix: '', cash: '', credit_card: '', debit_card: '' });
         
-        // Mostrar alerta de sucesso
-        const change = method === 'money' && cashReceived ? (cashReceived - cartTotal).toFixed(2) : '0.00';
-        alert(`Venda realizada com sucesso!\n${method === 'money' ? `Troco: R$ ${change}` : ''}`);
+        const change = method === 'cash' && cashReceived ? (cashReceived - cartTotal).toFixed(2) : '0.00';
+        toast.success(method === 'cash' ? `Venda realizada com sucesso! Troco: R$ ${change}` : 'Venda realizada com sucesso!');
         
         setCart([]);
         setSelectedPatient(null);
@@ -265,16 +559,8 @@ export default function StorePage() {
         if (activeTab === 'dash') fetchMetrics();
       } catch (error: any) {
         console.error('Erro ao finalizar venda:', error);
-        alert(error.message || 'Erro ao finalizar venda. Verifique o console.');
+        toast.error(error.message || 'Erro ao finalizar venda. Verifique o console.');
       }
-  };
-
-  const openPaymentModal = (method: string) => {
-    setSelectedPaymentMethod(method);
-    setShowPaymentModal(true);
-    if (method === 'money') {
-      setCashAmount(cartTotal.toFixed(2));
-    }
   };
 
   return (
@@ -293,12 +579,13 @@ export default function StorePage() {
          <div className="flex bg-slate-100 dark:bg-[#2a2d36] p-1 rounded-xl transition-colors">
             {[
                { id: 'dash', label: 'Dashboard', icon: LayoutGrid },
-               { id: 'pos', label: 'Vendas (PDV)', icon: ShoppingCart },
+               { id: 'pos', label: 'Checkout', icon: ShoppingCart },
                { id: 'catalog', label: 'Catálogo', icon: Package },
+               { id: 'cash', label: 'Caixa da Lojinha', icon: Wallet },
             ].map(tab => (
                <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => handleTabChange(tab.id as 'dash' | 'pos' | 'catalog' | 'cash')}
                   className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
                      activeTab === tab.id 
                      ? 'bg-white dark:bg-[#1e2028] text-rose-600 dark:text-rose-400 shadow-sm' 
@@ -334,6 +621,20 @@ export default function StorePage() {
                      <MetricCard title="Vencendo (30d)" value={metrics.expiringItems} icon={Calendar} color="rose" subtext="Atenção Urgente" />
                   </div>
                )}
+
+               <div className="bg-white dark:bg-[#1e2028] p-4 rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200">Operações e Segurança</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    <button onClick={() => handleTabChange('pos')} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">Abrir checkout</button>
+                    <button onClick={() => setShowScanner(true)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">Scanner mobile</button>
+                    <button onClick={() => handleTabChange('cash')} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">Fechar caixa loja</button>
+                    <button onClick={exportOperationalReport} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">Exportar logs</button>
+                    <button onClick={() => handleTabChange('catalog')} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">Auditoria catálogo</button>
+                  </div>
+               </div>
 
                <div className="grid grid-cols-3 gap-6">
                   {/* Gráfico de Vendas */}
@@ -390,7 +691,22 @@ export default function StorePage() {
                            </div>
                         )}
                      </div>
-                     <button className="mt-4 w-full py-2 text-xs font-bold text-slate-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 transition-colors">Ver relatório completo</button>
+                     <div className="mt-4 grid grid-cols-2 gap-2">
+                        <button
+                           type="button"
+                           onClick={() => router.push('/financeiro')}
+                           className="w-full py-2 text-xs font-bold text-slate-500 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors border border-slate-200 dark:border-gray-700 rounded-lg"
+                        >
+                           Visão financeira
+                        </button>
+                        <button
+                           type="button"
+                           onClick={exportOperationalReport}
+                           className="w-full py-2 text-xs font-bold text-slate-500 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors border border-slate-200 dark:border-gray-700 rounded-lg"
+                        >
+                           Exportar logs
+                        </button>
+                     </div>
                   </div>
                </div>
             </div>
@@ -401,8 +717,8 @@ export default function StorePage() {
             <div className="h-full flex">
                {/* Esquerda: Catálogo Visual */}
                <div className="flex-1 flex flex-col p-6 pr-3 border-r border-slate-200 dark:border-gray-800">
-                  <div className="mb-6">
-                     <div className="relative">
+                  <div className="mb-6 flex gap-3">
+                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-3 w-5 h-5 text-slate-400 dark:text-gray-500" />
                         <input 
                            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 dark:focus:ring-rose-900 transition-all shadow-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-600"
@@ -411,6 +727,14 @@ export default function StorePage() {
                            onChange={e => setSearchTerm(e.target.value)}
                         />
                      </div>
+                     <button
+                        type="button"
+                        onClick={() => setShowScanner(true)}
+                        className="px-4 py-3 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-xl font-bold text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center gap-2"
+                     >
+                        <Smartphone className="w-4 h-4 text-rose-500" />
+                        Scanner Mobile
+                     </button>
                   </div>
 
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -552,8 +876,21 @@ export default function StorePage() {
                         <span className="text-3xl font-black text-rose-600 dark:text-rose-400">R$ {cartTotal.toFixed(2)}</span>
                      </div>
                      
-                     {/* Cálculo de Troco (se método for dinheiro) */}
-                     {selectedPaymentMethod === 'money' && showPaymentModal && (
+                    {/* Pagamento inline */}
+                    <div className="mb-3">
+                      <p className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2">Forma de pagamento</p>
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <button onClick={() => setSelectedPaymentMethod('cash')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'cash' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-[#2a2d36] border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300'}`}>Dinheiro</button>
+                        <button onClick={() => setSelectedPaymentMethod('pix')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'pix' ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-800 text-teal-700 dark:text-teal-400' : 'bg-white dark:bg-[#2a2d36] border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300'}`}>Pix</button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button onClick={() => setSelectedPaymentMethod('credit_card')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'credit_card' ? 'bg-slate-100 dark:bg-slate-700 border-slate-400 dark:border-slate-500 text-slate-800 dark:text-white' : 'bg-white dark:bg-[#2a2d36] border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300'}`}>Crédito</button>
+                        <button onClick={() => setSelectedPaymentMethod('debit_card')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'debit_card' ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300' : 'bg-white dark:bg-[#2a2d36] border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300'}`}>Débito</button>
+                        <button onClick={() => setSelectedPaymentMethod('mixed')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'mixed' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400' : 'bg-white dark:bg-[#2a2d36] border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300'}`}>Misto</button>
+                      </div>
+                    </div>
+
+                    {selectedPaymentMethod === 'cash' && (
                         <div className="mb-4 p-4 bg-white dark:bg-[#2a2d36] rounded-xl border border-slate-200 dark:border-gray-700">
                            <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 mb-2">Valor Recebido</label>
                            <input
@@ -576,13 +913,44 @@ export default function StorePage() {
                               </div>
                            )}
                         </div>
-                     )}
-                     
-                     <div className="grid grid-cols-2 gap-3 mb-3">
-                        <button onClick={() => openPaymentModal('money')} className="py-3 bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl font-bold text-slate-600 dark:text-gray-300 text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all flex items-center justify-center gap-2"><Banknote className="w-4 h-4"/> Dinheiro</button>
-                        <button onClick={() => openPaymentModal('pix')} className="py-3 bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl font-bold text-slate-600 dark:text-gray-300 text-sm hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:border-teal-200 dark:hover:border-teal-800 hover:text-teal-600 dark:hover:text-teal-400 transition-all flex items-center justify-center gap-2"><QrCode className="w-4 h-4"/> Pix</button>
-                     </div>
-                     <button onClick={() => openPaymentModal('card')} className="w-full py-4 bg-slate-800 dark:bg-slate-700 text-white rounded-xl font-bold text-lg hover:bg-slate-900 dark:hover:bg-slate-600 shadow-lg shadow-slate-200 dark:shadow-none transition-all flex items-center justify-center gap-2"><CreditCard className="w-5 h-5"/> Cartão de Crédito</button>
+                    )}
+
+                    {selectedPaymentMethod === 'mixed' && (
+                      <div className="mb-3 p-3 bg-white dark:bg-[#2a2d36] rounded-xl border border-slate-200 dark:border-gray-700">
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="number" step="0.01" min="0" value={mixedAmounts.pix} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, pix: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded text-xs font-bold" placeholder="Pix" />
+                          <input type="number" step="0.01" min="0" value={mixedAmounts.cash} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, cash: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded text-xs font-bold" placeholder="Dinheiro" />
+                          <input type="number" step="0.01" min="0" value={mixedAmounts.credit_card} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, credit_card: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded text-xs font-bold" placeholder="Crédito" />
+                          <input type="number" step="0.01" min="0" value={mixedAmounts.debit_card} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, debit_card: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded text-xs font-bold" placeholder="Débito" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedPatient(null);
+                          setPatientSearchTerm('');
+                        }}
+                        className="py-3 bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl font-bold text-slate-600 dark:text-gray-300 text-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
+                      >
+                        Consumidor final
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (selectedPaymentMethod === 'cash') {
+                            const received = parseFloat(cashAmount || '0');
+                            handleCheckout('cash', received);
+                            return;
+                          }
+                          handleCheckout(selectedPaymentMethod);
+                        }}
+                        className="py-3 bg-rose-600 text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        Finalizar venda
+                      </button>
+                    </div>
                   </div>
                </div>
             </div>
@@ -603,6 +971,10 @@ export default function StorePage() {
                      </button>
                      <button 
                         onClick={() => {
+                           if (profile?.role !== 'admin') {
+                              toast.error('Somente administradores podem cadastrar produtos.');
+                              return;
+                           }
                            setEditingProduct(null);
                            setShowProductModal(true);
                         }}
@@ -611,6 +983,35 @@ export default function StorePage() {
                         <Plus className="w-4 h-4" /> Novo Produto
                      </button>
                   </div>
+               </div>
+
+               <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-200 dark:border-gray-800 p-4 mb-4 grid grid-cols-4 gap-3">
+                  <input
+                     value={catalogSearchTerm}
+                     onChange={(e) => setCatalogSearchTerm(e.target.value)}
+                     placeholder="Buscar por nome ou código"
+                     className="col-span-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 text-sm font-semibold text-slate-700 dark:text-gray-200"
+                  />
+                  <select
+                    value={catalogCategoryFilter}
+                    onChange={(e) => setCatalogCategoryFilter(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 text-sm font-semibold text-slate-700 dark:text-gray-200"
+                  >
+                    {catalogCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category === 'all' ? 'Todas categorias' : category}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={catalogStockFilter}
+                    onChange={(e) => setCatalogStockFilter(e.target.value as 'all' | 'low' | 'critical')}
+                    className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 text-sm font-semibold text-slate-700 dark:text-gray-200"
+                  >
+                    <option value="all">Todos estoques</option>
+                    <option value="low">Estoque baixo (&lt;10)</option>
+                    <option value="critical">Estoque crítico (&lt;5)</option>
+                  </select>
                </div>
                
                <div className="bg-white dark:bg-[#1e2028] rounded-3xl border border-slate-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
@@ -626,7 +1027,7 @@ export default function StorePage() {
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-slate-50 dark:divide-gray-800">
-                        {products.map(product => (
+                        {filteredCatalogProducts.map(product => (
                            <tr key={product.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors group">
                               <td className="p-4">
                                  <div className="flex items-center gap-3">
@@ -660,7 +1061,7 @@ export default function StorePage() {
                                     <button 
                                        onClick={() => {
                                           // TODO: Implementar impressão de etiqueta
-                                          alert('Funcionalidade de impressão em desenvolvimento');
+                                          toast.info('Funcionalidade de impressão em desenvolvimento');
                                        }}
                                        className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300" 
                                        title="Imprimir Etiqueta"
@@ -670,15 +1071,30 @@ export default function StorePage() {
                                     <button 
                                        onClick={() => {
                                           // TODO: Implementar histórico de movimentações
-                                          alert('Funcionalidade de histórico em desenvolvimento');
+                                          toast.info('Funcionalidade de histórico em desenvolvimento');
                                        }}
                                        className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300" 
                                        title="Histórico"
                                     >
                                        <History className="w-4 h-4"/>
                                     </button>
+                                    <button
+                                      onClick={() => {
+                                        addToCart(product);
+                                        handleTabChange('pos');
+                                        toast.success('Produto enviado para o checkout.');
+                                      }}
+                                      className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg text-slate-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400"
+                                      title="Enviar ao checkout"
+                                    >
+                                      <ShoppingCart className="w-4 h-4" />
+                                    </button>
                                     <button 
                                        onClick={() => {
+                                          if (profile?.role !== 'admin') {
+                                             toast.error('Somente administradores podem editar produtos.');
+                                             return;
+                                          }
                                           setEditingProduct(product);
                                           setShowProductModal(true);
                                        }}
@@ -697,118 +1113,124 @@ export default function StorePage() {
             </div>
          )}
 
-         {/* MODAL DE PAGAMENTO */}
-         {showPaymentModal && selectedPaymentMethod && (
-            <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200" onClick={() => {
-               setShowPaymentModal(false);
-               setSelectedPaymentMethod(null);
-               setCashAmount('');
-            }}>
-               <div className="bg-white dark:bg-[#1e2028] p-8 rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center justify-between mb-6">
-                     <h3 className="text-2xl font-black text-slate-800 dark:text-gray-100">
-                        Finalizar Venda
-                     </h3>
-                     <button 
-                        onClick={() => {
-                           setShowPaymentModal(false);
-                           setSelectedPaymentMethod(null);
-                           setCashAmount('');
-                        }}
-                        className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-gray-500"
-                     >
-                        <X className="w-5 h-5" />
-                     </button>
+         {/* === 4. ABA CAIXA DA LOJINHA === */}
+         {activeTab === 'cash' && (
+            <div className="h-full p-8 overflow-y-auto custom-scrollbar">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100">Caixa da Lojinha</h2>
+                  <p className="text-sm text-slate-500 dark:text-gray-400">Fechamento dedicado da operação da loja com reconciliação por método.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={fetchStoreCash} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-gray-700 text-sm font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">
+                    Atualizar
+                  </button>
+                  <button
+                    onClick={closeStoreCash}
+                    disabled={closingStoreCash || loadingStoreCash || storeCashData?.isClosed || profile?.role !== 'admin'}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {storeCashData?.isClosed ? 'Fechado' : closingStoreCash ? 'Fechando...' : 'Fechar caixa'}
+                  </button>
+                </div>
+              </div>
+
+              {loadingStoreCash ? (
+                <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 p-8 text-center text-slate-500 dark:text-gray-400">
+                  Carregando dados do caixa...
+                </div>
+              ) : storeCashData ? (
+                <>
+                  <div className="grid grid-cols-5 gap-4 mb-6">
+                    <MetricCard title="Data" value={storeCashData.date} icon={Calendar} color="blue" />
+                    <MetricCard title="Total Loja" value={`R$ ${storeCashData.totals.totalAmount.toFixed(2)}`} icon={Wallet} color="emerald" />
+                    <MetricCard title="Pix" value={`R$ ${storeCashData.totals.totalsByMethod.pix.toFixed(2)}`} icon={QrCode} color="blue" />
+                    <MetricCard title="Dinheiro" value={`R$ ${storeCashData.totals.totalsByMethod.cash.toFixed(2)}`} icon={Banknote} color="amber" />
+                    <MetricCard title="Status" value={storeCashData.isClosed ? 'Fechado' : 'Em aberto'} icon={CheckCircle2} color={storeCashData.isClosed ? 'emerald' : 'rose'} />
                   </div>
 
-                  <div className="mb-6">
-                     <div className="bg-slate-50 dark:bg-[#2a2d36] p-4 rounded-xl mb-4">
-                        <div className="flex justify-between items-center mb-2">
-                           <span className="text-sm font-bold text-slate-500 dark:text-gray-400">Total</span>
-                           <span className="text-3xl font-black text-rose-600 dark:text-rose-400">R$ {cartTotal.toFixed(2)}</span>
-                        </div>
-                        <div className="text-xs text-slate-400 dark:text-gray-500">
-                           {cart.length} {cart.length === 1 ? 'item' : 'itens'}
-                        </div>
-                     </div>
-
-                     {selectedPaymentMethod === 'money' && (
-                        <div className="mb-4">
-                           <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2">Valor Recebido</label>
-                           <input
-                              type="number"
-                              step="0.01"
-                              min={cartTotal}
-                              value={cashAmount}
-                              onChange={(e) => setCashAmount(e.target.value)}
-                              className="w-full px-4 py-3 bg-white dark:bg-[#1e2028] border-2 border-slate-200 dark:border-gray-700 rounded-xl text-xl font-bold text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                              placeholder="0.00"
-                              autoFocus
-                           />
-                           {parseFloat(cashAmount || '0') >= cartTotal && (
-                              <div className="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-900/30">
-                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Troco</span>
-                                    <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                                       R$ {(parseFloat(cashAmount || '0') - cartTotal).toFixed(2)}
-                                    </span>
-                                 </div>
-                              </div>
-                           )}
-                           {parseFloat(cashAmount || '0') < cartTotal && parseFloat(cashAmount || '0') > 0 && (
-                              <div className="mt-2 text-xs text-red-600 dark:text-red-400 font-bold">
-                                 Faltam R$ {(cartTotal - parseFloat(cashAmount || '0')).toFixed(2)}
-                              </div>
-                           )}
-                        </div>
-                     )}
-
-                     {selectedPaymentMethod !== 'money' && (
-                        <div className="mb-4 p-4 bg-slate-50 dark:bg-[#2a2d36] rounded-xl">
-                           <div className="flex items-center gap-3">
-                              {selectedPaymentMethod === 'pix' && <QrCode className="w-6 h-6 text-teal-500" />}
-                              {selectedPaymentMethod === 'card' && <CreditCard className="w-6 h-6 text-slate-600 dark:text-gray-400" />}
-                              <span className="font-bold text-slate-700 dark:text-gray-200">
-                                 {selectedPaymentMethod === 'pix' ? 'Pix' : 'Cartão de Crédito'}
-                              </span>
-                           </div>
-                        </div>
-                     )}
+                  <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-100 dark:border-gray-800 flex items-center justify-between">
+                      <h3 className="font-bold text-slate-700 dark:text-gray-200">Logs da sessão da loja</h3>
+                      <span className="text-xs font-bold text-slate-500 dark:text-gray-400">{storeCashData.transactions.length} lançamentos</span>
+                    </div>
+                    <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
+                      {storeCashData.transactions.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 dark:text-gray-400">Sem transações da loja para a data selecionada.</div>
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead className="bg-slate-50 dark:bg-[#2a2d36] sticky top-0">
+                            <tr>
+                              <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Horário</th>
+                              <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Valor</th>
+                              <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Observação</th>
+                              <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {storeCashData.transactions.map((transaction) => (
+                              <tr key={transaction.id} className="border-t border-slate-100 dark:border-gray-800">
+                                <td className="px-4 py-3 text-slate-700 dark:text-gray-300">{new Date(transaction.occurred_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
+                                <td className="px-4 py-3 font-bold text-slate-800 dark:text-gray-100">R$ {Number(transaction.amount || 0).toFixed(2)}</td>
+                                <td className="px-4 py-3 text-slate-600 dark:text-gray-400">{transaction.notes || '-'}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-xs font-bold px-2 py-1 rounded ${transaction.notes ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                                    {storeCashData.isClosed ? 'Conciliado' : 'Em aberto'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="flex gap-3">
-                     <button
-                        onClick={() => {
-                           setShowPaymentModal(false);
-                           setSelectedPaymentMethod(null);
-                           setCashAmount('');
-                        }}
-                        className="flex-1 py-3 bg-slate-100 dark:bg-[#2a2d36] text-slate-700 dark:text-gray-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
-                     >
-                        Cancelar
-                     </button>
-                     <button
-                        onClick={() => {
-                           if (selectedPaymentMethod === 'money') {
-                              const received = parseFloat(cashAmount || '0');
-                              if (received < cartTotal) {
-                                 alert('Valor recebido deve ser maior ou igual ao total!');
-                                 return;
-                              }
-                              handleCheckout(selectedPaymentMethod, received);
-                           } else {
-                              handleCheckout(selectedPaymentMethod);
-                           }
-                        }}
-                        className="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 dark:shadow-none transition-all flex items-center justify-center gap-2"
-                     >
-                        <CheckCircle2 className="w-5 h-5" />
-                        Confirmar
-                     </button>
-                  </div>
-               </div>
+                </>
+              ) : (
+                <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 p-8 text-center text-slate-500 dark:text-gray-400">
+                  Não foi possível carregar o caixa da lojinha.
+                </div>
+              )}
             </div>
          )}
+
+        {/* MODAL QR SCANNER */}
+        {showScanner && (
+           <div
+              className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setShowScanner(false)}
+           >
+              <div
+                 className="bg-white dark:bg-[#1e2028] rounded-3xl shadow-2xl max-w-md w-full p-6"
+                 onClick={(e) => e.stopPropagation()}
+              >
+                 <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-black text-slate-800 dark:text-gray-100">Scanner no celular</h3>
+                    <button
+                       type="button"
+                       onClick={() => setShowScanner(false)}
+                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-gray-500"
+                    >
+                       <X className="w-4 h-4" />
+                    </button>
+                 </div>
+                 <p className="text-sm text-slate-500 dark:text-gray-400 mb-4">
+                    Escaneie para abrir o scanner no celular e enviar produtos em tempo real para o carrinho.
+                 </p>
+                 <div className="bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-2xl p-4 flex items-center justify-center mb-3">
+                    <QRCodeSVG value={scannerUrl} size={220} includeMargin />
+                 </div>
+                 <a
+                    href={scannerUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full inline-flex items-center justify-center py-2.5 text-sm font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors"
+                 >
+                    Abrir scanner
+                 </a>
+              </div>
+           </div>
+        )}
 
          {/* MODAL DE PRODUTO */}
          <ProductModal
@@ -822,7 +1244,7 @@ export default function StorePage() {
                setShowProductModal(false);
                setEditingProduct(null);
             }}
-            product={editingProduct}
+            product={editingProduct ? { ...editingProduct, active: true, description: undefined } as import('@/types').Product : null}
          />
       </div>
     </div>

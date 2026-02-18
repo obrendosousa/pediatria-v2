@@ -1,8 +1,8 @@
 import './globals.css';
 import { Inter, Nunito } from 'next/font/google';
-import Navigation from '@/components/Navigation';
-import SidebarWrapper from '@/components/SidebarWrapper';
-import { SidebarProvider } from '@/contexts/SidebarContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ToastProvider } from '@/contexts/ToastContext';
+import AuthLayoutGuard from '@/components/AuthLayoutGuard';
 import type { Metadata } from 'next';
 
 // Fonte Padrão (Leitura - mantém a seriedade nos textos longos)
@@ -44,18 +44,11 @@ export default function RootLayout({
         className={`${inter.variable} ${nunito.variable} font-sans antialiased bg-[rgb(var(--background))] text-[rgb(var(--foreground))] overflow-hidden selection:bg-pink-200 selection:text-pink-900`} 
         suppressHydrationWarning={true}
       >
-        <SidebarProvider>
-        <div className="flex h-screen w-full transition-colors duration-500">
-          
-          <SidebarWrapper>
-            <Navigation />
-          </SidebarWrapper>
-          
-            <main className="flex-1 overflow-hidden relative w-full h-full transition-all duration-500 ease-in-out">
-            {children}
-          </main>
-        </div>
-        </SidebarProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <AuthLayoutGuard>{children}</AuthLayoutGuard>
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );

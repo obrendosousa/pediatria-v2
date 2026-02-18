@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 
 export function useUnreadChatsCount() {
   const [unreadCount, setUnreadCount] = useState<number>(0);

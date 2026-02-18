@@ -5,7 +5,9 @@ import {
   X, Calendar, Clock, User, FileText, 
   Ban, CheckCircle2, AlertCircle, Save 
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
+import { useToast } from '@/contexts/ToastContext';
 
 interface ManageShiftModalProps {
   isOpen: boolean;
@@ -46,7 +48,7 @@ export default function ManageShiftModal({ isOpen, onClose, onSuccess, initialDa
 
   const handleSave = async () => {
     if (!doctorId || !date || !startTime || !endTime) {
-      alert("Por favor, preencha todos os campos obrigatórios.");
+      toast.toast.error("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
 
@@ -73,7 +75,7 @@ export default function ManageShiftModal({ isOpen, onClose, onSuccess, initialDa
       setReason('');
     } catch (error) {
       console.error('Erro ao salvar escala:', error);
-      alert('Erro ao salvar alteração de escala.');
+      toast.toast.error('Erro ao salvar alteração de escala.');
     } finally {
       setLoading(false);
     }

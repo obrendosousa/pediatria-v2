@@ -4,11 +4,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save, CheckCircle } from 'lucide-react';
 import { useMedicalRecord } from '@/hooks/useMedicalRecord';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { RichTextEditor } from './RichTextEditor';
 import { DiagnosisSelect } from './DiagnosisSelect';
 import { ModelTemplateModal } from './ModelTemplateModal';
 import { format } from 'date-fns';
+import { useToast } from '@/contexts/ToastContext';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { ptBR } from 'date-fns/locale';
 
 interface AttendanceFormProps {
@@ -37,6 +40,8 @@ export function AttendanceForm({
   onSave,
   onFinish
 }: AttendanceFormProps) {
+  const { toast } = useToast();
+  const [confirmFinishOpen, setConfirmFinishOpen] = useState(false);
   const { record, isLoading, saveRecord, finishRecord } = useMedicalRecord(patientId, appointmentId);
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<FormData>({
     defaultValues: {
@@ -176,10 +181,10 @@ export function AttendanceForm({
   const onSubmit = async (data: FormData) => {
     try {
       const vitals = {
-        weight: data.weight || null,
-        height: data.height || null,
-        imc: data.imc || null,
-        pe: data.pe || null,
+        weight: data.weight ?? undefined,
+        height: data.height ?? undefined,
+        imc: data.imc ?? undefined,
+        pe: data.pe ?? undefined,
       };
 
       await saveRecord({
@@ -189,23 +194,23 @@ export function AttendanceForm({
         physical_exam: data.physical_exam,
         diagnosis: data.diagnosis,
         conducts: data.conducts,
-        vitals: vitals,
+        vitals,
       });
 
       if (onSave) onSave();
     } catch (error) {
       console.error('Erro ao salvar:', error);
-      alert('Erro ao salvar o atendimento. Tente novamente.');
+      toast.toast.error('Erro ao salvar o atendimento. Tente novamente.');
     }
   };
 
-  const handleFinish = async () => {
-    if (!window.confirm('Deseja finalizar o atendimento? Esta ação não pode ser desfeita.')) {
-      return;
-    }
+  const handleFinishClick = () => {
+    setConfirmFinishOpen(true);
+  };
 
+  const handleFinishConfirm = async () => {
+    setConfirmFinishOpen(false);
     try {
-      // Primeiro, salvar os dados do formulário
       const formData = watch();
       const vitals = {
         weight: formData.weight || null,
@@ -214,7 +219,6 @@ export function AttendanceForm({
         pe: formData.pe || null,
       };
 
-      // Salvar e obter o registro atualizado com ID
       const savedRecord = await saveRecord({
         chief_complaint: formData.chief_complaint,
         hda: formData.hda,
@@ -225,17 +229,16 @@ export function AttendanceForm({
         vitals: vitals,
       } as any);
 
-      // Agora que temos o ID, finalizar o registro
       if (savedRecord?.id) {
         await finishRecord();
         if (onFinish) onFinish();
-        alert('Atendimento finalizado com sucesso!');
+        toast.toast.success('Atendimento finalizado com sucesso!');
       } else {
         throw new Error('Erro ao salvar o registro antes de finalizar');
       }
     } catch (error: any) {
       console.error('Erro ao finalizar:', error);
-      alert(error?.message || 'Erro ao finalizar o atendimento. Tente novamente.');
+      toast.toast.error(error?.message || 'Erro ao finalizar o atendimento. Tente novamente.');
     }
   };
 
@@ -434,7 +437,7 @@ export function AttendanceForm({
           </button>
           <button
             type="button"
-            onClick={handleFinish}
+            onClick={handleFinishClick}
             disabled={isSubmitting}
             className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
@@ -463,11 +466,20 @@ export function AttendanceForm({
             setModelModalOpen(false);
           } catch (err: any) {
             console.error('Erro ao salvar modelo:', err);
-            alert('Erro ao salvar modelo: ' + err.message);
+            toast.toast.error('Erro ao salvar modelo: ' + err.message);
           }
         }}
         type={modelModalType}
         currentContent={currentModelContent}
+      />
+      <ConfirmModal
+        isOpen={confirmFinishOpen}
+        onClose={() => setConfirmFinishOpen(false)}
+        onConfirm={handleFinishConfirm}
+        title="Finalizar atendimento"
+        message="Deseja finalizar o atendimento? Esta ação não pode ser desfeita."
+        type="danger"
+        confirmText="Sim, finalizar"
       />
     </div>
   );

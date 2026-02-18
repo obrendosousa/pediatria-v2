@@ -8,12 +8,14 @@ import {
   MapPin, Phone, CreditCard, Sparkles, AlertCircle,
   Camera, Trash2, Users, X
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Appointment } from '@/types/medical';
 import { patientBaseSchema, patientRefinements } from '@/schemas/patientSchema';
 import { z } from 'zod';
 import { formatCPF, cleanCPF, formatPhone, cleanPhone, formatCEP, cleanCEP, cleanRG } from '@/utils/formatUtils';
 import { linkPatientByPhone, addPhoneToPatient } from '@/utils/patientRelations';
+import { useToast } from '@/contexts/ToastContext';
 
 // --- SCHEMA EXTENDIDO ---
 const insuranceSchema = z.object({
@@ -33,6 +35,7 @@ interface PatientRegistrationFormProps {
   appointment: Appointment;
   onCancel: () => void;
   onSuccess: (newId: number) => void;
+  chatId?: number;
 }
 
 // Componentes auxiliares
@@ -168,6 +171,7 @@ function Switch({ register, name, colorClass = 'bg-blue-500' }: any) {
 }
 
 export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chatId }: PatientRegistrationFormProps) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'personal' | 'extra' | 'insurance'>('personal');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -383,7 +387,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
       onSuccess(newPatient.id);
     } catch (err: any) {
       console.error('Erro ao salvar:', err);
-      alert('Erro ao salvar: ' + err.message);
+      toast.toast.error('Erro ao salvar: ' + err.message);
     } finally {
       setIsSubmitting(false);
     }

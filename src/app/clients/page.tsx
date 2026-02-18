@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { PatientListTable } from '@/components/medical-record/PatientListTable';
 import { NewPatientModal } from '@/components/medical-record/NewPatientModal';
 

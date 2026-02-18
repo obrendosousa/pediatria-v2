@@ -3,7 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Smile, X, Send, Loader2, Save, Trash2, Edit2, Check, Paperclip } from 'lucide-react';
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
+import { useToast } from '@/contexts/ToastContext';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface SavedMessage {
   id: number;
@@ -30,12 +33,14 @@ export default function CallMessageModal({
   isLoading = false,
   defaultMessage = "Olá! Sua vez chegou. Por favor, dirija-se ao consultório."
 }: CallMessageModalProps) {
+  const toast = useToast();
   const [message, setMessage] = useState(defaultMessage);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showSavedMessages, setShowSavedMessages] = useState(false);
   const [savedMessages, setSavedMessages] = useState<SavedMessage[]>([]);
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   
   // Estados de gravação de áudio
   const [isRecording, setIsRecording] = useState(false);
@@ -95,11 +100,11 @@ export default function CallMessageModal({
       
       if (!error) {
         await loadSavedMessages();
-        alert('Mensagem salva com sucesso!');
+        toast.toast.success('Mensagem salva com sucesso!');
       }
     } catch (error) {
       console.error('Erro ao salvar mensagem:', error);
-      alert('Erro ao salvar mensagem');
+      toast.toast.error('Erro ao salvar mensagem');
     }
   };
 
@@ -133,20 +138,36 @@ export default function CallMessageModal({
     }
   };
 
-  const handleDeleteMessage = async (id: number) => {
-    if (!confirm('Deseja realmente excluir esta mensagem?')) return;
-    
+  const handleDeleteMessageClick = (id: number) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleDeleteMessageConfirm = async () => {
+    if (confirmDeleteId == null) return;
+
     try {
+      const idToDelete = confirmDeleteId;
+      setConfirmDeleteId(null);
+
       const { error } = await supabase
         .from('saved_call_messages')
         .delete()
-        .eq('id', id);
-      
-      if (!error) {
-        await loadSavedMessages();
+        .eq('id', idToDelete);
+
+      if (error) {
+        throw error;
       }
+
+      if (editingMessageId === idToDelete) {
+        setEditingMessageId(null);
+        setEditingContent('');
+      }
+
+      await loadSavedMessages();
+      toast.toast.success('Mensagem excluída com sucesso!');
     } catch (error) {
-      console.error('Erro ao deletar mensagem:', error);
+      console.error('Erro ao excluir mensagem:', error);
+      toast.toast.error('Erro ao excluir mensagem');
     }
   };
 
@@ -179,7 +200,7 @@ export default function CallMessageModal({
       }, 1000);
     } catch (error) {
       console.error('Erro ao acessar microfone:', error);
-      alert('Permissão de microfone negada ou dispositivo indisponível.');
+      toast.toast.error('Permissão de microfone negada ou dispositivo indisponível.');
     }
   };
 
@@ -251,6 +272,7 @@ export default function CallMessageModal({
   if (!isOpen) return null;
 
   return (
+    <>
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-hidden" onClick={onClose}>
       <div 
         className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-3xl shadow-2xl overflow-visible animate-fade-in-up relative" 
@@ -412,7 +434,7 @@ export default function CallMessageModal({
                                 <Edit2 className="w-3 h-3 text-blue-600" />
                               </button>
                               <button
-                                onClick={() => handleDeleteMessage(msg.id)}
+                                onClick={() => handleDeleteMessageClick(msg.id)}
                                 className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
                                 title="Excluir"
                               >
@@ -520,5 +542,15 @@ export default function CallMessageModal({
         </div>
       </div>
     </div>
+    <ConfirmModal
+      isOpen={confirmDeleteId != null}
+      onClose={() => setConfirmDeleteId(null)}
+      onConfirm={handleDeleteMessageConfirm}
+      title="Excluir mensagem"
+      message="Deseja realmente excluir esta mensagem?"
+      type="danger"
+      confirmText="Excluir"
+    />
+    </>
   );
 }

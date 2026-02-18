@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createPortal } from 'react-dom';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Chat } from '@/types';
 import { X, MessageCircle, Loader2, User, AlertCircle } from 'lucide-react';
 import ChatWindow from '@/components/ChatWindow';
@@ -16,7 +18,9 @@ export default function QuickChatModal({ isOpen, onClose, patientPhone }: QuickC
   const [chat, setChat] = useState<Chat | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (isOpen && patientPhone) {
       fetchOrCreateChat();
@@ -69,8 +73,8 @@ export default function QuickChatModal({ isOpen, onClose, patientPhone }: QuickC
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4 animate-in fade-in">
+  const modalContent = (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in">
       <div className="bg-white dark:bg-[#1e2028] rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
         
         {/* Header */}
@@ -119,4 +123,8 @@ export default function QuickChatModal({ isOpen, onClose, patientPhone }: QuickC
       </div>
     </div>
   );
+
+  return mounted && typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : null;
 }

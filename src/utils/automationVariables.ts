@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { differenceInMonths, differenceInDays, parseISO, isValid } from 'date-fns';
 import { Patient } from '@/types/patient';
-import { Appointment } from '@/types';
+import { Appointment } from '@/types/medical';
 
 export interface VariableData {
   patient?: Patient;

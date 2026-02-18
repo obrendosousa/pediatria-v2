@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { getPauseConfig, hasChatReceivedAutoMessage } from '@/utils/pauseService';
 
 /**
@@ -46,7 +47,8 @@ export function useAutoPauseMessages() {
             message_text: message,
             sender: 'HUMAN_AGENT',
             message_type: 'text',
-            auto_sent_pause_session: sessionId
+            auto_sent_pause_session: sessionId,
+            tool_data: { source: 'automation_pause' },
           })
           .select()
           .single();
@@ -65,7 +67,8 @@ export function useAutoPauseMessages() {
             phone: phone,
             message: message,
             type: 'text',
-            dbMessageId: dbMessage.id
+            dbMessageId: dbMessage.id,
+            messageSource: 'automation_pause',
           })
         });
 

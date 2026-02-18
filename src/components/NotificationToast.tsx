@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, X, CheckCircle2, ShoppingBag, DollarSign } from 'lucide-react';
+import { Bell, X, CheckCircle2, ShoppingBag, DollarSign, AlertCircle } from 'lucide-react';
 
-interface Notification {
+export interface Notification {
   id: string;
-  type: 'checkout' | 'info' | 'success';
+  type: 'checkout' | 'info' | 'success' | 'error';
   title: string;
   message: string;
   duration?: number;
@@ -30,6 +30,7 @@ export function NotificationToast({ notifications, onDismiss }: NotificationToas
             ${notification.type === 'checkout' ? 'border-l-rose-500' : ''}
             ${notification.type === 'success' ? 'border-l-emerald-500' : ''}
             ${notification.type === 'info' ? 'border-l-blue-500' : ''}
+            ${notification.type === 'error' ? 'border-l-red-500' : ''}
           `}
         >
           <div className="flex items-start gap-3">
@@ -38,16 +39,20 @@ export function NotificationToast({ notifications, onDismiss }: NotificationToas
               ${notification.type === 'checkout' ? 'bg-rose-100 dark:bg-rose-900/20' : ''}
               ${notification.type === 'success' ? 'bg-emerald-100 dark:bg-emerald-900/20' : ''}
               ${notification.type === 'info' ? 'bg-blue-100 dark:bg-blue-900/20' : ''}
+              ${notification.type === 'error' ? 'bg-red-100 dark:bg-red-900/20' : ''}
             `}>
               {notification.type === 'checkout' && <ShoppingBag className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
               {notification.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
               {notification.type === 'info' && <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+              {notification.type === 'error' && <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />}
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-sm text-slate-800 dark:text-gray-100 mb-1">
-                {notification.title}
-              </h4>
-              <p className="text-xs text-slate-600 dark:text-gray-400">
+              {notification.title ? (
+                <h4 className="font-bold text-sm text-slate-800 dark:text-gray-100 mb-1">
+                  {notification.title}
+                </h4>
+              ) : null}
+              <p className={`text-slate-600 dark:text-gray-400 ${notification.title ? 'text-xs' : 'text-sm'}`}>
                 {notification.message}
               </p>
             </div>
@@ -79,10 +84,11 @@ export function useNotifications() {
     setNotifications(prev => [...prev, newNotification]);
 
     // Auto-dismiss após duração
-    if (newNotification.duration > 0) {
+    const duration = newNotification.duration ?? 0;
+    if (duration > 0) {
       setTimeout(() => {
         dismissNotification(id);
-      }, newNotification.duration);
+      }, duration);
     }
 
     return id;

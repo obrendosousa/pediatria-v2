@@ -63,6 +63,8 @@ export interface MedicalRecord {
   // SOAP
   chief_complaint: string;
   hda: string;
+  antecedents?: string;
+  conducts?: string;
   physical_exam: string;
   diagnosis: string;
   
@@ -97,8 +99,19 @@ export interface Appointment {
   patient_sex?: 'M' | 'F' | null;
   doctor_name: string;
   doctor_id: number | null;
-  status: 'scheduled' | 'waiting' | 'in_service' | 'finished' | 'blocked' | 'cancelled';
+  // Adicionado 'waiting_payment' para suportar o fluxo de checkout da secretária
+  status: 'scheduled' | 'called' | 'waiting' | 'in_service' | 'waiting_payment' | 'finished' | 'blocked' | 'cancelled' | 'no_show';
   notes?: string | null;
   anamnesis?: string | null;
+  
+  // NOVOS CAMPOS FINANCEIROS
+  total_amount?: number; // Valor total combinado (numeric no banco)
+  amount_paid?: number;  // Quanto já foi pago (numeric no banco)
+  appointment_type?: 'consulta' | 'retorno' | null;
+  chat_id?: number | null;
+  queue_entered_at?: string | null;
+  in_service_at?: string | null;
+  finished_at?: string | null;
+  
   created_at?: string;
 }

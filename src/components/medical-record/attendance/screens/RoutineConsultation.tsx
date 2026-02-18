@@ -7,6 +7,7 @@ import { useMedicalRecord, RoutineConsultationData } from '@/hooks/useMedicalRec
 import { RichTextEditor } from '../RichTextEditor';
 import { ModelTemplateModal } from '../ModelTemplateModal';
 import { AttendanceScreenProps } from '@/types/attendance';
+import { useToast } from '@/contexts/ToastContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -38,6 +39,7 @@ interface RoutineConsultationFormData {
 }
 
 export function RoutineConsultation({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
+  const { toast } = useToast();
   const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<RoutineConsultationFormData>({
     defaultValues: {
@@ -167,7 +169,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Erro ao salvar:', error);
-      alert('Erro ao salvar o formulário. Tente novamente.');
+      toast.toast.error('Erro ao salvar o formulário. Tente novamente.');
     }
   };
 

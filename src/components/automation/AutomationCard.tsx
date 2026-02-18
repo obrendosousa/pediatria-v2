@@ -1,7 +1,7 @@
 'use client';
 
 import { AutomationRule } from '@/types';
-import { Calendar, Clock, Users, CheckCircle2, XCircle, Edit2, Trash2, Zap } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, XCircle, Edit2, Trash2, Zap } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -47,25 +47,23 @@ export default function AutomationCard({
   };
 
   return (
-    <div className="bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-2xl p-6 hover:shadow-lg transition-all">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+    <div className="bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-2xl p-5 hover:shadow-md transition-all">
+      <div className="flex items-start justify-between mb-4 gap-3">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <Zap className={`w-5 h-5 ${automation.active ? 'text-rose-500' : 'text-slate-400'}`} />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100">
+            <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-gray-100">
               {automation.name}
             </h3>
-            <span className={`px-2 py-0.5 rounded text-xs font-bold border ${getTypeColor()}`}>
+            <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${getTypeColor()}`}>
               {getTypeLabel()}
             </span>
           </div>
-          <p className="text-sm text-slate-500 dark:text-gray-400">
+          <p className="text-sm text-slate-500 dark:text-gray-400 leading-relaxed">
             {automation.message_sequence.length} {automation.message_sequence.length === 1 ? 'mensagem' : 'mensagens'} na sequência
           </p>
         </div>
-        
-        {/* Status Toggle */}
+
         <button
           onClick={onToggle}
           className={`p-2 rounded-lg transition-colors ${
@@ -83,22 +81,20 @@ export default function AutomationCard({
         </button>
       </div>
 
-      {/* Informações */}
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-400">
-          <Clock className="w-4 h-4" />
+      <div className="rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-[#252833] p-3 mb-4 space-y-2">
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-400 font-medium">
+          <Clock className="w-4 h-4 shrink-0" />
           <span>Dispara às {automation.trigger_time}</span>
         </div>
-        
+
         {automation.type === 'milestone' && (
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-400">
-            <Calendar className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-400 font-medium">
+            <Calendar className="w-4 h-4 shrink-0" />
             <span>Quando paciente completa {automation.age_months} {automation.age_months === 1 ? 'mês' : 'meses'}</span>
           </div>
         )}
       </div>
 
-      {/* Estatísticas */}
       {stats && (
         <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-slate-50 dark:bg-[#2a2d36] rounded-lg">
           <div>
@@ -126,7 +122,6 @@ export default function AutomationCard({
         </div>
       )}
 
-      {/* Ações */}
       <div className="flex items-center gap-2 pt-4 border-t border-slate-200 dark:border-gray-700">
         <button
           onClick={onEdit}

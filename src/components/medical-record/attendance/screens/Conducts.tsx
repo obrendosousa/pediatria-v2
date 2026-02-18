@@ -9,7 +9,9 @@ import { ModelTemplateModal } from '../ModelTemplateModal';
 import { AttendanceScreenProps } from '@/types/attendance';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
+import { useToast } from '@/contexts/ToastContext';
 
 interface ConductsFormData {
   conducts: string;
@@ -67,7 +69,7 @@ export function Conducts({ patientId, patientData, onRefresh, appointmentId }: A
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Erro ao salvar:', error);
-      alert('Erro ao salvar o formulário. Tente novamente.');
+      toast.toast.error('Erro ao salvar o formulário. Tente novamente.');
     }
   };
 
@@ -139,10 +141,10 @@ export function Conducts({ patientId, patientData, onRefresh, appointmentId }: A
               });
             if (error) throw error;
             setModelModalOpen(false);
-            alert('Modelo salvo com sucesso!');
+            toast.toast.success('Modelo salvo com sucesso!');
           } catch (err: any) {
             console.error('Erro ao salvar modelo:', err);
-            alert('Erro ao salvar modelo: ' + err.message);
+            toast.toast.error('Erro ao salvar modelo: ' + err.message);
           }
         }}
         type={modelModalType}

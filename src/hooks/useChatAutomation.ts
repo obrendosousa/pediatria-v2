@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Chat, Macro, Funnel, ScheduledMessage } from '@/types';
+import { useToast } from '@/contexts/ToastContext';
 
 export interface ExecutionItem {
   id: string; 
   chatId: number;
   title: string;
-  type: 'text' | 'audio' | 'image' | 'video' | 'wait';
-  status: 'pending' | 'simulating' | 'sending' | 'completed' | 'failed';
+  type: 'text' | 'audio' | 'image' | 'video' | 'document' | 'wait';
+  status: 'queued' | 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
   progress: number; 
   totalDuration: number; 
   data: any; 
@@ -22,6 +24,7 @@ export function useChatAutomation(activeChat: Chat | null) {
   const [activeTab, setActiveTab] = useState<'text' | 'audio' | 'image' | 'script' | 'funnels' | 'schedule' | 'executions' | null>(null); 
   
   const [isProcessingMacro, setIsProcessingMacro] = useState(false);
+  const [processingActionId, setProcessingActionId] = useState<string | null>(null);
   const [executions, setExecutions] = useState<ExecutionItem[]>([]);
 
   // 1. Carregar Dados Iniciais
@@ -52,72 +55,116 @@ export function useChatAutomation(activeChat: Chat | null) {
   }, [activeTab, activeChat?.id]);
 
 
-  // 3. Motor de Execução
-  const executeItem = async (chatId: number, phone: string, type: string, content: string, duration: number, title: string) => {
-      const execId = Math.random().toString(36).substr(2, 9);
-      const newItem: ExecutionItem = { 
-          id: execId, chatId, title, 
-          type: type as any, 
-          status: 'simulating', 
-          progress: 0, 
-          totalDuration: duration, 
-          data: { content } 
-      };
-      setExecutions(prev => [...prev, newItem]);
+  // 3. Motor de Execução (server-side via LangGraph)
+  const runServerFunnel = async (
+    title: string,
+    steps: Array<{ type: 'text' | 'audio' | 'image' | 'document' | 'video' | 'wait'; content?: string; delay?: number }>
+  ) => {
+    if (!activeChat) return;
+    const runStartedAt = new Date().toISOString();
+    const totalConfiguredDelaySec = Math.max(
+      steps.reduce((acc, step) => acc + Math.max(step.delay || 0, 0), 0),
+      2
+    );
+    const expectedOutgoingMessages = Math.max(steps.filter((step) => step.type !== 'wait').length, 1);
 
-      // Se não estiver na aba de execuções, abre ela automaticamente para o usuário ver o progresso
-      if (activeTab !== 'executions') {
-          // Opcional: Descomente se quiser que abra a aba automaticamente
-          // setActiveTab('executions');
+    const execId = Math.random().toString(36).slice(2, 11);
+    const firstType = steps[0]?.type ?? 'text';
+    setExecutions(prev => [
+      ...prev,
+      {
+        id: execId,
+        chatId: activeChat.id,
+        title,
+        type: firstType as any,
+        status: 'queued',
+        progress: 0,
+        totalDuration: totalConfiguredDelaySec,
+        data: { stepsCount: steps.length, startedAt: runStartedAt },
+      },
+    ]);
+
+    const progressStartMs = Date.now();
+    let progressTimer: ReturnType<typeof setInterval> | null = null;
+    let stopped = false;
+    const stopProgressTimer = () => {
+      if (progressTimer) {
+        clearInterval(progressTimer);
+        progressTimer = null;
+      }
+    };
+
+    setExecutions(prev => prev.map(e => (e.id === execId ? { ...e, status: 'sending', progress: 0 } : e)));
+
+    progressTimer = setInterval(() => {
+      if (stopped) return;
+      const elapsedSec = (Date.now() - progressStartMs) / 1000;
+      // Não deixa bater 100% antes da mensagem realmente aparecer no chat
+      const linearProgress = Math.min(95, (elapsedSec / totalConfiguredDelaySec) * 95);
+      setExecutions(prev =>
+        prev.map(e =>
+          e.id === execId
+            ? { ...e, progress: linearProgress, status: e.status === 'queued' ? 'sending' : e.status }
+            : e
+        )
+      );
+    }, 120);
+
+    try {
+      const response = await fetch('/api/automation/funnel/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: activeChat.id,
+          phone: activeChat.phone,
+          title,
+          steps,
+          initiatedBy: 'ui',
+        }),
+      });
+
+      const json = await response.json();
+      if (!response.ok || !json?.ok) {
+        throw new Error(json?.error?.message || 'Falha ao executar funil no servidor');
       }
 
-      try {
-          if (type !== 'wait') {
-              await fetch('/api/whatsapp/presence', { 
-                  method: 'POST', 
-                  body: JSON.stringify({ 
-                      phone, 
-                      status: type === 'audio' ? 'recording' : 'composing', 
-                      duration: duration * 1000 
-                  }) 
-              });
-          }
+      // A simulação só termina ao aparecer a(s) mensagem(ns) no chat
+      let appearedInChat = false;
+      for (let attempt = 0; attempt < 25; attempt++) {
+        const { data: recentInserted } = await supabase
+          .from('chat_messages')
+          .select('id')
+          .eq('chat_id', activeChat.id)
+          .eq('sender', 'HUMAN_AGENT')
+          .gte('created_at', runStartedAt)
+          .order('created_at', { ascending: false })
+          .limit(Math.max(expectedOutgoingMessages, 10));
 
-          const startTime = Date.now(); 
-          const endTime = startTime + (duration * 1000);
-          
-          await new Promise<void>((resolve) => {
-              const timer = setInterval(() => {
-                  const now = Date.now(); 
-                  const remaining = endTime - now; 
-                  const progress = Math.min(100, 100 - (remaining / (duration * 1000) * 100));
-                  setExecutions(prev => prev.map(e => e.id === execId ? { ...e, progress } : e));
-                  if (now >= endTime) { clearInterval(timer); resolve(); }
-              }, 100);
-          });
-
-          setExecutions(prev => prev.map(e => e.id === execId ? { ...e, status: 'sending' } : e));
-          
-          if (type !== 'wait') {
-              await fetch('/api/whatsapp/send', { 
-                  method: 'POST', 
-                  headers: { 'Content-Type': 'application/json' }, 
-                  body: JSON.stringify({ 
-                      chatId, 
-                      phone, 
-                      message: type === 'text' ? content : '', 
-                      type: type === 'text' ? 'text' : type, 
-                      mediaUrl: type !== 'text' ? content : undefined 
-                  }), 
-              });
-          }
-          
-          setExecutions(prev => prev.filter(e => e.id !== execId)); 
-      } catch (error) {
-          console.error("Erro na execução", error);
-          setExecutions(prev => prev.map(e => e.id === execId ? { ...e, status: 'failed' } : e));
-          setTimeout(() => setExecutions(prev => prev.filter(e => e.id !== execId)), 3000); 
+        if ((recentInserted || []).length >= expectedOutgoingMessages) {
+          appearedInChat = true;
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
+
+      stopped = true;
+      stopProgressTimer();
+      setExecutions(prev =>
+        prev.map(e => (
+          e.id === execId
+            ? { ...e, status: 'sent', progress: appearedInChat ? 100 : Math.max(e.progress, 95) }
+            : e
+        ))
+      );
+      // Assim que chega a 100% (mensagem no chat), finaliza rapidamente a execução visual
+      setTimeout(() => setExecutions(prev => prev.filter(e => e.id !== execId)), 1200);
+    } catch (error) {
+      stopped = true;
+      stopProgressTimer();
+      console.error("Erro na execução server-side", error);
+      setExecutions(prev => prev.map(e => (e.id === execId ? { ...e, status: 'failed' } : e)));
+      setTimeout(() => setExecutions(prev => prev.filter(e => e.id !== execId)), 3000);
+    }
   };
 
   // --- Ações Públicas ---
@@ -125,32 +172,67 @@ export function useChatAutomation(activeChat: Chat | null) {
   const handleRunFunnel = async (funnel: Funnel) => {
       if (!activeChat || isProcessingMacro) return;
       setIsProcessingMacro(true);
+      setProcessingActionId(`funnel:${funnel.id}`);
       // Abre a aba de execuções para dar feedback visual
       setActiveTab('executions'); 
       
       try {
-        for (const step of funnel.steps) {
-            const delaySec = (step.delay || 0);
-            await executeItem(activeChat.id, activeChat.phone, step.type, step.content || '', Math.max(delaySec, 2), `Funil: ${funnel.title}`);
-        }
-      } finally { setIsProcessingMacro(false); }
+        await runServerFunnel(
+          `Funil: ${funnel.title}`,
+          funnel.steps.map(step => ({
+            type: step.type,
+            content: step.content || '',
+            delay: Math.max(step.delay || 0, 2),
+          }))
+        );
+      } finally {
+        setIsProcessingMacro(false);
+        setProcessingActionId(null);
+      }
   };
 
   const handleRunScriptStep = async (step: any, scriptTitle: string) => {
       if (!activeChat || isProcessingMacro) return;
       setIsProcessingMacro(true);
+      setProcessingActionId(`script:${scriptTitle}:${step?.title || step?.type || 'step'}`);
+      setActiveTab('executions');
       try {
-          await executeItem(activeChat.id, activeChat.phone, step.type, step.content || '', 2, `Script: ${scriptTitle}`);
-      } finally { setIsProcessingMacro(false); }
+          if (step?.type === 'funnel' && Array.isArray(step?.funnel_steps) && step.funnel_steps.length > 0) {
+            await runServerFunnel(
+              `Script: ${scriptTitle} • Funil: ${step.title || 'Bloco'}`,
+              step.funnel_steps.map((nested: any) => ({
+                type: (nested.type || 'text') as 'text' | 'audio' | 'image' | 'document' | 'video' | 'wait',
+                content: nested.content || '',
+                delay: Math.max(nested.delay || 0, 0),
+              }))
+            );
+            return;
+          }
+
+          await runServerFunnel(`Script: ${scriptTitle}`, [{
+            type: step.type as 'text' | 'audio' | 'image' | 'document' | 'video' | 'wait',
+            content: step.content || '',
+            delay: 2,
+          }]);
+      } finally {
+        setIsProcessingMacro(false);
+        setProcessingActionId(null);
+      }
   };
 
   const handleMacroSend = async (macro: Macro) => {
       if (!activeChat || isProcessingMacro) return;
       setIsProcessingMacro(true);
+      setProcessingActionId(`macro:${macro.id}`);
       try { 
-          await executeItem(activeChat.id, activeChat.phone, macro.type, macro.content, macro.simulation_delay || 3, macro.title); 
+          await runServerFunnel(macro.title, [{
+            type: macro.type as 'text' | 'audio' | 'image' | 'document' | 'video' | 'wait',
+            content: macro.content,
+            delay: macro.simulation_delay || 3,
+          }]); 
       } finally { 
           setIsProcessingMacro(false); 
+          setProcessingActionId(null);
       }
   };
 
@@ -163,7 +245,7 @@ export function useChatAutomation(activeChat: Chat | null) {
         const res = await supabase.from('macros').insert({ ...data, category: 'Geral' });
         error = res.error;
     }
-    if (error) alert("Erro ao salvar Macro: " + JSON.stringify(error));
+    if (error) toast.toast.error("Erro ao salvar Macro: " + JSON.stringify(error));
     else fetchData();
   };
 
@@ -183,7 +265,7 @@ export function useChatAutomation(activeChat: Chat | null) {
       }
       if (error) {
           console.error("Erro Supabase:", error);
-          alert("Erro ao salvar Roteiro: " + error.message);
+          toast.toast.error("Erro ao salvar Roteiro: " + error.message);
       } else {
           fetchData();
       }
@@ -214,7 +296,7 @@ export function useChatAutomation(activeChat: Chat | null) {
     setActiveTab('schedule');
   };
 
-  const handleScheduleAdHoc = async (type: 'text'|'audio'|'image', content: string | File | Blob, date: string, time: string, textCaption?: string) => {
+  const handleScheduleAdHoc = async (type: 'text'|'audio'|'image'|'video'|'document', content: string | File | Blob, date: string, time: string, textCaption?: string) => {
       if (!activeChat) return;
 
       let finalContent = "";
@@ -225,7 +307,7 @@ export function useChatAutomation(activeChat: Chat | null) {
           const fileName = `adhoc/${activeChat.id}_${Date.now()}.${ext}`;
           const { error } = await supabase.storage.from('midia').upload(fileName, content);
           
-          if (error) { alert("Erro ao fazer upload da mídia."); return; }
+          if (error) { toast.toast.error("Erro ao fazer upload da mídia."); return; }
           
           const { data: { publicUrl } } = supabase.storage.from('midia').getPublicUrl(fileName);
           finalContent = publicUrl;
@@ -240,7 +322,14 @@ export function useChatAutomation(activeChat: Chat | null) {
       const { error } = await supabase.from('scheduled_messages').insert({
           chat_id: activeChat.id,
           item_type: 'adhoc',
-          title: type === 'audio' ? 'Áudio Personalizado' : (textCaption || 'Mensagem Rápida'),
+          title:
+            type === 'audio'
+              ? 'Áudio Personalizado'
+              : type === 'video'
+              ? 'Vídeo Personalizado'
+              : type === 'document'
+              ? 'Documento Personalizado'
+              : (textCaption || 'Mensagem Rápida'),
           content: payload,
           scheduled_for: scheduledFor.toISOString(),
           status: 'pending'
@@ -248,7 +337,7 @@ export function useChatAutomation(activeChat: Chat | null) {
 
       if (error) {
           console.error(error);
-          alert("Erro ao agendar.");
+          toast.toast.error("Erro ao agendar.");
       } else {
           fetchScheduledMessages();
           setActiveTab('schedule');
@@ -267,6 +356,7 @@ export function useChatAutomation(activeChat: Chat | null) {
       activeTab,
       setActiveTab,
       isProcessingMacro,
+      processingActionId,
       executions,
       
       handleRunFunnel,

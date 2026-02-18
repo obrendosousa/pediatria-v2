@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Search } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
+import { useToast } from '@/contexts/ToastContext';
 
 interface ModelTemplateModalProps {
   isOpen: boolean;
@@ -21,6 +23,7 @@ export function ModelTemplateModal({
   type,
   currentContent = ''
 }: ModelTemplateModalProps) {
+  const { toast } = useToast();
   const [templates, setTemplates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,7 +56,7 @@ export function ModelTemplateModal({
 
   async function handleSave() {
     if (!saveTitle.trim() || !currentContent.trim()) {
-      alert('Preencha o título e o conteúdo para salvar o modelo.');
+      toast.toast.error('Preencha o título e o conteúdo para salvar o modelo.');
       return;
     }
 
@@ -72,10 +75,10 @@ export function ModelTemplateModal({
       setSaveMode(false);
       setSaveTitle('');
       loadTemplates();
-      alert('Modelo salvo com sucesso!');
+      toast.toast.success('Modelo salvo com sucesso!');
     } catch (err: any) {
       console.error('Erro ao salvar modelo:', err);
-      alert('Erro ao salvar modelo: ' + err.message);
+      toast.toast.error('Erro ao salvar modelo: ' + err.message);
     }
   }
 

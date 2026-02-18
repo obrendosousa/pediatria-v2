@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Paperclip, X, Smile, Trash2, StopCircle } from 'lucide-react';
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
+import { useToast } from '@/contexts/ToastContext';
 
 interface ChatInputProps {
   onSendMessage: (text: string, type: string, file?: File, metadata?: any) => Promise<void> | void;
@@ -11,6 +12,8 @@ interface ChatInputProps {
   onTyping: (isTyping: boolean) => void;
   replyTo: any;
   onCancelReply: () => void;
+  editingMessage?: any;
+  onCancelEdit?: () => void;
   isRecordingProp?: boolean;
 }
 
@@ -21,8 +24,11 @@ export default function ChatInput({
   onTyping,
   replyTo,
   onCancelReply,
+  editingMessage = null,
+  onCancelEdit = () => {},
   isRecordingProp = false
 }: ChatInputProps) {
+  const { toast } = useToast();
   // --- ESTADOS ---
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -92,7 +98,7 @@ export default function ChatInput({
 
     } catch (error) {
       console.error('Erro ao acessar microfone:', error);
-      alert('Permissão de microfone negada ou dispositivo indisponível.');
+      toast.toast.error('Permissão de microfone negada ou dispositivo indisponível.');
     }
   };
 
@@ -140,7 +146,7 @@ export default function ChatInput({
   const handleSend = () => {
     const text = getTextFromHtml();
     if (text) {
-      onSendMessage(text, 'text');
+      onSendMessage(text, 'text', undefined, { replyTo, editingMessage });
       setMessage('');
       if (inputRef.current) inputRef.current.innerHTML = '';
       setShowEmojiPicker(false);
@@ -214,6 +220,16 @@ export default function ChatInput({
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  useEffect(() => {
+    if (!editingMessage || !inputRef.current) return;
+    const newText = String(editingMessage.message_text || '');
+    inputRef.current.innerText = newText;
+    setMessage(newText);
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+  }, [editingMessage?.id]);
 
   // --- RENDERIZAÇÃO ---
   if (isRecording) {
@@ -293,17 +309,38 @@ export default function ChatInput({
       </div>
 
       <div className="flex-1 bg-white dark:bg-[#2a3942] rounded-lg border border-transparent focus-within:border-green-500/50 transition-colors min-h-[42px] relative flex flex-col justify-center my-1">
-        {replyTo && (
+        {(replyTo || editingMessage) && (
            <div className="absolute bottom-full left-0 right-0 bg-[#f0f2f5] dark:bg-[#1f2c34] p-2 rounded-t-lg border-l-4 border-green-500 flex justify-between items-start mb-1 mx-1 shadow-sm opacity-95 animate-in slide-in-from-bottom-2">
              <div className="flex-1 min-w-0">
-               <span className="text-xs font-bold text-green-600 dark:text-green-400 block mb-0.5">
-                 {replyTo.sender === 'me' ? 'Você' : replyTo.sender}
-               </span>
-               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                 {replyTo.message_type === 'audio' ? '🎵 Áudio' : replyTo.message_type === 'image' ? '📷 Foto' : replyTo.message_text}
-               </p>
+               {editingMessage ? (
+                 <>
+                   <span className="text-xs font-bold text-amber-600 dark:text-amber-400 block mb-0.5">
+                     Editando mensagem
+                   </span>
+                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                     {editingMessage.message_text}
+                   </p>
+                 </>
+               ) : (
+                 <>
+                   <span className="text-xs font-bold text-green-600 dark:text-green-400 block mb-0.5">
+                     {replyTo.sender === 'me' || replyTo.sender === 'HUMAN_AGENT' ? 'Você' : replyTo.sender}
+                   </span>
+                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                     {replyTo.message_type === 'audio'
+                       ? '🎵 Áudio'
+                       : replyTo.message_type === 'image'
+                       ? '📷 Foto'
+                       : replyTo.message_type === 'video'
+                       ? '🎬 Vídeo'
+                       : replyTo.message_type === 'document'
+                       ? '📄 Documento'
+                       : replyTo.message_text}
+                   </p>
+                 </>
+               )}
              </div>
-             <button onClick={onCancelReply} className="p-1 hover:bg-black/5 rounded">
+             <button onClick={editingMessage ? onCancelEdit : onCancelReply} className="p-1 hover:bg-black/5 rounded">
                <X size={14} className="text-gray-500"/>
              </button>
            </div>
@@ -324,7 +361,7 @@ export default function ChatInput({
           onInput={handleInput}
           onKeyDown={handleKeyDown}
           role="textbox"
-          data-placeholder="Digite uma mensagem"
+          data-placeholder={editingMessage ? 'Edite sua mensagem' : 'Digite uma mensagem'}
           className="custom-input w-full px-4 py-3 bg-transparent outline-none max-h-[120px] overflow-y-auto text-[15px] text-[#111b21] dark:text-[#e9edef] leading-5 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 whitespace-pre-wrap break-words"
           style={{ minHeight: '44px' }}
         />

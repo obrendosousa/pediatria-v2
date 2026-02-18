@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { X, StickyNote, CheckSquare, Calendar, Palette, Loader2, Plus, Trash2, Clock } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
 
 interface ModalProps {
   isOpen: boolean;
@@ -22,6 +24,7 @@ const COLORS = [
 ];
 
 export default function CreateTaskModal({ isOpen, onClose, onSuccess, initialDate, initialType }: ModalProps) {
+  const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
@@ -76,7 +79,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess, initialDat
         onSuccess();
         onClose();
     } catch (error: any) {
-        alert(`Erro: ${error.message}`);
+        toast.toast.error(`Erro: ${error.message}`);
     } finally {
         setLoading(false);
     }

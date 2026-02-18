@@ -1,4 +1,7 @@
+'use client';
+
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   Plus, 
@@ -12,7 +15,9 @@ import {
   CheckCircle2,
   Clock
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
+import { useToast } from '@/contexts/ToastContext';
 
 interface MacroModalProps {
   isOpen: boolean;
@@ -23,15 +28,18 @@ interface MacroModalProps {
 }
 
 export default function MacroModal({ isOpen, onClose, onSave, initialData, typeOverride }: MacroModalProps) {
+    const { toast } = useToast();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [delay, setDelay] = useState(3);
-    const [activeType, setActiveType] = useState<'text' | 'audio' | 'image' | 'video'>('text');
+    const [activeType, setActiveType] = useState<'text' | 'audio' | 'image' | 'video' | 'document'>('text');
     
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
+    useEffect(() => setMounted(true), []);
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
@@ -73,7 +81,7 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
 
             setContent(publicUrl);
         } catch (error: any) {
-            alert('Erro no upload: ' + error.message);
+            toast.error('Erro no upload: ' + error.message);
         } finally {
             setIsUploading(false);
         }
@@ -88,7 +96,7 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
     };
 
     const handleSave = async () => {
-        if (!title || !content) return alert("Preencha título e conteúdo/mídia");
+        if (!title || !content) return toast.error("Preencha título e conteúdo/mídia");
         setIsSaving(true);
         try {
             await onSave({ 
@@ -108,8 +116,8 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
+    const modalContent = (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
                 <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
                     <div>
@@ -129,6 +137,7 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                             { id: 'audio', label: 'Áudio', icon: Mic },
                             { id: 'image', label: 'Imagem', icon: ImageIcon },
                             { id: 'video', label: 'Vídeo', icon: Video },
+                            { id: 'document', label: 'PDF/Doc', icon: FileText },
                         ].map((t) => (
                             <button 
                                 key={t.id}
@@ -153,7 +162,7 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
 
                     <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wide">
-                            {activeType === 'text' ? 'Mensagem' : `Arquivo de ${activeType === 'image' ? 'Imagem' : activeType === 'audio' ? 'Áudio' : 'Vídeo'}`}
+                            {activeType === 'text' ? 'Mensagem' : `Arquivo de ${activeType === 'image' ? 'Imagem' : activeType === 'audio' ? 'Áudio' : activeType === 'video' ? 'Vídeo' : 'Documento'}`}
                         </label>
                         
                         {activeType === 'text' ? (
@@ -172,7 +181,13 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                                     onDrop={onDrop}
                                     onClick={() => document.getElementById('macro-file-upload')?.click()}
                                 >
-                                    <input type="file" id="macro-file-upload" className="hidden" onChange={(e) => e.target.files && handleFileUpload(e.target.files[0])} accept={activeType === 'image' ? 'image/*' : activeType === 'audio' ? 'audio/*' : 'video/*'} />
+                                    <input
+                                      type="file"
+                                      id="macro-file-upload"
+                                      className="hidden"
+                                      onChange={(e) => e.target.files && handleFileUpload(e.target.files[0])}
+                                      accept={activeType === 'image' ? 'image/*' : activeType === 'audio' ? 'audio/*' : activeType === 'video' ? 'video/*' : 'application/pdf,application/*'}
+                                    />
                                     
                                     {isUploading ? (
                                         <div className="py-4"><Loader2 size={32} className="animate-spin text-blue-500 mb-2"/> <span className="text-sm font-medium text-gray-600">Enviando arquivo...</span></div>
@@ -182,7 +197,7 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                                                 <UploadCloud size={24}/>
                                             </div>
                                             <p className="text-sm font-bold text-gray-700">Clique para enviar ou arraste aqui</p>
-                                            <p className="text-xs text-gray-400 mt-1">Suporta {activeType === 'image' ? 'JPG, PNG' : activeType === 'audio' ? 'MP3, OGG, WAV' : 'MP4'}</p>
+                                            <p className="text-xs text-gray-400 mt-1">Suporta {activeType === 'image' ? 'JPG, PNG' : activeType === 'audio' ? 'MP3, OGG, WAV' : activeType === 'video' ? 'MP4' : 'PDF e documentos'}</p>
                                         </>
                                     )}
                                 </div>
@@ -203,6 +218,11 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                                         {activeType === 'image' && <img src={content} alt="Preview" className="h-32 object-contain rounded border bg-white"/>}
                                         {activeType === 'audio' && <audio src={content} controls className="w-full h-8"/>}
                                         {activeType === 'video' && <video src={content} controls className="w-full max-h-32 rounded bg-black"/>}
+                                        {activeType === 'document' && (
+                                          <a href={content} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline">
+                                            Abrir documento
+                                          </a>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -243,4 +263,8 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
             </div>
         </div>
     );
+
+    return mounted && typeof document !== 'undefined'
+        ? createPortal(modalContent, document.body)
+        : null;
 };

@@ -8,7 +8,12 @@ import {
   MapPin, Phone, HeartPulse, CreditCard, Sparkles, AlertCircle,
   Camera, Trash2, Users
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { logAudit } from '@/lib/audit';
+import { useToast } from '@/contexts/ToastContext';
+
+const supabase = createClient();
 // Importamos o Base e o Refinements separadamente para fazer o merge limpo
 import { patientBaseSchema, patientRefinements } from '@/schemas/patientSchema';
 import { z } from 'zod';
@@ -43,6 +48,8 @@ interface NewPatientModalProps {
 }
 
 export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patientId }: NewPatientModalProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'personal' | 'extra' | 'insurance'>('personal');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -195,12 +202,52 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
     }
   };
 
+  const getTabFromFieldName = (fieldName: string): 'personal' | 'extra' | 'insurance' => {
+    if (fieldName.startsWith('insurance_')) return 'insurance';
+
+    const extraFields = new Set([
+      'naturality_city',
+      'nationality',
+      'ethnicity',
+      'marital_status',
+      'profession',
+      'is_deceased',
+      'cause_of_death',
+      'family_members',
+    ]);
+
+    if (extraFields.has(fieldName) || fieldName.startsWith('family_members')) {
+      return 'extra';
+    }
+
+    return 'personal';
+  };
+
+  const handleInvalidSubmit = (formErrors: FieldErrors) => {
+    const errorEntries = Object.entries(formErrors);
+
+    if (errorEntries.length > 0) {
+      const [rawFieldName, errorValue] = errorEntries[0];
+      const fieldName = String(rawFieldName);
+      const tab = getTabFromFieldName(fieldName);
+      setActiveTab(tab);
+
+      const message =
+        (errorValue as { message?: string })?.message ||
+        'Existe um campo inválido. Revise os dados obrigatórios.';
+
+      toast.error(`Erro de validação: ${message}`);
+      return;
+    }
+
+    // Alguns erros de schema podem não mapear diretamente para campos específicos.
+    toast.error('Não foi possível validar o formulário. Revise os campos obrigatórios e tente novamente.');
+    console.warn('[NewPatientModal] Validação bloqueou envio sem erros mapeados para campos.');
+  };
+
   const onSubmit = async (data: any) => {
-    console.log('[NewPatientModal] onSubmit INICIADO', { patientId, hasBirthDate: !!data.birth_date, birthDate: data.birth_date });
     setIsSubmitting(true);
     try {
-      console.log('[NewPatientModal] onSubmit chamado', { patientId, data: { ...data, profile_picture: data.profile_picture instanceof File ? 'File' : typeof data.profile_picture } });
-      
       let photoUrl = null;
 
       // 1. Upload da Imagem (apenas se for um novo arquivo)
@@ -289,6 +336,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
         }
         console.log('[NewPatientModal] Paciente atualizado com sucesso:', updatedPatient);
         updatedPatientId = updatedPatient.id;
+        if (user?.id) await logAudit({ userId: user.id, action: 'update', entityType: 'patient', entityId: String(patientId), details: { name: patientPayload.name } });
       } else {
         // Modo criação: inserir novo paciente
         const { data: newPatient, error: patientError } = await supabase
@@ -299,6 +347,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
 
         if (patientError) throw patientError;
         updatedPatientId = newPatient.id;
+        if (user?.id) await logAudit({ userId: user.id, action: 'create', entityType: 'patient', entityId: String(newPatient.id), details: { name: patientPayload.name } });
 
         // 3. Convênio (apenas na criação)
         if (data.insurance_name) {
@@ -322,7 +371,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
     } catch (err: any) {
       console.error('[NewPatientModal] Erro completo:', err);
       const errorMessage = err.message || err.details || 'Erro desconhecido ao salvar';
-      alert('Erro ao salvar: ' + errorMessage);
+      toast.error('Erro ao salvar: ' + errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -394,23 +443,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
           <main className="flex-1 overflow-y-auto bg-white dark:bg-[#1e2028] relative scroll-smooth">
             <form 
               id="patient-form" 
-              onSubmit={handleSubmit(onSubmit, (errors) => {
-                console.error('[NewPatientModal] Erros de validação:', errors);
-                console.log('[NewPatientModal] Estado do formulário:', { 
-                  patientId, 
-                  isSubmitting,
-                  errorsCount: Object.keys(errors).length 
-                });
-                // Mostrar primeiro erro encontrado
-                const errorEntries = Object.entries(errors);
-                if (errorEntries.length > 0) {
-                  const [fieldName, error] = errorEntries[0];
-                  const errorMessage = (error as any)?.message || `Campo ${fieldName} inválido`;
-                  alert(`Erro de validação: ${errorMessage}`);
-                } else {
-                  console.warn('[NewPatientModal] handleSubmit chamado mas onSubmit não foi executado - sem erros de validação');
-                }
-              })} 
+              onSubmit={handleSubmit(onSubmit, handleInvalidSubmit)} 
               className="p-8 max-w-4xl mx-auto pb-32"
             >
               
@@ -456,26 +489,33 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
                         <div className="flex-1 w-full grid grid-cols-12 gap-5">
                             <div className="col-span-12">
                                 <ModernInput 
-                                  label="Nome Completo *" 
+                                  label="Nome Completo" 
                                   register={register} 
                                   name="name" 
                                   placeholder="Digite o nome completo"
                                   error={errors.name}
+                                  requiredField
                                   autoFocus
                                 />
                             </div>
                             <div className="col-span-12 md:col-span-5">
                               <ModernInput 
-                                label="Data de Nascimento *" 
+                                label="Data de Nascimento" 
                                 type="date" 
                                 register={register} 
                                 name="birth_date" 
                                 error={errors.birth_date} 
+                                requiredField
                               />
                             </div>
                             <div className="col-span-12 md:col-span-7">
-                                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 block ml-1 uppercase tracking-wider">Sexo Biológico *</label>
-                                <div className="flex gap-0 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 block ml-1 uppercase tracking-wider">
+                                  <span>Sexo Biológico</span>
+                                  <span className="ml-2 inline-block text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 align-middle">
+                                    Obrigatório
+                                  </span>
+                                </label>
+                                <div className="flex gap-0 bg-amber-50/60 dark:bg-amber-900/10 p-1 rounded-lg border border-amber-300/70 dark:border-amber-800/60">
                                   <button
                                     type="button"
                                     onClick={() => setValue('biological_sex', 'M')}
@@ -561,7 +601,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
                   <div className="space-y-6 pt-4">
                     <SectionHeader icon={Phone} title="Canais de Contato" />
                     <div className="grid grid-cols-12 gap-5">
-                       <div className="col-span-5"><ModernInput label="Celular (WhatsApp) *" register={register} name="phone" placeholder="(99) 99999-9999" error={errors.phone} /></div>
+                       <div className="col-span-5"><ModernInput label="Celular (WhatsApp)" register={register} name="phone" placeholder="(99) 99999-9999" error={errors.phone} requiredField /></div>
                        <div className="col-span-7"><ModernInput label="E-mail" type="email" register={register} name="email" error={errors.email} icon={<span className="text-slate-400">@</span>} /></div>
                        
                        <div className="col-span-12 flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
@@ -772,7 +812,8 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
         {/* --- FOOTER FLUTUANTE --- */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100 dark:border-gray-800 bg-white/90 dark:bg-[#1e2028]/95 backdrop-blur z-30 flex justify-between items-center">
            <div className="text-xs text-slate-400 pl-4 hidden md:block">
-             <span className="text-rose-500 font-bold">*</span> Campos obrigatórios
+             <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 mr-1 align-middle">Obrigatório</span>
+             Destaque visual aplicado nos campos obrigatórios
            </div>
            <div className="flex gap-3 w-full md:w-auto justify-end px-4 md:px-0">
               <button 
@@ -844,10 +885,20 @@ interface ModernInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   name: string;
   error?: FieldErrors | any;
   icon?: React.ReactNode;
+  requiredField?: boolean;
 }
-const ModernInput = ({ label, register, name, error, icon, className = "", ...props }: ModernInputProps) => (
+const ModernInput = ({ label, register, name, error, icon, className = "", requiredField = false, ...props }: ModernInputProps) => (
   <div className="w-full group">
-    {label && <label className="text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400">{label}</label>}
+    {label && (
+      <label className="text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400">
+        <span>{label}</span>
+        {requiredField && (
+          <span className="ml-2 inline-block text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 align-middle">
+            Obrigatório
+          </span>
+        )}
+      </label>
+    )}
     <div className="relative">
       <input
         {...register(name)}
@@ -858,6 +909,7 @@ const ModernInput = ({ label, register, name, error, icon, className = "", ...pr
           transition-all duration-200
           focus:bg-white dark:focus:bg-[#1a1d24] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none
           disabled:opacity-60 disabled:cursor-not-allowed
+          ${requiredField ? 'border-amber-300/80 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-900/10' : ''}
           ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10 bg-red-50/30' : ''}
           ${icon ? 'pl-9' : ''}
           ${className}

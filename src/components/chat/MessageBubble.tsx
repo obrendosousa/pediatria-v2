@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Message } from '@/types';
-import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User } from 'lucide-react';
+import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2 } from 'lucide-react';
 import AudioMessage from './AudioMessage';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 import { Emoji, EmojiStyle } from 'emoji-picker-react';
@@ -14,8 +15,15 @@ interface MessageBubbleProps {
   showAvatar: boolean;
   sequencePosition: 'single' | 'first' | 'middle' | 'last';
   onDelete: (msg: Message, deleteForEveryone: boolean) => void;
-  onSaveMacro: (text: string) => void;
+  onSaveMacro: (macro: { title: string; type: 'text' | 'audio' | 'image' | 'video' | 'document'; content: string }) => void;
+  onReply: (msg: Message) => void;
+  onEdit: (msg: Message) => void;
   onPreviewImage: (url: string) => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (msg: Message) => void;
+  onStartSelection?: (msg: Message) => void;
+  animate?: boolean;
 }
 
 export default function MessageBubble({ 
@@ -27,10 +35,112 @@ export default function MessageBubble({
   sequencePosition,
   onDelete,
   onSaveMacro,
-  onPreviewImage
+  onReply,
+  onEdit,
+  onPreviewImage,
+  isSelectionMode = false,
+  isSelected = false,
+  onToggleSelect,
+  onStartSelection,
+  animate = false
 }: MessageBubbleProps) {
+  const toMacroPayload = useCallback(() => {
+    const msgType = String(message.message_type || 'text').toLowerCase();
+    const supportedMediaType = msgType === 'audio' || msgType === 'image' || msgType === 'video' || msgType === 'document';
+
+    if (supportedMediaType) {
+      return {
+        title: '',
+        type: msgType as 'audio' | 'image' | 'video' | 'document',
+        content: message.media_url || '',
+      };
+    }
+
+    return {
+      title: '',
+      type: 'text' as const,
+      content: message.message_text || '',
+    };
+  }, [message.media_url, message.message_text, message.message_type]);
+
+  const MENU_MIN_WIDTH = 160;
+  const MENU_OFFSET = 4;
+  const VIEWPORT_MARGIN = 8;
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, openUp: false });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [imgError, setImgError] = useState(false);
+
+  const recalculateMenuPosition = useCallback(() => {
+    if (!buttonRef.current) return;
+
+    const rect = buttonRef.current.getBoundingClientRect();
+    const menu = document.querySelector('[data-message-menu]') as HTMLElement | null;
+    const menuHeight = menu?.offsetHeight ?? 240;
+    const menuWidth = Math.max(menu?.offsetWidth ?? MENU_MIN_WIDTH, MENU_MIN_WIDTH);
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUp = spaceBelow < menuHeight + MENU_OFFSET && spaceAbove > spaceBelow;
+
+    let top = openUp
+      ? rect.top - menuHeight - MENU_OFFSET
+      : rect.bottom + MENU_OFFSET;
+    top = Math.max(VIEWPORT_MARGIN, Math.min(top, window.innerHeight - menuHeight - VIEWPORT_MARGIN));
+
+    let left = rect.right - menuWidth;
+    left = Math.max(VIEWPORT_MARGIN, Math.min(left, window.innerWidth - menuWidth - VIEWPORT_MARGIN));
+
+    setMenuPosition((prev) => {
+      if (prev.top === top && prev.left === left && prev.openUp === openUp) {
+        return prev;
+      }
+      return { top, left, openUp };
+    });
+  }, []);
+
+  // Recalcular posição do dropdown ao abrir (useLayoutEffect evita flash)
+  useLayoutEffect(() => {
+    if (!showMenu) return;
+
+    recalculateMenuPosition();
+    const raf = requestAnimationFrame(recalculateMenuPosition);
+    window.addEventListener('resize', recalculateMenuPosition);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', recalculateMenuPosition);
+    };
+  }, [showMenu, recalculateMenuPosition]);
+
+  // Fechar menu ao clicar fora ou ao rolar (menu está em Portal)
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (buttonRef.current?.contains(target)) return;
+      const menu = document.querySelector('[data-message-menu]');
+      if (menu?.contains(target)) return;
+      setShowMenu(false);
+    };
+    const handleScroll = () => setShowMenu(false);
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll, true);
+    // Container do chat tem overflow-y-auto - scroll não propaga para window
+    let el: HTMLElement | null = buttonRef.current;
+    const scrollParents: HTMLElement[] = [];
+    while (el) {
+      const { overflowY } = getComputedStyle(el);
+      if (overflowY === 'auto' || overflowY === 'scroll') scrollParents.push(el);
+      el = el.parentElement;
+    }
+    scrollParents.forEach(p => p.addEventListener('scroll', handleScroll));
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+      scrollParents.forEach(p => p.removeEventListener('scroll', handleScroll));
+    };
+  }, [showMenu]);
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -39,6 +149,15 @@ export default function MessageBubble({
   };
 
   const isSticker = message.message_type === 'sticker';
+  const isRevoked = message.message_type === 'revoked';
+  const canEdit = isMe && message.message_type === 'text' && !isRevoked;
+
+  const replyData =
+    message.tool_data && typeof message.tool_data === 'object'
+      ? (message.tool_data as any).reply_to
+      : null;
+
+  const hasReplyPreview = Boolean(replyData?.wpp_id || replyData?.message_text);
 
   // Função para verificar se a mensagem contém APENAS emojis (para exibir grande)
   const isOnlyEmojis = (text: string) => {
@@ -88,7 +207,7 @@ export default function MessageBubble({
       : 'bg-white dark:bg-[#202c33]';
 
   let roundedClass = 'rounded-lg';
-  if (!isSticker) {
+  if (!isSticker && !isRevoked) {
     if (isMe) {
       if (sequencePosition === 'first') roundedClass = 'rounded-lg rounded-br-[2px]';
       if (sequencePosition === 'middle') roundedClass = 'rounded-lg rounded-br-[2px] rounded-tr-[2px]';
@@ -100,13 +219,26 @@ export default function MessageBubble({
     }
   }
 
-  const marginClass = (sequencePosition === 'first' || sequencePosition === 'middle') && !isSticker
+  const marginClass = (sequencePosition === 'first' || sequencePosition === 'middle') && !isSticker && !isRevoked
     ? 'mb-[2px]' 
     : 'mb-3';
 
-  const msgStatus = (message as any).status || 'sent';
+  const msgStatus = (message.status ?? (message as any).status) || 'sent';
+
+  // Mensagens apagadas: balão discreto na mesma posição (igual WhatsApp)
+  const bgClassRevoked = isRevoked ? 'bg-[#e7e7e7] dark:bg-[#2a3942]' : '';
+  const finalBgClass = isRevoked ? bgClassRevoked : bgClass;
 
   const renderContent = () => {
+    // 0. Mensagem apagada (igual WhatsApp - balão discreto no fluxo)
+    if (isRevoked) {
+      return (
+        <span className="text-[#667781] dark:text-[#9aa6ad] text-[14px] line-through decoration-[1.5px]">
+          Esta mensagem foi apagada
+        </span>
+      );
+    }
+
     // 1. Sticker
     if (isSticker && message.media_url) {
         return (
@@ -123,29 +255,32 @@ export default function MessageBubble({
 
     // 2. Imagem
     if (message.message_type === 'image' && message.media_url) {
+      const placeholderTexts = ['Imagem recebida', 'Mídia', 'Foto', '[Mídia]', 'Image', 'Imagem'];
+      const hasRealCaption = message.message_text?.trim() && 
+        !placeholderTexts.some(p => message.message_text!.trim().toLowerCase() === p.toLowerCase());
       return (
         <>
-          <div className="-mt-1 -mx-1 cursor-pointer overflow-hidden rounded-md bg-black/5" onClick={() => onPreviewImage(message.media_url!)}>
+          <div className="-mt-1 -mx-1 cursor-pointer overflow-hidden rounded-md bg-black/5 max-w-full" onClick={() => onPreviewImage(message.media_url!)}>
             <img 
               src={message.media_url} 
               alt="Mídia" 
               loading="lazy"
-              className="w-full h-auto max-h-[350px] object-cover min-w-[200px]" 
+              className="w-full h-auto max-h-[280px] sm:max-h-[320px] md:max-h-[350px] object-cover min-w-0 max-w-full" 
             />
           </div>
-          {message.message_text && (
+          {hasRealCaption && (
             <div className="pt-1">
-              {renderTextContent(message.message_text)}
+              {renderTextContent(message.message_text!)}
             </div>
           )}
         </>
       );
     }
     
-    // 3. Áudio
+    // 3. Áudio - dimensões fixas para evitar oscilação, proporção adequada
     if (message.message_type === 'audio' && message.media_url) {
        return (
-         <div className="pt-2 pb-0 min-w-[280px]">
+         <div className="pt-2 pb-0 w-[280px] min-w-[240px] max-w-full">
             <AudioMessage 
               src={message.media_url as string} 
               isCustomer={!isMe} 
@@ -155,27 +290,81 @@ export default function MessageBubble({
        );
     }
 
-    // 4. Texto
+    // 4. Vídeo
+    if (message.message_type === 'video' && message.media_url) {
+      return (
+        <>
+          <div className="-mt-1 -mx-1 rounded-md overflow-hidden bg-black">
+            <video
+              src={message.media_url}
+              controls
+              preload="metadata"
+              className="w-full h-auto max-h-[320px] object-contain"
+            />
+          </div>
+          {message.message_text && message.message_text.trim() && (
+            <div className="pt-1">{renderTextContent(message.message_text)}</div>
+          )}
+        </>
+      );
+    }
+
+    // 5. Documento/PDF
+    if (message.message_type === 'document' && message.media_url) {
+      const toolData = (message.tool_data && typeof message.tool_data === 'object' ? message.tool_data : {}) as any;
+      const fileName = String(toolData.file_name || message.message_text || 'Documento');
+      const mime = String(toolData.mime_type || '');
+      const isPdf = mime.includes('pdf') || fileName.toLowerCase().endsWith('.pdf');
+      return (
+        <div className="pt-1">
+          <a
+            href={message.media_url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-white/70 dark:bg-[#1e2028] hover:bg-white dark:hover:bg-[#24323a] transition-colors"
+          >
+            <div className="w-9 h-9 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 flex items-center justify-center">
+              <FileText size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold truncate text-gray-700 dark:text-gray-100">
+                {fileName}
+              </p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-300">
+                {isPdf ? 'PDF' : 'Documento'} - toque para abrir
+              </p>
+            </div>
+            <Download size={16} className="text-gray-400" />
+          </a>
+        </div>
+      );
+    }
+
+    // 6. Texto
     return renderTextContent(message.message_text || '');
   };
 
-  // Determinar se é mensagem pendente (ainda não foi salva no banco)
-  const isPending = !message.id || String(message.id).startsWith('pending_');
-  
-  // Animação suave baseada na direção (enviada vs recebida)
-  const animationName = isMe ? 'messageSlideInRight' : 'messageSlideInLeft';
-  const animationDuration = isPending ? '0.2s' : '0.25s';
-  
+  const renderSelectionCheckbox = (side: 'left' | 'right') => (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggleSelect?.(message);
+      }}
+      className={`relative w-6 h-6 ${side === 'left' ? 'mr-2' : 'ml-2'} mt-auto mb-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1f2c34] flex items-center justify-center shrink-0 z-10`}
+      aria-label={isSelected ? 'Desmarcar mensagem' : 'Selecionar mensagem'}
+    >
+      {isSelected && <Check size={13} className="text-blue-500" />}
+    </button>
+  );
+
   return (
     <div 
-      className={`group flex w-full ${isMe ? 'justify-end' : 'justify-start'} ${marginClass} select-none`}
-      style={{
-        animation: `${animationName} ${animationDuration} cubic-bezier(0.16, 1, 0.3, 1) forwards`,
-        opacity: 0,
-        willChange: 'opacity, transform'
-      } as React.CSSProperties}
-      onMouseLeave={() => setShowMenu(false)}
+      className={`group flex w-full min-w-0 ${isMe ? 'justify-end' : 'justify-start'} ${marginClass} select-none ${animate ? 'animate-message-fade-in' : ''} ${isSelectionMode ? 'cursor-pointer' : ''}`}
+      onClick={isSelectionMode ? () => onToggleSelect?.(message) : undefined}
     >
+      {isSelectionMode && isMe && renderSelectionCheckbox('left')}
+
       {/* AVATAR */}
       {!isMe && (
          <div className="w-[30px] mr-2 flex flex-col justify-end shrink-0">
@@ -204,35 +393,60 @@ export default function MessageBubble({
          </div>
       )}
 
-      {/* BALÃO */}
+      {/* BALÃO: min-w garante espaço para horário mesmo em mensagens de 1–2 caracteres */}
       <div 
-        className={`relative max-w-[85%] md:max-w-[65%] w-fit ${!isSticker ? 'shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]' : ''} ${bgClass} ${roundedClass} ${isSticker ? 'p-0' : 'px-[9px] pb-[22px]'} flex flex-col min-w-[100px]`}
-        style={{
-          willChange: 'transform'
-        }}
+        className={`relative max-w-[90%] sm:max-w-[85%] md:max-w-[65%] w-fit ${!isSticker && !isRevoked ? 'min-w-[80px] shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]' : 'min-w-0'} ${finalBgClass} ${roundedClass} ${isSticker ? 'p-0' : isRevoked ? 'px-3 py-2 pb-[20px]' : 'px-[9px] pb-[22px]'} flex flex-col overflow-hidden ${isSelectionMode && isSelected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
       >
         
         {/* Conteúdo */}
-        <div className="">
+        <div className="min-w-0 overflow-hidden break-words">
+           {hasReplyPreview && (
+             <div className="mb-1.5 rounded-md bg-black/5 dark:bg-white/5 px-2 py-1 border-l-[3px] border-green-500">
+               <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 truncate">
+                 {replyData?.sender === 'HUMAN_AGENT' || replyData?.sender === 'me' ? 'Você' : replyData?.sender || 'Contato'}
+               </p>
+               <p className="text-[12px] text-gray-600 dark:text-gray-300 truncate">
+                 {replyData?.message_type === 'audio'
+                   ? '🎵 Áudio'
+                   : replyData?.message_type === 'image'
+                   ? '📷 Foto'
+                   : replyData?.message_type === 'video'
+                   ? '🎬 Vídeo'
+                   : replyData?.message_text || 'Mensagem'}
+               </p>
+             </div>
+           )}
            {renderContent()}
         </div>
 
-        {/* Metadados: Hora + Check */}
-        <div className={`absolute bottom-[3px] right-[7px] flex items-center gap-[3px] select-none h-[15px] ${isSticker ? 'bg-black/30 rounded-full px-1.5 py-0.5 backdrop-blur-sm' : ''}`}>
+        {/* Metadados: Hora + Check — sempre visível graças ao min-w do balão */}
+        <div className={`absolute bottom-[3px] right-[7px] flex items-center gap-[3px] select-none h-[15px] shrink-0 ${isSticker ? 'bg-black/30 rounded-full px-1.5 py-0.5 backdrop-blur-sm' : ''}`}>
            <span className={`text-[11px] tabular-nums leading-none ${isSticker ? 'text-white font-medium' : 'text-[rgba(17,27,33,0.6)] dark:text-[rgba(255,255,255,0.6)]'}`}>
              {formatTime(message.created_at)}
            </span>
            
-           {isMe && !isSticker && (
-             <span className={msgStatus === 'read' ? 'text-[#53bdeb]' : 'text-[rgba(17,27,33,0.4)] dark:text-[rgba(255,255,255,0.5)]'}>
-               {msgStatus === 'read' ? <CheckCheck size={16} strokeWidth={1.5} /> : <Check size={16} strokeWidth={1.5} />}
+           {isMe && !isSticker && !isRevoked && (
+             <span className={
+               msgStatus === 'uploading' || msgStatus === 'sending'
+                 ? 'text-[#8696a0]'
+                 :
+               msgStatus === 'read' ? 'text-[#53bdeb]' :
+               msgStatus === 'delivered' ? 'text-[#8696a0]' :
+               'text-[rgba(17,27,33,0.4)] dark:text-[rgba(255,255,255,0.5)]'
+             }>
+               {msgStatus === 'uploading' || msgStatus === 'sending'
+                 ? <Loader2 size={14} className="animate-spin" />
+                 : msgStatus === 'read' || msgStatus === 'delivered'
+                 ? <CheckCheck size={16} strokeWidth={1.5} />
+                 : <Check size={16} strokeWidth={1.5} />}
              </span>
            )}
         </div>
 
-        {/* Botão de Menu */}
-        {!isSticker && (
+        {/* Botão de Menu - oculto para mensagens apagadas */}
+        {!isSticker && !isRevoked && !isSelectionMode && (
             <button 
+              ref={buttonRef}
               onClick={() => setShowMenu(!showMenu)}
               className={`absolute top-0 right-0 p-1 m-0.5 rounded-full bg-gradient-to-l from-[rgba(255,255,255,0.95)] via-[rgba(255,255,255,0.8)] to-transparent dark:from-[#202c33] opacity-0 group-hover:opacity-100 transition-all duration-150 z-20 ${showMenu ? 'opacity-100' : ''}`}
               style={{
@@ -244,14 +458,17 @@ export default function MessageBubble({
             </button>
         )}
 
-        {/* Dropdown Menu */}
-        {showMenu && (
+        {/* Dropdown Menu - renderizado via Portal para evitar corte por overflow */}
+        {showMenu && createPortal(
           <div 
-            className="absolute right-4 top-4 bg-white dark:bg-[#233138] py-2 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)] z-50 min-w-[160px] border border-gray-100 dark:border-gray-700 origin-top-right"
+            data-message-menu
+            className={`fixed bg-white dark:bg-[#233138] py-2 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)] z-[9999] min-w-[160px] border border-gray-100 dark:border-gray-700 ${menuPosition.openUp ? 'origin-bottom-right' : 'origin-top-right'}`}
             style={{
+              top: menuPosition.top,
+              left: menuPosition.left,
               animation: 'menuSlideIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards',
               opacity: 0,
-              transform: 'scale(0.92) translateY(-3px)',
+              transform: menuPosition.openUp ? 'scale(0.92) translateY(3px)' : 'scale(0.92) translateY(-3px)',
               willChange: 'opacity, transform'
             } as React.CSSProperties}
           >
@@ -262,11 +479,31 @@ export default function MessageBubble({
                 <Copy size={16}/> Copiar
              </button>
              <button 
-                onClick={() => { onSaveMacro(message.message_text || ''); setShowMenu(false); }}
+                onClick={() => { onSaveMacro(toMacroPayload()); setShowMenu(false); }}
                 className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
              >
-                <BookmarkPlus size={16}/> Salvar Macro
+                <BookmarkPlus size={16}/> Ad. Respostas Rápidas
              </button>
+             <button
+                onClick={() => { onReply(message); setShowMenu(false); }}
+                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+             >
+                <Reply size={16}/> Responder
+             </button>
+             <button
+                onClick={() => { onStartSelection?.(message); setShowMenu(false); }}
+                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+             >
+                <CheckCircle2 size={16}/> Selecionar mensagens
+             </button>
+             {canEdit && (
+               <button
+                  onClick={() => { onEdit(message); setShowMenu(false); }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+               >
+                  <Pencil size={16}/> Editar
+               </button>
+             )}
              {isMe && (
                <button 
                   onClick={() => onDelete(message, true)}
@@ -281,9 +518,12 @@ export default function MessageBubble({
                >
                   <Trash2 size={16}/> Apagar p/ mim
                </button>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
+
+      {isSelectionMode && !isMe && renderSelectionCheckbox('right')}
     </div>
   );
 }

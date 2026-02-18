@@ -1,16 +1,35 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Loader2, AlertCircle, User, Mic } from 'lucide-react';
 import WaveSurfer from 'wavesurfer.js';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+import { getCachedBlobUrl, setCachedBlobUrl } from '@/lib/audioCache';
 
-// Função auxiliar local para resolver URL do Supabase
+const supabase = createClient();
+
 const resolveAudioUrl = (src: string) => {
   if (!src) return '';
   if (src.startsWith('http') || src.startsWith('blob:')) return encodeURI(src);
-  // Assume bucket 'midia'
   const { data } = supabase.storage.from('midia').getPublicUrl(src); 
   return encodeURI(data.publicUrl);
 };
+
+async function fetchAudioWithRetry(url: string, retries = 3): Promise<Blob | null> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, { cache: 'default', mode: 'cors' });
+      if (res.ok) {
+        const blob = await res.blob();
+        if (blob.size > 0) return blob;
+      }
+    } catch {
+      // Falha de rede ou CORS, tenta novamente
+    }
+    if (i < retries - 1) {
+      await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+    }
+  }
+  return null;
+}
 
 interface AudioMessageProps {
   src: string;
@@ -50,25 +69,36 @@ export default function AudioMessage({
         setIsLoading(true); 
         setHasError(false);
         
-        // Limpa instância anterior
         if (wavesurfer.current) {
             try { wavesurfer.current.destroy(); } catch(e){}
         }
 
         const resolvedSrc = resolveAudioUrl(src);
-        const response = await fetch(resolvedSrc);
+        if (!resolvedSrc) throw new Error('URL inválida');
+
+        // Cache em memória: carregamento instantâneo
+        let finalUrl = getCachedBlobUrl(resolvedSrc);
         
-        if (!response.ok) throw new Error('Falha ao carregar');
+        if (!finalUrl) {
+          const blob = await fetchAudioWithRetry(resolvedSrc);
+          if (!isMounted) return;
+          if (!blob) {
+            setHasError(true);
+            setIsLoading(false);
+            return;
+          }
+          finalUrl = URL.createObjectURL(blob);
+          setCachedBlobUrl(resolvedSrc, finalUrl);
+        }
         
-        const blob = await response.blob();
-        if (blob.size === 0) throw new Error('Vazio');
-        
+        audioUrl = finalUrl;
         if (!isMounted) return;
         
-        audioUrl = URL.createObjectURL(blob);
+        const container = containerRef.current;
+        if (!container) return;
         
         wavesurfer.current = WaveSurfer.create({
-          container: containerRef.current!, 
+          container, 
           waveColor, 
           progressColor, 
           url: audioUrl, 
@@ -76,9 +106,9 @@ export default function AudioMessage({
           barWidth: 3, 
           barGap: 2, 
           barRadius: 3, 
-          height: 24, // Altura reduzida para ficar mais compacto (era 30)
+          height: 36, 
           normalize: true, 
-          minPxPerSec: 1, 
+          minPxPerSec: 2, 
           backend: 'MediaElement', 
         });
 
@@ -124,7 +154,7 @@ export default function AudioMessage({
         if (wavesurfer.current) {
             try { wavesurfer.current.destroy(); } catch(e){}
         }
-        if (audioUrl) URL.revokeObjectURL(audioUrl); 
+        // Não revoga: URLs vêm do cache compartilhado ou foram adicionadas ao cache
     };
   }, [src]); 
 
@@ -173,7 +203,7 @@ export default function AudioMessage({
   );
 
   return (
-    <div className={`flex items-center gap-3 py-1 select-none ${simpleMode ? 'w-full pr-1' : 'min-w-[280px] max-w-[340px]'}`}>
+    <div className={`flex items-center gap-3 py-2 select-none w-[280px] min-w-[240px] max-w-full ${simpleMode ? 'pr-1' : ''}`} style={{ flexShrink: 0 }}>
       {!simpleMode && (
          <div className="relative shrink-0">
              <div className="w-10 h-10 rounded-full overflow-hidden border border-black/5 shadow-sm">
@@ -192,14 +222,14 @@ export default function AudioMessage({
       )}
       
       {/* Botão de Play */}
-      <button onClick={togglePlay} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-black/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" disabled={isLoading}>
+      <button onClick={togglePlay} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-black/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" disabled={isLoading}>
         {isLoading ? <Loader2 size={18} className="animate-spin" /> : isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
       </button>
 
-      {/* Onda Sonora e Tempo */}
-      <div className="flex-1 flex flex-col justify-center min-w-0 h-[36px]"> {/* Altura ajustada para 36px (antes 42) */}
-          <div ref={containerRef} className="w-full" />
-          <div className="flex justify-between items-center text-[10px] text-gray-500 dark:text-gray-400 font-medium px-0.5 pt-0.5">
+      {/* Onda Sonora e Tempo - dimensões fixas para evitar oscilação */}
+      <div className="flex-1 flex flex-col justify-center min-w-[140px] h-[52px] shrink-0">
+          <div ref={containerRef} className="w-full shrink-0" style={{ height: 36, minHeight: 36 }} />
+          <div className="flex justify-between items-center text-[11px] text-gray-500 dark:text-gray-400 font-medium px-0.5 pt-1">
               <span>{isPlaying ? currentTime : duration}</span>
           </div>
       </div>
@@ -207,7 +237,7 @@ export default function AudioMessage({
       {/* Botão de Velocidade */}
       <button 
         onClick={changeSpeed} 
-        className={`shrink-0 w-[28px] h-[28px] rounded-full flex items-center justify-center text-[10px] font-bold transition-all border ${speed > 1 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200'}`}
+        className={`shrink-0 w-[32px] h-[32px] rounded-full flex items-center justify-center text-[11px] font-bold transition-all border ${speed > 1 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200'}`}
       >
         {speed}x
       </button>

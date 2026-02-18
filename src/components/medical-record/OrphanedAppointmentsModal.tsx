@@ -1,10 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Appointment } from '@/types/medical';
 import { X, AlertTriangle, CheckCircle2, Clock, User, Calendar } from 'lucide-react';
 import { formatAppointmentTime, parseAppointmentDate } from '@/utils/dateUtils';
+import { useToast } from '@/contexts/ToastContext';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface OrphanedAppointmentsModalProps {
   isOpen: boolean;
@@ -21,8 +24,10 @@ export default function OrphanedAppointmentsModal({
   onFinalize,
   onRefresh
 }: OrphanedAppointmentsModalProps) {
+  const { toast } = useToast();
   const [loading, setLoading] = useState<number | null>(null);
   const [dontShowToday, setDontShowToday] = useState(false);
+  const [confirmCancelId, setConfirmCancelId] = useState<number | null>(null);
 
   if (!isOpen) return null;
 
@@ -46,7 +51,7 @@ export default function OrphanedAppointmentsModal({
     try {
       const { error } = await supabase
         .from('appointments')
-        .update({ status: 'finished' })
+        .update({ status: 'finished', finished_at: new Date().toISOString() })
         .eq('id', appointmentId);
 
       if (error) throw error;
@@ -64,7 +69,7 @@ export default function OrphanedAppointmentsModal({
       }
     } catch (error: any) {
       console.error('Erro ao finalizar atendimento:', error);
-      alert('Erro ao finalizar atendimento: ' + (error.message || 'Tente novamente.'));
+      toast.toast.error('Erro ao finalizar atendimento: ' + (error.message || 'Tente novamente.'));
     } finally {
       setLoading(null);
     }
@@ -75,7 +80,12 @@ export default function OrphanedAppointmentsModal({
     try {
       const { error } = await supabase
         .from('appointments')
-        .update({ status: 'waiting' })
+        .update({
+          status: 'waiting',
+          queue_entered_at: new Date().toISOString(),
+          in_service_at: null,
+          finished_at: null,
+        })
         .eq('id', appointmentId);
 
       if (error) throw error;
@@ -92,15 +102,20 @@ export default function OrphanedAppointmentsModal({
       }
     } catch (error: any) {
       console.error('Erro ao reverter atendimento:', error);
-      alert('Erro ao reverter atendimento: ' + (error.message || 'Tente novamente.'));
+      toast.toast.error('Erro ao reverter atendimento: ' + (error.message || 'Tente novamente.'));
     } finally {
       setLoading(null);
     }
   };
 
-  const handleCancel = async (appointmentId: number) => {
-    if (!confirm('Deseja realmente cancelar este atendimento?')) return;
-    
+  const handleCancelClick = (appointmentId: number) => {
+    setConfirmCancelId(appointmentId);
+  };
+
+  const handleCancelConfirm = async () => {
+    const appointmentId = confirmCancelId;
+    if (appointmentId == null) return;
+    setConfirmCancelId(null);
     setLoading(appointmentId);
     try {
       const { error } = await supabase
@@ -112,7 +127,6 @@ export default function OrphanedAppointmentsModal({
 
       onRefresh();
       
-      // Se não houver mais atendimentos órfãos, fechar modal
       const remaining = appointments.filter(a => a.id !== appointmentId);
       if (remaining.length === 0) {
         if (dontShowToday) {
@@ -122,7 +136,7 @@ export default function OrphanedAppointmentsModal({
       }
     } catch (error: any) {
       console.error('Erro ao cancelar atendimento:', error);
-      alert('Erro ao cancelar atendimento: ' + (error.message || 'Tente novamente.'));
+      toast.toast.error('Erro ao cancelar atendimento: ' + (error.message || 'Tente novamente.'));
     } finally {
       setLoading(null);
     }
@@ -136,6 +150,7 @@ export default function OrphanedAppointmentsModal({
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-[#1e2028] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
@@ -230,7 +245,7 @@ export default function OrphanedAppointmentsModal({
                     Reverter para Fila
                   </button>
                   <button
-                    onClick={() => handleCancel(apt.id)}
+                    onClick={() => handleCancelClick(apt.id)}
                     disabled={loading === apt.id}
                     className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-gray-200 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -264,5 +279,15 @@ export default function OrphanedAppointmentsModal({
         </div>
       </div>
     </div>
+    <ConfirmModal
+      isOpen={confirmCancelId != null}
+      onClose={() => setConfirmCancelId(null)}
+      onConfirm={handleCancelConfirm}
+      title="Cancelar atendimento"
+      message="Deseja realmente cancelar este atendimento?"
+      type="danger"
+      confirmText="Sim, cancelar"
+    />
+    </>
   );
 }

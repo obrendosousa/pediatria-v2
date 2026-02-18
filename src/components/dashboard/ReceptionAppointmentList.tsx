@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Appointment } from '@/types/medical';
 import { getLocalDateRange, formatAppointmentTime } from '@/utils/dateUtils';
 import { 
   Clock, MessageCircle, MapPin, Megaphone, Loader2, 
   User, Stethoscope, Phone, GripVertical, Undo2
 } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface ReceptionAppointmentListProps {
   selectedDate: string;
@@ -24,9 +27,11 @@ export default function ReceptionAppointmentList({
   onRevertStatus,
   calledAppointmentId 
 }: ReceptionAppointmentListProps) {
+  const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
+  const [confirmRevert, setConfirmRevert] = useState<{ open: boolean; appointment: Appointment | null; newStatus: string }>({ open: false, appointment: null, newStatus: '' });
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -80,7 +85,7 @@ export default function ReceptionAppointmentList({
     try {
       const { error } = await supabase
         .from('appointments')
-        .update({ status: 'waiting' })
+        .update({ status: 'waiting', queue_entered_at: new Date().toISOString() })
         .eq('id', appointment.id);
 
       if (error) throw error;
@@ -89,22 +94,35 @@ export default function ReceptionAppointmentList({
       fetchAppointments();
     } catch (error: any) {
       console.error('Erro ao fazer check-in:', error);
-      alert('Erro ao fazer check-in: ' + (error.message || 'Tente novamente.'));
+      toast.toast.error('Erro ao fazer check-in: ' + (error.message || 'Tente novamente.'));
     } finally {
       setIsUpdating(null);
     }
   };
 
-  const handleRevertStatus = async (appointment: Appointment, newStatus: string) => {
-    if (!confirm(`Deseja reverter o status deste paciente para "${newStatus === 'scheduled' ? 'Agendado' : 'Na Espera'}"?`)) {
-      return;
-    }
-    
+  const handleRevertStatusClick = (appointment: Appointment, newStatus: string) => {
+    setConfirmRevert({ open: true, appointment, newStatus });
+  };
+
+  const handleRevertStatusConfirm = async () => {
+    const { appointment, newStatus } = confirmRevert;
+    if (!appointment) return;
+    setConfirmRevert(prev => ({ ...prev, open: false }));
     setIsUpdating(appointment.id);
     try {
+      const updatePayload: Record<string, string | null> = { status: newStatus };
+      if (newStatus === 'scheduled') {
+        updatePayload.queue_entered_at = null;
+        updatePayload.in_service_at = null;
+        updatePayload.finished_at = null;
+      } else if (newStatus === 'waiting') {
+        updatePayload.queue_entered_at = new Date().toISOString();
+        updatePayload.in_service_at = null;
+        updatePayload.finished_at = null;
+      }
       const { error } = await supabase
         .from('appointments')
-        .update({ status: newStatus })
+        .update(updatePayload)
         .eq('id', appointment.id);
 
       if (error) throw error;
@@ -113,7 +131,7 @@ export default function ReceptionAppointmentList({
       fetchAppointments();
     } catch (error: any) {
       console.error('Erro ao reverter status:', error);
-      alert('Erro ao reverter status: ' + (error.message || 'Tente novamente.'));
+      toast.toast.error('Erro ao reverter status: ' + (error.message || 'Tente novamente.'));
     } finally {
       setIsUpdating(null);
     }
@@ -132,6 +150,7 @@ export default function ReceptionAppointmentList({
   const waitingAppointments = appointments.filter(a => a.status === 'waiting');
 
   return (
+    <>
     <div className="space-y-3">
       {/* Agendados (ainda não chegaram) */}
       {scheduledAppointments.map((apt) => {
@@ -202,7 +221,7 @@ export default function ReceptionAppointmentList({
             {isCalled && (
               <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800">
                 <button
-                  onClick={() => handleRevertStatus(apt, 'scheduled')}
+                  onClick={() => handleRevertStatusClick(apt, 'scheduled')}
                   disabled={isUpdating === apt.id}
                   className="w-full bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -273,7 +292,7 @@ export default function ReceptionAppointmentList({
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => handleRevertStatus(apt, 'scheduled')}
+                onClick={() => handleRevertStatusClick(apt, 'scheduled')}
                 disabled={isUpdating === apt.id}
                 className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Reverter para Agendado"
@@ -302,5 +321,14 @@ export default function ReceptionAppointmentList({
         </div>
       )}
     </div>
+    <ConfirmModal
+      isOpen={confirmRevert.open}
+      onClose={() => setConfirmRevert(prev => ({ ...prev, open: false }))}
+      onConfirm={handleRevertStatusConfirm}
+      title="Reverter status"
+      message={confirmRevert.appointment ? `Deseja reverter o status deste paciente para "${confirmRevert.newStatus === 'scheduled' ? 'Agendado' : 'Na Espera'}"?` : ''}
+      type="warning"
+    />
+    </>
   );
 }

@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
+import { useAuth } from '@/contexts/AuthContext';
 import { Appointment } from '@/types/medical';
 import { PatientMedicalRecordView } from '@/components/medical-record/PatientMedicalRecordView';
 import { findPatientByPhone } from '@/utils/patientUtils';
@@ -15,6 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function DoctorPage() {
+  const { profile } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -106,41 +109,23 @@ export default function DoctorPage() {
 
   const fetchAppointments = async () => {
     try {
-      // PRIORIDADE: Primeiro buscar o paciente em atendimento (in_service) de QUALQUER data
-      const { data: inServiceData, error: inServiceError } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('status', 'in_service')
-        .order('start_time', { ascending: false })
-        .limit(1); // Apenas 1 paciente pode estar em atendimento
-
-      if (inServiceError) {
-        console.error('Erro ao buscar paciente em atendimento:', inServiceError);
-      }
-
-      // Se houver paciente em atendimento, priorizar exibir seu prontuário
-      if (inServiceData && inServiceData.length > 0) {
-        const inServiceAppointment = inServiceData[0] as Appointment;
-        setAppointmentsList([inServiceAppointment]);
-        await checkForInServicePatient([inServiceAppointment]);
-        
-        // Verificar atendimentos órfãos apenas se estiver visualizando o dia atual
-        if (selectedDate === getTodayDateString()) {
-          await checkForOrphanedAppointments();
-        }
-        return; // Não precisa buscar outros appointments se já temos um em atendimento
-      }
-
-      // Se não houver paciente em atendimento, buscar appointments do dia selecionado
       const { startOfDay, endOfDay } = getLocalDateRange(selectedDate);
 
-      const { data: todayData, error: todayError } = await supabase
+      // Sempre buscar TODOS os agendamentos do dia (para o kanban da lateral)
+      let query = supabase
         .from('appointments')
         .select('*')
         .gte('start_time', startOfDay)
         .lte('start_time', endOfDay)
-        .in('status', ['scheduled', 'called', 'waiting'])
+        .neq('status', 'cancelled')
+        .neq('status', 'blocked')
         .order('start_time', { ascending: true });
+
+      if (profile?.doctor_id) {
+        query = query.eq('doctor_id', profile.doctor_id);
+      }
+
+      const { data: todayData, error: todayError } = await query;
 
       if (todayError) {
         console.error('Erro ao buscar appointments:', todayError);
@@ -149,20 +134,40 @@ export default function DoctorPage() {
       }
 
       const todayAppointments = (todayData as Appointment[] || []);
-      
-      // Filtrar por data local usando função utilitária para garantir consistência
-      const appointments = todayAppointments.filter(apt => 
+      const appointments = todayAppointments.filter(apt =>
         isAppointmentOnDate(apt.start_time, selectedDate)
       );
-      
+
       setAppointmentsList(appointments);
-      
-      // Não há paciente em atendimento, limpar estados
-      setPatientId(null);
-      setAppointmentId(null);
-      setCurrentAppointment(null);
-      
-      // Verificar atendimentos órfãos apenas se estiver visualizando o dia atual
+
+      // Verificar se há paciente em atendimento (in_service) para priorizar o prontuário
+      let inServiceQuery = supabase
+        .from('appointments')
+        .select('*')
+        .eq('status', 'in_service')
+        .order('start_time', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (profile?.doctor_id) {
+        inServiceQuery = inServiceQuery.eq('doctor_id', profile.doctor_id);
+      }
+
+      const { data: inServiceData, error: inServiceError } = await inServiceQuery;
+
+      if (inServiceError) {
+        console.error('Erro ao buscar paciente em atendimento:', inServiceError);
+      }
+
+      if (inServiceData) {
+        const inServiceAppointment = inServiceData as Appointment;
+        await checkForInServicePatient([inServiceAppointment]);
+      } else {
+        setPatientId(null);
+        setAppointmentId(null);
+        setCurrentAppointment(null);
+      }
+
       if (selectedDate === getTodayDateString()) {
         await checkForOrphanedAppointments();
       }
@@ -230,12 +235,18 @@ export default function DoctorPage() {
       const { startOfDay: todayStart } = getLocalDateRange(today);
       
       // Buscar appointments em in_service de dias anteriores
-      const { data: orphaned, error } = await supabase
+      let orphanedQuery = supabase
         .from('appointments')
         .select('*')
         .eq('status', 'in_service')
         .lt('start_time', todayStart)
         .order('start_time', { ascending: false });
+
+      if (profile?.doctor_id) {
+        orphanedQuery = orphanedQuery.eq('doctor_id', profile.doctor_id);
+      }
+
+      const { data: orphaned, error } = await orphanedQuery;
 
       if (error) {
         console.error('Erro ao buscar atendimentos órfãos:', error);
@@ -388,14 +399,21 @@ export default function DoctorPage() {
   };
 
 
-  // Se há paciente em atendimento, mostrar prontuário com menu lateral
-  if (patientId) {
+  // Se há paciente em atendimento OU se temos lista do dia, mostrar layout com menu lateral (kanban)
+  const hasListOrPatient = appointmentsList.length > 0 || patientId;
+  if (hasListOrPatient) {
     const scheduled = appointmentsList.filter(a => a.status === 'scheduled');
     const called = appointmentsList.filter(a => a.status === 'called');
     const waiting = appointmentsList.filter(a => a.status === 'waiting').sort((a, b) => {
       const aTime = new Date(a.start_time).getTime();
       const bTime = new Date(b.start_time).getTime();
       return aTime - bTime;
+    });
+    const inService = appointmentsList.filter(a => a.status === 'in_service');
+    const finished = appointmentsList.filter(a => a.status === 'finished').sort((a, b) => {
+      const aTime = new Date(a.start_time).getTime();
+      const bTime = new Date(b.start_time).getTime();
+      return bTime - aTime;
     });
 
     return (
@@ -539,14 +557,86 @@ export default function DoctorPage() {
                 </div>
               </div>
             )}
+            {inService.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-2">
+                  <Stethoscope className="w-3 h-3" />
+                  Em Atendimento ({inService.length})
+                </h3>
+                <div className="space-y-2">
+                  {inService.map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10"
+                    >
+                      <div className="flex items-start justify-between mb-1">
+                        <h4 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">
+                          {apt.patient_name || 'Sem nome'}
+                        </h4>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${getStatusBadge(apt.status || '')}`}>
+                          {getStatusLabel(apt.status || '')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{formatTime(apt.start_time)}</span>
+                        {apt.doctor_name && (
+                          <>
+                            <span>•</span>
+                            <span className="truncate">{apt.doctor_name}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {finished.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-2">
+                  <UserCheck className="w-3 h-3" />
+                  Concluídos ({finished.length})
+                </h3>
+                <div className="space-y-2">
+                  {finished.map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/20 opacity-90"
+                    >
+                      <div className="flex items-start justify-between mb-1">
+                        <h4 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">
+                          {apt.patient_name || 'Sem nome'}
+                        </h4>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${getStatusBadge(apt.status || '')}`}>
+                          {getStatusLabel(apt.status || '')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{formatTime(apt.start_time)}</span>
+                        {apt.doctor_name && (
+                          <>
+                            <span>•</span>
+                            <span className="truncate">{apt.doctor_name}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Área Principal - Prontuário */}
+        {/* Área Principal - Prontuário (só quando há paciente selecionado) */}
         <div className="flex-1 flex flex-col bg-[#f8fafc] dark:bg-[#0b141a] relative overflow-hidden">
+          {patientId ? (
           <PatientMedicalRecordView 
             patientId={patientId}
             appointmentId={appointmentId}
+            currentDoctorId={profile?.doctor_id}
             onRefresh={() => {
               if (appointmentId) {
                 fetchAppointment(appointmentId);
@@ -555,6 +645,19 @@ export default function DoctorPage() {
             }}
             // Não passar onBack para remover o botão de voltar no Painel Médico
           />
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-8">
+              <div className="text-center max-w-sm">
+                <Users className="w-12 h-12 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-slate-600 dark:text-gray-400 font-medium">
+                  O paciente em atendimento será exibido aqui quando a recepção clicar em &quot;Entrar&quot;.
+                </p>
+                <p className="text-sm text-slate-500 dark:text-gray-500 mt-1">
+                  Use a lista ao lado para acompanhar a fila do dia.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

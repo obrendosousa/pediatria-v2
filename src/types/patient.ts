@@ -22,6 +22,7 @@ export interface Patient {
   // --- Identificação ---
   name: string; // Nome Principal (Civil ou Social dependendo da lógica, mas geralmente o que é exibido)
   code?: string;
+  birth_date?: string; // Data de nascimento (YYYY-MM-DD)
   
   // Lógica Social vs Civil
   social_name?: string;

@@ -5,10 +5,15 @@ import {
   Clock, AlertCircle, CheckCircle2, 
   Settings, ChevronLeft, ChevronRight, X, Lock, Unlock,
   Plus, Trash2, Calendar as CalendarIcon, LayoutGrid, Loader2, Save,
-  Briefcase, Coffee, AlertTriangle
+  Briefcase, Coffee, AlertTriangle, Users, CheckCircle, XCircle
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { logAudit } from '@/lib/audit';
 import { ScheduleRule } from '@/types';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+
+const supabase = createClient();
 
 // --- TIPOS ---
 interface Override {
@@ -21,12 +26,29 @@ interface Override {
 const DAYS_MAP = { 0: 'Domingo', 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado' };
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
+type PendingProfile = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  status: string;
+  created_at: string;
+};
+
 export default function ConfiguracoesPage() {
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+
   // --- ESTADOS ---
-  const [activeTab, setActiveTab] = useState<'geral' | 'escala' | 'calendario'>('geral');
+  const [activeTab, setActiveTab] = useState<'geral' | 'escala' | 'calendario' | 'usuarios'>('geral');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [pendingUsers, setPendingUsers] = useState<PendingProfile[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [actingOnId, setActingOnId] = useState<string | null>(null);
+  const [confirmDeleteSlotId, setConfirmDeleteSlotId] = useState<number | null>(null);
+  const [confirmRestoreDate, setConfirmRestoreDate] = useState<string | null>(null);
 
   // Dados
   const [duration, setDuration] = useState<number>(60);
@@ -49,6 +71,45 @@ export default function ConfiguracoesPage() {
   useEffect(() => {
     fetchAllConfigs();
   }, []);
+
+  useEffect(() => {
+    if (isAdmin && activeTab === 'usuarios') fetchPendingUsers();
+  }, [isAdmin, activeTab]);
+
+  const fetchPendingUsers = async () => {
+    setLoadingUsers(true);
+    const { data } = await supabase.from('profiles').select('id, email, full_name, role, status, created_at').eq('status', 'pending').order('created_at', { ascending: false });
+    setPendingUsers((data as PendingProfile[]) || []);
+    setLoadingUsers(false);
+  };
+
+  const handleApproveUser = async (userId: string) => {
+    const { data: { user: me } } = await supabase.auth.getUser();
+    if (!me?.id) return;
+    setActingOnId(userId);
+    const { error } = await supabase.from('profiles').update({ status: 'approved', approved_at: new Date().toISOString(), approved_by: me.id, updated_at: new Date().toISOString() }).eq('id', userId);
+    setActingOnId(null);
+    if (error) showFeedback('error', 'Erro ao aprovar.');
+    else {
+      await logAudit({ userId: me.id, action: 'approve_user', entityType: 'user_approval', entityId: userId, details: { target_user_id: userId } });
+      showFeedback('success', 'Usuário aprovado.');
+      fetchPendingUsers();
+    }
+  };
+
+  const handleRejectUser = async (userId: string) => {
+    const { data: { user: me } } = await supabase.auth.getUser();
+    if (!me?.id) return;
+    setActingOnId(userId);
+    const { error } = await supabase.from('profiles').update({ status: 'rejected', updated_at: new Date().toISOString() }).eq('id', userId);
+    setActingOnId(null);
+    if (error) showFeedback('error', 'Erro ao rejeitar.');
+    else {
+      await logAudit({ userId: me.id, action: 'reject_user', entityType: 'user_approval', entityId: userId, details: { target_user_id: userId } });
+      showFeedback('success', 'Solicitação rejeitada.');
+      fetchPendingUsers();
+    }
+  };
 
   // --- DATA FETCHING ---
   const fetchAllConfigs = async () => {
@@ -116,8 +177,14 @@ export default function ConfiguracoesPage() {
     setSaving(false);
   };
 
-  const handleDeleteSlot = async (id: number) => {
-    if(!confirm("Tem certeza que deseja remover este horário fixo?")) return;
+  const handleDeleteSlotClick = (id: number) => {
+    setConfirmDeleteSlotId(id);
+  };
+
+  const handleDeleteSlotConfirm = async () => {
+    const id = confirmDeleteSlotId;
+    if (id == null) return;
+    setConfirmDeleteSlotId(null);
     await supabase.from('doctor_schedules').delete().eq('id', id);
     showFeedback('success', 'Horário removido.');
     fetchAllConfigs();
@@ -171,9 +238,16 @@ export default function ConfiguracoesPage() {
     setSaving(false);
   };
 
-  const handleDeleteOverride = async () => {
-     if (!selectedDate || !confirm("Restaurar configuração padrão deste dia?")) return;
-     await supabase.from('schedule_overrides').delete().eq('doctor_id', 1).eq('override_date', selectedDate);
+  const handleDeleteOverrideClick = () => {
+     if (!selectedDate) return;
+     setConfirmRestoreDate(selectedDate);
+  };
+
+  const handleDeleteOverrideConfirm = async () => {
+     const date = confirmRestoreDate;
+     if (!date) return;
+     setConfirmRestoreDate(null);
+     await supabase.from('schedule_overrides').delete().eq('doctor_id', 1).eq('override_date', date);
      showFeedback('success', 'Dia restaurado ao padrão.');
      setModalOpen(false);
      fetchAllConfigs();
@@ -342,6 +416,7 @@ export default function ConfiguracoesPage() {
                 <TabButton id="geral" label="Geral" icon={Settings} />
                 <TabButton id="escala" label="Escala Semanal" icon={LayoutGrid} />
                 <TabButton id="calendario" label="Calendário Mensal" icon={CalendarIcon} />
+                {isAdmin && <TabButton id="usuarios" label="Usuários pendentes" icon={Users} />}
             </div>
 
             {/* CONTEÚDO */}
@@ -443,7 +518,7 @@ export default function ConfiguracoesPage() {
                                                             </div>
                                                         </div>
                                                         <button 
-                                                            onClick={() => handleDeleteSlot(rule.id)} 
+                                                            onClick={() => handleDeleteSlotClick(rule.id)} 
                                                             className="text-slate-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 p-2 opacity-0 group-hover/item:opacity-100 transition-opacity"
                                                         >
                                                             <Trash2 size={16}/>
@@ -456,6 +531,53 @@ export default function ConfiguracoesPage() {
                                 );
                             })}
                         </div>
+                    </div>
+                )}
+
+                {/* 4. ABA USUÁRIOS PENDENTES (só admin) */}
+                {activeTab === 'usuarios' && isAdmin && (
+                    <div className="p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+                            <Users className="w-5 h-5 text-pink-600 dark:text-pink-400" /> Solicitações de acesso
+                        </h3>
+                        <p className="text-slate-500 dark:text-gray-400 text-sm mb-6">Aprove ou rejeite novos cadastros.</p>
+                        {loadingUsers ? (
+                            <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-pink-500" /></div>
+                        ) : pendingUsers.length === 0 ? (
+                            <div className="rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50/50 dark:bg-[#1e2028]/50 p-8 text-center text-slate-500 dark:text-gray-400">
+                                Nenhuma solicitação pendente.
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {pendingUsers.map((u) => (
+                                    <div key={u.id} className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-[#202c33] p-4">
+                                        <div>
+                                            <p className="font-medium text-slate-800 dark:text-gray-100">{u.full_name || '—'}</p>
+                                            <p className="text-sm text-slate-500 dark:text-gray-400">{u.email}</p>
+                                            <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">{new Date(u.created_at).toLocaleString('pt-BR')}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleApproveUser(u.id)}
+                                                disabled={actingOnId === u.id}
+                                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium disabled:opacity-50"
+                                            >
+                                                {actingOnId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                                Aprovar
+                                            </button>
+                                            <button
+                                                onClick={() => handleRejectUser(u.id)}
+                                                disabled={actingOnId === u.id}
+                                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-medium disabled:opacity-50"
+                                            >
+                                                {actingOnId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                                                Rejeitar
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -556,7 +678,7 @@ export default function ConfiguracoesPage() {
 
                    <div className="pt-2 flex gap-3">
                       {overrides.some(o => o.override_date === selectedDate) && (
-                          <button onClick={handleDeleteOverride} className="flex-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-transparent hover:border-red-100 dark:hover:border-red-900/30 py-3 rounded-xl text-sm font-bold transition-all">
+                          <button onClick={handleDeleteOverrideClick} className="flex-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-transparent hover:border-red-100 dark:hover:border-red-900/30 py-3 rounded-xl text-sm font-bold transition-all">
                               Restaurar Padrão
                           </button>
                       )}
@@ -582,5 +704,23 @@ export default function ConfiguracoesPage() {
 
       </div>
     </div>
+    <ConfirmModal
+      isOpen={confirmDeleteSlotId != null}
+      onClose={() => setConfirmDeleteSlotId(null)}
+      onConfirm={handleDeleteSlotConfirm}
+      title="Remover horário"
+      message="Tem certeza que deseja remover este horário fixo?"
+      type="danger"
+      confirmText="Sim, remover"
+    />
+    <ConfirmModal
+      isOpen={confirmRestoreDate != null}
+      onClose={() => setConfirmRestoreDate(null)}
+      onConfirm={handleDeleteOverrideConfirm}
+      title="Restaurar dia"
+      message="Restaurar configuração padrão deste dia?"
+      type="warning"
+      confirmText="Sim, restaurar"
+    />
   );
 }

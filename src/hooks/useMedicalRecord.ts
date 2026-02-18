@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 
 export interface RoutineConsultationData {
   caregivers_name?: string | null;
@@ -107,7 +108,7 @@ export interface MedicalRecordData {
   created_at?: string;
 }
 
-export function useMedicalRecord(patientId: number, appointmentId?: number | null) {
+export function useMedicalRecord(patientId: number, appointmentId?: number | null, currentDoctorId?: number | null) {
   const [record, setRecord] = useState<MedicalRecordData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -172,6 +173,7 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
         const newRecord: MedicalRecordData = {
           patient_id: patientId,
           appointment_id: appointmentId || null,
+          doctor_id: currentDoctorId || null,
           status: 'draft',
           vitals: {},
         };
@@ -195,8 +197,8 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
             ...recordData,
             patient_id: patientId,
             appointment_id: appointmentId || null,
+            doctor_id: currentDoctorId || null,
             status: 'draft',
-            started_at: new Date().toISOString(),
           })
           .select()
           .single();
@@ -248,6 +250,48 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
     }
   }
 
+  /**
+   * Inicia oficialmente o cronometro de atendimento.
+   * Regra: started_at so pode ser gravado no clique "Iniciar Atendimento".
+   */
+  async function startConsultationTimer() {
+    try {
+      if (record?.id) {
+        if (record.started_at) return record;
+        const now = new Date().toISOString();
+        const { data, error: updateError } = await supabase
+          .from('medical_records')
+          .update({ started_at: now })
+          .eq('id', record.id)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+        setRecord(data);
+        return data;
+      }
+
+      const now = new Date().toISOString();
+      const { data, error: createError } = await supabase
+        .from('medical_records')
+        .insert({
+          patient_id: patientId,
+          appointment_id: appointmentId || null,
+          doctor_id: currentDoctorId || null,
+          status: 'draft',
+          started_at: now,
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+      setRecord(data);
+      return data;
+    } catch (err: any) {
+      console.error('Erro ao iniciar cronometro do atendimento:', err);
+      throw err;
+    }
+  }
+
   // Função para salvar todos os dados de uma vez (usado antes de finalizar)
   async function saveAllData() {
     try {
@@ -261,8 +305,8 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
           .insert({
             patient_id: patientId,
             appointment_id: appointmentId || null,
+            doctor_id: currentDoctorId || null,
             status: 'draft',
-            started_at: new Date().toISOString(),
           })
           .select()
           .single();
@@ -284,6 +328,7 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
     error,
     saveRecord,
     finishRecord,
+    startConsultationTimer,
     saveAllData,
     reload: loadRecord,
   };

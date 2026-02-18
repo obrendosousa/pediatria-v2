@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { X, Save, Check } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
+import { X, Check } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { createPortal } from 'react-dom';
+const supabase = createClient();
+import { useToast } from '@/contexts/ToastContext';
 
 interface SavedMessage {
   id: number;
@@ -21,11 +24,18 @@ export default function PauseServiceModal({
   onClose,
   onConfirm
 }: PauseServiceModalProps) {
+  const { toast } = useToast();
+  const [isMounted, setIsMounted] = useState(false);
   const [message, setMessage] = useState('');
   const [selectedSavedMessageId, setSelectedSavedMessageId] = useState<number | null>(null);
   const [savedMessages, setSavedMessages] = useState<SavedMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [useSavedMessage, setUseSavedMessage] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -60,7 +70,7 @@ export default function PauseServiceModal({
       if (saved) {
         finalMessage = saved.content;
       } else {
-        alert('Mensagem salva não encontrada');
+        toast.toast.error('Mensagem salva não encontrada');
         return;
       }
     } else {
@@ -68,7 +78,7 @@ export default function PauseServiceModal({
     }
 
     if (!finalMessage) {
-      alert('Por favor, escreva ou selecione uma mensagem');
+      toast.toast.error('Por favor, escreva ou selecione uma mensagem');
       return;
     }
 
@@ -78,7 +88,7 @@ export default function PauseServiceModal({
       onClose();
     } catch (error) {
       console.error('Erro ao ativar pausa:', error);
-      alert('Erro ao ativar pausa. Tente novamente.');
+      toast.toast.error('Erro ao ativar pausa. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -92,14 +102,14 @@ export default function PauseServiceModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !isMounted) return null;
 
   const previewMessage = useSavedMessage && selectedSavedMessageId
     ? savedMessages.find(m => m.id === selectedSavedMessageId)?.content || ''
     : message;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 dark:bg-black/70 backdrop-blur-sm">
       <div className="bg-white dark:bg-[#1e2028] rounded-2xl shadow-xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -237,5 +247,5 @@ export default function PauseServiceModal({
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }

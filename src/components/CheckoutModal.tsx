@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { Product } from '@/types';
 import { X, ShoppingBag, Calendar, Check, Trash, Plus, Search, CreditCard, Banknote, QrCode, Clock, ArrowRight, Loader2, FileText } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
+import { normalizePaymentSplits, resolveSalePaymentMethodFromSplits } from '@/lib/finance';
+import { createFinancialTransaction } from '@/lib/financialTransactions';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -13,6 +18,8 @@ interface CheckoutModalProps {
 }
 
 export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: CheckoutModalProps) {
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'cart' | 'schedule'>('cart');
 
@@ -101,14 +108,20 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
 
         // 1. Processar Venda (Se tiver itens ou valor de consulta)
         const consultationValue = task.raw_data?.consultation_value || 0;
-        const totalWithConsultation = total + consultationValue;
+        const totalWithConsultation = total;
+        const paymentSplits = normalizePaymentSplits(totalWithConsultation, paymentMethod);
+        const salePaymentMethod = resolveSalePaymentMethodFromSplits(paymentSplits);
 
         if (cart.length > 0 || consultationValue > 0) {
             const { data: sale, error: saleError } = await supabase.from('sales').insert({
                 chat_id: task.chat_id,
+                patient_id: task.patient_id ?? task.raw_data?.patient_id ?? null,
                 total: totalWithConsultation,
-                status: 'paid', // Secretária está cobrando agora
-                payment_method: paymentMethod
+                status: 'completed',
+                payment_method: salePaymentMethod,
+                created_by: user?.id ?? null,
+                origin: 'atendimento',
+                appointment_id: task.raw_data?.appointment_id ?? null
             }).select().single();
 
             if (saleError) throw new Error('Erro ao criar venda');
@@ -123,6 +136,16 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
                 }));
                 await supabase.from('sale_items').insert(saleItems);
             }
+
+            await createFinancialTransaction(supabase, {
+              amount: totalWithConsultation,
+              origin: 'atendimento',
+              createdBy: user?.id ?? null,
+              appointmentId: task.raw_data?.appointment_id ?? null,
+              saleId: sale.id,
+              medicalCheckoutId: task.origin_table === 'medical_checkouts' ? task.id : null,
+              payments: paymentSplits
+            });
         }
 
         // 2. Processar Agendamento (Se tiver retorno)
@@ -156,6 +179,19 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
         // 4. Atualizar appointment status para 'finished' se houver appointment_id
         if (task.raw_data?.appointment_id) {
             const appointmentId = task.raw_data.appointment_id;
+            let incrementAmountPaid = consultationValue;
+            if (incrementAmountPaid < 0) incrementAmountPaid = 0;
+
+            let nextAmountPaid: number | null = null;
+            if (incrementAmountPaid > 0) {
+              const { data: currentAppointment } = await supabase
+                .from('appointments')
+                .select('amount_paid')
+                .eq('id', appointmentId)
+                .maybeSingle();
+
+              nextAmountPaid = Number(currentAppointment?.amount_paid || 0) + incrementAmountPaid;
+            }
             console.log('[DEBUG] Finalizando appointment no CheckoutModal:', { 
                 appointmentId,
                 taskId: task.id
@@ -163,7 +199,10 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
             
             const { data, error } = await supabase
                 .from('appointments')
-                .update({ status: 'finished' })
+                .update({
+                  status: 'finished',
+                  ...(nextAmountPaid != null ? { amount_paid: nextAmountPaid } : {})
+                })
                 .eq('id', appointmentId)
                 .select();
             
@@ -190,7 +229,7 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
         onClose();
 
     } catch (error: any) {
-        alert(error.message);
+        toast.error(error.message);
     } finally {
         setLoading(false);
     }

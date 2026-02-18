@@ -6,7 +6,7 @@ import { Users } from 'lucide-react';
 
 interface ReceptionColumnProps {
   title: string;
-  status: 'scheduled' | 'called' | 'waiting' | 'in_service' | 'finished';
+  status: 'scheduled' | 'called' | 'waiting' | 'in_service' | 'waiting_payment' | 'finished';
   appointments: Appointment[];
   color: {
     border: string;
@@ -20,7 +20,13 @@ interface ReceptionColumnProps {
   onEnter?: (appointment: Appointment) => void;
   onFinish?: (appointment: Appointment) => void;
   onRevert?: (appointment: Appointment) => void;
+  onEditAppointment?: (appointment: Appointment) => void;
+  buttonLabel?: string;
   isUpdating?: number | null;
+  callingAppointmentId?: number | null;
+  /** Hub checkout: id do agendamento selecionado e callback ao selecionar */
+  selectedAppointmentId?: number | null;
+  onSelectAppointment?: (appointment: Appointment) => void;
 }
 
 export default function ReceptionColumn({
@@ -34,10 +40,16 @@ export default function ReceptionColumn({
   onEnter,
   onFinish,
   onRevert,
-  isUpdating
+  onEditAppointment,
+  buttonLabel,
+  isUpdating,
+  callingAppointmentId,
+  selectedAppointmentId,
+  onSelectAppointment
 }: ReceptionColumnProps) {
+  const isSelectMode = selectedAppointmentId !== undefined && onSelectAppointment != null;
   return (
-    <div className="flex-1 min-w-[240px] bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 shadow-sm flex flex-col overflow-hidden transition-colors">
+    <div className={`flex flex-col overflow-hidden transition-colors bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 shadow-sm ${isSelectMode ? 'min-w-0' : 'flex-1 min-w-[240px]'}`}>
       {/* Header compacto */}
       <div className={`p-3 border-b ${color.border} ${color.headerBg} flex justify-between items-center`}>
         <h3 className={`font-semibold text-sm ${color.text} flex items-center gap-2`}>
@@ -63,12 +75,17 @@ export default function ReceptionColumn({
               status={status}
               position={status === 'waiting' ? idx : undefined}
               isUpdating={isUpdating === apt.id}
+              isCalling={callingAppointmentId === apt.id}
               onCall={onCall ? () => onCall(apt) : undefined}
               onCheckIn={onCheckIn ? () => onCheckIn(apt) : undefined}
               onConfirmArrival={onConfirmArrival ? () => onConfirmArrival(apt) : undefined}
               onEnter={onEnter ? () => onEnter(apt) : undefined}
               onFinish={onFinish ? () => onFinish(apt) : undefined}
               onRevert={onRevert ? () => onRevert(apt) : undefined}
+              onEdit={onEditAppointment ? () => onEditAppointment(apt) : undefined}
+              buttonLabel={buttonLabel}
+              selectable={isSelectMode}
+              isSelected={isSelectMode && selectedAppointmentId === apt.id}
             />
           ))
         )}

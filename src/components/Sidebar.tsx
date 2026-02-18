@@ -19,6 +19,7 @@ import TagSelector from './sidebar/TagSelector';
 import NewChatModal from './chat/modals/NewChatModal';
 import EditContactModal from './chat/modals/EditContactModal';
 import PauseServiceModal from './sidebar/PauseServiceModal';
+import ConfirmModal from './ui/ConfirmModal';
 
 // Hooks e utilitários
 import { useAutoPauseMessages } from '@/hooks/useAutoPauseMessages';
@@ -50,8 +51,15 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
   const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isCheckingPause, setIsCheckingPause] = useState(true);
+  const [confirmState, setConfirmState] = useState<{ message: string; title: string; resolve: (ok: boolean) => void } | null>(null);
 
   const headerMenuRef = useRef<HTMLDivElement>(null);
+  const lastSyncedSelectedKeyRef = useRef<string>('');
+
+  const confirmFn = (message: string, title = 'Confirmar') =>
+    new Promise<boolean>((resolve) => {
+      setConfirmState({ message, title, resolve });
+    });
 
   // Hook para disparo automático de mensagens
   useAutoPauseMessages();
@@ -79,13 +87,16 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
   }, [isPauseModalOpen]);
 
   // --- DADOS E AÇÕES (HOOK) ---
-  const { chats, tags, isLoading, actions, fetchTags } = useChatList(isViewingArchived, searchTerm);
+  const { chats, tags, isLoading, actions, fetchTags } = useChatList(isViewingArchived, searchTerm, { confirm: confirmFn });
 
   // --- EFEITOS DE UI ---
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // Fecha menu do chat se clicar fora
-      if (activeMenuId !== null && !(event.target as Element).closest('.group')) {
+      const target = event.target as Element;
+      const isInsideChatMenu = target.closest('[data-chat-menu]');
+      const isInsideGroup = target.closest('.group');
+      // Fecha menu do chat se clicar fora (não fecha ao clicar em itens do menu)
+      if (activeMenuId !== null && !isInsideGroup && !isInsideChatMenu) {
         setActiveMenuId(null);
       }
       // Fecha menu do header
@@ -96,6 +107,31 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [activeMenuId]);
+
+  // Mantém o chat selecionado do painel principal sincronizado com a fonte da lista.
+  // Isso evita divergência entre ChatListItem e ChatHeader quando o chat é atualizado em realtime.
+  useEffect(() => {
+    if (!onSelectChat || !selectedChatId) return;
+
+    const selectedFromList = chats.find((c) => c.id === selectedChatId);
+    if (!selectedFromList) return;
+
+    const syncKey = [
+      selectedFromList.id,
+      selectedFromList.contact_name || '',
+      selectedFromList.phone || '',
+      selectedFromList.updated_at || '',
+      selectedFromList.last_interaction_at || '',
+      selectedFromList.last_message || '',
+      selectedFromList.last_message_type || '',
+      selectedFromList.unread_count || 0,
+    ].join('|');
+
+    if (syncKey !== lastSyncedSelectedKeyRef.current) {
+      lastSyncedSelectedKeyRef.current = syncKey;
+      onSelectChat(selectedFromList);
+    }
+  }, [chats, selectedChatId, onSelectChat]);
 
   // --- HANDLERS ---
 
@@ -124,33 +160,42 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
     setIsPaused(true);
   };
 
-  const handleDeactivatePause = async () => {
-    if (window.confirm('Deseja realmente desativar o modo de pausa?')) {
-      await deactivatePause();
-      setIsPaused(false);
-    }
+  const handleDeactivatePause = () => {
+    setConfirmState({
+      message: 'Deseja realmente desativar o modo de pausa?',
+      title: 'Desativar pausa',
+      resolve: (ok) => {
+        setConfirmState(null);
+        if (ok) deactivatePause().then(() => setIsPaused(false));
+      },
+    });
   };
 
   const handleItemAction = (e: React.MouseEvent, action: string, chat: Chat) => {
     e.stopPropagation();
-    setActiveMenuId(null);
+    e.preventDefault();
 
     // Ações que abrem modais locais
     if (action === 'tags') {
+      setActiveMenuId(null);
       setTagSelectorChat(chat);
       return;
     }
     if (action === 'edit_contact') {
+      setActiveMenuId(null);
       setEditingContact(chat);
       return;
     }
+
+    setActiveMenuId(null);
 
     // Ações de dados (delegadas ao hook)
     actions.singleAction(action, chat);
   };
 
   return (
-    <div className="w-[400px] flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1e2028] h-full relative z-20 transition-colors duration-300">
+    <>
+    <div className="w-[320px] min-w-[260px] md:w-[380px] lg:w-[400px] shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1e2028] h-full relative z-10 transition-colors duration-300">
       
       {/* --- MODAIS --- */}
       <TagsManager 
@@ -163,9 +208,11 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
       <TagSelector 
         isOpen={!!tagSelectorChat} 
         onClose={() => setTagSelectorChat(null)} 
-        chat={tagSelectorChat} 
+        chat={tagSelectorChat ? (chats.find(c => c.id === tagSelectorChat.id) ?? tagSelectorChat) : null} 
         allTags={tags || []} 
-        onToggleTag={actions.toggleTag} 
+        onSaveTags={async (chat, tagIds) => {
+          await actions.setTagsOnChat(chat, tagIds);
+        }} 
       />
 
       <NewChatModal 
@@ -378,5 +425,14 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
         )}
       </div>
     </div>
+    <ConfirmModal
+      isOpen={!!confirmState}
+      onClose={() => { confirmState?.resolve(false); setConfirmState(null); }}
+      onConfirm={() => { confirmState?.resolve(true); setConfirmState(null); }}
+      title={confirmState?.title ?? 'Confirmar'}
+      message={confirmState?.message ?? ''}
+      type="warning"
+    />
+    </>
   );
 }

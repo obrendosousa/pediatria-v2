@@ -1,18 +1,10 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Dot,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Dot
 } from 'recharts';
-import { ReferenceLine, GrowthChartData } from '@/types/anthropometry';
+import { GrowthChartData } from '@/types/anthropometry';
 import { ChartRegistryConfig } from '@/config/growthChartsRegistry';
 import { formatXAxisLabel } from '@/utils/growthChartUtils';
 
@@ -24,205 +16,142 @@ interface GrowthChartProps {
   xAxisLabel: string;
 }
 
-// Componente customizado para os pontos do paciente
+// Ponto visual do paciente (Bolinha preta)
 const PatientDot = (props: any) => {
-  const { cx, cy } = props;
+  const { cx, cy, payload } = props;
+  
+  // Só desenha a bolinha se tiver valor real
+  if (payload && payload.paciente === undefined) return null;
+
   return (
-    <Dot
-      cx={cx}
-      cy={cy}
-      r={6}
-      fill="#1e293b"
-      stroke="#ffffff"
-      strokeWidth={2}
-      className="drop-shadow-md"
-    />
+    <Dot cx={cx} cy={cy} r={5} fill="#1e293b" stroke="#ffffff" strokeWidth={2} />
   );
 };
 
-// Mapeamento de labels para exibição
-const getDisplayLabel = (label: string, displayMode: 'PERCENTILE' | 'Z_SCORE'): string => {
-  if (displayMode === 'PERCENTILE') {
-    return label; // P3, P15, P50, P85, P97
-  } else {
-    return label; // Z-3, Z-2, Z-1, Z0, Z+1, Z+2, Z+3
-  }
-};
-
 export function GrowthChart({ 
-  data, 
-  chartConfig, 
-  displayMode,
-  yAxisLabel, 
-  xAxisLabel 
+  data, chartConfig, displayMode, yAxisLabel, xAxisLabel 
 }: GrowthChartProps) {
-  const chartRef = useRef<HTMLDivElement>(null);
 
-  // Ordenar linhas de referência para áreas preenchidas
-  const sortedReferenceLines = useMemo(() => {
-    // Ordenar linhas de Z-Score: Z-3, Z-2, Z-1, Z0, Z+1, Z+2, Z+3
-    // Ou Percentil: P3, P15, P50, P85, P97
-    const order = displayMode === 'PERCENTILE' 
-      ? ['P3', 'P15', 'P50', 'P85', 'P97']
-      : ['Z-3', 'Z-2', 'Z-1', 'Z0', 'Z+1', 'Z+2', 'Z+3'];
-    
-    return [...data.referenceLines].sort((a, b) => {
-      const indexA = order.indexOf(a.label);
-      const indexB = order.indexOf(b.label);
-      return indexA - indexB;
-    });
-  }, [data.referenceLines, displayMode]);
-
-
-  // Formatar tooltip
+  // Tooltip Inteligente
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      // Tenta encontrar o dado do paciente no ponto atual
+      const patientData = payload.find((p: any) => p.dataKey === 'paciente');
+      
+      const xLabelText = chartConfig.isXAxisLength 
+        ? `${Math.round(label)} cm` 
+        : formatXAxisLabel(label, false);
+
       return (
-        <div className="bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-          <p className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-2">
-            {chartConfig.isXAxisLength 
-              ? `${xAxisLabel}: ${Math.round(label)}` 
-              : `${xAxisLabel}: ${formatXAxisLabel(label, false)}`}
+        <div className="bg-white/95 backdrop-blur shadow-xl border border-slate-200 rounded-lg p-3 text-xs min-w-[120px]">
+          {/* Cabeçalho: Sempre mostra a Idade/Eixo X (Serve como régua) */}
+          <p className="text-slate-500 font-medium pb-1 mb-1 border-b border-slate-100">
+            {xAxisLabel}: <span className="text-slate-700">{xLabelText}</span>
           </p>
-          {payload.map((entry: any, index: number) => (
-            <p
-              key={index}
-              className="text-xs"
-              style={{ color: entry.color }}
-            >
-              <span className="font-semibold">{entry.name}:</span> {entry.value.toFixed(2)}
-            </p>
-          ))}
+
+          {/* Corpo: Só mostra o Peso se tiver medição neste ponto exato */}
+          {patientData && patientData.value !== undefined ? (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="w-2 h-2 rounded-full bg-slate-800"></span>
+              <div>
+                <p className="font-bold text-slate-800 text-sm">
+                  {Number(patientData.value).toFixed(2)} kg
+                </p>
+                <p className="text-[10px] text-slate-400">Paciente</p>
+              </div>
+            </div>
+          ) : (
+            // Se não tiver ponto do paciente aqui, não mostra nada extra (nem "Sem medição")
+            null
+          )}
         </div>
       );
     }
     return null;
   };
 
-  // Preparar dados para o gráfico
-  // Combinar todas as linhas de referência e pontos do paciente
+  // Prepara os dados combinando linhas de referência + pontos do paciente
   const chartData: any[] = useMemo(() => {
-    const result: any[] = [];
+    const allX = new Set<number>();
     
-    // Encontrar todos os valores de X únicos
-    const allXValues = new Set<number>();
+    // Coleta todos os pontos X (Idades) existentes
+    data.referenceLines.forEach(l => l.data.forEach(p => allX.add(p.x)));
+    data.patientPoints.forEach(p => allX.add(p.x));
     
-    // Adicionar X das linhas de referência
-    data.referenceLines.forEach(line => {
-      line.data.forEach(point => allXValues.add(point.x));
-    });
-    
-    // Adicionar X dos pontos do paciente
-    data.patientPoints.forEach(point => allXValues.add(point.x));
-    
-    // Criar array ordenado de X
-    const sortedXValues = Array.from(allXValues).sort((a, b) => a - b);
-    
-    // Para cada X, criar um objeto com todos os valores Y
-    sortedXValues.forEach(x => {
-      const dataPoint: any = {
-        x,
-        xLabel: chartConfig.isXAxisLength 
-          ? `${Math.round(x)} cm`
-          : formatXAxisLabel(x, false),
-      };
+    // Cria array ordenado único
+    return Array.from(allX).sort((a, b) => a - b).map(x => {
+      const point: any = { x };
       
-      // Adicionar valores das linhas de referência
+      // Adiciona Y das linhas de referência (Coloridas)
       data.referenceLines.forEach(line => {
-        const point = line.data.find(p => Math.abs(p.x - x) < 0.01); // Tolerância para comparação
-        if (point) {
-          dataPoint[line.label] = point.y;
-        }
+        // Tolerância pequena para encontrar o ponto correspondente
+        const p = line.data.find(d => Math.abs(d.x - x) < 0.01);
+        if (p) point[line.label] = p.y;
       });
       
-      // Adicionar ponto do paciente se existir neste X
-      const patientPoint = data.patientPoints.find(p => Math.abs(p.x - x) < 0.01);
-      if (patientPoint) {
-        dataPoint.paciente = patientPoint.y;
-      }
+      // Adiciona Y do paciente (Preto)
+      const pat = data.patientPoints.find(d => Math.abs(d.x - x) < 0.01);
+      if (pat) point.paciente = pat.y;
       
-      result.push(dataPoint);
+      return point;
     });
-
-    return result;
-  }, [data.referenceLines, data.patientPoints, chartConfig.isXAxisLength]);
-
-  // Função para formatar tick do eixo X
-  const formatXAxisTick = (value: number) => {
-    if (chartConfig.isXAxisLength) {
-      return `${Math.round(value)}`;
-    }
-    return formatXAxisLabel(value, false);
-  };
+  }, [data]);
 
   return (
-    <div ref={chartRef} className="w-full h-full bg-white dark:bg-[#1e2028] rounded-lg p-4">
+    <div className="w-full h-full bg-white rounded-lg p-2">
       <ResponsiveContainer width="100%" height={500}>
-        <LineChart
-          data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-        >
-          <CartesianGrid 
-            strokeDasharray="3 3" 
-            stroke="#e2e8f0" 
-            className="dark:stroke-gray-700"
-          />
+        <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+          
           <XAxis
             dataKey="x"
-            tickFormatter={formatXAxisTick}
-            label={{ 
-              value: xAxisLabel, 
-              position: 'insideBottom', 
-              offset: -10,
-              className: 'text-xs fill-slate-600 dark:fill-gray-400'
-            }}
-            stroke="#64748b"
-            className="dark:stroke-gray-400"
-          />
-          <YAxis
-            label={{ 
-              value: yAxisLabel, 
-              angle: -90, 
-              position: 'insideLeft',
-              className: 'text-xs fill-slate-600 dark:fill-gray-400'
-            }}
-            stroke="#64748b"
-            className="dark:stroke-gray-400"
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend 
-            wrapperStyle={{ paddingTop: '20px' }}
-            iconType="line"
+            tickFormatter={(val) => chartConfig.isXAxisLength ? `${Math.round(val)}` : formatXAxisLabel(val, false)}
+            tick={{ fontSize: 11, fill: '#64748b' }}
+            tickLine={false}
+            axisLine={{ stroke: '#e2e8f0' }}
+            minTickGap={30}
           />
           
-          {/* Linhas de referência (TODAS as 7 linhas) */}
-          {sortedReferenceLines.map((line, index) => (
+          <YAxis
+            tick={{ fontSize: 11, fill: '#64748b' }}
+            tickLine={false}
+            axisLine={false}
+            width={30}
+            domain={['auto', 'auto']} // Ajusta escala automaticamente
+          />
+
+          <Tooltip 
+            content={<CustomTooltip />} 
+            cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }} // Linha pontilhada vertical
+          />
+          
+          {/* Linhas de Referência (Coloridas) */}
+          {data.referenceLines.map((line) => (
             <Line
-              key={`ref-${line.label}-${index}`}
+              key={line.label}
               type="monotone"
               dataKey={line.label}
               stroke={line.color}
-              strokeWidth={2}
+              strokeWidth={line.label === 'Z0' || line.label === 'P50' ? 2 : 1.5}
+              strokeOpacity={1}
               dot={false}
               activeDot={false}
-              name={getDisplayLabel(line.label, displayMode)}
-              legendType="line"
+              isAnimationActive={false} // Desativa animação para performance
             />
           ))}
           
-          {/* Linha do paciente */}
-          {data.patientPoints.length > 0 && (
-            <Line
-              type="monotone"
-              dataKey="paciente"
-              stroke="#1e293b"
-              strokeWidth={3}
-              dot={<PatientDot />}
-              activeDot={{ r: 8 }}
-              name="Paciente"
-              legendType="line"
-            />
-          )}
+          {/* Linha do Paciente (Preta) */}
+          <Line
+            type="monotone"
+            dataKey="paciente"
+            name="Paciente"
+            stroke="#1e293b"
+            strokeWidth={2}
+            dot={<PatientDot />}
+            activeDot={{ r: 6, fill: '#1e293b', stroke: '#fff', strokeWidth: 2 }}
+            connectNulls={true} // Liga os pontos mesmo se houver meses vazios no meio
+            isAnimationActive={true}
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>

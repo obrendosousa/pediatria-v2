@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { X, Trash2, Plus, Check, Save, Loader2, Clock } from 'lucide-react';
+import { useToast } from '@/contexts/ToastContext';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface EditModalProps {
   isOpen: boolean;
@@ -21,7 +24,9 @@ const COLORS = [
 ];
 
 export default function EditNoteModal({ isOpen, onClose, note, onUpdate }: EditModalProps) {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -72,14 +77,18 @@ export default function EditNoteModal({ isOpen, onClose, note, onUpdate }: EditM
         onClose();
     } catch (error) {
         console.error(error);
-        alert('Erro ao salvar');
+        toast.toast.error('Erro ao salvar');
     } finally {
         setLoading(false);
     }
   }
 
-  async function handleDelete() {
-      if(!confirm('Excluir permanentemente?')) return;
+  function handleDeleteClick() {
+      setConfirmDeleteOpen(true);
+  }
+
+  async function handleDeleteConfirm() {
+      setConfirmDeleteOpen(false);
       await supabase.from('tasks').update({ status: 'deleted' }).eq('id', note.id);
       onUpdate();
       onClose();
@@ -90,6 +99,7 @@ export default function EditNoteModal({ isOpen, onClose, note, onUpdate }: EditM
   const colorTheme = COLORS.find(c => c.id === selectedColorId) || COLORS[0];
 
   return (
+    <>
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4">
       <div className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up transition-colors duration-500 ${colorTheme.bg} flex flex-col max-h-[90vh]`}>
         
@@ -101,7 +111,7 @@ export default function EditNoteModal({ isOpen, onClose, note, onUpdate }: EditM
                 ))}
             </div>
             <div className="flex gap-2">
-                <button onClick={handleDelete} className="p-2 hover:bg-red-100 text-red-400 rounded-full"><Trash2 className="w-5 h-5"/></button>
+                <button onClick={handleDeleteClick} className="p-2 hover:bg-red-100 text-red-400 rounded-full"><Trash2 className="w-5 h-5"/></button>
                 <button onClick={onClose} className="p-2 hover:bg-black/10 rounded-full"><X className="w-5 h-5 opacity-50"/></button>
             </div>
         </div>
@@ -154,5 +164,15 @@ export default function EditNoteModal({ isOpen, onClose, note, onUpdate }: EditM
         </div>
       </div>
     </div>
+    <ConfirmModal
+      isOpen={confirmDeleteOpen}
+      onClose={() => setConfirmDeleteOpen(false)}
+      onConfirm={handleDeleteConfirm}
+      title="Excluir nota"
+      message="Excluir permanentemente?"
+      type="danger"
+      confirmText="Sim, excluir"
+    />
+    </>
   );
 }

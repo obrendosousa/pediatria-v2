@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { User, FileText, Calendar, Phone, X, ExternalLink, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { useRouter } from 'next/navigation';
 import { getPatientPhones, getPatientAppointments } from '@/utils/patientRelations';
 
@@ -19,7 +21,9 @@ export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientIn
   const [phones, setPhones] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (patientId && isOpen) {
       fetchPatientData();
@@ -78,9 +82,9 @@ export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientIn
       </button>
 
       {/* Modal de Informações */}
-      {isOpen && (
+      {isOpen && mounted && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in"
           onClick={() => setIsOpen(false)}
         >
           <div 
@@ -245,7 +249,8 @@ export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientIn
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

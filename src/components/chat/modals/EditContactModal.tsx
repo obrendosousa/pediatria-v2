@@ -1,7 +1,12 @@
+'use client';
+
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, UserCog, Loader2, Save } from 'lucide-react';
-import { supabase } from '@/lib/supabase'; //
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient(); //
 import { Chat } from '@/types'; //
+import { useToast } from '@/contexts/ToastContext';
 
 interface EditContactModalProps {
   isOpen: boolean;
@@ -11,43 +16,49 @@ interface EditContactModalProps {
 }
 
 export default function EditContactModal({ isOpen, onClose, chat, onUpdate }: EditContactModalProps) {
+  const { toast } = useToast();
   const [name, setName] = useState(chat.contact_name || '');
   const [phone, setPhone] = useState(chat.phone || '');
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     setName(chat.contact_name || '');
     setPhone(chat.phone || '');
   }, [chat]);
 
-  if (!isOpen) return null;
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      const cleanName = name.trim();
+
       // Atualiza no Supabase
       const { error } = await supabase
         .from('chats')
-        .update({ contact_name: name, phone: phone })
+        .update({ contact_name: cleanName || phone.trim(), phone: phone.trim() })
         .eq('id', chat.id);
 
       if (error) throw error;
 
       // Atualiza o estado local
-      onUpdate({ ...chat, contact_name: name, phone: phone });
+      onUpdate({ ...chat, contact_name: cleanName || phone.trim(), phone: phone.trim() });
       onClose();
     } catch (err) {
       console.error('Erro ao atualizar:', err);
-      alert('Erro ao atualizar contato.');
+      toast.toast.error('Erro ao atualizar contato.');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+  if (!isOpen) return null;
+
+  const modalContent = (
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-[#202c33] w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-md font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
@@ -92,4 +103,8 @@ export default function EditContactModal({ isOpen, onClose, chat, onUpdate }: Ed
       </div>
     </div>
   );
+
+  return mounted && typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : null;
 }

@@ -1,8 +1,8 @@
 // src/types/index.ts
 
 export interface Message {
-  id: number;
-  chat_id: number;
+  id: number | string;
+  chat_id: number | string;
   phone?: string; 
   sender: 'CUSTOMER' | 'AI_AGENT' | 'HUMAN_AGENT' | 'me' | string;
   message_text: string;     
@@ -11,6 +11,11 @@ export interface Message {
   media_url?: string;
   created_at: string;
   wpp_id?: string;
+  /** Status de confirmação: sent | delivered | read (apenas para mensagens enviadas) */
+  status?: 'sent' | 'delivered' | 'read';
+  quoted_wpp_id?: string | null;
+  is_edited?: boolean;
+  edited_at?: string | null;
   active?: boolean;
   nomewpp?: string;
   bot_message?: string;
@@ -27,6 +32,15 @@ export interface Message {
     duration?: number;
     caption?: string;
     fileName?: string;
+    reply_to?: {
+      wpp_id?: string;
+      sender?: string;
+      message_type?: string;
+      message_text?: string;
+      remote_jid?: string;
+    };
+    is_edited?: boolean;
+    edited_at?: string;
     [key: string]: any;
   };
 }
@@ -128,10 +142,14 @@ export interface Product {
 
 export interface Sale {
   id: number;
-  chat_id: number;
+  chat_id: number | null;
+  patient_id?: number | null;
+  appointment_id?: number | null;
   total: number;
-  status: 'pending' | 'paid' | 'cancelled';
+  status: 'pending' | 'paid' | 'completed' | 'cancelled';
   payment_method?: string;
+  origin?: 'atendimento' | 'loja' | string;
+  created_by?: string | null;
   created_at: string;
 }
 
@@ -201,7 +219,7 @@ export interface MedicalCheckout {
 export interface Macro {
   id: number;
   title: string;
-  type: 'text' | 'audio' | 'image' | 'document';
+  type: 'text' | 'audio' | 'image' | 'video' | 'document';
   content: string; // URL se for mídia, Texto se for mensagem
   category?: string;
   is_script?: boolean; // Se true, não envia, apenas mostra para leitura
@@ -210,9 +228,16 @@ export interface Macro {
 }
 
 export interface FunnelStep {
-  type: 'text' | 'audio' | 'image' | 'wait';
+  type: 'text' | 'audio' | 'image' | 'video' | 'document' | 'wait' | 'funnel';
   content?: string;
   delay?: number; // Tempo de espera em milissegundos
+  title?: string;
+  funnel_id?: number;
+  funnel_steps?: Array<{
+    type: 'text' | 'audio' | 'image' | 'video' | 'document' | 'wait';
+    content?: string;
+    delay?: number;
+  }>;
 }
 
 export interface Funnel {

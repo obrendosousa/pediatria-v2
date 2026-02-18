@@ -1,7 +1,8 @@
 // src/utils/appointmentSafety.ts
 // Funções utilitárias para garantir segurança e integridade dos atendimentos
 
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { getTodayDateString, getLocalDateRange, addDaysToDate } from './dateUtils';
 
 export interface AppointmentHealthCheck {
@@ -105,7 +106,7 @@ export async function finalizeOrphanedAppointments(olderThanHours: number = 24):
   
   const { data, error: updateError } = await supabase
     .from('appointments')
-    .update({ status: 'finished' })
+    .update({ status: 'finished', finished_at: new Date().toISOString() })
     .in('id', appointmentIds)
     .select();
 

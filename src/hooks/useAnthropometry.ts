@@ -1,7 +1,8 @@
 // Hook para gerenciar dados de antropometria
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { AnthropometryEntry } from '@/types/anthropometry';
 import { calculateBMI } from '@/utils/growthChartUtils';
 

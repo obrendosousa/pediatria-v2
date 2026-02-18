@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, Save, Plus, Trash2, Search, AlertTriangle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { ClinicalSummary, Allergy, MedicationInUse } from '@/types/medical';
 
 // Configuração das Seções (Mapeamento de Títulos e Campos)

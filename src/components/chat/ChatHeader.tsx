@@ -1,10 +1,14 @@
-import { MoreVertical, Trash2, User, Edit, UserCog, Sparkles, Loader2 } from 'lucide-react';
+'use client';
+
+import { MoreVertical, Trash2, User, UserCog, Sparkles, Loader2 } from 'lucide-react';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 import { Chat } from '@/types'; //
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase'; //
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient(); //
 import EditContactModal from './modals/EditContactModal'; // Importar o modal novo
 import { PatientInfoBadge } from './PatientInfoBadge';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface ChatHeaderProps {
   chat: Chat;
@@ -17,18 +21,38 @@ interface ChatHeaderProps {
 export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedule, isLoadingAI }: ChatHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
-  const handleClearChat = async () => {
-    if(confirm("Limpar todo o histórico desta conversa?")) {
-        await supabase.from('chat_messages').delete().eq('chat_id', chat.id);
-        setIsMenuOpen(false);
-    }
+  const handleClearChatClick = () => {
+    setConfirmClearOpen(true);
+  };
+
+  const handleClearChatConfirm = async () => {
+    setConfirmClearOpen(false);
+    await supabase.from('chat_messages').delete().eq('chat_id', chat.id);
+    setIsMenuOpen(false);
   };
 
   const handleUpdate = (updatedChat: Chat) => {
       if (onChatUpdate) onChatUpdate(updatedChat);
       setIsMenuOpen(false);
   };
+
+  const normalizePhone = (value?: string | null) => (value || '').replace(/\D/g, '');
+  const contactName = (chat.contact_name || '').trim();
+  const isUnsavedContact =
+    !contactName || normalizePhone(contactName) === normalizePhone(chat.phone);
+
+  // Buscar foto de perfil via Evolution API quando o chat não tem
+  useEffect(() => {
+    if (!chat.profile_pic && chat.id && chat.phone) {
+      fetch('/api/whatsapp/profile-picture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: chat.id }),
+      }).catch(() => {});
+    }
+  }, [chat.id, chat.phone, chat.profile_pic]);
 
   return (
     <>
@@ -46,7 +70,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                   style={!chat.profile_pic ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
                 >
                     {chat.profile_pic ? (
-                      <img src={chat.profile_pic} className="w-full h-full object-cover"/>
+                      <img src={chat.profile_pic} alt="Foto do contato" className="w-full h-full object-cover"/>
                     ) : (
                       <User 
                         className="w-6 h-6 opacity-80" 
@@ -57,6 +81,14 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                 <div>
                 <h2 className="font-medium text-gray-800 dark:text-gray-100">{chat.contact_name || chat.phone}</h2>
                 <p className="text-[12px] text-gray-500 dark:text-gray-400">{loadingMsgs ? 'Carregando...' : chat.phone}</p>
+                {isUnsavedContact && (
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="mt-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    Salvar contato
+                  </button>
+                )}
                 </div>
             </div>
             
@@ -106,7 +138,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                             </button>
                             <div className="h-[1px] bg-gray-100 dark:bg-gray-700 my-1"/>
                             <button 
-                                onClick={handleClearChat} 
+                                onClick={handleClearChatClick} 
                                 className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-red-600 dark:text-red-400 text-sm flex gap-2 items-center transition-colors"
                             >
                                 <Trash2 size={16}/> Limpar Conversa
@@ -116,6 +148,15 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                 </div>
             </div>
         </div>
+    <ConfirmModal
+      isOpen={confirmClearOpen}
+      onClose={() => setConfirmClearOpen(false)}
+      onConfirm={handleClearChatConfirm}
+      title="Limpar conversa"
+      message="Limpar todo o histórico desta conversa?"
+      type="danger"
+      confirmText="Sim, limpar"
+    />
     </>
   );
 }

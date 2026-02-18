@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 
 /**
  * Gera um UUID v4 usando crypto.randomUUID() (nativo)

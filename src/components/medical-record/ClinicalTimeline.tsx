@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { MedicalRecord } from '@/types/medical';
 import { AttendanceDetailModal } from './AttendanceDetailModal';
 

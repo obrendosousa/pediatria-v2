@@ -1,7 +1,8 @@
 // src/utils/patientRelations.ts
 // Utilitários para gerenciar relacionamentos entre pacientes, telefones, appointments e chats
 
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
+const supabase = createClient();
 import { cleanPhone } from './formatUtils';
 import { Appointment } from '@/types/medical';
 
@@ -111,7 +112,7 @@ export async function addPhoneToPatient(
       return null;
     }
     
-    return data;
+    return data as number | null;
   } catch (error) {
     console.error('Erro ao adicionar número ao paciente:', error);
     return null;
@@ -402,7 +403,7 @@ export async function linkPatientByPhone(
       return null;
     }
     
-    return data;
+    return data as number | null;
   } catch (error) {
     console.error('Erro ao vincular paciente por telefone:', error);
     return null;

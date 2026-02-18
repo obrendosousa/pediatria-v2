@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Calendar, 
   X, 
@@ -16,13 +17,15 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { Macro, Funnel } from '@/types';
+import { useToast } from '@/contexts/ToastContext';
 
 interface CreateScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
   macros: Macro[];
   funnels: Funnel[];
-  onConfirmAdHoc: (type: 'text'|'audio'|'image', content: string | File | Blob, date: string, time: string) => Promise<void>;
+  preselectedItem?: { item: any | null; type: 'macro' | 'funnel' } | null;
+  onConfirmAdHoc: (type: 'text'|'audio'|'image'|'video'|'document', content: string | File | Blob, date: string, time: string) => Promise<void>;
   onConfirmSaved: (item: any, type: 'macro' | 'funnel', date: string, time: string) => Promise<void>;
 }
 
@@ -31,10 +34,11 @@ export default function CreateScheduleModal({
   onClose, 
   macros, 
   funnels, 
+  preselectedItem,
   onConfirmAdHoc, 
   onConfirmSaved 
 }: CreateScheduleModalProps) {
-    // Abas Principais
+    const { toast } = useToast();
     const [mode, setMode] = useState<'custom' | 'saved'>('custom'); // 'custom' = Criar Agora, 'saved' = Biblioteca
 
     // Estados Gerais
@@ -43,7 +47,7 @@ export default function CreateScheduleModal({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Estados "Criar Agora" (Custom)
-    const [customType, setCustomType] = useState<'text'|'audio'|'image'>('text');
+    const [customType, setCustomType] = useState<'text'|'audio'|'image'|'video'|'document'>('text');
     const [text, setText] = useState("");
     const [file, setFile] = useState<File | null>(null);
     
@@ -58,6 +62,18 @@ export default function CreateScheduleModal({
     // Estados "Usar Salvo" (Saved)
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedItem, setSelectedItem] = useState<{item: any, type: 'macro'|'funnel'} | null>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+      if (!isOpen) return;
+      if (preselectedItem?.item) {
+        setMode('saved');
+        setSelectedItem({ item: preselectedItem.item, type: preselectedItem.type });
+      } else {
+        setSelectedItem(null);
+      }
+    }, [isOpen, preselectedItem]);
 
     if (!isOpen) return null;
 
@@ -73,7 +89,7 @@ export default function CreateScheduleModal({
             setIsRecording(true);
             setRecordingTime(0);
             timerRef.current = setInterval(() => setRecordingTime(p => p + 1), 1000);
-        } catch { alert("Erro ao acessar microfone."); }
+        } catch { toast.error("Erro ao acessar microfone."); }
     };
 
     const stopRecording = () => {
@@ -96,11 +112,13 @@ export default function CreateScheduleModal({
         try {
             if (mode === 'custom') {
                 if (customType === 'text' && !text.trim()) throw new Error("Digite uma mensagem.");
-                if (customType === 'image' && !file) throw new Error("Selecione uma imagem.");
+                if ((customType === 'image' || customType === 'video' || customType === 'document') && !file) throw new Error("Selecione um arquivo.");
                 if (customType === 'audio' && !audioBlob) throw new Error("Grave um áudio.");
                 
                 if (customType === 'text') await onConfirmAdHoc('text', text, date, time);
                 else if (customType === 'image') await onConfirmAdHoc('image', file!, date, time);
+                else if (customType === 'video') await onConfirmAdHoc('video', file!, date, time);
+                else if (customType === 'document') await onConfirmAdHoc('document', file!, date, time);
                 else if (customType === 'audio') await onConfirmAdHoc('audio', audioBlob!, date, time);
             
             } else {
@@ -109,7 +127,7 @@ export default function CreateScheduleModal({
             }
             onClose();
         } catch (e: any) {
-            alert(e.message);
+            toast.error(e.message || 'Erro ao agendar.');
         } finally {
             setIsSubmitting(false);
         }
@@ -119,8 +137,8 @@ export default function CreateScheduleModal({
     const filteredMacros = macros.filter(m => m.title.toLowerCase().includes(searchTerm.toLowerCase()));
     const filteredFunnels = funnels.filter(f => f.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[140] flex items-center justify-center p-4 animate-in fade-in">
+    const modalContent = (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 
                 {/* Header */}
@@ -160,7 +178,7 @@ export default function CreateScheduleModal({
                         {mode === 'custom' ? (
                             <div className="space-y-4 animate-in slide-in-from-right-4 fade-in duration-300">
                                 <div className="flex p-1 bg-gray-100 rounded-lg mb-4">
-                                    {[{id:'text', label:'Texto'}, {id:'audio', label:'Áudio'}, {id:'image', label:'Mídia'}].map(t => (
+                                    {[{id:'text', label:'Texto'}, {id:'audio', label:'Áudio'}, {id:'image', label:'Imagem'}, {id:'video', label:'Vídeo'}, {id:'document', label:'PDF/Doc'}].map(t => (
                                         <button key={t.id} onClick={() => setCustomType(t.id as any)} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${customType === t.id ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'}`}>{t.label}</button>
                                     ))}
                                 </div>
@@ -188,9 +206,14 @@ export default function CreateScheduleModal({
                                     </div>
                                 )}
 
-                                {customType === 'image' && (
+                                {(customType === 'image' || customType === 'video' || customType === 'document') && (
                                     <div className="h-40 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center relative hover:bg-gray-100 transition-colors">
-                                        <input type="file" accept="image/*,application/pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setFile(e.target.files?.[0] || null)}/>
+                                        <input
+                                            type="file"
+                                            accept={customType === 'image' ? 'image/*' : customType === 'video' ? 'video/*' : 'application/pdf,application/*'}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            onChange={e => setFile(e.target.files?.[0] || null)}
+                                        />
                                         {file ? (
                                             <div className="text-center"><CheckCircle2 className="text-green-500 w-8 h-8 mx-auto mb-2"/><p className="text-sm font-bold text-gray-700">{file.name}</p></div>
                                         ) : (
@@ -236,4 +259,8 @@ export default function CreateScheduleModal({
             </div>
         </div>
     );
+
+    return mounted && typeof document !== 'undefined'
+        ? createPortal(modalContent, document.body)
+        : null;
 }
