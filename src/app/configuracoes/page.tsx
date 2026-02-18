@@ -722,5 +722,7 @@ export default function ConfiguracoesPage() {
       type="warning"
       confirmText="Sim, restaurar"
     />
+    </div>
+    </div>
   );
 }
