@@ -11,7 +11,7 @@
     "worker:dev": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config worker/src/main.ts",
     "worker:start": "DOTENV_CONFIG_PATH=.env.local node --require dotenv/config --enable-source-maps ./node_modules/tsx/dist/cli.mjs worker/src/main.ts",
     "worker:dry-run": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config worker/src/dry-run.ts",
-    "build": "next build",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
     "start": "next start",
     "lint": "eslint",
     "test:crm-metrics": "node --test --import tsx src/lib/crm/metrics.test.ts",
