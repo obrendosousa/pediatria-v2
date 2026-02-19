@@ -13,9 +13,9 @@ type FinancialTransaction = {
   occurred_at: string;
   sale_id: number | null;
   appointment_id: number | null;
-  appointments?: {
+  appointments?: Array<{
     appointment_type: 'consulta' | 'retorno' | null;
-  } | null;
+  }> | null;
   financial_transaction_payments: Array<{
     payment_method: PaymentMethod;
     amount: number;
@@ -30,16 +30,16 @@ type SaleRow = {
   patient_id: number | null;
   origin: string | null;
   appointment_id: number | null;
-  appointments?: {
+  appointments?: Array<{
     appointment_type: 'consulta' | 'retorno' | null;
-  } | null;
+  }> | null;
 };
 
 type SaleItemRow = {
   sale_id: number;
   quantity: number;
   unit_price: number;
-  products?: { price_cost: number | null } | null;
+  products?: Array<{ price_cost: number | null }> | null;
 };
 
 function dateKeyFromISO(dateISO: string): string {
@@ -52,6 +52,10 @@ function dateKeyFromISO(dateISO: string): string {
 
 function round2(value: number): number {
   return Number(value.toFixed(2));
+}
+
+function firstAppointmentType(row: { appointments?: Array<{ appointment_type: 'consulta' | 'retorno' | null }> | null }) {
+  return row.appointments?.[0]?.appointment_type ?? null;
 }
 
 export async function GET(request: Request) {
@@ -120,9 +124,9 @@ export async function GET(request: Request) {
     if (salesError) throw new Error(salesError.message || 'Erro ao consultar vendas.');
     if (itemsError) throw new Error(itemsError.message || 'Erro ao consultar itens de venda.');
 
-    const txRows = (transactions || []) as FinancialTransaction[];
+    const txRows = ((transactions || []) as unknown) as FinancialTransaction[];
     const salesRows = (sales || []) as SaleRow[];
-    const saleItemsRows = (saleItems || []) as SaleItemRow[];
+    const saleItemsRows = ((saleItems || []) as unknown) as SaleItemRow[];
     const patientIds = [...new Set(salesRows.map((sale) => sale.patient_id).filter((id): id is number => Number.isInteger(id)))];
     const chatIds = [...new Set(salesRows.map((sale) => sale.chat_id).filter((id): id is number => Number.isInteger(id)))];
 
@@ -144,7 +148,7 @@ export async function GET(request: Request) {
     const salesInPeriodSet = new Set(salesRows.map((sale) => sale.id));
     const saleItemsInRange = saleItemsRows.filter((item) => salesInPeriodSet.has(item.sale_id));
     const storeCost = saleItemsInRange.reduce((acc, item) => {
-      const unitCost = Number(item.products?.price_cost || 0);
+      const unitCost = Number(item.products?.[0]?.price_cost || 0);
       return acc + unitCost * Number(item.quantity || 0);
     }, 0);
 
@@ -171,7 +175,7 @@ export async function GET(request: Request) {
       const normalizedOrigin = normalizeFinancialOrigin(tx.origin);
       const financialType = resolveFinancialType({
         origin: tx.origin,
-        appointmentType: tx.appointments?.appointment_type ?? null
+        appointmentType: firstAppointmentType(tx)
       });
 
       revenueByOrigin[normalizedOrigin] += amount;
@@ -196,7 +200,7 @@ export async function GET(request: Request) {
       const saleAmount = Number(sale.total || 0);
       const saleType = resolveFinancialType({
         origin: sale.origin,
-        appointmentType: sale.appointments?.appointment_type ?? null
+        appointmentType: firstAppointmentType(sale)
       });
       salesRevenueByType[saleType] += saleAmount;
       salesRevenueTotal += saleAmount;

@@ -5,13 +5,18 @@ import { NotificationToast } from '@/components/NotificationToast';
 import type { Notification } from '@/components/NotificationToast';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
+type ToastMethods = {
+  success: (message: string, title?: string) => void;
+  error: (message: string, title?: string) => void;
+  info: (message: string, title?: string) => void;
+  checkout: (patientName: string, total: number) => void;
+  confirm: (message: string, title?: string) => Promise<boolean>;
+};
+
 interface ToastContextValue {
-  toast: {
-    success: (message: string, title?: string) => void;
-    error: (message: string, title?: string) => void;
-    info: (message: string, title?: string) => void;
-    checkout: (patientName: string, total: number) => void;
-    confirm: (message: string, title?: string) => Promise<boolean>;
+  toast: ToastMethods & {
+    // Compatibilidade com componentes legados que chamam toast.toast.error(...)
+    toast: ToastMethods;
   };
   addNotification: (notification: Omit<Notification, 'id'>) => string;
   dismissNotification: (id: string) => void;
@@ -115,8 +120,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setConfirmState((prev) => ({ ...prev, isOpen: false }));
   }, []);
 
+  const toastApi: ToastMethods = { success, error, info, checkout, confirm };
+
   const value: ToastContextValue = {
-    toast: { success, error, info, checkout, confirm },
+    toast: { ...toastApi, toast: toastApi },
     addNotification,
     dismissNotification,
     notifications,

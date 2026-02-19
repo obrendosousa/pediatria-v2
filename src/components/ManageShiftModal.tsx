@@ -17,6 +17,7 @@ interface ManageShiftModalProps {
 }
 
 export default function ManageShiftModal({ isOpen, onClose, onSuccess, initialDate }: ManageShiftModalProps) {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [doctors, setDoctors] = useState<any[]>([]);
   

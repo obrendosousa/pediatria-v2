@@ -16,6 +16,7 @@ export interface ExecutionItem {
 }
 
 export function useChatAutomation(activeChat: Chat | null) {
+  const { toast } = useToast();
   const [macros, setMacros] = useState<Macro[]>([]);
   const [funnels, setFunnels] = useState<Funnel[]>([]);
   const [scheduledMessages, setScheduledMessages] = useState<ScheduledMessage[]>([]);
@@ -180,7 +181,7 @@ export function useChatAutomation(activeChat: Chat | null) {
         await runServerFunnel(
           `Funil: ${funnel.title}`,
           funnel.steps.map(step => ({
-            type: step.type,
+            type: (step.type === 'funnel' ? 'text' : step.type) as 'text' | 'audio' | 'image' | 'document' | 'video' | 'wait',
             content: step.content || '',
             delay: Math.max(step.delay || 0, 2),
           }))

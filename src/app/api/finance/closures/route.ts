@@ -19,25 +19,33 @@ type TransactionRow = {
   sale_id: number | null;
   medical_checkout_id: number | null;
   notes: string | null;
-  appointments?: {
+  appointments?: Array<{
     id: number;
     patient_id: number | null;
     patient_name: string | null;
     parent_name: string | null;
     appointment_type: 'consulta' | 'retorno' | null;
-  } | null;
-  sales?: {
+  }> | null;
+  sales?: Array<{
     id: number;
     patient_id: number | null;
     chat_id: number | null;
     total: number | null;
     payment_method: string | null;
-  } | null;
+  }> | null;
   financial_transaction_payments: Array<{
     payment_method: PaymentMethod;
     amount: number;
   }>;
 };
+
+function firstAppointment(transaction: TransactionRow) {
+  return transaction.appointments?.[0] ?? null;
+}
+
+function firstSale(transaction: TransactionRow) {
+  return transaction.sales?.[0] ?? null;
+}
 
 function buildDailyTotals(transactions: TransactionRow[]) {
   const totalsByMethod: Record<PaymentMethod, number> = {
@@ -59,9 +67,10 @@ function buildDailyTotals(transactions: TransactionRow[]) {
   for (const transaction of transactions) {
     const amount = Number(transaction.amount || 0);
     const normalizedOrigin = normalizeFinancialOrigin(transaction.origin);
+    const appointment = firstAppointment(transaction);
     const financialType = resolveFinancialType({
       origin: transaction.origin,
-      appointmentType: transaction.appointments?.appointment_type ?? null
+      appointmentType: appointment?.appointment_type ?? null
     });
 
     totalsByOrigin[normalizedOrigin] += amount;
@@ -94,11 +103,13 @@ function mapTransactionLog(
   patientNameById: Map<number, string>,
   chatNameById: Map<number, string>
 ) {
-  const appointmentType = transaction.appointments?.appointment_type ?? null;
+  const appointment = firstAppointment(transaction);
+  const sale = firstSale(transaction);
+  const appointmentType = appointment?.appointment_type ?? null;
   const patientName =
-    transaction.appointments?.patient_name ||
-    (transaction.sales?.patient_id ? patientNameById.get(transaction.sales.patient_id) : null) ||
-    (transaction.sales?.chat_id ? chatNameById.get(transaction.sales.chat_id) : null) ||
+    appointment?.patient_name ||
+    (sale?.patient_id ? patientNameById.get(sale.patient_id) : null) ||
+    (sale?.chat_id ? chatNameById.get(sale.chat_id) : null) ||
     'Não identificado';
 
   const normalizedOrigin = normalizeFinancialOrigin(transaction.origin);
@@ -168,9 +179,21 @@ async function loadTransactionsByRange(startISO: string, endISO: string) {
     throw new Error(error.message || 'Erro ao carregar transações do dia.');
   }
 
-  const rows = (data || []) as TransactionRow[];
-  const patientIds = [...new Set(rows.map((row) => row.sales?.patient_id).filter((id): id is number => Number.isInteger(id)))];
-  const chatIds = [...new Set(rows.map((row) => row.sales?.chat_id).filter((id): id is number => Number.isInteger(id)))];
+  const rows = ((data || []) as unknown) as TransactionRow[];
+  const patientIds = [
+    ...new Set(
+      rows
+        .map((row) => firstSale(row)?.patient_id)
+        .filter((id): id is number => Number.isInteger(id))
+    ),
+  ];
+  const chatIds = [
+    ...new Set(
+      rows
+        .map((row) => firstSale(row)?.chat_id)
+        .filter((id): id is number => Number.isInteger(id))
+    ),
+  ];
 
   const [patientsRes, chatsRes] = await Promise.all([
     patientIds.length > 0

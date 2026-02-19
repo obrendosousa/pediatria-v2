@@ -63,12 +63,15 @@ export async function GET(request: Request) {
     if (medicalRecordsResult.error) throw medicalRecordsResult.error;
     if (messagesResult.error) throw messagesResult.error;
 
+    const appointmentsByStart = (appointmentsByStartResult.data || []) as Appointment[];
+    const appointmentsByCreated = (appointmentsByCreatedResult.data || []) as Appointment[];
+
     const appointmentsMap = new Map<number, Appointment>();
-    for (const apt of appointmentsByStartResult.data || []) {
-      appointmentsMap.set(apt.id, apt as Appointment);
+    for (const apt of appointmentsByStart) {
+      appointmentsMap.set(Number(apt.id), apt);
     }
-    for (const apt of appointmentsByCreatedResult.data || []) {
-      appointmentsMap.set(apt.id, apt as Appointment);
+    for (const apt of appointmentsByCreated) {
+      appointmentsMap.set(Number(apt.id), apt);
     }
 
     const payload = buildCRMMetricsPayload({

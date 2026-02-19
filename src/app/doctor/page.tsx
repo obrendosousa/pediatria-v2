@@ -146,14 +146,13 @@ export default function DoctorPage() {
         .select('*')
         .eq('status', 'in_service')
         .order('start_time', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
 
       if (profile?.doctor_id) {
         inServiceQuery = inServiceQuery.eq('doctor_id', profile.doctor_id);
       }
 
-      const { data: inServiceData, error: inServiceError } = await inServiceQuery;
+      const { data: inServiceData, error: inServiceError } = await inServiceQuery.maybeSingle();
 
       if (inServiceError) {
         console.error('Erro ao buscar paciente em atendimento:', inServiceError);

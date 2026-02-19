@@ -29,7 +29,7 @@ export interface MedicalCheckoutData {
     id: number;
     product_id: number;
     quantity: number;
-    products?: { id: number; name: string; price_sale: number } | null;
+    products?: Array<{ id: number; name: string; price_sale: number }> | null;
   }>;
 }
 
@@ -105,16 +105,17 @@ export function useCheckoutPanel(appointmentId: number | null) {
           });
         }
 
-        const items = (mcData.checkout_items || []) as NonNullable<MedicalCheckoutData['checkout_items']>;
+        const items = ((mcData.checkout_items || []) as unknown) as NonNullable<MedicalCheckoutData['checkout_items']>;
         items.forEach((item) => {
-          if (item.products) {
+          const productRow = item.products?.[0];
+          if (productRow) {
             initialItems.push({
-              id: item.products.id,
+              id: productRow.id,
               qty: item.quantity,
               type: 'medical_item',
-              name: item.products.name,
-              price: item.products.price_sale,
-              product: item.products
+              name: productRow.name,
+              price: productRow.price_sale,
+              product: (productRow as unknown) as Product
             });
           }
         });

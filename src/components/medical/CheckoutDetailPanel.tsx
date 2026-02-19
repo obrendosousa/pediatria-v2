@@ -137,10 +137,10 @@ export default function CheckoutDetailPanel({
                   className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#2a2d36] rounded-lg border border-slate-200 dark:border-gray-700"
                 >
                   <span className="text-sm font-medium text-slate-800 dark:text-gray-200">
-                    {item.products?.name ?? 'Item'}
+                    {item.products?.[0]?.name ?? 'Item'}
                   </span>
                   <span className="text-xs text-slate-500 dark:text-gray-400">
-                    R$ {item.products?.price_sale != null ? Number(item.products.price_sale).toFixed(2) : '0,00'}
+                    R$ {item.products?.[0]?.price_sale != null ? Number(item.products[0].price_sale).toFixed(2) : '0,00'}
                     {item.quantity > 1 ? ` x ${item.quantity}` : ''}
                   </span>
                   <span className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">

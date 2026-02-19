@@ -13,11 +13,11 @@ type StoreCashTx = {
   daily_closure_id: number | null;
   origin: string;
   notes: string | null;
-  sales?: {
+  sales?: Array<{
     id: number;
     patient_id: number | null;
     chat_id: number | null;
-  } | null;
+  }> | null;
   financial_transaction_payments: Array<{
     payment_method: PaymentMethod;
     amount: number;
@@ -84,7 +84,7 @@ async function loadStoreTransactions(date: string) {
     throw new Error(error.message || 'Erro ao carregar transações do caixa da loja.');
   }
 
-  return (data || []) as StoreCashTx[];
+  return ((data || []) as unknown) as StoreCashTx[];
 }
 
 export async function GET(request: Request) {

@@ -19,11 +19,12 @@ interface SchedulerState {
 }
 
 async function ensureChatId(phoneRaw: string, contactName?: string): Promise<number | null> {
-  const supabase = getSupabaseAdminClient();
+  const supabase = getSupabaseAdminClient() as any;
   const phone = phoneRaw.replace(/\D/g, "");
   const existing = await supabase.from("chats").select("id").eq("phone", phone).maybeSingle();
   if (existing.error) throw existing.error;
-  if (existing.data?.id) return existing.data.id as number;
+  const existingChat = (existing.data as { id?: number } | null) ?? null;
+  if (existingChat?.id) return existingChat.id;
 
   const created = await supabase
     .from("chats")
@@ -36,7 +37,8 @@ async function ensureChatId(phoneRaw: string, contactName?: string): Promise<num
     .single();
 
   if (created.error) throw created.error;
-  return (created.data?.id as number) || null;
+  const createdChat = (created.data as { id?: number } | null) ?? null;
+  return createdChat?.id || null;
 }
 
 async function enqueueSequence(params: {
@@ -51,7 +53,7 @@ async function enqueueSequence(params: {
   appointmentId?: number;
   dryRun: boolean;
 }) {
-  const supabase = getSupabaseAdminClient();
+  const supabase = getSupabaseAdminClient() as any;
   let delaySeconds = 0;
   let created = 0;
 
@@ -118,10 +120,10 @@ async function getCompiledSchedulerGraph() {
           returnRule: { reducer: (_, y) => y, default: () => null },
           createdCount: { reducer: (_, y) => y, default: () => 0 },
         },
-      });
+      }) as any;
 
-      graph.addNode("load_rules", async (state) => {
-        const supabase = getSupabaseAdminClient();
+      graph.addNode("load_rules", async (state: SchedulerState) => {
+        const supabase = getSupabaseAdminClient() as any;
         const [milestoneRulesRes, appointmentRuleRes, returnRuleRes] = await Promise.all([
           supabase.from("automation_rules").select("*").eq("type", "milestone").eq("active", true).not("age_months", "is", null),
           supabase.from("automation_rules").select("*").eq("type", "appointment_reminder").eq("active", true).limit(1).maybeSingle(),
@@ -151,7 +153,7 @@ async function getCompiledSchedulerGraph() {
         return payload;
       });
 
-      graph.addNode("evaluate_and_enqueue", async (state) => {
+      graph.addNode("evaluate_and_enqueue", async (state: SchedulerState) => {
         let createdCount = 0;
         const now = new Date(state.nowIso);
         const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;

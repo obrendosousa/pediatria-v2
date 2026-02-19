@@ -30,7 +30,7 @@ async function setPresence(phone: string, status: "composing" | "recording", dur
 }
 
 async function appendRunLog(runId: string, threadId: string, nodeName: string, message: string, metadata: Record<string, unknown>) {
-  const supabase = getSupabaseAdminClient();
+  const supabase = getSupabaseAdminClient() as any;
   await supabase.from("worker_run_logs").insert({
     run_id: runId,
     thread_id: threadId,
@@ -59,9 +59,9 @@ async function getCompiledChatFunnelGraph() {
           stepIndex: { reducer: (_, y) => y, default: () => 0 },
           completed: { reducer: (_, y) => y, default: () => 0 },
         },
-      });
+      }) as any;
 
-      graph.addNode("execute_step", async (state) => {
+      graph.addNode("execute_step", async (state: FunnelState) => {
         const step = state.steps[state.stepIndex];
         if (!step) return {};
 
@@ -104,7 +104,7 @@ async function getCompiledChatFunnelGraph() {
           phone: state.phone,
           type: step.type,
           content: payloadContent,
-          mediaUrl: step.type === "text" || step.type === "wait" ? null : payloadContent,
+          mediaUrl: step.type === "text" ? null : payloadContent,
           wppId: sendRes.wppId,
         });
 
@@ -117,7 +117,7 @@ async function getCompiledChatFunnelGraph() {
         return { stepIndex: state.stepIndex + 1, completed: state.completed + 1 };
       });
 
-      graph.addConditionalEdges("execute_step", (state) => {
+      graph.addConditionalEdges("execute_step", (state: FunnelState) => {
         if (state.stepIndex >= state.steps.length) return END;
         return "execute_step";
       });

@@ -12,6 +12,7 @@ import { saveAppointmentDateTime } from '@/utils/dateUtils';
 import { formatDateToDisplay, formatDateToISO, formatCurrency, parseCurrency } from '../utils/agendaUtils';
 import { useToast } from '@/contexts/ToastContext';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import type { Appointment } from '@/types/medical';
 
 const supabase = createClient();
 

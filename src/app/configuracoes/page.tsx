@@ -383,6 +383,7 @@ export default function ConfiguracoesPage() {
   );
 
   return (
+    <>
     <div className="flex-1 h-full bg-[#f8fafc] dark:bg-[#0b141a] overflow-y-auto custom-scrollbar transition-colors duration-300">
       <div className="max-w-7xl mx-auto p-6 lg:p-8">
         
@@ -722,7 +723,6 @@ export default function ConfiguracoesPage() {
       type="warning"
       confirmText="Sim, restaurar"
     />
-    </div>
-    </div>
+    </>
   );
 }

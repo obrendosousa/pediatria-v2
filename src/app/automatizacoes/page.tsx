@@ -107,7 +107,7 @@ export default function AutomationsPage() {
       fetchAutomations();
     } catch (error) {
       console.error('Erro ao excluir automação:', error);
-      toast.toast.error('Erro ao excluir automação');
+      toast.error('Erro ao excluir automação');
     }
   };
 
@@ -123,7 +123,7 @@ export default function AutomationsPage() {
       fetchAutomations();
     } catch (error) {
       console.error('Erro ao alterar status:', error);
-      toast.toast.error('Erro ao alterar status da automação');
+      toast.error('Erro ao alterar status da automação');
     }
   };
 

@@ -73,7 +73,7 @@ export async function saveMessageToDb(payload: {
 }) {
   const supabase = await getSupabase();
 
-  const status = (payload.sender === "HUMAN_AGENT" || payload.sender === "AI_AGENT") ? "sent" : undefined;
+  const status = payload.sender === "HUMAN_AGENT" ? "sent" : undefined;
   const insertPayload: Record<string, unknown> = {
     chat_id: payload.chat_id,
     phone: payload.phone,

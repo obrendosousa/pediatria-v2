@@ -73,23 +73,23 @@ export const processInputNode = async (
   if (data.messageType === "audioMessage") {
     type = "audio";
     content = content || "🎵 Áudio recebido";
-    mediaUrl = await handleMediaUpload(msg, data.key, data.base64);
+    mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "imageMessage") {
     type = "image";
     content = content || "📷 Imagem recebida";
-    mediaUrl = await handleMediaUpload(msg, data.key, data.base64);
+    mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "videoMessage") {
     type = "video";
     content = content || "🎬 Vídeo recebido";
-    mediaUrl = await handleMediaUpload(msg, data.key, data.base64);
+    mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "stickerMessage") {
     type = "sticker";
     content = content || "💟 Figurinha";
-    mediaUrl = await handleMediaUpload(msg, data.key, data.base64);
+    mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "documentMessage") {
     type = "document";
     content = content || "📄 Documento recebido";
-    mediaUrl = await handleMediaUpload(msg, data.key, data.base64);
+    mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else {
     // Texto: usar extractMediaUrl apenas para URLs já existentes (raro)
     mediaUrl = extractMediaUrl(msg);

@@ -65,9 +65,9 @@ async function getCompiledDispatchGraph() {
           failedCount: { reducer: (_, y) => y, default: () => 0 },
           deadLetterCount: { reducer: (_, y) => y, default: () => 0 },
         },
-      });
+      }) as any;
 
-      graph.addNode("claim_pending", async (state) => {
+      graph.addNode("claim_pending", async (state: DispatchState) => {
         const claimed = await claimScheduledMessages(state.batchSize, state.workerId);
         await logRunEvent({
           runId: state.runId,
@@ -80,7 +80,7 @@ async function getCompiledDispatchGraph() {
         return { claimed };
       });
 
-      graph.addNode("dispatch_batch", async (state) => {
+      graph.addNode("dispatch_batch", async (state: DispatchState) => {
         let sentCount = 0;
         let failedCount = 0;
         let deadLetterCount = 0;
@@ -221,7 +221,7 @@ export async function runScheduledDispatchGraph(input: DispatchRunCommandContrac
   const graph = await getCompiledDispatchGraph();
 
   const threadId = `dispatch-${new Date().toISOString().slice(0, 10)}-${workerId}`;
-  const finalState = await graph.invoke(
+  const finalState = (await graph.invoke(
     {
       runId,
       workerId,
@@ -233,7 +233,7 @@ export async function runScheduledDispatchGraph(input: DispatchRunCommandContrac
         thread_id: threadId,
       },
     }
-  );
+  )) as unknown as DispatchState;
 
   return workerAckSchema.parse({
     ok: true,

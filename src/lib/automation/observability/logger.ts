@@ -9,7 +9,7 @@ export async function logRunEvent(params: {
   message: string;
   metadata?: Record<string, unknown>;
 }) {
-  const supabase = getSupabaseAdminClient();
+  const supabase = getSupabaseAdminClient() as any;
   await supabase.from("worker_run_logs").insert({
     run_id: params.runId,
     thread_id: params.threadId || null,
