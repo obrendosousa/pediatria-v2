@@ -18,6 +18,7 @@ interface ConductsFormData {
 }
 
 export function Conducts({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
+  const { toast } = useToast();
   const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<ConductsFormData>({
     defaultValues: {
