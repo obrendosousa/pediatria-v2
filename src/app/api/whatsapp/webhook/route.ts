@@ -327,6 +327,14 @@ function detectMessageType(message: unknown): string {
   return "unknown";
 }
 
+function toRemoteJid(value: unknown): string {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  if (raw.includes("@")) return raw;
+  const digits = raw.replace(/\D/g, "");
+  return digits ? `${digits}@s.whatsapp.net` : "";
+}
+
 function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
   const payload = (body ?? {}) as Record<string, unknown>;
   const data = payload.data as unknown;
@@ -354,7 +362,15 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
         id: item.keyId ?? item.id ?? "",
       } as Record<string, unknown>);
 
-    const remoteJid = typeof keyRaw.remoteJid === "string" ? keyRaw.remoteJid : "";
+    const remoteJid = toRemoteJid(
+      keyRaw.remoteJid ??
+        item.remoteJid ??
+        item.jid ??
+        item.from ??
+        item.sender ??
+        item.number ??
+        item.phone
+    );
     if (!remoteJid) continue;
 
     const messageValue = (item.message ?? item.content ?? {}) as unknown;
@@ -408,7 +424,10 @@ export async function POST(req: Request) {
     const messages = normalizeMessagesFromWebhook(body);
 
     if (messages.length === 0) {
-      return NextResponse.json({ status: "ignored" });
+      console.warn("[WEBHOOK] Ignorado: nenhum payload normalizado", {
+        event: eventUpper || event || "unknown",
+      });
+      return NextResponse.json({ status: "ignored", reason: "no_messages_normalized" });
     }
 
     const persistedIngestionGraph = await getPersistedIngestionGraph();
@@ -445,6 +464,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ status: "processed", messages: messages.length });
   } catch (error) {
     console.error("Erro no Webhook:", error);
-    return NextResponse.json({ status: "error" });
+    return NextResponse.json({ status: "error" }, { status: 500 });
   }
 }
