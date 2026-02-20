@@ -5,6 +5,7 @@
 - Aplicar `database/langgraph_migration_phase1.sql` em homologacao e producao.
 - Validar variaveis:
   - `LANGGRAPH_CHECKPOINT_POSTGRES_URI` (ou `DATABASE_URL`)
+  - `LANGGRAPH_CHECKPOINTER_MODE` (`auto` recomendado; usar `postgres` apenas se quiser falhar sem fallback)
   - `SUPABASE_SERVICE_ROLE_KEY`
   - `EVOLUTION_API_URL`, `EVOLUTION_INSTANCE`, `EVOLUTION_API_KEY`
   - `WORKER_PORT`, `WORKER_POLL_INTERVAL_MS`, `WORKER_SCHEDULER_INTERVAL_MS`
@@ -26,6 +27,10 @@
 
 - Monitorar `worker_run_logs` por `run_id` e `thread_id`.
 - Monitorar `langgraph_dead_letter` (crescimento anormal).
+- Monitorar `GET /health`:
+  - `cronJobs[].consecutiveFailures`
+  - `cronJobs[].lastError`
+  - `checkpointer.mode` (esperado `postgres`; `memory` indica fallback)
 - Validar SLO:
   - taxa de sucesso >= 95%
   - dead-letter dentro do limite operacional

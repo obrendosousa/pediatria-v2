@@ -2,11 +2,16 @@ import { runScheduledDispatchGraph } from "./langgraph/graphs/scheduledDispatch"
 import { runAutomationSchedulerGraph } from "./langgraph/graphs/automationScheduler";
 import { markDispatchRun, markSchedulerRun, markWorkerError } from "./health";
 import type { WorkerConfig } from "./config";
+import { RobustCronManager, type CronJobSnapshot } from "./cron/robustCron";
 
-type StopFn = () => Promise<void>;
+export interface WorkerRuntimeController {
+  stop: () => Promise<void>;
+  getCronJobs: () => CronJobSnapshot[];
+}
 
-export async function startWorkerRuntime(config: WorkerConfig): Promise<StopFn> {
+export async function startWorkerRuntime(config: WorkerConfig): Promise<WorkerRuntimeController> {
   let shuttingDown = false;
+  const cron = new RobustCronManager();
 
   const runDispatch = async () => {
     if (shuttingDown) return;
@@ -20,6 +25,7 @@ export async function startWorkerRuntime(config: WorkerConfig): Promise<StopFn> 
     } catch (error) {
       markWorkerError(error);
       console.error("[Worker] dispatch error:", error);
+      throw error;
     }
   };
 
@@ -34,22 +40,33 @@ export async function startWorkerRuntime(config: WorkerConfig): Promise<StopFn> 
     } catch (error) {
       markWorkerError(error);
       console.error("[Worker] scheduler error:", error);
+      throw error;
     }
   };
 
-  await Promise.all([runDispatch(), runScheduler()]);
+  cron.register({
+    name: "dispatch",
+    intervalMs: config.pollIntervalMs,
+    maxBackoffMs: Math.max(config.pollIntervalMs * 10, 60_000),
+    runOnStart: true,
+    task: runDispatch,
+  });
 
-  const dispatchTimer = setInterval(() => {
-    void runDispatch();
-  }, config.pollIntervalMs);
+  cron.register({
+    name: "scheduler",
+    intervalMs: config.schedulerIntervalMs,
+    maxBackoffMs: Math.max(config.schedulerIntervalMs * 10, 300_000),
+    runOnStart: true,
+    task: runScheduler,
+  });
 
-  const schedulerTimer = setInterval(() => {
-    void runScheduler();
-  }, config.schedulerIntervalMs);
+  await cron.start();
 
-  return async () => {
-    shuttingDown = true;
-    if (dispatchTimer) clearInterval(dispatchTimer);
-    if (schedulerTimer) clearInterval(schedulerTimer);
+  return {
+    stop: async () => {
+      shuttingDown = true;
+      await cron.stop();
+    },
+    getCronJobs: () => cron.snapshot(),
   };
 }

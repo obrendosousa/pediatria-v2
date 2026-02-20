@@ -2,10 +2,11 @@ import http from "node:http";
 import { getWorkerConfig } from "./config";
 import { startWorkerRuntime } from "./runtime";
 import { workerHealthState, markWorkerError } from "./health";
+import { getAutomationCheckpointerHealth } from "@/lib/automation/checkpointer";
 
 async function bootstrap() {
   const config = getWorkerConfig();
-  const stopRuntime = await startWorkerRuntime(config);
+  const runtime = await startWorkerRuntime(config);
 
   const server = http.createServer((req, res) => {
     if (req.url === "/health" && req.method === "GET") {
@@ -16,6 +17,8 @@ async function bootstrap() {
           ok: true,
           service: "langgraph-automation-worker",
           ...workerHealthState,
+          checkpointer: getAutomationCheckpointerHealth(),
+          cronJobs: runtime.getCronJobs(),
         })
       );
       return;
@@ -32,7 +35,7 @@ async function bootstrap() {
 
   const shutdown = async (signal: string) => {
     console.log(`[Worker] ${signal} received, shutting down...`);
-    await stopRuntime();
+    await runtime.stop();
     await new Promise<void>((resolve) => {
       server.close(() => resolve());
     });

@@ -35,6 +35,15 @@ EVOLUTION_INSTANCE="Pediatria Alianca"
 
 # OpenAI API (NECESSÁRIO para agendamento com IA)
 OPENAI_API_KEY=sk-proj-sua-chave-openai-aqui
+
+# Worker de agendamentos/disparos (produção)
+DATABASE_URL=postgresql://...
+LANGGRAPH_CHECKPOINT_POSTGRES_URI=postgresql://...
+LANGGRAPH_CHECKPOINTER_MODE=auto
+WORKER_DRY_RUN=false
+WORKER_PORT=4040
+WORKER_POLL_INTERVAL_MS=5000
+WORKER_SCHEDULER_INTERVAL_MS=60000
 ```
 
 ### Importante
