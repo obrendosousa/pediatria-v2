@@ -303,7 +303,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
             setChats(prev => prev.filter(c => c.id !== chat.id)); // Remove da UI
             await supabase.from('chat_messages').delete().eq('chat_id', chat.id);
             await supabase.from('chats').delete().eq('id', chat.id);
-            return;
+            return true;
         }
 
         // Aplica update no banco (UI atualiza via Realtime ou Otimista se quiser implementar complexidade extra)
@@ -313,17 +313,19 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
         }
         
         await supabase.from('chats').update(updates).eq('id', chat.id);
+        return false;
 
     } catch (e) {
         console.error("Erro na ação:", e);
         fetchChats(); // Reverte em caso de erro
+        return false;
     }
   };
 
   const handleBulkAction = async (action: 'archive' | 'delete', selectedIds: number[]) => {
-      if (selectedIds.length === 0) return;
+      if (selectedIds.length === 0) return false;
       const confirmText = action === 'archive' ? 'arquivar' : 'excluir permanentemente';
-      if (!(await askConfirm(`Deseja ${confirmText} as ${selectedIds.length} conversas?`, 'Confirmar ação'))) return;
+      if (!(await askConfirm(`Deseja ${confirmText} as ${selectedIds.length} conversas?`, 'Confirmar ação'))) return false;
 
       try {
         // Otimista
@@ -335,9 +337,11 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
             await supabase.from('chat_messages').delete().in('chat_id', selectedIds);
             await supabase.from('chats').delete().in('id', selectedIds);
         }
+        return true;
       } catch (e) {
           console.error(e);
           fetchChats();
+          return false;
       }
   };
 

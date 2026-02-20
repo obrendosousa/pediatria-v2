@@ -5,10 +5,9 @@ import { createPortal } from 'react-dom';
 import { 
   Pin, Trash2, Mail, ChevronDown, User, 
   MessageSquareWarning, CheckCheck, Check, Tag, UserCog, Archive,
-  Camera, Mic, Sticker, FileText, Video, Ban
+  Camera, Mic, Sticker, FileText, Video, Ban, CheckCircle2
 } from 'lucide-react';
 import { Chat } from '@/types';
-import FormattedMessage from '@/components/ui/FormattedMessage';
 import { TagData, formatTime } from '@/utils/sidebarUtils';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 
@@ -53,7 +52,7 @@ const ChatListItem = memo(({
             if (!trigger) return;
 
             const rect = trigger.getBoundingClientRect();
-            const menuHeight = 278; // altura aproximada do menu
+            const menuHeight = 322; // altura aproximada do menu (inclui opção "Selecionar")
             const padding = 8;
             const viewportH = window.innerHeight;
 
@@ -120,6 +119,17 @@ const ChatListItem = memo(({
         // CORREÇÃO AQUI: Forçamos 'as string' para evitar erro de tipo se 'revoked' não estiver na interface
         const type = (chat.last_message_type || 'text') as string;
         const text = chat.last_message;
+        const normalizedText = String(text || '')
+          .toLowerCase()
+          .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        const isAutoVideoPlaceholder = ['vídeo recebido', 'video recebido'].includes(normalizedText);
+        const displayText = isAutoVideoPlaceholder ? '' : text;
+        const singleLineText = String(displayText || '')
+          .replace(/\s*\n+\s*/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
         const sender = chat.last_message_sender || 'contact';
         
         // Determina se fui eu que enviei
@@ -162,7 +172,7 @@ const ChatListItem = memo(({
                 Content = (
                     <div className="flex items-center min-w-0">
                         <Camera size={16} className={`${mediaIconClass} flex-shrink-0`} />
-                        <span className={`${textClass} truncate`}>{text || 'Foto'}</span>
+                        <span className={`${textClass} truncate`}>{singleLineText || 'Foto'}</span>
                     </div>
                 );
                 break;
@@ -171,7 +181,7 @@ const ChatListItem = memo(({
                 Content = (
                     <div className="flex items-center min-w-0">
                         <Video size={16} className={`${mediaIconClass} flex-shrink-0`} />
-                        <span className={`${textClass} truncate`}>{text || 'Vídeo'}</span>
+                        {singleLineText ? <span className={`${textClass} truncate`}>{singleLineText}</span> : null}
                     </div>
                 );
                 break;
@@ -189,7 +199,7 @@ const ChatListItem = memo(({
                  Content = (
                     <div className="flex items-center min-w-0">
                         <FileText size={16} className={`${mediaIconClass} flex-shrink-0`} />
-                        <span className={`${textClass} truncate`}>{text || 'Documento'}</span>
+                        <span className={`${textClass} truncate`}>{singleLineText || 'Documento'}</span>
                     </div>
                 );
                 break;
@@ -206,35 +216,28 @@ const ChatListItem = memo(({
             default: // text
                 Content = (
                     <div 
-                        className={`text-[14px] overflow-hidden min-w-0 truncate ${isUnread ? 'text-[#111b21] dark:text-gray-100 font-medium' : 'text-[#667781] dark:text-[#8696a0]'}`}
+                        className={`text-[14px] leading-[1.35] overflow-hidden min-w-0 whitespace-nowrap truncate ${isUnread ? 'text-[#111b21] dark:text-gray-100 font-medium' : 'text-[#667781] dark:text-[#8696a0]'}`}
                         style={{ 
-                            display: '-webkit-box',
-                            WebkitLineClamp: 1,
-                            WebkitBoxOrient: 'vertical',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             wordBreak: 'break-word',
-                            maxHeight: '1.4em',
-                            lineHeight: '1.4em'
+                            lineHeight: '1.35'
                         }}
                     >
-                        <FormattedMessage 
-                            text={text || ""} 
-                            className="break-words"
-                        />
+                        <span>{singleLineText}</span>
                     </div>
                 );
                 break;
         }
 
         return (
-            <div className="flex items-center overflow-hidden w-full h-[20px] min-h-[20px] max-h-[20px]">
+            <div className="flex items-center overflow-hidden w-full min-h-[22px]">
                 {StatusIcon && (
                     <div className="shrink-0 mr-1 flex-shrink-0">
                         {StatusIcon}
                     </div>
                 )}
-                <div className="flex-1 min-w-0 overflow-hidden h-full">
+                <div className="flex-1 min-w-0 overflow-hidden">
                     {Content}
                 </div>
             </div>
@@ -266,22 +269,33 @@ const ChatListItem = memo(({
         )}
         {/* COLUNA ESQUERDA: Checkbox (modo seleção) OU Avatar */}
         <div className="flex items-center pl-3 pr-3 py-3 shrink-0">
-          {isSelectionMode ? (
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-150 ${isSelectedInMode ? 'bg-[#00a884]' : 'bg-gray-200 dark:bg-gray-600'}`}>
-              <CheckCheck size={18} className="text-white" />
-            </div>
-          ) : (
-            <div 
-              className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-gray-700"
-              style={!chat.profile_pic ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
+          {isSelectionMode && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSelection(chat.id);
+              }}
+              className={`mr-2 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                isSelectedInMode
+                  ? 'bg-[#00a884] border-[#00a884] text-white'
+                  : 'bg-white dark:bg-[#111b21] border-gray-300 dark:border-gray-600 text-transparent'
+              }`}
+              aria-label={isSelectedInMode ? 'Desmarcar conversa' : 'Selecionar conversa'}
             >
-              {chat.profile_pic ? (
-                <img src={chat.profile_pic} alt="Avatar" className="w-full h-full object-cover"/>
-              ) : (
-                <User className="w-6 h-6 opacity-90" style={{ color: getAvatarTextColor(chat.id) }} />
-              )}
-            </div>
+              <Check size={13} />
+            </button>
           )}
+          <div 
+            className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-gray-700"
+            style={!chat.profile_pic ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
+          >
+            {chat.profile_pic ? (
+              <img src={chat.profile_pic} alt="Avatar" className="w-full h-full object-cover"/>
+            ) : (
+              <User className="w-6 h-6 opacity-90" style={{ color: getAvatarTextColor(chat.id) }} />
+            )}
+          </div>
         </div>
 
         {/* CONTEÚDO PRINCIPAL - Grid com áreas definidas */}
@@ -298,7 +312,7 @@ const ChatListItem = memo(({
             </div>
             
             {/* Linha 2: Preview + Ícones - flex sem overlap */}
-            <div className="flex items-center gap-2 min-h-[20px] flex-shrink-0">
+            <div className="flex items-center gap-2 min-h-[22px] flex-shrink-0">
                 <div className="flex-1 min-w-0 overflow-hidden" style={{ minWidth: 0 }}>
                     {renderMessagePreview()}
                 </div>
@@ -386,6 +400,9 @@ const ChatListItem = memo(({
             </button>
             <button onClick={(e) => onAction(e, 'unread', chat)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[#3b4a54] dark:text-gray-200 text-[14.5px] flex items-center gap-3">
               <Mail size={17} className="text-[#54656f] dark:text-gray-400" /> {(chat.unread_count || 0) > 0 ? 'Marcar como lida' : 'Marcar como não lida'}
+            </button>
+            <button onClick={(e) => onAction(e, 'select', chat)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[#3b4a54] dark:text-gray-200 text-[14.5px] flex items-center gap-3">
+              <CheckCircle2 size={17} className="text-[#54656f] dark:text-gray-400" /> Selecionar
             </button>
             <div className="my-1 border-t border-gray-100 dark:border-gray-700"></div>
             <button onClick={(e) => onAction(e, 'delete', chat)} className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-red-500 text-[14.5px] flex items-center gap-3">

@@ -26,7 +26,7 @@ import { useAutoPauseMessages } from '@/hooks/useAutoPauseMessages';
 import { activatePause, deactivatePause, isPauseActive } from '@/utils/pauseService';
 
 interface SidebarProps {
-  onSelectChat?: (chat: Chat) => void;
+  onSelectChat?: (chat: Chat | null) => void;
   selectedChatId?: number;
 }
 
@@ -171,7 +171,7 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
     });
   };
 
-  const handleItemAction = (e: React.MouseEvent, action: string, chat: Chat) => {
+  const handleItemAction = async (e: React.MouseEvent, action: string, chat: Chat) => {
     e.stopPropagation();
     e.preventDefault();
 
@@ -186,11 +186,36 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
       setEditingContact(chat);
       return;
     }
+    if (action === 'select') {
+      setActiveMenuId(null);
+      setIsSelectionMode(true);
+      setSelectedChatIds((prev) => (prev.includes(chat.id) ? prev : [...prev, chat.id]));
+      return;
+    }
 
     setActiveMenuId(null);
 
     // Ações de dados (delegadas ao hook)
-    actions.singleAction(action, chat);
+    const wasDeleted = action === 'delete' ? await actions.singleAction(action, chat) : false;
+    if (wasDeleted && selectedChatId === chat.id) {
+      onSelectChat?.(null);
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    if (selectedChatIds.length === 0) return;
+    await actions.bulkAction('archive', selectedChatIds);
+    toggleSelectionMode();
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedChatIds.length === 0) return;
+    const deletingCurrentChat = selectedChatId ? selectedChatIds.includes(selectedChatId) : false;
+    const didDelete = await actions.bulkAction('delete', selectedChatIds);
+    if (didDelete && deletingCurrentChat) {
+      onSelectChat?.(null);
+    }
+    toggleSelectionMode();
   };
 
   return (
@@ -278,10 +303,10 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
                </span>
             </div>
             <div className="flex gap-2">
-               <button onClick={() => { actions.bulkAction('archive', selectedChatIds); toggleSelectionMode(); }} className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-full text-primary-foreground dark:text-gray-200" title="Arquivar">
+               <button onClick={handleBulkArchive} className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-full text-primary-foreground dark:text-gray-200" title="Arquivar">
                  <Archive size={20} />
                </button>
-               <button onClick={() => { actions.bulkAction('delete', selectedChatIds); toggleSelectionMode(); }} className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-full text-red-500 dark:text-red-400" title="Excluir">
+               <button onClick={handleBulkDelete} className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-full text-red-500 dark:text-red-400" title="Excluir">
                  <Trash2 size={20} />
                </button>
             </div>

@@ -15,6 +15,7 @@ interface MessageListProps {
   onReply: (msg: Message) => void;
   onEdit: (msg: Message) => void;
   onPreviewImage: (url: string) => void;
+  onPreviewVideo: (url: string) => void;
 }
 
 export default function MessageList({ 
@@ -25,7 +26,8 @@ export default function MessageList({
   onSaveMacro,
   onReply,
   onEdit,
-  onPreviewImage 
+  onPreviewImage,
+  onPreviewVideo
 }: MessageListProps) {
   const { toast } = useToast();
   const pediatricWallpaper = useMemo(() => {
@@ -344,6 +346,10 @@ export default function MessageList({
     onPreviewImage(url);
   }, [onPreviewImage]);
 
+  const handlePreviewVideo = useCallback((url: string) => {
+    onPreviewVideo(url);
+  }, [onPreviewVideo]);
+
   // Memoizar renderização das mensagens
   const renderedMessages = useMemo(() => {
     return allMessages.map((msg, index) => {
@@ -401,6 +407,7 @@ export default function MessageList({
             onReply={handleReply}
             onEdit={handleEdit}
             onPreviewImage={handlePreviewImage}
+            onPreviewVideo={handlePreviewVideo}
             isSelectionMode={isSelectionMode}
             isSelected={selectedMessageIds.includes(msg.id)}
             onToggleSelect={toggleSelectedMessage}

@@ -49,7 +49,11 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   // UI States
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedItemId, setExpandedItemId] = useState<string | number | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewMedia, setPreviewMedia] = useState<{ src: string; type: 'image' | 'video' } | null>(null);
+
+  useEffect(() => {
+    setPreviewMedia(null);
+  }, [chat?.id]);
   
   // Effect para remover pendingMessages quando a mensagem real chegar OU quando for apagada
   // IMPORTANTE: Só depende de messages. Incluir pendingMessages causaria loop infinito
@@ -572,7 +576,12 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           onConfirmSaved={handleScheduleItem}
         />
         <ConfirmModal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)} onConfirm={confirmData?.onConfirm || (() => {})} title={confirmData?.title || ''} message={confirmData?.message || ''} />
-        <ImagePreviewModal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} src={previewImage} />
+        <ImagePreviewModal
+          isOpen={!!previewMedia}
+          onClose={() => setPreviewMedia(null)}
+          src={previewMedia?.src || null}
+          mediaType={previewMedia?.type || 'image'}
+        />
         <AppointmentModal
           isOpen={isAppointmentModalOpen}
           onClose={handleCloseAppointmentModal}
@@ -599,7 +608,8 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
                 onSaveMacro={handleSaveMacroFromMessage}
                 onReply={handleReplyMessage}
                 onEdit={handleEditMessage}
-                onPreviewImage={setPreviewImage}
+                onPreviewImage={(src) => setPreviewMedia({ src, type: 'image' })}
+                onPreviewVideo={(src) => setPreviewMedia({ src, type: 'video' })}
             />
             
             <ChatInput 

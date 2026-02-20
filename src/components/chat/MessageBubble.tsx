@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Message } from '@/types';
-import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2 } from 'lucide-react';
+import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2, Play } from 'lucide-react';
 import AudioMessage from './AudioMessage';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 import { Emoji, EmojiStyle } from 'emoji-picker-react';
@@ -19,6 +19,7 @@ interface MessageBubbleProps {
   onReply: (msg: Message) => void;
   onEdit: (msg: Message) => void;
   onPreviewImage: (url: string) => void;
+  onPreviewVideo: (url: string) => void;
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (msg: Message) => void;
@@ -38,6 +39,7 @@ export default function MessageBubble({
   onReply,
   onEdit,
   onPreviewImage,
+  onPreviewVideo,
   isSelectionMode = false,
   isSelected = false,
   onToggleSelect,
@@ -149,6 +151,8 @@ export default function MessageBubble({
   };
 
   const isSticker = message.message_type === 'sticker';
+  const isImageMessage = message.message_type === 'image' && !!message.media_url;
+  const isVideoMessage = message.message_type === 'video' && !!message.media_url;
   const isRevoked = message.message_type === 'revoked';
   const canEdit = isMe && message.message_type === 'text' && !isRevoked;
 
@@ -202,12 +206,16 @@ export default function MessageBubble({
   // Mensagens recebidas sempre brancas, enviadas verdes
   const bgClass = isSticker 
     ? 'bg-transparent shadow-none'
+    : isImageMessage
+      ? 'bg-transparent shadow-none'
+    : isVideoMessage
+      ? 'bg-transparent shadow-none'
     : isMe 
       ? 'bg-[#d9fdd3] dark:bg-[#005c4b]' 
       : 'bg-white dark:bg-[#202c33]';
 
   let roundedClass = 'rounded-lg';
-  if (!isSticker && !isRevoked) {
+  if (!isSticker && !isRevoked && !isVideoMessage && !isImageMessage) {
     if (isMe) {
       if (sequencePosition === 'first') roundedClass = 'rounded-lg rounded-br-[2px]';
       if (sequencePosition === 'middle') roundedClass = 'rounded-lg rounded-br-[2px] rounded-tr-[2px]';
@@ -255,17 +263,25 @@ export default function MessageBubble({
 
     // 2. Imagem
     if (message.message_type === 'image' && message.media_url) {
-      const placeholderTexts = ['Imagem recebida', 'Mídia', 'Foto', '[Mídia]', 'Image', 'Imagem'];
-      const hasRealCaption = message.message_text?.trim() && 
-        !placeholderTexts.some(p => message.message_text!.trim().toLowerCase() === p.toLowerCase());
+      const rawText = (message.message_text || '').trim();
+      const normalizedText = rawText
+        .toLowerCase()
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const placeholderTexts = ['imagem recebida', 'midia', 'mídia', 'foto', '[midia]', '[mídia]', 'image', 'imagem'];
+      const hasRealCaption = normalizedText.length > 0 && !placeholderTexts.includes(normalizedText);
       return (
         <>
-          <div className="-mt-1 -mx-1 cursor-pointer overflow-hidden rounded-md bg-black/5 max-w-full" onClick={() => onPreviewImage(message.media_url!)}>
+          <div
+            className="relative w-full max-w-[240px] sm:max-w-[260px] aspect-[3/4] cursor-pointer overflow-hidden rounded-md bg-black/5"
+            onClick={() => onPreviewImage(message.media_url!)}
+          >
             <img 
               src={message.media_url} 
               alt="Mídia" 
               loading="lazy"
-              className="w-full h-auto max-h-[280px] sm:max-h-[320px] md:max-h-[350px] object-cover min-w-0 max-w-full" 
+              className="w-full h-full object-cover" 
             />
           </div>
           {hasRealCaption && (
@@ -292,17 +308,34 @@ export default function MessageBubble({
 
     // 4. Vídeo
     if (message.message_type === 'video' && message.media_url) {
+      const rawText = (message.message_text || '').trim();
+      const normalizedText = rawText
+        .toLowerCase()
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const placeholderTexts = ['vídeo recebido', 'video recebido', 'vídeo', 'video', 'mídia', '[mídia]', 'media'];
+      const hasRealCaption = normalizedText.length > 0 && !placeholderTexts.includes(normalizedText);
       return (
         <>
-          <div className="-mt-1 -mx-1 rounded-md overflow-hidden bg-black">
+          <div
+            className="relative w-full max-w-[240px] sm:max-w-[260px] aspect-[3/4] cursor-pointer overflow-hidden rounded-md bg-black"
+            onClick={() => onPreviewVideo(message.media_url!)}
+          >
             <video
               src={message.media_url}
-              controls
               preload="metadata"
-              className="w-full h-auto max-h-[320px] object-contain"
+              muted
+              playsInline
+              className="w-full h-full object-cover"
             />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+              <div className="h-11 w-11 rounded-full bg-black/55 text-white flex items-center justify-center">
+                <Play size={20} className="ml-0.5" />
+              </div>
+            </div>
           </div>
-          {message.message_text && message.message_text.trim() && (
+          {hasRealCaption && (
             <div className="pt-1">{renderTextContent(message.message_text)}</div>
           )}
         </>
@@ -395,7 +428,7 @@ export default function MessageBubble({
 
       {/* BALÃO: min-w garante espaço para horário mesmo em mensagens de 1–2 caracteres */}
       <div 
-        className={`relative max-w-[90%] sm:max-w-[85%] md:max-w-[65%] w-fit ${!isSticker && !isRevoked ? 'min-w-[80px] shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]' : 'min-w-0'} ${finalBgClass} ${roundedClass} ${isSticker ? 'p-0' : isRevoked ? 'px-3 py-2 pb-[20px]' : 'px-[9px] pb-[22px]'} flex flex-col overflow-hidden ${isSelectionMode && isSelected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
+        className={`relative max-w-[90%] sm:max-w-[85%] md:max-w-[65%] w-fit ${!isSticker && !isRevoked && !isVideoMessage && !isImageMessage ? 'min-w-[80px] shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]' : 'min-w-0'} ${finalBgClass} ${roundedClass} ${isSticker || isVideoMessage || isImageMessage ? 'p-0' : isRevoked ? 'px-3 py-2 pb-[20px]' : 'px-[9px] pb-[22px]'} flex flex-col overflow-hidden ${isSelectionMode && isSelected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
       >
         
         {/* Conteúdo */}
@@ -444,7 +477,7 @@ export default function MessageBubble({
         </div>
 
         {/* Botão de Menu - oculto para mensagens apagadas */}
-        {!isSticker && !isRevoked && !isSelectionMode && (
+        {!isSticker && !isRevoked && !isSelectionMode && !isVideoMessage && !isImageMessage && (
             <button 
               ref={buttonRef}
               onClick={() => setShowMenu(!showMenu)}

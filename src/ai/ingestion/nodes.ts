@@ -76,11 +76,13 @@ export const processInputNode = async (
     mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "imageMessage") {
     type = "image";
-    content = content || "📷 Imagem recebida";
+    // Para imagem, só persiste texto quando vier caption real.
+    content = content || "";
     mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "videoMessage") {
     type = "video";
-    content = content || "🎬 Vídeo recebido";
+    // Para vídeo, só persiste texto quando vier caption real.
+    content = content || "";
     mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "stickerMessage") {
     type = "sticker";
