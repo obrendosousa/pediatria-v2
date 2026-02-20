@@ -313,7 +313,7 @@ export function AttendanceForm({
       {/* Seção: Exame Físico & Vitals */}
       <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
         <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200 mb-3">Exame físico</h2>
-        
+
         {/* Exame Físico */}
         <div>
           <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-2">

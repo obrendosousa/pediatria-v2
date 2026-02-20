@@ -170,7 +170,7 @@ export function AttendanceDetailModal({
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-300 mb-3">Exame físico</h3>
                 <div className="bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl p-4">
                   <p className="text-xs font-bold text-slate-400 uppercase mb-2">Exame físico:</p>
-                  <div 
+                  <div
                     className="text-sm text-slate-700 dark:text-gray-200 prose dark:prose-invert max-w-none"
                     dangerouslySetInnerHTML={{ __html: record.physical_exam }}
                   />

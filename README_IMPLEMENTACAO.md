@@ -70,7 +70,6 @@ Execute o SQL em `database/cid10_table.sql` no Supabase para criar a tabela de c
 ### 2. Integração nas Telas
 O `AttendanceForm` já está integrado em:
 - `AttendanceOverview` (tela "Atendimento (Visão Geral)")
-- `PhysicalExam` (tela "Exame Físico")
 
 ### 3. Uso do Hook
 ```typescript

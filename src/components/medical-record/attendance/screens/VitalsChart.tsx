@@ -7,7 +7,7 @@ import { useGrowthReferenceData } from '@/hooks/useGrowthReferenceData';
 import { GrowthChart } from '../GrowthChart';
 import { RichTextEditor } from '../RichTextEditor';
 import { ModelTemplateModal } from '../ModelTemplateModal';
-import { AVAILABLE_CHARTS, ChartRegistryConfig } from '@/config/growthChartsRegistry';
+import { AVAILABLE_CHARTS } from '@/config/growthChartsRegistry';
 import { preparePatientPoints } from '@/utils/chartDataAdapter'; // <--- Importamos o novo adaptador
 import {
   calculateBMI,
@@ -19,7 +19,6 @@ const supabase = createClient();
 import {
   Download,
   Plus,
-  Calendar,
   Save,
   AlertCircle,
   Info
@@ -55,7 +54,6 @@ export function VitalsChart({ patientId, patientData }: AttendanceScreenProps) {
     error: referenceError 
   } = useGrowthReferenceData();
 
-  // Estados de UI/Formulário
   const [physicalExamContent, setPhysicalExamContent] = useState('');
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -94,7 +92,6 @@ export function VitalsChart({ patientId, patientData }: AttendanceScreenProps) {
     };
   }, [entries, activeChartConfig, patientBirthDate, displayMode, getReferenceLines]);
 
-  // Carregar exame físico existente (Legado)
   useEffect(() => {
     const loadPhysicalExam = async () => {
       if (!patientId) return;
@@ -142,20 +139,18 @@ export function VitalsChart({ patientId, patientData }: AttendanceScreenProps) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Lógica de salvar o prontuário (Exame físico)
-      // (Mantive a mesma lógica original sua aqui)
-      let { data: existing } = await supabase
+      const { data: existing } = await supabase
         .from('medical_records').select('*').eq('patient_id', patientId)
         .eq('status', 'draft').limit(1).maybeSingle();
 
       const payload = { patient_id: patientId, physical_exam: physicalExamContent, status: 'draft' };
-      
+
       if (existing) {
         await supabase.from('medical_records').update(payload).eq('id', existing.id);
       } else {
         await supabase.from('medical_records').insert(payload);
       }
-      await fetchEntries(); // Recarrega medições
+      await fetchEntries();
       toast.success('Salvo com sucesso!');
     } catch (err: any) {
       toast.error('Erro ao salvar: ' + err.message);
@@ -270,7 +265,6 @@ export function VitalsChart({ patientId, patientData }: AttendanceScreenProps) {
         </div>
       </div>
 
-      {/* Editor de Texto (Mantido) */}
       <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 p-6">
         <h2 className="text-lg font-bold mb-4">Exame Físico</h2>
         <RichTextEditor
@@ -281,9 +275,9 @@ export function VitalsChart({ patientId, patientData }: AttendanceScreenProps) {
           modelType="physical_exam"
         />
         <div className="mt-4 flex justify-end">
-           <button onClick={handleSave} disabled={isSaving} className="px-6 py-2 bg-rose-600 text-white rounded font-bold hover:bg-rose-700 flex items-center gap-2">
-             <Save className="w-4 h-4" /> {isSaving ? 'Salvando...' : 'Salvar Prontuário'}
-           </button>
+          <button onClick={handleSave} disabled={isSaving} className="px-6 py-2 bg-rose-600 text-white rounded font-bold hover:bg-rose-700 flex items-center gap-2">
+            <Save className="w-4 h-4" /> {isSaving ? 'Salvando...' : 'Salvar Prontuário'}
+          </button>
         </div>
       </div>
 
@@ -295,6 +289,7 @@ export function VitalsChart({ patientId, patientData }: AttendanceScreenProps) {
         type="physical_exam"
         currentContent={physicalExamContent}
       />
+
     </div>
   );
 }

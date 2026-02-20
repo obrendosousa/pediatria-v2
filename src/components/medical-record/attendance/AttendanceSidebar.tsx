@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { 
-  Square, Clock, 
-  LayoutDashboard, FileText, Stethoscope, 
+  Square, 
+  LayoutDashboard, FileText, 
   Activity, User, ClipboardList, 
   Heart, Pill, UtensilsCrossed, 
   History, RotateCcw, AlertCircle, 
@@ -22,7 +22,6 @@ interface AttendanceSidebarProps {
 const MENU_ITEMS: AttendanceMenuItem[] = [
   { key: 'overview', label: 'Atendimento (Visão Geral)', icon: 'LayoutDashboard' },
   { key: 'routine', label: 'Consulta de Rotina', icon: 'FileText' },
-  { key: 'physical-exam', label: 'Exame Físico', icon: 'Stethoscope' },
   { key: 'vitals', label: 'Estatura / Peso / IMC / PC', icon: 'Activity' },
   { key: 'adolescent', label: 'Consulta Adolescente', icon: 'User' },
   { key: 'exam-results', label: 'Resultado de Exames', icon: 'ClipboardList' },
@@ -41,7 +40,6 @@ const MENU_ITEMS: AttendanceMenuItem[] = [
 const iconMap: Record<string, React.ElementType> = {
   LayoutDashboard,
   FileText,
-  Stethoscope,
   Activity,
   User,
   ClipboardList,

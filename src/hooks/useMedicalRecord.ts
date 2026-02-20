@@ -29,18 +29,6 @@ export interface RoutineConsultationData {
   print_development_guide?: 'sim' | 'não' | null;
 }
 
-export interface PhysicalExamData {
-  general_exam?: string | null; // Rich Text - EXAME FÍSICO GERAL
-  otoscopy?: string | null; // Input Simples - OTOSCOPIA
-  mouth_throat_exam?: string | null; // Input Simples - EXAME BOCA E GARGANTA
-  skin_mucosa_exam?: string | null; // Rich Text - EXAME DE PELE, MUCOSAS E ANEXOS
-  head_neck_exam?: string | null; // Input Simples - EXAME CABEÇA E PESCOÇO
-  respiratory_exam?: string | null; // Input Simples - EXAME APARELHO RESPIRATÓRIO
-  abdomen_exam?: string | null; // Rich Text - EXAME DO ABDÔMEN
-  nervous_system_exam?: string | null; // Rich Text - EXAME SISTEMA NERVOSO
-  genitals_exam?: string | null; // Rich Text - EXAME DOS GENITAIS
-}
-
 export interface AdolescentConsultationData {
   companions?: string | null;                    // ACOMPANHANTES
   lives_where?: string | null;                  // MORA ONDE
@@ -98,7 +86,6 @@ export interface MedicalRecordData {
   };
   prescription?: any[];
   routine_consultation?: RoutineConsultationData | null;
-  physical_exam_data?: PhysicalExamData | null;
   adolescent_consultation?: AdolescentConsultationData | null;
   exam_results_data?: ExamResultsData | null;
   diagnostic_hypothesis_data?: DiagnosticHypothesisData | null;
@@ -150,10 +137,6 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
         // Parse routine_consultation se for string
         if (data.routine_consultation && typeof data.routine_consultation === 'string') {
           data.routine_consultation = JSON.parse(data.routine_consultation);
-        }
-        // Parse physical_exam_data se for string
-        if (data.physical_exam_data && typeof data.physical_exam_data === 'string') {
-          data.physical_exam_data = JSON.parse(data.physical_exam_data);
         }
         // Parse adolescent_consultation se for string
         if (data.adolescent_consultation && typeof data.adolescent_consultation === 'string') {

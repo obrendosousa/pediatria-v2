@@ -3,7 +3,6 @@
 export type AttendanceTabKey =
   | 'overview'
   | 'routine'
-  | 'physical-exam'
   | 'vitals'
   | 'adolescent'
   | 'exam-results'

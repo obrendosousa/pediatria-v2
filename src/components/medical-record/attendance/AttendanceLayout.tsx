@@ -5,7 +5,6 @@ import { AttendanceTabKey, AttendanceScreenProps } from '@/types/attendance';
 import { AttendanceSidebar } from './AttendanceSidebar';
 import { AttendanceOverview } from './screens/AttendanceOverview';
 import { RoutineConsultation } from './screens/RoutineConsultation';
-import { PhysicalExam } from './screens/PhysicalExam';
 import { VitalsChart } from './screens/VitalsChart';
 import { AdolescentConsultation } from './screens/AdolescentConsultation';
 import { ExamResults } from './screens/ExamResults';
@@ -32,7 +31,6 @@ interface AttendanceLayoutProps {
 const screenComponents: Record<AttendanceTabKey, React.ComponentType<AttendanceScreenProps>> = {
   'overview': AttendanceOverview,
   'routine': RoutineConsultation,
-  'physical-exam': PhysicalExam,
   'vitals': VitalsChart,
   'adolescent': AdolescentConsultation,
   'exam-results': ExamResults,
