@@ -50,7 +50,7 @@ export async function claimScheduledMessages(batchSize: number, workerId: string
 export async function markDispatchedSuccess(messageId: number, payload: { runId: string; wppId: string | null }) {
   const supabase = getSupabaseAdminClient() as any;
   const sentAt = new Date().toISOString();
-  await supabase
+  const res = await supabase
     .from("scheduled_messages")
     .update({
       status: "sent",
@@ -61,6 +61,7 @@ export async function markDispatchedSuccess(messageId: number, payload: { runId:
       last_error: null,
     })
     .eq("id", messageId);
+  if (res.error) throw res.error;
 }
 
 export async function markDispatchedFailure(
@@ -69,7 +70,7 @@ export async function markDispatchedFailure(
 ) {
   const supabase = getSupabaseAdminClient() as any;
   const nextStatus = payload.sendToDeadLetter ? "failed" : "pending";
-  await supabase
+  const res = await supabase
     .from("scheduled_messages")
     .update({
       status: nextStatus,
@@ -81,6 +82,7 @@ export async function markDispatchedFailure(
       last_error: payload.errorMessage,
     })
     .eq("id", messageId);
+  if (res.error) throw res.error;
 }
 
 export async function insertChatAndMemory(params: {
@@ -98,7 +100,7 @@ export async function insertChatAndMemory(params: {
   const mediaUrl = params.mediaUrl || (isMediaType ? params.content : null);
   const messageText = isMediaType ? params.caption || "" : params.caption || params.content || "";
 
-  await supabase.from("chat_messages").insert({
+  const chatIns = await supabase.from("chat_messages").insert({
     chat_id: params.chatId,
     phone: params.phone,
     sender: "HUMAN_AGENT",
@@ -109,6 +111,7 @@ export async function insertChatAndMemory(params: {
     status: "sent",
     created_at: new Date().toISOString(),
   });
+  if (chatIns.error) throw chatIns.error;
 
   const memoryText =
     params.type === "audio"
@@ -119,7 +122,7 @@ export async function insertChatAndMemory(params: {
       ? `[DOCUMENTO AGENDADO] ${params.caption || ""} URL: ${mediaUrl || params.content}`
       : params.content;
 
-  await supabase.from("n8n_chat_histories").insert({
+  const memoryIns = await supabase.from("n8n_chat_histories").insert({
     session_id: params.phone,
     message: {
       type: "ai",
@@ -131,6 +134,7 @@ export async function insertChatAndMemory(params: {
       },
     },
   });
+  if (memoryIns.error) throw memoryIns.error;
 }
 
 export async function insertDeadLetter(payload: {
@@ -145,7 +149,7 @@ export async function insertDeadLetter(payload: {
   body: Record<string, unknown>;
 }) {
   const supabase = getSupabaseAdminClient() as any;
-  await supabase.from("langgraph_dead_letter").insert({
+  const deadLetterIns = await supabase.from("langgraph_dead_letter").insert({
     run_id: payload.runId,
     thread_id: payload.threadId,
     source_graph: "ScheduledDispatchGraph",
@@ -157,4 +161,5 @@ export async function insertDeadLetter(payload: {
     retryable: payload.retryable,
     next_retry_at: payload.nextRetryAt,
   });
+  if (deadLetterIns.error) throw deadLetterIns.error;
 }
