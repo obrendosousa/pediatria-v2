@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from "./supabaseAdmin";
 export interface ClaimedScheduledMessage {
   id: number;
   chat_id: number;
+  status?: string;
   item_type: "macro" | "funnel" | "adhoc";
   content: Record<string, unknown> | string;
   automation_rule_id?: number | null;
@@ -14,11 +15,16 @@ export interface ClaimedScheduledMessage {
 export async function claimScheduledMessages(batchSize: number, workerId: string): Promise<ClaimedScheduledMessage[]> {
   const supabase = getSupabaseAdminClient() as any;
   const nowIso = new Date().toISOString();
+  const lockTimeoutSeconds = Math.max(
+    Math.floor(Number(process.env.WORKER_DISPATCH_LOCK_TIMEOUT_SECONDS || 180)),
+    30
+  );
 
   const rpcRes = await (supabase as any).rpc("claim_scheduled_messages", {
     p_limit: batchSize,
     p_worker_id: workerId,
     p_now: nowIso,
+    p_lock_timeout_seconds: lockTimeoutSeconds,
   });
 
   if (!rpcRes.error && Array.isArray(rpcRes.data)) {
@@ -28,26 +34,19 @@ export async function claimScheduledMessages(batchSize: number, workerId: string
     if (ids.length === 0) return [];
     const joined = await supabase
       .from("scheduled_messages")
-      .select("id, chat_id, item_type, content, automation_rule_id, run_id, retry_count, chats(id, phone)")
+      .select("id, chat_id, status, item_type, content, automation_rule_id, run_id, retry_count, chats(id, phone)")
       .in("id", ids);
     if (joined.error) throw joined.error;
     return (joined.data || []) as ClaimedScheduledMessage[];
   }
 
-  // Fallback for environments without migration applied.
-  const fallback = await supabase
-    .from("scheduled_messages")
-    .select("id, chat_id, item_type, content, automation_rule_id, run_id, retry_count, chats(id, phone)")
-    .eq("status", "pending")
-    .lte("scheduled_for", nowIso)
-    .order("scheduled_for", { ascending: true })
-    .limit(batchSize);
-
-  if (fallback.error) throw fallback.error;
-  return (fallback.data || []) as ClaimedScheduledMessage[];
+  throw new Error(`claim_scheduled_messages_rpc_failed:${rpcRes.error?.message || "unknown_error"}`);
 }
 
-export async function markDispatchedSuccess(messageId: number, payload: { runId: string; wppId: string | null }) {
+export async function markDispatchedSuccess(
+  messageId: number,
+  payload: { runId: string; workerId: string; wppId: string | null }
+) {
   const supabase = getSupabaseAdminClient() as any;
   const sentAt = new Date().toISOString();
   const res = await supabase
@@ -60,13 +59,24 @@ export async function markDispatchedSuccess(messageId: number, payload: { runId:
       dispatch_locked_by: null,
       last_error: null,
     })
-    .eq("id", messageId);
+    .eq("id", messageId)
+    .eq("status", "processing")
+    .eq("dispatch_locked_by", payload.workerId)
+    .select("id")
+    .single();
   if (res.error) throw res.error;
 }
 
 export async function markDispatchedFailure(
   messageId: number,
-  payload: { runId: string; errorMessage: string; retryCount: number; nextRetryAt: string | null; sendToDeadLetter: boolean }
+  payload: {
+    runId: string;
+    workerId: string;
+    errorMessage: string;
+    retryCount: number;
+    nextRetryAt: string | null;
+    sendToDeadLetter: boolean;
+  }
 ) {
   const supabase = getSupabaseAdminClient() as any;
   const nextStatus = payload.sendToDeadLetter ? "failed" : "pending";
@@ -81,7 +91,28 @@ export async function markDispatchedFailure(
       dispatch_locked_by: null,
       last_error: payload.errorMessage,
     })
-    .eq("id", messageId);
+    .eq("id", messageId)
+    .eq("status", "processing")
+    .eq("dispatch_locked_by", payload.workerId)
+    .select("id")
+    .single();
+  if (res.error) throw res.error;
+}
+
+export async function releaseClaimedMessage(messageId: number, payload: { workerId: string }) {
+  const supabase = getSupabaseAdminClient() as any;
+  const res = await supabase
+    .from("scheduled_messages")
+    .update({
+      status: "pending",
+      dispatch_locked_at: null,
+      dispatch_locked_by: null,
+    })
+    .eq("id", messageId)
+    .eq("status", "processing")
+    .eq("dispatch_locked_by", payload.workerId)
+    .select("id")
+    .single();
   if (res.error) throw res.error;
 }
 

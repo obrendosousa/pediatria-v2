@@ -4,6 +4,8 @@ import { startWorkerRuntime } from "./runtime";
 import { workerHealthState, markWorkerError } from "./health";
 import { getAutomationCheckpointerHealth } from "@/lib/automation/checkpointer";
 
+let shutdownInProgress = false;
+
 async function bootstrap() {
   const config = getWorkerConfig();
   const runtime = await startWorkerRuntime(config);
@@ -17,6 +19,7 @@ async function bootstrap() {
           ok: true,
           service: "langgraph-automation-worker",
           ...workerHealthState,
+          workerGraphCheckpointerMode: "memory",
           checkpointer: getAutomationCheckpointerHealth(),
           cronJobs: runtime.getCronJobs(),
         })
@@ -33,20 +36,35 @@ async function bootstrap() {
     console.log(`[Worker] online at :${config.port}`);
   });
 
-  const shutdown = async (signal: string) => {
+  const shutdown = async (signal: string, exitCode = 0) => {
+    if (shutdownInProgress) return;
+    shutdownInProgress = true;
     console.log(`[Worker] ${signal} received, shutting down...`);
-    await runtime.stop();
-    await new Promise<void>((resolve) => {
-      server.close(() => resolve());
-    });
-    process.exit(0);
+    try {
+      await runtime.stop();
+      await new Promise<void>((resolve) => {
+        server.close(() => resolve());
+      });
+    } finally {
+      process.exit(exitCode);
+    }
   };
 
   process.on("SIGINT", () => {
-    void shutdown("SIGINT");
+    void shutdown("SIGINT", 0);
   });
   process.on("SIGTERM", () => {
-    void shutdown("SIGTERM");
+    void shutdown("SIGTERM", 0);
+  });
+  process.on("unhandledRejection", (reason) => {
+    markWorkerError(reason);
+    console.error("[Worker] unhandledRejection:", reason);
+    void shutdown("unhandledRejection", 1);
+  });
+  process.on("uncaughtException", (error) => {
+    markWorkerError(error);
+    console.error("[Worker] uncaughtException:", error);
+    void shutdown("uncaughtException", 1);
   });
 }
 

@@ -33,26 +33,44 @@ function markCheckpointer(mode: "memory" | "postgres", error?: unknown) {
   }
 }
 
+async function createSaverWithPool(pool: pg.Pool): Promise<PostgresSaver> {
+  pool.on("error", (poolError) => {
+    console.error("[Automation] Postgres checkpointer pool error:", poolError);
+  });
+  const saver = new PostgresSaver(pool, undefined, { schema: "public" });
+  await saver.setup();
+  return saver;
+}
+
 async function createPostgresSaver(connString: string): Promise<PostgresSaver> {
+  let primaryPool: pg.Pool | null = null;
   try {
-    const saver = PostgresSaver.fromConnString(connString, { schema: "public" });
-    await saver.setup();
-    return saver;
+    primaryPool = new pg.Pool({
+      connectionString: connString,
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
+      max: 5,
+    });
+    return await createSaverWithPool(primaryPool);
   } catch (error) {
+    if (primaryPool) await primaryPool.end().catch(() => undefined);
     const isCertChainError =
       error instanceof Error && /self-signed certificate/i.test(error.message);
-    if (!isCertChainError) throw error;
+    const isNetworkError =
+      error instanceof Error &&
+      /(ENOTFOUND|ETIMEDOUT|ECONNRESET|ECONNREFUSED|getaddrinfo|timeout|timed out)/i.test(
+        error.message
+      );
+    if (!isCertChainError && !isNetworkError) throw error;
 
     const pool = new pg.Pool({
       connectionString: removeSslModeFromConnString(connString),
       ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
+      max: 5,
     });
-    pool.on("error", (poolError) => {
-      console.error("[Automation] Postgres checkpointer pool error:", poolError);
-    });
-    const saver = new PostgresSaver(pool, undefined, { schema: "public" });
-    await saver.setup();
-    return saver;
+    return await createSaverWithPool(pool);
   }
 }
 

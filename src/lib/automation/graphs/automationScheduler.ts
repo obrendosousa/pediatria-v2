@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { END, START, StateGraph } from "@langchain/langgraph";
+import { END, START, StateGraph, MemorySaver } from "@langchain/langgraph";
 import { schedulerRunCommandSchema, workerAckSchema, type SchedulerRunCommandContract, type WorkerAckContract } from "@/lib/automation/contracts";
-import { getAutomationCheckpointer } from "@/lib/automation/checkpointer";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { getAppointmentsNeedingReminder, getPatientWithRelations, getPatientsReachingMilestone, getReturnsNeedingReminder, hasSentMilestoneAutomation, recordAutomationSent } from "@/utils/automationUtils";
 import { replaceVariables } from "@/utils/automationVariables";
@@ -109,7 +108,9 @@ let compiledGraphPromise: Promise<ReturnType<StateGraph<SchedulerState>["compile
 async function getCompiledSchedulerGraph() {
   if (!compiledGraphPromise) {
     compiledGraphPromise = (async () => {
-      const checkpointer = await getAutomationCheckpointer();
+      // O scheduler nao precisa de checkpoint persistente para gerar filas.
+      // MemorySaver evita falhas de cron por indisponibilidade de conexao PG de checkpoint.
+      const checkpointer = new MemorySaver();
       const graph = new StateGraph<SchedulerState>({
         channels: {
           runId: { reducer: (_, y) => y, default: () => randomUUID() },

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { END, START, StateGraph } from "@langchain/langgraph";
+import { END, START, StateGraph, MemorySaver } from "@langchain/langgraph";
 import { dispatchRunCommandSchema, workerAckSchema, type DispatchRunCommandContract, type WorkerAckContract } from "@/lib/automation/contracts";
 import type { ClaimedScheduledMessage } from "@/lib/automation/adapters/dispatchRepository";
 import {
@@ -8,9 +8,9 @@ import {
   insertDeadLetter,
   markDispatchedFailure,
   markDispatchedSuccess,
+  releaseClaimedMessage,
 } from "@/lib/automation/adapters/dispatchRepository";
 import { sendWithEvolution } from "@/lib/automation/adapters/evolutionSender";
-import { getAutomationCheckpointer } from "@/lib/automation/checkpointer";
 import { logRunEvent } from "@/lib/automation/observability/logger";
 
 interface DispatchState {
@@ -53,7 +53,9 @@ let compiledGraphPromise: Promise<ReturnType<StateGraph<DispatchState>["compile"
 async function getCompiledDispatchGraph() {
   if (!compiledGraphPromise) {
     compiledGraphPromise = (async () => {
-      const checkpointer = await getAutomationCheckpointer();
+      // Dispatch e cron rodam continuamente e nao dependem de checkpoint persistente.
+      // MemorySaver evita indisponibilidade do Postgres de checkpoint interromper envios.
+      const checkpointer = new MemorySaver();
       const graph = new StateGraph<DispatchState>({
         channels: {
           runId: { reducer: (_, y) => y, default: () => randomUUID() },
@@ -92,6 +94,7 @@ async function getCompiledDispatchGraph() {
             failedCount += 1;
             await markDispatchedFailure(item.id, {
               runId: state.runId,
+              workerId: state.workerId,
               errorMessage: "chat_data_missing",
               retryCount: (item.retry_count || 0) + 1,
               nextRetryAt: null,
@@ -130,6 +133,7 @@ async function getCompiledDispatchGraph() {
           const caption = asText(payload.caption);
 
           if (state.dryRun) {
+            await releaseClaimedMessage(item.id, { workerId: state.workerId });
             sentCount += 1;
             continue;
           }
@@ -137,7 +141,11 @@ async function getCompiledDispatchGraph() {
           const sendRes = await sendWithEvolution({ phone, type, content, caption });
           if (sendRes.ok) {
             sentCount += 1;
-            await markDispatchedSuccess(item.id, { runId: state.runId, wppId: sendRes.wppId });
+            await markDispatchedSuccess(item.id, {
+              runId: state.runId,
+              workerId: state.workerId,
+              wppId: sendRes.wppId,
+            });
             await insertChatAndMemory({
               chatId,
               phone,
@@ -165,6 +173,7 @@ async function getCompiledDispatchGraph() {
           const errorMessage = `evolution_send_failed_${sendRes.status}`;
           await markDispatchedFailure(item.id, {
             runId: state.runId,
+            workerId: state.workerId,
             errorMessage,
             retryCount,
             nextRetryAt: retryPolicy.nextRetryAt,

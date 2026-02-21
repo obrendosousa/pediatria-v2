@@ -257,7 +257,7 @@ export interface ScheduledMessage {
   title?: string;     // Para exibir na lista
   content: any;       // O conteúdo da macro ou funil salvo
   scheduled_for: string;
-  status: 'pending' | 'sent' | 'failed' | 'cancelled';
+  status: 'pending' | 'processing' | 'sent' | 'failed' | 'cancelled';
   created_at: string;
   automation_rule_id?: number; // Para rastrear automações
 }
