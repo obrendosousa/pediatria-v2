@@ -36,7 +36,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
       )
     );
   }, []);
-  const { messages, loading: loadingMsgs, isSendingMsg, sendMessage, deleteMessage, editMessage, setMessages } = useChatMessages(chat, {
+  const { messages, loading: loadingMsgs, isSendingMsg, sendMessage, deleteMessage, editMessage, reactToMessage, setMessages } = useChatMessages(chat, {
     onRemovePending,
     onRemovePendingForRevoked
   });
@@ -608,6 +608,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
                 onSaveMacro={handleSaveMacroFromMessage}
                 onReply={handleReplyMessage}
                 onEdit={handleEditMessage}
+                onReact={reactToMessage}
                 onPreviewImage={(src) => setPreviewMedia({ src, type: 'image' })}
                 onPreviewVideo={(src) => setPreviewMedia({ src, type: 'video' })}
             />

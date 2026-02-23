@@ -318,6 +318,7 @@ async function handleRevokeMessage(message: EvolutionWebhookData) {
 function detectMessageType(message: unknown): string {
   const msg = (message ?? {}) as Record<string, unknown>;
   if (msg.protocolMessage) return "protocolMessage";
+  if (msg.reactionMessage) return "reactionMessage";
   if (msg.audioMessage) return "audioMessage";
   if (msg.imageMessage) return "imageMessage";
   if (msg.videoMessage) return "videoMessage";
@@ -397,6 +398,67 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
   return normalized;
 }
 
+function extractPhoneFromRemoteJid(remoteJid?: string | null): string | null {
+  const raw = String(remoteJid ?? "").trim();
+  if (!raw) return null;
+  const beforeAt = raw.includes("@") ? raw.split("@")[0] : raw;
+  const digits = beforeAt.replace(/\D/g, "");
+  return digits || null;
+}
+
+async function upsertReactionMessage(message: EvolutionWebhookData) {
+  const supabase = getSupabase();
+  const msg = (message.message ?? {}) as Record<string, any>;
+  const reaction = msg.reactionMessage as Record<string, any> | undefined;
+  if (!reaction?.key?.id) return;
+
+  const targetWppId = String(reaction.key.id || "").trim();
+  if (!targetWppId) return;
+  const emoji = typeof reaction.text === "string" ? reaction.text.trim() : "";
+  const remoteJid = String(reaction.key.remoteJid || message.key?.remoteJid || "").trim() || null;
+  const fromMe = Boolean(message.key?.fromMe ?? reaction.key.fromMe);
+  const senderPhone = fromMe ? "__me__" : extractPhoneFromRemoteJid(remoteJid);
+  const senderName = typeof message.pushName === "string" ? message.pushName : null;
+
+  const { data: targetMessage } = await supabase
+    .from("chat_messages")
+    .select("id, chat_id")
+    .eq("wpp_id", targetWppId)
+    .maybeSingle();
+
+  if (!targetMessage?.chat_id) return;
+
+  if (!emoji) {
+    const deleteQuery = supabase
+      .from("message_reactions")
+      .delete()
+      .eq("target_wpp_id", targetWppId)
+      .eq("from_me", fromMe);
+
+    if (senderPhone) deleteQuery.eq("sender_phone", senderPhone);
+    else deleteQuery.is("sender_phone", null);
+
+    await deleteQuery;
+    return;
+  }
+
+  await supabase
+    .from("message_reactions")
+    .upsert(
+      {
+        chat_id: targetMessage.chat_id,
+        message_id: targetMessage.id,
+        target_wpp_id: targetWppId,
+        emoji,
+        sender_phone: senderPhone,
+        sender_name: senderName,
+        from_me: fromMe,
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: "target_wpp_id,sender_phone,from_me" }
+    );
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
@@ -445,6 +507,14 @@ export async function POST(req: Request) {
         await handleRevokeMessage(message);
         // Impede duplicação: não envia para o grafo
         continue; 
+      }
+
+      const isReaction =
+        message.messageType === "reactionMessage" ||
+        Boolean((message.message as Record<string, unknown> | undefined)?.reactionMessage);
+      if (isReaction) {
+        await upsertReactionMessage(message);
+        continue;
       }
 
       const remoteJid = String(message.key?.remoteJid || "");

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import {
@@ -27,6 +27,48 @@ interface UseChatMessagesOptions {
   onRemovePending?: (tempId: string) => void;
   /** Remove pendentes que correspondem a uma mensagem revogada (evita duplicata original + popup) */
   onRemovePendingForRevoked?: (createdAt: string) => void;
+}
+
+interface MessageReactionRow {
+  target_wpp_id: string;
+  emoji: string;
+  sender_phone?: string | null;
+  sender_name?: string | null;
+  from_me?: boolean | null;
+  created_at?: string;
+}
+
+function mergeReactionsIntoMessages(baseMessages: Message[], reactionRows: MessageReactionRow[]): Message[] {
+  if (!baseMessages.length) return baseMessages;
+  const grouped = new Map<string, MessageReactionRow[]>();
+  reactionRows.forEach((row) => {
+    const key = String(row.target_wpp_id || '').trim();
+    if (!key) return;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(row);
+  });
+
+  return baseMessages.map((msg) => {
+    const targetWppId = String((msg as any).wpp_id || '').trim();
+    if (!targetWppId) return msg;
+    const reactionsForMessage = grouped.get(targetWppId) || [];
+    const normalized = reactionsForMessage.map((r) => ({
+      emoji: r.emoji,
+      sender_phone: r.sender_phone ?? null,
+      sender_name: r.sender_name ?? null,
+      from_me: Boolean(r.from_me),
+      created_at: r.created_at,
+    }));
+
+    return {
+      ...msg,
+      reactions: normalized,
+      tool_data: {
+        ...(msg.tool_data || {}),
+        reactions: normalized,
+      },
+    };
+  });
 }
 
 function getErrorMessage(error: unknown): string {
@@ -123,6 +165,15 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
         .eq('chat_id', chatId)
         .order('created_at', { ascending: true });
 
+      const fetchAndApplyReactions = async (rawMessages: Message[]) => {
+        const { data: reactionsData, error: reactionsError } = await supabase
+          .from('message_reactions')
+          .select('target_wpp_id, emoji, sender_phone, sender_name, from_me, created_at')
+          .eq('chat_id', chatId);
+        if (reactionsError || !Array.isArray(reactionsData)) return rawMessages;
+        return mergeReactionsIntoMessages(rawMessages, reactionsData as MessageReactionRow[]);
+      };
+
       if (!error && data) {
         if (String(currentChatIdRef.current) !== String(chatId)) {
           setLoading(false);
@@ -130,18 +181,19 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
         }
         const deleted = getDeletedSetForChat(chatId);
         const filtered = deleted.size > 0 ? data.filter((m) => !deleted.has(m.id)) : data;
+        const withReactions = await fetchAndApplyReactions(filtered as Message[]);
         setMessages((prev) => {
           if (String(currentChatIdRef.current) !== String(chatId)) return prev;
           const prevRevoked = new Map(prev.filter((m) => (m as any).message_type === 'revoked').map((m) => [m.id, m]));
-          return filtered.map((m) => {
+          return withReactions.map((m) => {
             const wasRevoked = prevRevoked.get(m.id);
             if (wasRevoked) return wasRevoked;
             return m;
           });
         });
-        const toCache = filtered.length > MAX_CACHED_MESSAGES_PER_CHAT
-          ? filtered.slice(-MAX_CACHED_MESSAGES_PER_CHAT)
-          : filtered;
+        const toCache = withReactions.length > MAX_CACHED_MESSAGES_PER_CHAT
+          ? withReactions.slice(-MAX_CACHED_MESSAGES_PER_CHAT)
+          : withReactions;
         set(cacheKey, toCache, TTL_MESSAGES_MS);
         touchMessagesCacheKey(chatId);
       }
@@ -150,7 +202,7 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
 
     fetchMsgs();
 
-    const channel = supabase.channel(`chat_realtime_${activeChat.id}`)
+    const chatMessagesChannel = supabase.channel(`chat_messages_realtime_${activeChat.id}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -198,8 +250,34 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
       })
       .subscribe();
 
+    let reactionsChannel: ReturnType<typeof supabase.channel> | null = null;
+    void (async () => {
+      const { error: tableCheckError } = await supabase
+        .from('message_reactions')
+        .select('id')
+        .limit(1);
+      if (tableCheckError) return;
+
+      reactionsChannel = supabase.channel(`message_reactions_realtime_${activeChat.id}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'message_reactions',
+          filter: `chat_id=eq.${activeChat.id}`,
+        }, async () => {
+          const { data: reactionsData, error: reactionsError } = await supabase
+            .from('message_reactions')
+            .select('target_wpp_id, emoji, sender_phone, sender_name, from_me, created_at')
+            .eq('chat_id', chatId);
+          if (reactionsError || !Array.isArray(reactionsData)) return;
+          setMessages((prev) => mergeReactionsIntoMessages(prev, reactionsData as MessageReactionRow[]));
+        })
+        .subscribe();
+    })();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(chatMessagesChannel);
+      if (reactionsChannel) supabase.removeChannel(reactionsChannel);
     };
   }, [activeChat?.id]);
 
@@ -474,6 +552,35 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     }
   };
 
+  const reactToMessage = useCallback(async (msg: Message, emoji: string) => {
+    if (!activeChat) return;
+    const wppId = String((msg as any).wpp_id || '').trim();
+    if (!wppId) {
+      toast.info('Essa mensagem ainda não possui ID no WhatsApp.');
+      return;
+    }
+
+    const cleanPhone = String(activeChat.phone || '').replace(/\D/g, '');
+    const remoteJid = cleanPhone ? `${cleanPhone}@s.whatsapp.net` : '';
+    const targetFromMe =
+      msg.sender === 'HUMAN_AGENT' || msg.sender === 'AI_AGENT' || msg.sender === 'me';
+
+    const response = await fetch('/api/whatsapp/reaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messageWppId: wppId,
+        remoteJid,
+        targetFromMe,
+        reaction: String(emoji || '').trim(),
+      }),
+    }).catch(() => null);
+
+    if (!response || !response.ok) {
+      toast.error('Não foi possível enviar a reação');
+    }
+  }, [activeChat, toast]);
+
   // 3. Deletar Mensagem
   const deleteMessage = async (msg: Message, deleteForEveryone: boolean) => {
       const msgId = msg.id;
@@ -577,5 +684,6 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     sendMessage, 
     deleteMessage,
     editMessage,
+    reactToMessage,
   };
 }

@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Message } from '@/types';
-import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2, Play } from 'lucide-react';
+import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2, Play, Smile, Plus } from 'lucide-react';
 import AudioMessage from './AudioMessage';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
-import { Emoji, EmojiStyle } from 'emoji-picker-react';
+import EmojiPicker, { Emoji, EmojiStyle, Theme } from 'emoji-picker-react';
 import FormattedMessage from '@/components/ui/FormattedMessage'; // Importação do novo componente
 
 interface MessageBubbleProps {
@@ -18,6 +18,7 @@ interface MessageBubbleProps {
   onSaveMacro: (macro: { title: string; type: 'text' | 'audio' | 'image' | 'video' | 'document'; content: string }) => void;
   onReply: (msg: Message) => void;
   onEdit: (msg: Message) => void;
+  onReact?: (msg: Message, emoji: string) => void;
   onPreviewImage: (url: string) => void;
   onPreviewVideo: (url: string) => void;
   isSelectionMode?: boolean;
@@ -38,6 +39,7 @@ export default function MessageBubble({
   onSaveMacro,
   onReply,
   onEdit,
+  onReact,
   onPreviewImage,
   onPreviewVideo,
   isSelectionMode = false,
@@ -69,8 +71,12 @@ export default function MessageBubble({
   const MENU_OFFSET = 4;
   const VIEWPORT_MARGIN = 8;
   const [showMenu, setShowMenu] = useState(false);
+  const [showReactionPopup, setShowReactionPopup] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, openUp: false });
+  const [reactionPosition, setReactionPosition] = useState({ top: 0, left: 0, openUp: false });
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const reactionButtonRef = useRef<HTMLButtonElement>(null);
   const [imgError, setImgError] = useState(false);
 
   const recalculateMenuPosition = useCallback(() => {
@@ -101,6 +107,22 @@ export default function MessageBubble({
     });
   }, []);
 
+  const recalculateReactionPosition = useCallback(() => {
+    if (!reactionButtonRef.current) return;
+    const rect = reactionButtonRef.current.getBoundingClientRect();
+    const popup = document.querySelector('[data-reaction-popup]') as HTMLElement | null;
+    const popupHeight = popup?.offsetHeight ?? (showEmojiPicker ? 360 : 48);
+    const popupWidth = popup?.offsetWidth ?? (showEmojiPicker ? 320 : 260);
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUp = spaceBelow < popupHeight + MENU_OFFSET && spaceAbove > spaceBelow;
+    let top = openUp ? rect.top - popupHeight - MENU_OFFSET : rect.bottom + MENU_OFFSET;
+    top = Math.max(VIEWPORT_MARGIN, Math.min(top, window.innerHeight - popupHeight - VIEWPORT_MARGIN));
+    let left = isMe ? rect.right - popupWidth : rect.left;
+    left = Math.max(VIEWPORT_MARGIN, Math.min(left, window.innerWidth - popupWidth - VIEWPORT_MARGIN));
+    setReactionPosition({ top, left, openUp });
+  }, [isMe, showEmojiPicker, MENU_OFFSET, VIEWPORT_MARGIN]);
+
   // Recalcular posição do dropdown ao abrir (useLayoutEffect evita flash)
   useLayoutEffect(() => {
     if (!showMenu) return;
@@ -115,17 +137,36 @@ export default function MessageBubble({
     };
   }, [showMenu, recalculateMenuPosition]);
 
+  useLayoutEffect(() => {
+    if (!showReactionPopup) return;
+    recalculateReactionPosition();
+    const raf = requestAnimationFrame(recalculateReactionPosition);
+    window.addEventListener('resize', recalculateReactionPosition);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', recalculateReactionPosition);
+    };
+  }, [showReactionPopup, showEmojiPicker, recalculateReactionPosition]);
+
   // Fechar menu ao clicar fora ou ao rolar (menu está em Portal)
   useEffect(() => {
-    if (!showMenu) return;
+    if (!showMenu && !showReactionPopup) return;
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (buttonRef.current?.contains(target)) return;
+      if (buttonRef.current?.contains(target) || reactionButtonRef.current?.contains(target)) return;
       const menu = document.querySelector('[data-message-menu]');
       if (menu?.contains(target)) return;
+      const reaction = document.querySelector('[data-reaction-popup]');
+      if (reaction?.contains(target)) return;
       setShowMenu(false);
+      setShowReactionPopup(false);
+      setShowEmojiPicker(false);
     };
-    const handleScroll = () => setShowMenu(false);
+    const handleScroll = () => {
+      setShowMenu(false);
+      setShowReactionPopup(false);
+      setShowEmojiPicker(false);
+    };
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('scroll', handleScroll, true);
     // Container do chat tem overflow-y-auto - scroll não propaga para window
@@ -142,7 +183,13 @@ export default function MessageBubble({
       window.removeEventListener('scroll', handleScroll, true);
       scrollParents.forEach(p => p.removeEventListener('scroll', handleScroll));
     };
-  }, [showMenu]);
+  }, [showMenu, showReactionPopup]);
+
+  const handlePickReaction = (emoji: string) => {
+    onReact?.(message, emoji);
+    setShowReactionPopup(false);
+    setShowEmojiPicker(false);
+  };
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -162,6 +209,19 @@ export default function MessageBubble({
       : null;
 
   const hasReplyPreview = Boolean(replyData?.wpp_id || replyData?.message_text);
+  const messageReactions = Array.isArray(message.reactions) ? message.reactions : [];
+  const groupedReactions = Array.from(
+    messageReactions.reduce((acc, reactionItem) => {
+      const emoji = String(reactionItem?.emoji || '').trim();
+      if (!emoji) return acc;
+      const current = acc.get(emoji) || { emoji, count: 0, mine: false };
+      current.count += 1;
+      current.mine = current.mine || Boolean(reactionItem?.from_me);
+      acc.set(emoji, current);
+      return acc;
+    }, new Map<string, { emoji: string; count: number; mine: boolean }>())
+      .values()
+  );
 
   // Função para verificar se a mensagem contém APENAS emojis (para exibir grande)
   const isOnlyEmojis = (text: string) => {
@@ -428,7 +488,7 @@ export default function MessageBubble({
 
       {/* BALÃO: min-w garante espaço para horário mesmo em mensagens de 1–2 caracteres */}
       <div 
-        className={`relative max-w-[90%] sm:max-w-[85%] md:max-w-[65%] w-fit ${!isSticker && !isRevoked && !isVideoMessage && !isImageMessage ? 'min-w-[80px] shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]' : 'min-w-0'} ${finalBgClass} ${roundedClass} ${isSticker || isVideoMessage || isImageMessage ? 'p-0' : isRevoked ? 'px-3 py-2 pb-[20px]' : 'px-[9px] pb-[22px]'} flex flex-col overflow-hidden ${isSelectionMode && isSelected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
+        className={`relative max-w-[90%] sm:max-w-[85%] md:max-w-[65%] w-fit ${!isSticker && !isRevoked && !isVideoMessage && !isImageMessage ? 'min-w-[80px] shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]' : 'min-w-0'} ${finalBgClass} ${roundedClass} ${isSticker || isVideoMessage || isImageMessage ? 'p-0 overflow-hidden' : isRevoked ? 'px-3 py-2 pb-[20px]' : 'px-[9px] pb-[22px]'} flex flex-col overflow-visible ${isSelectionMode && isSelected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
       >
         
         {/* Conteúdo */}
@@ -450,6 +510,23 @@ export default function MessageBubble({
              </div>
            )}
            {renderContent()}
+           {groupedReactions.length > 0 && (
+             <div className="mt-1.5 flex flex-wrap items-center gap-1 pr-12">
+               {groupedReactions.map((reaction) => (
+                 <span
+                   key={reaction.emoji}
+                   className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-[2px] text-[11px] ${
+                     reaction.mine
+                       ? 'border-[#00a884]/40 bg-[#00a884]/10 text-[#007a63] dark:text-[#8fe3d5]'
+                       : 'border-black/10 bg-black/5 text-[#3b4a54] dark:text-[#c7d1d8]'
+                   }`}
+                 >
+                   <span>{reaction.emoji}</span>
+                   <span>{reaction.count}</span>
+                 </span>
+               ))}
+             </div>
+           )}
         </div>
 
         {/* Metadados: Hora + Check — sempre visível graças ao min-w do balão */}
@@ -477,10 +554,31 @@ export default function MessageBubble({
         </div>
 
         {/* Botão de Menu - oculto para mensagens apagadas */}
+        {!isRevoked && !isSelectionMode && (
+          <button
+            ref={reactionButtonRef}
+            onClick={() => {
+              setShowMenu(false);
+              setShowReactionPopup(!showReactionPopup);
+              setShowEmojiPicker(false);
+            }}
+            className={`absolute top-0 ${isMe ? '-left-8' : '-right-8'} p-1.5 rounded-full bg-white/95 dark:bg-[#202c33] border border-gray-200 dark:border-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-150 z-20 shadow-sm`}
+            title="Reagir"
+            aria-label="Reagir"
+          >
+            <Smile size={14} className="text-[#54656f] dark:text-[#aebac1]" />
+          </button>
+        )}
+
+        {/* Botão de Menu - oculto para mensagens apagadas */}
         {!isSticker && !isRevoked && !isSelectionMode && !isVideoMessage && !isImageMessage && (
             <button 
               ref={buttonRef}
-              onClick={() => setShowMenu(!showMenu)}
+              onClick={() => {
+                setShowReactionPopup(false);
+                setShowEmojiPicker(false);
+                setShowMenu(!showMenu);
+              }}
               className={`absolute top-0 right-0 p-1 m-0.5 rounded-full bg-gradient-to-l from-[rgba(255,255,255,0.95)] via-[rgba(255,255,255,0.8)] to-transparent dark:from-[#202c33] opacity-0 group-hover:opacity-100 transition-all duration-150 z-20 ${showMenu ? 'opacity-100' : ''}`}
               style={{
                 transform: showMenu ? 'scale(1.1)' : 'scale(1)',
@@ -489,6 +587,54 @@ export default function MessageBubble({
             >
                <ChevronDown size={18} className="text-[#54656f] dark:text-[#aebac1] drop-shadow-sm"/>
             </button>
+        )}
+
+        {/* Popup de reação estilo WhatsApp */}
+        {showReactionPopup && createPortal(
+          <div
+            data-reaction-popup
+            className="fixed z-[10000] bg-white dark:bg-[#233138] border border-gray-100 dark:border-gray-700 shadow-[0_4px_12px_rgba(0,0,0,0.15)] rounded-full p-1.5"
+            style={{
+              top: reactionPosition.top,
+              left: reactionPosition.left,
+              borderRadius: showEmojiPicker ? 12 : 999,
+            }}
+          >
+            {!showEmojiPicker ? (
+              <div className="flex items-center gap-1">
+                {['👍', '❤️', '😂', '😮', '🙏'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handlePickReaction(emoji)}
+                    className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-lg"
+                    title={`Reagir com ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowEmojiPicker(true)}
+                  className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-[#54656f] dark:text-[#aebac1] flex items-center justify-center"
+                  title="Mais emojis"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            ) : (
+              <EmojiPicker
+                onEmojiClick={(emojiData: any) => handlePickReaction(String(emojiData?.emoji || ''))}
+                autoFocusSearch={true}
+                theme={Theme.AUTO}
+                emojiStyle={EmojiStyle.APPLE}
+                searchDisabled={false}
+                width={320}
+                height={360}
+                previewConfig={{ showPreview: false }}
+                lazyLoadEmojis={true}
+              />
+            )}
+          </div>,
+          document.body
         )}
 
         {/* Dropdown Menu - renderizado via Portal para evitar corte por overflow */}

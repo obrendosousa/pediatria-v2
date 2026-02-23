@@ -14,6 +14,7 @@ interface MessageListProps {
   onSaveMacro: (macro: { title: string; type: 'text' | 'audio' | 'image' | 'video' | 'document'; content: string }) => void;
   onReply: (msg: Message) => void;
   onEdit: (msg: Message) => void;
+  onReact?: (msg: Message, emoji: string) => void;
   onPreviewImage: (url: string) => void;
   onPreviewVideo: (url: string) => void;
 }
@@ -26,6 +27,7 @@ export default function MessageList({
   onSaveMacro,
   onReply,
   onEdit,
+  onReact,
   onPreviewImage,
   onPreviewVideo
 }: MessageListProps) {
@@ -406,6 +408,7 @@ export default function MessageList({
             onSaveMacro={handleSaveMacro}
             onReply={handleReply}
             onEdit={handleEdit}
+            onReact={onReact}
             onPreviewImage={handlePreviewImage}
             onPreviewVideo={handlePreviewVideo}
             isSelectionMode={isSelectionMode}

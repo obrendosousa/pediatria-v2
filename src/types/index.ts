@@ -21,6 +21,14 @@ export interface Message {
   bot_message?: string;
   user_message?: string;
   auto_sent_pause_session?: string | null; // UUID da sessão de pausa que enviou esta mensagem
+
+  reactions?: Array<{
+    emoji: string;
+    sender_phone?: string | null;
+    sender_name?: string | null;
+    from_me?: boolean;
+    created_at?: string;
+  }>;
   
   // Campo para Automação Visual
   tool_data?: {
@@ -41,6 +49,13 @@ export interface Message {
     };
     is_edited?: boolean;
     edited_at?: string;
+    reactions?: Array<{
+      emoji: string;
+      sender_phone?: string | null;
+      sender_name?: string | null;
+      from_me?: boolean;
+      created_at?: string;
+    }>;
     [key: string]: any;
   };
 }
