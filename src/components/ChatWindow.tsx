@@ -71,12 +71,14 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
       .neq('id', chat.id)
       .order('last_interaction_at', { ascending: false })
       .limit(60)
-      .then(({ data }) => {
-        if (!cancelled && data) setForwardChatsCache(data as Chat[]);
-      })
-      .catch(() => {
-        if (!cancelled) setForwardChatsCache([]);
-      });
+      .then(
+        ({ data }) => {
+          if (!cancelled && data) setForwardChatsCache(data as Chat[]);
+        },
+        () => {
+          if (!cancelled) setForwardChatsCache([]);
+        }
+      );
     return () => { cancelled = true; };
   }, [chat?.id]);
   

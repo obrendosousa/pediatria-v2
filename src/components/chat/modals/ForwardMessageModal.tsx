@@ -84,15 +84,16 @@ export default function ForwardMessageModal({
       .or(`contact_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
       .order('last_interaction_at', { ascending: false })
       .limit(50)
-      .then(({ data }) => {
-        if (!cancelled) setChats((data as Chat[]) || []);
-      })
-      .catch(() => {
-        if (!cancelled) setChats([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      .then(
+        ({ data }) => {
+          if (!cancelled) setChats((data as Chat[]) || []);
+          if (!cancelled) setLoading(false);
+        },
+        () => {
+          if (!cancelled) setChats([]);
+          if (!cancelled) setLoading(false);
+        }
+      );
     return () => { cancelled = true; };
   }, [isOpen, currentChatId, searchTerm]);
 
@@ -108,15 +109,16 @@ export default function ForwardMessageModal({
       .neq('id', currentChatId)
       .order('last_interaction_at', { ascending: false })
       .limit(60)
-      .then(({ data }) => {
-        if (!cancelled) setChats((data as Chat[]) || []);
-      })
-      .catch(() => {
-        if (!cancelled) setChats([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      .then(
+        ({ data }) => {
+          if (!cancelled) setChats((data as Chat[]) || []);
+          if (!cancelled) setLoading(false);
+        },
+        () => {
+          if (!cancelled) setChats([]);
+          if (!cancelled) setLoading(false);
+        }
+      );
     return () => { cancelled = true; };
   }, [isOpen, currentChatId, searchTerm, hasInitial]);
 
