@@ -5,6 +5,14 @@ import { get, set, TTL_CHATS_LIST_MS, TTL_TAGS_MS } from '@/lib/chatCache';
 import { Chat } from '@/types';
 import { TagData } from '@/utils/sidebarUtils';
 
+const DEBUG_LOG_ENDPOINT = "http://127.0.0.1:7242/ingest/4058191e-4081-4adb-b80d-3c22067fcea5";
+const debugLog = (payload: Record<string, unknown>) =>
+  fetch(DEBUG_LOG_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+
 export interface UseChatListOptions {
   confirm?: (message: string, title?: string) => Promise<boolean>;
 }
@@ -61,6 +69,24 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
 
       const { data } = await query;
       const sortedChats = sortChats(data || []);
+      // #region agent log
+      debugLog({
+        runId: 'pre-fix',
+        hypothesisId: 'H2',
+        location: 'useChatList.ts:fetchChats-after-query',
+        message: 'Fetched chats for sidebar',
+        data: {
+          totalChats: sortedChats.length,
+          unreadChats: sortedChats.filter((c) => (c.unread_count || 0) > 0).length,
+          sample: sortedChats.slice(0, 5).map((c) => ({
+            id: c.id,
+            unread: c.unread_count || 0,
+            lastInteractionAt: c.last_interaction_at || null,
+          })),
+        },
+        timestamp: Date.now(),
+      });
+      // #endregion
       setChats(sortedChats);
       set(chatsListCacheKey, sortedChats, TTL_CHATS_LIST_MS);
     } catch (e) {
@@ -104,6 +130,20 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
         const newMessage = payload.new as any;
         const chatId = newMessage.chat_id;
         const sender = newMessage.sender;
+        // #region agent log
+        debugLog({
+          runId: 'pre-fix',
+          hypothesisId: 'H6',
+          location: 'useChatList.ts:messagesSub-insert',
+          message: 'Client realtime message insert observed',
+          data: {
+            chatId,
+            sender: String(sender || ''),
+            messageType: String(newMessage.message_type || ''),
+          },
+          timestamp: Date.now(),
+        });
+        // #endregion
 
         const isFromUs = sender === 'HUMAN_AGENT' || sender === 'AI_AGENT' || sender === 'me';
         if (isFromUs) {
@@ -125,7 +165,8 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
           return;
         }
 
-        // Atualizar unread_count e last_interaction_at do chat (mensagem do cliente)
+        // Atualizar preview local sem forçar unread_count.
+        // unread_count é fonte única do backend e vem pelo canal de chats (UPDATE).
         setChats(currentChats => {
           const chatIndex = currentChats.findIndex(c => c.id === chatId);
           if (chatIndex === -1) return currentChats;
@@ -136,7 +177,6 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
           // Atualizar chat com nova mensagem
           updatedChats[chatIndex] = {
             ...chat,
-            unread_count: (chat.unread_count || 0) + 1,
             last_interaction_at: newMessage.created_at || new Date().toISOString(),
             last_message: newMessage.message_text || '',
             last_message_type: newMessage.message_type || 'text',
@@ -147,27 +187,8 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
           return sortChats(updatedChats);
         });
 
-        // Atualizar unread_count no banco (async, não bloqueia UI)
-        // Buscar o valor atual e incrementar
-        supabase
-          .from('chats')
-          .select('unread_count')
-          .eq('id', chatId)
-          .single()
-          .then(({ data }) => {
-            if (data) {
-              const currentUnread = data.unread_count || 0;
-              void supabase
-                .from('chats')
-                .update({ 
-                  unread_count: currentUnread + 1,
-                  last_interaction_at: newMessage.created_at || new Date().toISOString()
-                })
-                .eq('id', chatId)
-                .then(({ error }) => { if (error) console.error(error); });
-            }
-          })
-          .then(undefined, console.error);
+        // O contador persistente agora é responsabilidade do backend/banco.
+        // Aqui mantemos apenas feedback visual imediato na lista.
       })
       .subscribe();
 
@@ -175,6 +196,24 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
     const chatsSub = supabase.channel('public:chats')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, (payload) => {
         const { eventType, new: newRecord, old: oldRecord } = payload;
+        const unreadBefore = Number((oldRecord as Record<string, unknown> | null)?.unread_count || 0);
+        const unreadAfter = Number((newRecord as Record<string, unknown> | null)?.unread_count || 0);
+        if (eventType === 'UPDATE' && unreadBefore !== unreadAfter) {
+          // #region agent log
+          debugLog({
+            runId: 'post-fix',
+            hypothesisId: 'H7',
+            location: 'useChatList.ts:chatsSub-unread-transition',
+            message: 'Realtime unread_count transition detected',
+            data: {
+              chatId: Number((newRecord as Record<string, unknown> | null)?.id || 0),
+              unreadBefore,
+              unreadAfter,
+            },
+            timestamp: Date.now(),
+          });
+          // #endregion
+        }
 
         setChats(currentChats => {
           // 1. DELETE
@@ -256,7 +295,13 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
     setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread_count: 0 } : c));
     
     if ((chat.unread_count || 0) > 0) {
-      await supabase.from('chats').update({ unread_count: 0 }).eq('id', chat.id);
+      await fetch('/api/chats/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: chat.id }),
+      }).catch((error) => {
+        console.error('Erro ao marcar como lida:', error);
+      });
     }
   };
 

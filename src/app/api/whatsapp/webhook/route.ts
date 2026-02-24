@@ -3,6 +3,14 @@ import { NextResponse } from "next/server";
 import { EvolutionWebhookData } from "@/ai/ingestion/state";
 import { createClient } from "@supabase/supabase-js";
 
+const DEBUG_LOG_ENDPOINT = "http://127.0.0.1:7242/ingest/4058191e-4081-4adb-b80d-3c22067fcea5";
+const debugLog = (payload: Record<string, unknown>) =>
+  fetch(DEBUG_LOG_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -459,6 +467,22 @@ async function upsertReactionMessage(message: EvolutionWebhookData) {
     );
 }
 
+// --- FUNÇÃO NOVA: Filtro de segurança de tempo ---
+function isMessageOlderThan24Hours(timestamp: number | string | undefined): boolean {
+  if (!timestamp) return false;
+  let ts = Number(timestamp);
+  if (isNaN(ts)) return false;
+
+  // A Evolution manda timestamp em segundos. Se tiver menos de 13 dígitos, convertemos para milissegundos
+  if (ts < 1000000000000) {
+    ts *= 1000;
+  }
+
+  const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+  // Compara o tempo atual com a data da mensagem original
+  return (Date.now() - ts) > twentyFourHoursMs;
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
@@ -483,7 +507,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: "processed", event: "messages_delete" });
     }
 
-    const messages = normalizeMessagesFromWebhook(body);
+    const rawMessages = normalizeMessagesFromWebhook(body);
+    
+    // --- APLICAÇÃO DO FILTRO DE TEMPO: Bloqueia mensagens mais velhas que 24h ---
+    const messages = rawMessages.filter(msg => !isMessageOlderThan24Hours(msg.messageTimestamp));
+
+    // Se o webhook veio com mensagens, mas TODAS eram antigas e foram filtradas, descartamos o evento.
+    if (rawMessages.length > 0 && messages.length === 0) {
+      console.warn(`[WEBHOOK] Ignorado: Sincronização antiga descartada. ${rawMessages.length} mensagens muito velhas (>24h).`);
+      return NextResponse.json({ status: "ignored", reason: "messages_too_old" });
+    }
 
     if (messages.length === 0) {
       console.warn("[WEBHOOK] Ignorado: nenhum payload normalizado", {
@@ -494,6 +527,20 @@ export async function POST(req: Request) {
 
     const persistedIngestionGraph = await getPersistedIngestionGraph();
     for (const message of messages) {
+      // #region agent log
+      debugLog({
+        runId: "pre-fix",
+        hypothesisId: "H1",
+        location: "webhook/route.ts:for-message-start",
+        message: "Incoming normalized message",
+        data: {
+          wppId: String(message.key?.id || ""),
+          fromMe: Boolean(message.key?.fromMe),
+          messageType: String(message.messageType || ""),
+        },
+        timestamp: Date.now(),
+      });
+      // #endregion
       const wppId = String(message.key?.id || "").trim();
       if (wppId && (await alreadyProcessedByWppId(wppId))) {
         continue;
@@ -529,6 +576,21 @@ export async function POST(req: Request) {
           },
         }
       );
+
+      // #region agent log
+      debugLog({
+        runId: "pre-fix",
+        hypothesisId: "H1",
+        location: "webhook/route.ts:after-ingestion-invoke",
+        message: "Message sent to ingestion graph",
+        data: {
+          wppId,
+          remoteJid: String(message.key?.remoteJid || ""),
+          fromMe: Boolean(message.key?.fromMe),
+        },
+        timestamp: Date.now(),
+      });
+      // #endregion
     }
 
     return NextResponse.json({ status: "processed", messages: messages.length });

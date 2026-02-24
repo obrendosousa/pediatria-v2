@@ -1,14 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import ChatWindow from '@/components/ChatWindow';
 import SecretaryCheckoutDrawer from '@/components/SecretaryCheckoutDrawer';
 import { Chat } from '@/types';
 import { MessageCircleHeart, ShieldCheck, Zap, Activity } from 'lucide-react';
 
+const DEBUG_LOG_ENDPOINT = "http://127.0.0.1:7242/ingest/4058191e-4081-4adb-b80d-3c22067fcea5";
+const debugLog = (payload: Record<string, unknown>) =>
+  fetch(DEBUG_LOG_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+
 export default function Home() {
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+
+  useEffect(() => {
+    // #region agent log
+    debugLog({
+      runId: 'post-fix',
+      hypothesisId: 'H8',
+      location: 'app/page.tsx:selectedChat-effect',
+      message: 'Selected chat state changed on home page',
+      data: {
+        selectedChatId: selectedChat?.id ?? null,
+        selectedUnread: selectedChat?.unread_count ?? null,
+      },
+      timestamp: Date.now(),
+    });
+    // #endregion
+  }, [selectedChat?.id]);
 
   return (
     // Fundo ajustado: Claro (#fffafa) | Escuro (#0b141a - tom profundo)

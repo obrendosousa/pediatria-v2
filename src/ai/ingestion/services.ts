@@ -1,5 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
 
+const DEBUG_LOG_ENDPOINT = "http://127.0.0.1:7242/ingest/4058191e-4081-4adb-b80d-3c22067fcea5";
+const debugLog = (payload: Record<string, unknown>) =>
+  fetch(DEBUG_LOG_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+
 // Função auxiliar para pegar cliente supabase no server action/route
 async function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -72,8 +80,42 @@ export async function saveMessageToDb(payload: {
   wpp_id: string;
 }) {
   const supabase = await getSupabase();
+  // #region agent log
+  debugLog({
+    runId: "pre-fix",
+    hypothesisId: "H5",
+    location: "ingestion/services.ts:saveMessageToDb-entry",
+    message: "Saving incoming/outgoing message",
+    data: {
+      chatId: payload.chat_id,
+      sender: payload.sender,
+      type: payload.type,
+      hasMedia: Boolean(payload.media_url),
+    },
+    timestamp: Date.now(),
+  });
+  // #endregion
 
-  const status = payload.sender === "HUMAN_AGENT" ? "sent" : undefined;
+  if (payload.type === "reaction") {
+    // #region agent log
+    debugLog({
+      runId: "post-fix",
+      hypothesisId: "H5",
+      location: "ingestion/services.ts:saveMessageToDb-skip-reaction",
+      message: "Skipping chat_messages insert for reaction type",
+      data: {
+        chatId: payload.chat_id,
+      },
+      timestamp: Date.now(),
+    });
+    // #endregion
+    return;
+  }
+
+  // CORREÇÃO APLICADA AQUI: Definimos 'received' para mensagens recebidas (CUSTOMER)
+  // em vez de undefined. Isso limpa qualquer status de 'read' herdado da última mensagem.
+  const status = payload.sender === "HUMAN_AGENT" ? "sent" : "received";
+  
   const insertPayload: Record<string, unknown> = {
     chat_id: payload.chat_id,
     phone: payload.phone,
@@ -84,10 +126,105 @@ export async function saveMessageToDb(payload: {
     wpp_id: payload.wpp_id,
     created_at: new Date().toISOString(),
   };
+  
   if (status) insertPayload.status = status;
+  
   const { error } = await supabase.from("chat_messages").insert(insertPayload);
+  if (error) {
+    // #region agent log
+    debugLog({
+      runId: "post-fix",
+      hypothesisId: "H5",
+      location: "ingestion/services.ts:saveMessageToDb-insert-error",
+      message: "Failed to insert message",
+      data: {
+        chatId: payload.chat_id,
+        sender: payload.sender,
+        error: error.message,
+      },
+      timestamp: Date.now(),
+    });
+    // #endregion
+    console.error("Erro fatal ao salvar mensagem:", error);
+    return;
+  }
 
-  if (error) console.error("Erro fatal ao salvar mensagem:", error);
+  const isIncoming = payload.sender === "CUSTOMER";
+  const nowIso = new Date().toISOString();
+  const previewText =
+    payload.type === "audio"
+      ? "Áudio"
+      : payload.type === "image"
+      ? "Foto"
+      : payload.type === "video"
+      ? "Vídeo"
+      : payload.type === "sticker"
+      ? "Figurinha"
+      : payload.type === "document"
+      ? "Documento"
+      : (payload.content || "").trim();
+
+  const chatUpdatePayload: Record<string, unknown> = {
+    last_message: previewText,
+    last_message_type: payload.type || "text",
+    last_message_sender: isIncoming ? "contact" : "me",
+    last_interaction_at: nowIso,
+  };
+  
+  if (status) chatUpdatePayload.last_message_status = status;
+
+  // #region agent log
+  debugLog({
+    runId: "post-fix",
+    hypothesisId: "H5",
+    location: "ingestion/services.ts:before-chat-update",
+    message: "About to update chat summary/unread",
+    data: {
+      chatId: payload.chat_id,
+      isIncoming,
+      type: payload.type,
+    },
+    timestamp: Date.now(),
+  });
+  // #endregion
+
+  if (isIncoming) {
+    const { data: chatRow } = await supabase
+      .from("chats")
+      .select("unread_count")
+      .eq("id", payload.chat_id)
+      .maybeSingle();
+    const currentUnread = Number(chatRow?.unread_count || 0);
+    chatUpdatePayload.unread_count = currentUnread + 1;
+  }
+
+  const { error: chatUpdateError } = await supabase
+    .from("chats")
+    .update(chatUpdatePayload)
+    .eq("id", payload.chat_id);
+
+  const { data: chatAfterUpdate } = await supabase
+    .from("chats")
+    .select("id, unread_count, last_message_sender, last_interaction_at")
+    .eq("id", payload.chat_id)
+    .maybeSingle();
+
+  // #region agent log
+  debugLog({
+    runId: "post-fix",
+    hypothesisId: "H5",
+    location: "ingestion/services.ts:after-chat-update",
+    message: "Chat row state after server-side update",
+    data: {
+      chatId: payload.chat_id,
+      sender: payload.sender,
+      chatUpdateError: chatUpdateError?.message || null,
+      unreadCount: Number(chatAfterUpdate?.unread_count || 0),
+      lastMessageSender: String(chatAfterUpdate?.last_message_sender || ""),
+    },
+    timestamp: Date.now(),
+  });
+  // #endregion
 }
 
 /**
