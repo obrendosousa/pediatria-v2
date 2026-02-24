@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { runAutomationSchedulerGraph } from "@/lib/automation/graphs/automationScheduler";
+import { automationQueue } from "@/lib/queue/config";
 
 export async function GET() {
   const allowHttpCron =
@@ -12,15 +12,19 @@ export async function GET() {
     );
   }
   try {
-    const result = await runAutomationSchedulerGraph({
+    const runId = randomUUID();
+
+    // AQUI ESTÁ A MUDANÇA: Em vez de executar o grafo, colocamos na fila do Redis
+    await automationQueue.add("scheduler", {
       contractVersion: "v1",
-      runId: randomUUID(),
+      runId: runId,
       triggerAt: new Date().toISOString(),
       dryRun: false,
     });
-    return NextResponse.json(result);
+
+    return NextResponse.json({ ok: true, message: "scheduler_job_enqueued", runId });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "scheduler_graph_failed";
+    const message = error instanceof Error ? error.message : "enqueue_failed";
     return NextResponse.json(
       { ok: false, error: message },
       { status: 500 }
