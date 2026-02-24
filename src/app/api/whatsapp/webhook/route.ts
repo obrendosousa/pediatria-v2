@@ -11,6 +11,10 @@ const debugLog = (payload: Record<string, unknown>) =>
     body: JSON.stringify(payload),
   }).catch(() => {});
 
+// Política anti-restauração: após reconnect, ignora backlog/histórico e segue apenas mensagens novas.
+const INGESTION_START_TS_MS = Date.now();
+const INCOMING_CLOCK_SKEW_MS = 30_000;
+
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -490,18 +494,32 @@ function isMessageOlderThan24Hours(timestamp: number | string | undefined): bool
   return (Date.now() - ts) > twentyFourHoursMs;
 }
 
-export async function POST(req: Request) {
+function toTimestampMs(input: number | string | undefined): number | null {
+  if (!input) return null;
+  let ts = Number(input);
+  if (!Number.isFinite(ts) || ts <= 0) return null;
+  if (ts < 1000000000000) ts *= 1000;
+  return ts;
+}
+
+function isMessageBeforeIngestionStart(timestamp: number | string | undefined): boolean {
+  const ts = toTimestampMs(timestamp);
+  if (ts == null) return false;
+  return ts < (INGESTION_START_TS_MS - INCOMING_CLOCK_SKEW_MS);
+}
+
+export async function processWebhookBody(body: Record<string, unknown>, requestUrl = "") {
   try {
-    const body = (await req.json()) as Record<string, unknown>;
     const event = (body.event ?? body.type ?? "") as string;
     const eventUpper = String(event).toUpperCase().replace(/\./g, "_");
 
     // Detecta MESSAGES_UPDATE / MESSAGES_DELETE
-    const path = req.url || "";
+    const path = requestUrl || "";
     const isUpdateByPath = /messages-update|messages\.update/i.test(path);
     const isUpdateByEvent = eventUpper === "MESSAGES_UPDATE" || event === "messages.update";
     const isDeleteByPath = /messages-delete|messages\.delete/i.test(path);
     const isDeleteByEvent = eventUpper === "MESSAGES_DELETE" || event === "messages.delete";
+    const isHistorySetEvent = eventUpper === "MESSAGES_SET" || event === "messages.set";
     const data = body.data as Record<string, unknown> | undefined;
     const hasUpdateStructure = data && (data.update ?? (Array.isArray(data) && (data as unknown[])[0] && ((data as unknown[])[0] as Record<string, unknown>)?.update));
 
@@ -513,16 +531,25 @@ export async function POST(req: Request) {
       await handleMessagesDelete(body);
       return NextResponse.json({ status: "processed", event: "messages_delete" });
     }
+    if (isHistorySetEvent) {
+      return NextResponse.json({ status: "ignored", reason: "history_restore_disabled" });
+    }
 
     const rawMessages = normalizeMessagesFromWebhook(body);
     
     // --- APLICAÇÃO DO FILTRO DE TEMPO: Bloqueia mensagens mais velhas que 24h ---
-    const messages = rawMessages.filter(msg => !isMessageOlderThan24Hours(msg.messageTimestamp));
+    const messages = rawMessages.filter(
+      (msg) =>
+        !isMessageOlderThan24Hours(msg.messageTimestamp) &&
+        !isMessageBeforeIngestionStart(msg.messageTimestamp)
+    );
 
     // Se o webhook veio com mensagens, mas TODAS eram antigas e foram filtradas, descartamos o evento.
     if (rawMessages.length > 0 && messages.length === 0) {
-      console.warn(`[WEBHOOK] Ignorado: Sincronização antiga descartada. ${rawMessages.length} mensagens muito velhas (>24h).`);
-      return NextResponse.json({ status: "ignored", reason: "messages_too_old" });
+      console.warn(
+        `[WEBHOOK] Ignorado: histórico/backlog descartado. ${rawMessages.length} mensagens fora da janela ativa.`
+      );
+      return NextResponse.json({ status: "ignored", reason: "messages_outside_live_window" });
     }
 
     if (messages.length === 0) {
@@ -573,7 +600,7 @@ export async function POST(req: Request) {
 
       const remoteJid = String(message.key?.remoteJid || "");
       const threadId = remoteJid || `webhook-${wppId || Date.now()}`;
-      await persistedIngestionGraph.invoke(
+      const ingestionResult = await persistedIngestionGraph.invoke(
         {
           raw_input: message as any,
         },
@@ -593,6 +620,21 @@ export async function POST(req: Request) {
         data: {
           wppId,
           remoteJid: String(message.key?.remoteJid || ""),
+          jid_original:
+            String((ingestionResult as Record<string, unknown>)?.source_jid ?? message.key?.remoteJid ?? ""),
+          jid_resolvido:
+            String((ingestionResult as Record<string, unknown>)?.resolved_jid ?? message.key?.remoteJid ?? ""),
+          resolver_strategy: String(
+            (ingestionResult as Record<string, unknown>)?.resolver_strategy ?? "direct"
+          ),
+          resolver_latency_ms: Number(
+            (ingestionResult as Record<string, unknown>)?.resolver_latency_ms ?? 0
+          ),
+          resolver_error:
+            (ingestionResult as Record<string, unknown>)?.resolver_error
+              ? String((ingestionResult as Record<string, unknown>)?.resolver_error)
+              : null,
+          should_continue: Boolean((ingestionResult as Record<string, unknown>)?.should_continue ?? true),
           fromMe: Boolean(message.key?.fromMe),
         },
         timestamp: Date.now(),
@@ -605,4 +647,9 @@ export async function POST(req: Request) {
     console.error("Erro no Webhook:", error);
     return NextResponse.json({ status: "error" }, { status: 500 });
   }
+}
+
+export async function POST(req: Request) {
+  const body = (await req.json()) as Record<string, unknown>;
+  return processWebhookBody(body, req.url);
 }

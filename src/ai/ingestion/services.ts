@@ -24,6 +24,193 @@ function normalizePhone(value?: string | null) {
   return (value ?? "").replace(/\D/g, "");
 }
 
+export function isLidJid(value?: string | null) {
+  const jid = String(value ?? "").trim().toLowerCase();
+  return jid.endsWith("@lid");
+}
+
+export function normalizeJidToPhone(jid?: string | null) {
+  const raw = String(jid ?? "").trim();
+  if (!raw) return "";
+  const localPart = raw.includes("@") ? raw.split("@")[0] : raw;
+  const primaryPart = localPart.split(":")[0];
+  return normalizePhone(primaryPart);
+}
+
+const LID_CACHE_TTL_MS = 10 * 60 * 1000;
+const LID_NEGATIVE_CACHE_TTL_MS = 60 * 1000;
+const LID_RESOLVE_TIMEOUT_MS = 2500;
+const LID_RESOLVE_MAX_ATTEMPTS = 2;
+const LID_MIN_PHONE_LENGTH = 8;
+const LID_MAX_PHONE_LENGTH = 15;
+
+type LidResolution = { phone: string; jid: string };
+type LidCacheEntry = { value: LidResolution | null; expiresAt: number };
+
+const lidResolutionCache = new Map<string, LidCacheEntry>();
+
+function getFromLidCache(lidJid: string): LidResolution | null | undefined {
+  const now = Date.now();
+  const entry = lidResolutionCache.get(lidJid);
+  if (!entry) return undefined;
+  if (entry.expiresAt <= now) {
+    lidResolutionCache.delete(lidJid);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function setLidCache(lidJid: string, value: LidResolution | null) {
+  const ttl = value ? LID_CACHE_TTL_MS : LID_NEGATIVE_CACHE_TTL_MS;
+  lidResolutionCache.set(lidJid, { value, expiresAt: Date.now() + ttl });
+}
+
+function isLikelyPhone(phone: string) {
+  return phone.length >= LID_MIN_PHONE_LENGTH && phone.length <= LID_MAX_PHONE_LENGTH;
+}
+
+function normalizeCandidateIdentity(raw: string): LidResolution | null {
+  const value = String(raw || "").trim();
+  if (!value) return null;
+
+  const lower = value.toLowerCase();
+  if (lower.includes("@g.us") || lower.includes("status@broadcast") || lower.includes("@lid")) {
+    return null;
+  }
+
+  let phone = "";
+  if (value.includes("@")) {
+    phone = normalizeJidToPhone(value);
+  } else {
+    phone = normalizePhone(value);
+  }
+
+  if (!isLikelyPhone(phone)) return null;
+  return { phone, jid: `${phone}@s.whatsapp.net` };
+}
+
+function collectIdentityCandidates(payload: unknown, depth = 0): string[] {
+  if (depth > 4 || payload == null) return [];
+
+  if (typeof payload === "string") return [payload];
+  if (typeof payload !== "object") return [];
+
+  if (Array.isArray(payload)) {
+    return payload.flatMap((item) => collectIdentityCandidates(item, depth + 1));
+  }
+
+  const obj = payload as Record<string, unknown>;
+  const keyRegex = /(remotejid|jid|phone|number|id)$/i;
+  const candidates: string[] = [];
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === "string" && keyRegex.test(key)) {
+      candidates.push(value);
+      continue;
+    }
+
+    if (value && typeof value === "object") {
+      candidates.push(...collectIdentityCandidates(value, depth + 1));
+    }
+  }
+
+  return candidates;
+}
+
+function parseResolutionFromEvolutionPayload(payload: unknown): LidResolution | null {
+  const candidates = collectIdentityCandidates(payload);
+  for (const candidate of candidates) {
+    const normalized = normalizeCandidateIdentity(candidate);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function callEvolutionResolver(
+  endpoint: string,
+  body: Record<string, unknown>
+): Promise<LidResolution | null> {
+  const apiKey = process.env.EVOLUTION_API_KEY;
+  if (!apiKey) return null;
+
+  for (let attempt = 1; attempt <= LID_RESOLVE_MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetchWithTimeout(
+        endpoint,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify(body),
+        },
+        LID_RESOLVE_TIMEOUT_MS
+      );
+
+      if (!res.ok) {
+        if (res.status >= 500 && attempt < LID_RESOLVE_MAX_ATTEMPTS) continue;
+        return null;
+      }
+
+      const payload = (await res.json().catch(() => null)) as unknown;
+      return parseResolutionFromEvolutionPayload(payload);
+    } catch {
+      if (attempt >= LID_RESOLVE_MAX_ATTEMPTS) return null;
+    }
+  }
+
+  return null;
+}
+
+export async function resolveLidToPhone(lidJid: string): Promise<LidResolution | null> {
+  const baseUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, "");
+  const instance = process.env.EVOLUTION_INSTANCE;
+  const normalizedLidJid = String(lidJid ?? "").trim();
+  if (!baseUrl || !instance || !normalizedLidJid || !isLidJid(normalizedLidJid)) {
+    return null;
+  }
+
+  const cacheHit = getFromLidCache(normalizedLidJid);
+  if (cacheHit !== undefined) return cacheHit;
+
+  const lidOnly = normalizedLidJid.split("@")[0];
+
+  const getContactByIdEndpoint = `${baseUrl}/chat/getContactById/${instance}`;
+  const byId = await callEvolutionResolver(getContactByIdEndpoint, {
+    id: lidOnly,
+    remoteJid: normalizedLidJid,
+    where: { id: lidOnly },
+  });
+  if (byId) {
+    setLidCache(normalizedLidJid, byId);
+    return byId;
+  }
+
+  const findContactsEndpoint = `${baseUrl}/chat/findContacts/${instance}`;
+  const byFindContacts = await callEvolutionResolver(findContactsEndpoint, {
+    where: { id: lidOnly },
+  });
+  if (byFindContacts) {
+    setLidCache(normalizedLidJid, byFindContacts);
+    return byFindContacts;
+  }
+
+  setLidCache(normalizedLidJid, null);
+  return null;
+}
+
 export async function ensureChatExists(phone: string, pushName: string, fromMe: boolean) {
   const supabase = await getSupabase();
 
@@ -78,6 +265,7 @@ export async function saveMessageToDb(payload: {
   type: string;
   media_url?: string;
   wpp_id: string;
+  message_timestamp_iso?: string;
 }) {
   const supabase = await getSupabase();
   // #region agent log
@@ -115,6 +303,8 @@ export async function saveMessageToDb(payload: {
   // Volta para undefined se for recebida para não estourar a trava do Postgres.
   const status = payload.sender === "HUMAN_AGENT" ? "sent" : undefined;
   
+  const messageCreatedAt = payload.message_timestamp_iso || new Date().toISOString();
+
   const insertPayload: Record<string, unknown> = {
     chat_id: payload.chat_id,
     phone: payload.phone,
@@ -123,13 +313,22 @@ export async function saveMessageToDb(payload: {
     message_type: payload.type,
     media_url: payload.media_url,
     wpp_id: payload.wpp_id,
-    created_at: new Date().toISOString(),
+    created_at: messageCreatedAt,
   };
   
   if (status) insertPayload.status = status;
   
   const { error } = await supabase.from("chat_messages").insert(insertPayload);
   if (error) {
+    const lowerMessage = String(error.message || "").toLowerCase();
+    const isDuplicateWppId =
+      lowerMessage.includes("duplicate key value") &&
+      (lowerMessage.includes("wpp_id") || lowerMessage.includes("chat_messages"));
+    if (isDuplicateWppId) {
+      // Idempotência forte: quando já existir wpp_id, não replica efeitos colaterais.
+      return;
+    }
+
     // #region agent log
     debugLog({
       runId: "post-fix",
@@ -149,6 +348,7 @@ export async function saveMessageToDb(payload: {
   }
 
   const isIncoming = payload.sender === "CUSTOMER";
+  const messageTimeMs = new Date(messageCreatedAt).getTime();
   const nowIso = new Date().toISOString();
   const previewText =
     payload.type === "audio"
@@ -163,44 +363,36 @@ export async function saveMessageToDb(payload: {
       ? "Documento"
       : (payload.content || "").trim();
 
-  const chatUpdatePayload: Record<string, unknown> = {
-    last_message: previewText,
-    last_message_type: payload.type || "text",
-    last_message_sender: isIncoming ? "contact" : "me",
-    last_interaction_at: nowIso,
-  };
+  const chatUpdatePayload: Record<string, unknown> = {};
   
   // Limpa o status visual de "lido" se for mensagem recebida, 
   // senão mantém o status de envio do atendente.
+  const { data: chatRowForOrdering } = await supabase
+    .from("chats")
+    .select("unread_count, last_interaction_at")
+    .eq("id", payload.chat_id)
+    .maybeSingle();
+
+  const currentUnread = Number(chatRowForOrdering?.unread_count || 0);
+  const lastInteractionMs = new Date(String(chatRowForOrdering?.last_interaction_at || 0)).getTime();
+  const isNewerOrEqual = !Number.isFinite(lastInteractionMs) || messageTimeMs >= lastInteractionMs;
+
+  // Mantém contador de não lidas consistente para toda mensagem recebida.
   if (isIncoming) {
-    chatUpdatePayload.last_message_status = null;
-  } else if (status) {
-    chatUpdatePayload.last_message_status = status;
+    chatUpdatePayload.unread_count = currentUnread + 1;
   }
 
-  // #region agent log
-  debugLog({
-    runId: "post-fix",
-    hypothesisId: "H5",
-    location: "ingestion/services.ts:before-chat-update",
-    message: "About to update chat summary/unread",
-    data: {
-      chatId: payload.chat_id,
-      isIncoming,
-      type: payload.type,
-    },
-    timestamp: Date.now(),
-  });
-  // #endregion
-
-  if (isIncoming) {
-    const { data: chatRow } = await supabase
-      .from("chats")
-      .select("unread_count")
-      .eq("id", payload.chat_id)
-      .maybeSingle();
-    const currentUnread = Number(chatRow?.unread_count || 0);
-    chatUpdatePayload.unread_count = currentUnread + 1;
+  // Só atualiza preview e ordenação se a mensagem for a mais recente daquele chat.
+  if (isNewerOrEqual) {
+    chatUpdatePayload.last_message = previewText;
+    chatUpdatePayload.last_message_type = payload.type || "text";
+    chatUpdatePayload.last_message_sender = isIncoming ? "contact" : "me";
+    chatUpdatePayload.last_interaction_at = messageCreatedAt || nowIso;
+    if (isIncoming) {
+      chatUpdatePayload.last_message_status = null;
+    } else if (status) {
+      chatUpdatePayload.last_message_status = status;
+    }
   }
 
   const { error: chatUpdateError } = await supabase
@@ -226,6 +418,8 @@ export async function saveMessageToDb(payload: {
       chatUpdateError: chatUpdateError?.message || null,
       unreadCount: Number(chatAfterUpdate?.unread_count || 0),
       lastMessageSender: String(chatAfterUpdate?.last_message_sender || ""),
+      messageCreatedAt,
+      isNewerOrEqual,
     },
     timestamp: Date.now(),
   });

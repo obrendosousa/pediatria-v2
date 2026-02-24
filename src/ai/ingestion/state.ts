@@ -20,6 +20,12 @@ export interface IngestionState {
   chat_id?: number;
   phone: string;
   contact_name: string;
+  message_timestamp_iso?: string;
+  source_jid?: string;
+  resolved_jid?: string;
+  resolver_strategy?: "direct" | "lid_lookup" | "lid_resolved" | "lid_unresolved";
+  resolver_latency_ms?: number;
+  resolver_error?: string;
   message_content: string;
   message_type: "text" | "audio" | "image" | "video" | "sticker" | "document";
   media_url?: string;

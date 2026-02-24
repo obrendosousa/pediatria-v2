@@ -22,20 +22,14 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
   const [tags, setTags] = useState<TagData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Função de ordenação: Pinned > Unread > Date
+  // Função de ordenação alinhada ao WhatsApp: Pinned > Date (mais recente primeiro)
   const sortChats = (chatsList: Chat[]): Chat[] => {
     return [...chatsList].sort((a, b) => {
       // 1. Pinned primeiro
       if (a.is_pinned && !b.is_pinned) return -1;
       if (!a.is_pinned && b.is_pinned) return 1;
-      
-      // 2. Chats com mensagens não lidas depois de pinned
-      const aUnread = (a.unread_count || 0) > 0;
-      const bUnread = (b.unread_count || 0) > 0;
-      if (aUnread && !bUnread) return -1;
-      if (!aUnread && bUnread) return 1;
-      
-      // 3. Por data de última interação (mais recente primeiro)
+
+      // 2. Por data de última interação (mais recente primeiro)
       const dateA = new Date(a.last_interaction_at || 0).getTime();
       const dateB = new Date(b.last_interaction_at || 0).getTime();
       return dateB - dateA;

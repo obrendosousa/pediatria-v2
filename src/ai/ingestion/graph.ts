@@ -23,6 +23,33 @@ export const ingestionWorkflow = new StateGraph<IngestionState>({
       reducer: (x: string | undefined, y: string | undefined) => y ?? x ?? "",
       default: () => "",
     },
+    message_timestamp_iso: {
+      reducer: (x: string | undefined, y: string | undefined) => y ?? x,
+      default: () => undefined,
+    },
+    source_jid: {
+      reducer: (x: string | undefined, y: string | undefined) => y ?? x,
+      default: () => undefined,
+    },
+    resolved_jid: {
+      reducer: (x: string | undefined, y: string | undefined) => y ?? x,
+      default: () => undefined,
+    },
+    resolver_strategy: {
+      reducer: (
+        x: IngestionState["resolver_strategy"] | undefined,
+        y: IngestionState["resolver_strategy"] | undefined
+      ) => y ?? x ?? "direct",
+      default: () => "direct" as IngestionState["resolver_strategy"],
+    },
+    resolver_latency_ms: {
+      reducer: (x: number | undefined, y: number | undefined) => y ?? x,
+      default: () => undefined,
+    },
+    resolver_error: {
+      reducer: (x: string | undefined, y: string | undefined) => y ?? x,
+      default: () => undefined,
+    },
     message_content: {
       reducer: (x: string | undefined, y: string | undefined) => y ?? x ?? "",
       default: () => "",

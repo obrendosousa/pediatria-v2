@@ -50,7 +50,6 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
   const [editingContact, setEditingContact] = useState<Chat | null>(null);
   const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [isCheckingPause, setIsCheckingPause] = useState(true);
   const [confirmState, setConfirmState] = useState<{ message: string; title: string; resolve: (ok: boolean) => void } | null>(null);
 
   const headerMenuRef = useRef<HTMLDivElement>(null);
@@ -68,14 +67,11 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
   useEffect(() => {
     const checkPauseStatus = async () => {
       try {
-        setIsCheckingPause(true);
         const active = await isPauseActive();
         setIsPaused(active);
-      } catch (error) {
+      } catch {
         // Ignorar erros silenciosamente - as colunas podem não existir ainda
         setIsPaused(false);
-      } finally {
-        setIsCheckingPause(false);
       }
     };
     
@@ -243,7 +239,7 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
       <NewChatModal 
         isOpen={isNewChatModalOpen} 
         onClose={() => setIsNewChatModalOpen(false)}
-        onStartChat={(chatData: any) => {
+        onStartChat={(chatData: unknown) => {
            const newChat = chatData as Chat;
            const createdChat = actions.create(newChat);
            setIsNewChatModalOpen(false);
@@ -441,7 +437,7 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
                 {isViewingArchived ? (
                     <>Nenhuma conversa arquivada.</>
                 ) : searchTerm ? (
-                    <>Nenhuma conversa encontrada para "{searchTerm}".</>
+                    <>{`Nenhuma conversa encontrada para "${searchTerm}".`}</>
                 ) : (
                     <>Nenhuma conversa.</>
                 )}
