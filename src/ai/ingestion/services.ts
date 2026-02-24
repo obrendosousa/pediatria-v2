@@ -112,7 +112,7 @@ export async function saveMessageToDb(payload: {
     return;
   }
 
-  // CORREÇÃO APLICADA AQUI: Definimos 'received' para mensagens recebidas (CUSTOMER)
+  // Definimos 'received' para mensagens recebidas (CUSTOMER)
   // em vez de undefined. Isso limpa qualquer status de 'read' herdado da última mensagem.
   const status = payload.sender === "HUMAN_AGENT" ? "sent" : "received";
   
@@ -403,7 +403,7 @@ async function fetchMediaFromEvolutionApi(
 }
 
 /**
- * Faz upload de mídia para o Supabase Storage (equivalente ao "Upload Supabase Final").
+ * Faz upload de mídia para o Supabase Storage com sanitização de nome de arquivo.
  */
 async function uploadToSupabase(
   base64: string,
@@ -412,7 +412,18 @@ async function uploadToSupabase(
 ): Promise<string | null> {
   const supabase = await getSupabase();
   const buf = Buffer.from(base64, "base64");
-  const storagePath = `${MEDIA_PATH_PREFIX}${fileName}`;
+  
+  // CORREÇÃO: Sanitizar o nome do arquivo para o Supabase não rejeitar (Causa 3)
+  const safeFileName = fileName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos (ex: ã, é, ç vira a, e, c)
+    .replace(/\s+/g, "_")            // Substitui espaços por underline
+    .replace(/[^a-zA-Z0-9._-]/g, "") // Remove qualquer caractere estranho que sobrar
+    .toLowerCase();                  // Deixa tudo minúsculo para padronizar
+
+  // Adicionar um timestamp para garantir unicidade mesmo com nomes iguais
+  const uniqueSafeFileName = `${Date.now()}_${safeFileName}`;
+  const storagePath = `${MEDIA_PATH_PREFIX}${uniqueSafeFileName}`;
 
   const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(storagePath, buf, {
     contentType: mimeType,
@@ -420,7 +431,7 @@ async function uploadToSupabase(
   });
 
   if (error) {
-    console.error("[handleMediaUpload] Erro upload Supabase:", error);
+    console.error(`[handleMediaUpload] Erro upload Supabase (${storagePath}):`, error);
     return null;
   }
 
