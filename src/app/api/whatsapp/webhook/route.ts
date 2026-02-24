@@ -380,7 +380,14 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
         item.number ??
         item.phone
     );
+    
     if (!remoteJid) continue;
+    
+    // --- NOVO FILTRO: IGNORAR STATUS/STORIES ---
+    if (remoteJid === "status@broadcast") {
+      console.log(`[WEBHOOK] Ignorando status/stories (status@broadcast)`);
+      continue;
+    }
 
     const messageValue = (item.message ?? item.content ?? {}) as unknown;
     

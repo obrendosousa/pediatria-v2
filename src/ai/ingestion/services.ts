@@ -112,9 +112,8 @@ export async function saveMessageToDb(payload: {
     return;
   }
 
-  // Definimos 'received' para mensagens recebidas (CUSTOMER)
-  // em vez de undefined. Isso limpa qualquer status de 'read' herdado da última mensagem.
-  const status = payload.sender === "HUMAN_AGENT" ? "sent" : "received";
+  // Volta para undefined se for recebida para não estourar a trava do Postgres.
+  const status = payload.sender === "HUMAN_AGENT" ? "sent" : undefined;
   
   const insertPayload: Record<string, unknown> = {
     chat_id: payload.chat_id,
@@ -171,7 +170,13 @@ export async function saveMessageToDb(payload: {
     last_interaction_at: nowIso,
   };
   
-  if (status) chatUpdatePayload.last_message_status = status;
+  // Limpa o status visual de "lido" se for mensagem recebida, 
+  // senão mantém o status de envio do atendente.
+  if (isIncoming) {
+    chatUpdatePayload.last_message_status = null;
+  } else if (status) {
+    chatUpdatePayload.last_message_status = status;
+  }
 
   // #region agent log
   debugLog({
@@ -387,7 +392,6 @@ async function fetchMediaFromEvolutionApi(
   }
 
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  // Evolution pode retornar { base64 } ou { data: { base64, mimetype, fileName } }
   const inner = (data.data as Record<string, unknown>) ?? data;
   const b64 = (inner.base64 ?? data.base64) as string | undefined;
   if (!b64 || typeof b64 !== "string") return null;
@@ -413,15 +417,13 @@ async function uploadToSupabase(
   const supabase = await getSupabase();
   const buf = Buffer.from(base64, "base64");
   
-  // CORREÇÃO: Sanitizar o nome do arquivo para o Supabase não rejeitar (Causa 3)
   const safeFileName = fileName
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Remove acentos (ex: ã, é, ç vira a, e, c)
-    .replace(/\s+/g, "_")            // Substitui espaços por underline
-    .replace(/[^a-zA-Z0-9._-]/g, "") // Remove qualquer caractere estranho que sobrar
-    .toLowerCase();                  // Deixa tudo minúsculo para padronizar
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9._-]/g, "")
+    .toLowerCase();
 
-  // Adicionar um timestamp para garantir unicidade mesmo com nomes iguais
   const uniqueSafeFileName = `${Date.now()}_${safeFileName}`;
   const storagePath = `${MEDIA_PATH_PREFIX}${uniqueSafeFileName}`;
 
@@ -439,11 +441,6 @@ async function uploadToSupabase(
   return data.publicUrl;
 }
 
-/**
- * Lógica de upload de mídia idêntica ao fluxo N8N:
- * 1. Se base64 no webhook → converte e faz upload
- * 2. Senão → busca na Evolution API getBase64FromMediaMessage → upload
- */
 export async function handleMediaUpload(
   messageData: Record<string, unknown>,
   key: { id: string; remoteJid?: string },
