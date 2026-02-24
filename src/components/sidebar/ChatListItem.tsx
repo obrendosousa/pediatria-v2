@@ -3,7 +3,7 @@
 import { memo, useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  Pin, Trash2, Mail, ChevronDown, User, 
+  Pin, Trash2, Mail, ChevronDown, 
   MessageSquareWarning, CheckCheck, Check, Tag, UserCog, Archive,
   Camera, Mic, Sticker, FileText, Video, Ban, CheckCircle2
 } from 'lucide-react';
@@ -42,6 +42,12 @@ const ChatListItem = memo(({
     const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; openUpward: boolean } | null>(null);
     const [isExiting, setIsExiting] = useState(false);
     const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [avatarError, setAvatarError] = useState(false);
+
+    // Reset avatar error quando o chat ou a foto mudam (ex.: nova foto buscada)
+    useEffect(() => {
+      setAvatarError(false);
+    }, [chat.id, chat.profile_pic]);
 
     // Calcula posição do menu ao abrir e posiciona acima ou abaixo conforme espaço disponível
     useLayoutEffect(() => {
@@ -288,12 +294,21 @@ const ChatListItem = memo(({
           )}
           <div 
             className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-gray-700"
-            style={!chat.profile_pic ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
+            style={!chat.profile_pic || avatarError ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
           >
-            {chat.profile_pic ? (
-              <img src={chat.profile_pic} alt="Avatar" className="w-full h-full object-cover"/>
+            {chat.profile_pic && !avatarError ? (
+              <img
+                src={chat.profile_pic}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+                onError={() => setAvatarError(true)}
+                loading="lazy"
+                decoding="async"
+              />
             ) : (
-              <User className="w-6 h-6 opacity-90" style={{ color: getAvatarTextColor(chat.id) }} />
+              <span className="text-lg font-semibold select-none" style={{ color: getAvatarTextColor(chat.id) }}>
+                {(chat.contact_name || chat.phone || '?').charAt(0).toUpperCase()}
+              </span>
             )}
           </div>
         </div>

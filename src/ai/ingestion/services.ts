@@ -266,6 +266,8 @@ export async function saveMessageToDb(payload: {
   media_url?: string;
   wpp_id: string;
   message_timestamp_iso?: string;
+  /** Se true, persiste tool_data.forwarded = true para exibir "Encaminhada" na UI */
+  forwarded?: boolean;
 }) {
   const supabase = await getSupabase();
   // #region agent log
@@ -317,6 +319,9 @@ export async function saveMessageToDb(payload: {
   };
   
   if (status) insertPayload.status = status;
+  if (payload.forwarded === true) {
+    insertPayload.tool_data = { forwarded: true };
+  }
   
   const { error } = await supabase.from("chat_messages").insert(insertPayload);
   if (error) {

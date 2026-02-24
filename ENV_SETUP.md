@@ -32,6 +32,8 @@ SUPABASE_SERVICE_ROLE_KEY=sua-chave-service-role
 EVOLUTION_API_URL="https://evolution-evolution-api.rozhd7.easypanel.host/"
 EVOLUTION_API_KEY="sua-chave-evolution"
 EVOLUTION_INSTANCE="Pediatria Alianca"
+# Opcional: número da conta WhatsApp vinculada (com DDI, ex: 5511999999999) para exibir sua foto no cabeçalho da sidebar
+EVOLUTION_MY_PHONE="5511999999999"
 
 # OpenAI API (NECESSÁRIO para agendamento com IA)
 OPENAI_API_KEY=sk-proj-sua-chave-openai-aqui

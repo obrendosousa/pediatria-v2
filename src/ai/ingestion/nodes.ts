@@ -148,6 +148,7 @@ export const processInputNode = async (
     resolver_strategy: resolverStrategy,
     resolver_latency_ms: Date.now() - resolverStartedAt,
     resolver_error: resolverError,
+    is_forwarded: data.isForwarded === true,
   };
 };
 
@@ -192,6 +193,7 @@ export const saveToDbNode = async (
     media_url: state.media_url,
     wpp_id: state.raw_input.key.id,
     message_timestamp_iso: state.message_timestamp_iso,
+    forwarded: state.is_forwarded === true,
   });
   return {};
 };

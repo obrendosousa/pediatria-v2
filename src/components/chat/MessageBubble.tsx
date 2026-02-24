@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Message } from '@/types';
-import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2, Play, Smile, Plus } from 'lucide-react';
+import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2, Play, Smile, Plus, Forward } from 'lucide-react';
 import AudioMessage from './AudioMessage';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 import EmojiPicker, { Emoji, EmojiStyle, Theme } from 'emoji-picker-react';
@@ -18,6 +18,7 @@ interface MessageBubbleProps {
   onSaveMacro: (macro: { title: string; type: 'text' | 'audio' | 'image' | 'video' | 'document'; content: string }) => void;
   onReply: (msg: Message) => void;
   onEdit: (msg: Message) => void;
+  onForward?: (msg: Message) => void;
   onReact?: (msg: Message, emoji: string) => void;
   onPreviewImage: (url: string) => void;
   onPreviewVideo: (url: string) => void;
@@ -39,6 +40,7 @@ export default function MessageBubble({
   onSaveMacro,
   onReply,
   onEdit,
+  onForward,
   onReact,
   onPreviewImage,
   onPreviewVideo,
@@ -493,6 +495,11 @@ export default function MessageBubble({
         
         {/* Conteúdo */}
         <div className="min-w-0 overflow-hidden break-words">
+           {message.tool_data?.forwarded === true && !isMe && (
+             <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+               <Forward size={12} /> Encaminhada
+             </p>
+           )}
            {hasReplyPreview && (
              <div className="mb-1.5 rounded-md bg-black/5 dark:bg-white/5 px-2 py-1 border-l-[3px] border-green-500">
                <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 truncate">
@@ -669,6 +676,14 @@ export default function MessageBubble({
              >
                 <Reply size={16}/> Responder
              </button>
+             {onForward && message.message_type !== 'revoked' && (
+               <button
+                 onClick={() => { onForward(message); setShowMenu(false); }}
+                 className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+               >
+                 <Forward size={16}/> Encaminhar
+               </button>
+             )}
              <button
                 onClick={() => { onStartSelection?.(message); setShowMenu(false); }}
                 className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"

@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreVertical, Trash2, User, UserCog, Sparkles, Loader2 } from 'lucide-react';
+import { MoreVertical, Trash2, UserCog, Sparkles, Loader2 } from 'lucide-react';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 import { Chat } from '@/types'; //
 import { useState, useEffect } from 'react';
@@ -22,6 +22,11 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [chat.id, chat.profile_pic]);
 
   const handleClearChatClick = () => {
     setConfirmClearOpen(true);
@@ -67,15 +72,21 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
             <div className="flex items-center gap-3">
                 <div 
                   className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 border-white/50 dark:border-gray-600"
-                  style={!chat.profile_pic ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
+                  style={!chat.profile_pic || avatarError ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
                 >
-                    {chat.profile_pic ? (
-                      <img src={chat.profile_pic} alt="Foto do contato" className="w-full h-full object-cover"/>
-                    ) : (
-                      <User 
-                        className="w-6 h-6 opacity-80" 
-                        style={{ color: getAvatarTextColor(chat.id) }}
+                    {chat.profile_pic && !avatarError ? (
+                      <img
+                        src={chat.profile_pic}
+                        alt="Foto do contato"
+                        className="w-full h-full object-cover"
+                        onError={() => setAvatarError(true)}
+                        loading="lazy"
+                        decoding="async"
                       />
+                    ) : (
+                      <span className="text-base font-semibold select-none" style={{ color: getAvatarTextColor(chat.id) }}>
+                        {(chat.contact_name || chat.phone || '?').charAt(0).toUpperCase()}
+                      </span>
                     )}
                 </div>
                 <div>

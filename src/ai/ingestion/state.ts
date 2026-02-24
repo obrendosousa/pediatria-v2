@@ -13,6 +13,8 @@ export interface EvolutionWebhookData {
   messageTimestamp: number | string;
   /** Base64 da mídia quando enviado no nível do body (ex: data.base64) */
   base64?: string;
+  /** Indica se a mensagem foi encaminhada no WhatsApp (contextInfo.forwarded) */
+  isForwarded?: boolean;
 }
 
 export interface IngestionState {
@@ -31,6 +33,8 @@ export interface IngestionState {
   media_url?: string;
   is_ai_paused: boolean;
   should_continue: boolean;
+  /** Indica se a mensagem recebida foi encaminhada (para persistir em tool_data) */
+  is_forwarded?: boolean;
 }
 
 // Mantém referência explícita ao tipo importado para futuras extensões de estado.

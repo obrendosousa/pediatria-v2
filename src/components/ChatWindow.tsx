@@ -4,6 +4,7 @@ import { useChatAutomation } from '@/hooks/useChatAutomation';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { Chat } from '@/types';
+import type { Message } from '@/types';
 import { User } from 'lucide-react';
 
 // Componentes de Interface
@@ -18,6 +19,7 @@ import SequenceEditorModal from './chat/modals/SequenceEditorModal';
 import ConfirmModal from './chat/modals/ConfirmModal';
 import ImagePreviewModal from './chat/modals/ImagePreviewModal';
 import CreateScheduleModal from './chat/modals/CreateScheduleModal';
+import ForwardMessageModal from './chat/modals/ForwardMessageModal';
 import AppointmentModal, { PreScheduleData } from './medical/AppointmentModal';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -53,6 +55,29 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
 
   useEffect(() => {
     setPreviewMedia(null);
+  }, [chat?.id]);
+
+  // Prefetch da lista de chats para o modal de encaminhar (abre instantâneo)
+  useEffect(() => {
+    if (!chat?.id || String(chat.id).startsWith('new_')) {
+      setForwardChatsCache(null);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from('chats')
+      .select('id, phone, contact_name, profile_pic, last_message, last_interaction_at')
+      .eq('is_archived', false)
+      .neq('id', chat.id)
+      .order('last_interaction_at', { ascending: false })
+      .limit(60)
+      .then(({ data }) => {
+        if (!cancelled && data) setForwardChatsCache(data as Chat[]);
+      })
+      .catch(() => {
+        if (!cancelled) setForwardChatsCache([]);
+      });
+    return () => { cancelled = true; };
   }, [chat?.id]);
   
   // Effect para remover pendingMessages quando a mensagem real chegar OU quando for apagada
@@ -100,6 +125,8 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   // REMOVIDO: isRecording e recordingDuration (agora gerenciados internamente pelo ChatInput)
   const [replyTo, setReplyTo] = useState<any>(null);
   const [editingMessage, setEditingMessage] = useState<any>(null);
+  const [forwardMessage, setForwardMessage] = useState<Message | null>(null);
+  const [forwardChatsCache, setForwardChatsCache] = useState<Chat[] | null>(null);
 
   // --- LÓGICA DE ENVIO DE ARQUIVO/ÁUDIO ---
   // Atualizado para aceitar 'metadata' (onde vem a duração do áudio)
@@ -473,6 +500,47 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     setReplyTo(null);
   }, []);
 
+  const handleForwardMessage = useCallback((msg: Message) => {
+    setForwardMessage(msg);
+  }, []);
+
+  const handleConfirmForward = useCallback((targetChat: Chat) => {
+    const msg = forwardMessage;
+    if (!msg) return;
+    // Fecha o modal na hora para não travar a UI
+    setForwardMessage(null);
+    toast.info('Encaminhando...');
+    (async () => {
+      try {
+        const type = String(msg.message_type || 'text').toLowerCase();
+        const text = (msg.message_text || '').trim();
+        const mediaUrl = msg.media_url || undefined;
+        const body: Record<string, unknown> = {
+          chatId: targetChat.id,
+          phone: targetChat.phone,
+          message: type === 'text' ? text : (text || (type === 'audio' ? 'Áudio' : 'Mídia')),
+          type: type === 'ptt' ? 'audio' : type,
+        };
+        if (mediaUrl && (type === 'image' || type === 'video' || type === 'audio' || type === 'document')) {
+          body.mediaUrl = mediaUrl;
+        }
+        const res = await fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error((data as { error?: string }).error || 'Falha ao encaminhar');
+        }
+        toast.success('Mensagem encaminhada.');
+      } catch (e) {
+        const errMsg = e instanceof Error ? e.message : 'Erro ao encaminhar';
+        toast.error(errMsg);
+      }
+    })();
+  }, [forwardMessage, toast]);
+
   const handleSendAudio = useCallback((blob: Blob, duration: number) => {
     handleSendFile(blob, '', 'audio', { duration });
   }, [handleSendFile]);
@@ -576,6 +644,14 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           onConfirmSaved={handleScheduleItem}
         />
         <ConfirmModal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)} onConfirm={confirmData?.onConfirm || (() => {})} title={confirmData?.title || ''} message={confirmData?.message || ''} />
+        <ForwardMessageModal
+          isOpen={!!forwardMessage}
+          onClose={() => setForwardMessage(null)}
+          message={forwardMessage}
+          currentChatId={chat?.id ?? ''}
+          onForward={handleConfirmForward}
+          initialChats={forwardChatsCache}
+        />
         <ImagePreviewModal
           isOpen={!!previewMedia}
           onClose={() => setPreviewMedia(null)}
@@ -608,6 +684,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
                 onSaveMacro={handleSaveMacroFromMessage}
                 onReply={handleReplyMessage}
                 onEdit={handleEditMessage}
+                onForward={handleForwardMessage}
                 onReact={reactToMessage}
                 onPreviewImage={(src) => setPreviewMedia({ src, type: 'image' })}
                 onPreviewVideo={(src) => setPreviewMedia({ src, type: 'video' })}

@@ -340,6 +340,22 @@ function detectMessageType(message: unknown): string {
   return "unknown";
 }
 
+/** Detecta se a mensagem foi encaminhada (contextInfo.forwarded - Baileys/Evolution) */
+function isMessageForwarded(message: unknown): boolean {
+  if (!message || typeof message !== "object") return false;
+  const msg = message as Record<string, unknown>;
+  const contextInfo =
+    msg.contextInfo ??
+    (msg.extendedTextMessage as Record<string, unknown> | undefined)?.contextInfo ??
+    (msg.imageMessage as Record<string, unknown> | undefined)?.contextInfo ??
+    (msg.videoMessage as Record<string, unknown> | undefined)?.contextInfo ??
+    (msg.audioMessage as Record<string, unknown> | undefined)?.contextInfo ??
+    (msg.documentMessage as Record<string, unknown> | undefined)?.contextInfo;
+  if (!contextInfo || typeof contextInfo !== "object") return false;
+  const ctx = contextInfo as Record<string, unknown>;
+  return ctx.forwarded === true || ctx.forwarded === "true";
+}
+
 function toRemoteJid(value: unknown): string {
   const raw = String(value ?? "").trim();
   if (!raw) return "";
@@ -399,6 +415,7 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
     const messageTypeValue = (item.messageType ?? item.contentType ?? detectedType) as string;
     
     const timestampValue = (item.messageTimestamp ?? item.timestamp ?? Date.now()) as number | string;
+    const forwarded = isMessageForwarded(messageValue);
 
     normalized.push({
       key: {
@@ -411,6 +428,7 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
       message: messageValue,
       messageTimestamp: timestampValue,
       base64: typeof item.base64 === "string" ? item.base64 : undefined,
+      ...(forwarded ? { isForwarded: true } : {}),
     });
   }
 

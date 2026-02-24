@@ -14,6 +14,7 @@ interface MessageListProps {
   onSaveMacro: (macro: { title: string; type: 'text' | 'audio' | 'image' | 'video' | 'document'; content: string }) => void;
   onReply: (msg: Message) => void;
   onEdit: (msg: Message) => void;
+  onForward?: (msg: Message) => void;
   onReact?: (msg: Message, emoji: string) => void;
   onPreviewImage: (url: string) => void;
   onPreviewVideo: (url: string) => void;
@@ -27,6 +28,7 @@ export default function MessageList({
   onSaveMacro,
   onReply,
   onEdit,
+  onForward,
   onReact,
   onPreviewImage,
   onPreviewVideo
@@ -344,6 +346,10 @@ export default function MessageList({
     onEdit(msg);
   }, [onEdit]);
 
+  const handleForward = useCallback((msg: Message) => {
+    onForward?.(msg);
+  }, [onForward]);
+
   const handlePreviewImage = useCallback((url: string) => {
     onPreviewImage(url);
   }, [onPreviewImage]);
@@ -407,6 +413,7 @@ export default function MessageList({
             onDelete={handleDelete}
             onSaveMacro={handleSaveMacro}
             onReply={handleReply}
+            onForward={handleForward}
             onEdit={handleEdit}
             onReact={onReact}
             onPreviewImage={handlePreviewImage}
@@ -434,6 +441,7 @@ export default function MessageList({
     selectedMessageIds,
     toggleSelectedMessage,
     startSelectionMode,
+    handleForward,
   ]);
 
   return (

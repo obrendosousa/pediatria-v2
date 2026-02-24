@@ -54,6 +54,18 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
 
   const headerMenuRef = useRef<HTMLDivElement>(null);
   const lastSyncedSelectedKeyRef = useRef<string>('');
+  const [myProfilePic, setMyProfilePic] = useState<string | null>(null);
+  const [myProfilePicError, setMyProfilePicError] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/whatsapp/my-profile-picture')
+      .then((res) => res.json())
+      .then((data: { profile_pic?: string | null }) => {
+        const url = data?.profile_pic;
+        if (typeof url === 'string' && url.startsWith('http')) setMyProfilePic(url);
+      })
+      .catch(() => {});
+  }, []);
 
   const confirmFn = (message: string, title = 'Confirmar') =>
     new Promise<boolean>((resolve) => {
@@ -314,12 +326,23 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
           <div className="h-[60px] bg-[#f0f2f5] dark:bg-[#2a2d36] flex items-center justify-between px-4 shrink-0 border-b border-gray-200 dark:border-gray-700">
             <div 
               className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-              style={{ backgroundColor: getAvatarColorHex(0) }}
+              style={!myProfilePic || myProfilePicError ? { backgroundColor: getAvatarColorHex(0) } : {}}
             >
-              <User 
-                className="w-6 h-6" 
-                style={{ color: getAvatarTextColor(0) }}
-              />
+              {myProfilePic && !myProfilePicError ? (
+                <img
+                  src={myProfilePic}
+                  alt="Sua foto de perfil"
+                  className="w-full h-full object-cover"
+                  onError={() => setMyProfilePicError(true)}
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <User 
+                  className="w-6 h-6" 
+                  style={{ color: getAvatarTextColor(0) }}
+                />
+              )}
             </div>
             <div className="flex gap-2 text-[#54656f] dark:text-gray-300">
                <button 

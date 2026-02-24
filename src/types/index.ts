@@ -36,6 +36,8 @@ export interface Message {
       label: string;
       status: 'pending' | 'processing' | 'completed' | 'failed';
     }>;
+    /** Indica se a mensagem foi encaminhada no WhatsApp (recebida) */
+    forwarded?: boolean;
     // Metadados de mídia (duração de áudio, nome de arquivo, etc)
     duration?: number;
     caption?: string;
