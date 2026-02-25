@@ -138,6 +138,7 @@ export default function Navigation() {
         </MenuGroup>
 
         <MenuGroup title="Sistema">
+            <NavItem icon={Bot} label="Analista IA" path="/analista" active={isActive('/analista')} color="indigo" />
             <NavItem icon={Zap} label="Automações" path="/automatizacoes" active={isActive('/automatizacoes')} color="indigo" />
             {profile?.role === 'admin' && (
               <NavItem icon={Settings} label="Configurações" path="/configuracoes" active={isActive('/configuracoes')} color="slate" />

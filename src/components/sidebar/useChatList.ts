@@ -17,29 +17,27 @@ export interface UseChatListOptions {
   confirm?: (message: string, title?: string) => Promise<boolean>;
 }
 
-export function useChatList(isViewingArchived: boolean, searchTerm: string, options?: UseChatListOptions) {
+// ADICIONADO: isViewingDrafts como parâmetro do hook
+export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean, searchTerm: string, options?: UseChatListOptions) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [tags, setTags] = useState<TagData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Função de ordenação alinhada ao WhatsApp: Pinned > Date (mais recente primeiro)
   const sortChats = (chatsList: Chat[]): Chat[] => {
     return [...chatsList].sort((a, b) => {
-      // 1. Pinned primeiro
       if (a.is_pinned && !b.is_pinned) return -1;
       if (!a.is_pinned && b.is_pinned) return 1;
 
-      // 2. Por data de última interação (mais recente primeiro)
       const dateA = new Date(a.last_interaction_at || 0).getTime();
       const dateB = new Date(b.last_interaction_at || 0).getTime();
       return dateB - dateA;
     });
   };
 
-  const chatsListCacheKey = `chats_list_${isViewingArchived}_${searchTerm || ''}`;
+  // ADICIONADO: Cache key agora inclui o estado de drafts para evitar mistura de dados
+  const chatsListCacheKey = `chats_list_${isViewingArchived}_${isViewingDrafts}_${searchTerm || ''}`;
   const tagsCacheKey = 'chats_tags';
 
-  // Mantém o cache quente quando realtime atualiza chats/tags
   useEffect(() => {
     set(chatsListCacheKey, chats, TTL_CHATS_LIST_MS);
   }, [chats, chatsListCacheKey]);
@@ -52,10 +50,16 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
   const fetchChats = async (showLoading = true) => {
     try {
       if (showLoading) setIsLoading(true);
+      
       let query = supabase
         .from('chats')
         .select('*')
         .eq('is_archived', isViewingArchived);
+
+      // ADICIONADO: Filtro que traz apenas os chats que possuem rascunho da IA
+      if (isViewingDrafts) {
+        query = query.not('ai_draft_reply', 'is', null);
+      }
 
       if (searchTerm) {
         query = query.or(`contact_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
@@ -63,7 +67,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
 
       const { data } = await query;
       const sortedChats = sortChats(data || []);
-      // #region agent log
+      
       debugLog({
         runId: 'pre-fix',
         hypothesisId: 'H2',
@@ -80,7 +84,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
         },
         timestamp: Date.now(),
       });
-      // #endregion
+      
       setChats(sortedChats);
       set(chatsListCacheKey, sortedChats, TTL_CHATS_LIST_MS);
     } catch (e) {
@@ -109,12 +113,10 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
     fetchChats(!hasValidChatsCache);
     fetchTags();
 
-    // Canal de Tags
     const tagsSub = supabase.channel('public:tags')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tags' }, () => fetchTags())
       .subscribe();
 
-    // Canal de Mensagens - para detectar novas mensagens e atualizar unread_count
     const messagesSub = supabase.channel('public:chat_messages_for_list')
       .on('postgres_changes', { 
         event: 'INSERT', 
@@ -124,7 +126,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
         const newMessage = payload.new as any;
         const chatId = newMessage.chat_id;
         const sender = newMessage.sender;
-        // #region agent log
+        
         debugLog({
           runId: 'pre-fix',
           hypothesisId: 'H6',
@@ -137,11 +139,9 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
           },
           timestamp: Date.now(),
         });
-        // #endregion
 
         const isFromUs = sender === 'HUMAN_AGENT' || sender === 'AI_AGENT' || sender === 'me';
         if (isFromUs) {
-          // Mensagem enviada por nós: atualiza preview (checks) na sidebar
           setChats(currentChats => {
             const chatIndex = currentChats.findIndex(c => c.id === chatId);
             if (chatIndex === -1) return currentChats;
@@ -159,8 +159,6 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
           return;
         }
 
-        // Atualizar preview local sem forçar unread_count.
-        // unread_count é fonte única do backend e vem pelo canal de chats (UPDATE).
         setChats(currentChats => {
           const chatIndex = currentChats.findIndex(c => c.id === chatId);
           if (chatIndex === -1) return currentChats;
@@ -168,7 +166,6 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
           const updatedChats = [...currentChats];
           const chat = updatedChats[chatIndex];
           
-          // Atualizar chat com nova mensagem
           updatedChats[chatIndex] = {
             ...chat,
             last_interaction_at: newMessage.created_at || new Date().toISOString(),
@@ -177,23 +174,18 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
             last_message_sender: sender
           };
 
-          // Reordenar: o chat com nova mensagem deve subir
           return sortChats(updatedChats);
         });
-
-        // O contador persistente agora é responsabilidade do backend/banco.
-        // Aqui mantemos apenas feedback visual imediato na lista.
       })
       .subscribe();
 
-    // Canal de Chats (Lógica complexa de merge)
     const chatsSub = supabase.channel('public:chats')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, (payload) => {
         const { eventType, new: newRecord, old: oldRecord } = payload;
         const unreadBefore = Number((oldRecord as Record<string, unknown> | null)?.unread_count || 0);
         const unreadAfter = Number((newRecord as Record<string, unknown> | null)?.unread_count || 0);
+        
         if (eventType === 'UPDATE' && unreadBefore !== unreadAfter) {
-          // #region agent log
           debugLog({
             runId: 'post-fix',
             hypothesisId: 'H7',
@@ -206,25 +198,25 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
             },
             timestamp: Date.now(),
           });
-          // #endregion
         }
 
         setChats(currentChats => {
-          // 1. DELETE
           if (eventType === 'DELETE') {
             return currentChats.filter(chat => chat.id !== oldRecord.id);
           }
 
-          // 2. INSERT
           if (eventType === 'INSERT') {
             const typedRecord = newRecord as Chat;
+            
+            // Regras de visualização estritas
             if (!!typedRecord.is_archived !== isViewingArchived) return currentChats;
+            if (isViewingDrafts && !typedRecord.ai_draft_reply) return currentChats;
 
-            // Evita duplicidade (ID exato ou chat temporário)
             if (currentChats.some(c => c.id === typedRecord.id)) {
                 const updatedList = currentChats.map(c => c.id === typedRecord.id ? typedRecord : c);
                 return sortChats(updatedList);
             }
+            
             const tempChatIndex = currentChats.findIndex(c => 
                 String(c.id).startsWith('new_') && c.phone === typedRecord.phone
             );
@@ -235,27 +227,27 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
                 return sortChats(updatedList);
             }
 
-            // Novo chat - adicionar e reordenar
             const newList = [typedRecord, ...currentChats];
             return sortChats(newList);
           }
 
-          // 3. UPDATE
           if (eventType === 'UPDATE') {
             const typedRecord = newRecord as Chat;
             
-            // Se mudou o status de arquivado, remove/adiciona conforme a view atual
+            // Regras de visualização estritas
             if (!!typedRecord.is_archived !== isViewingArchived) {
+                return currentChats.filter(chat => chat.id !== typedRecord.id);
+            }
+            if (isViewingDrafts && !typedRecord.ai_draft_reply) {
                 return currentChats.filter(chat => chat.id !== typedRecord.id);
             }
 
             const exists = currentChats.some(c => c.id === typedRecord.id);
             if (exists) {
                 const updatedList = currentChats.map(chat => chat.id === typedRecord.id ? typedRecord : chat);
-                // Reordena usando função customizada: Pinned > Unread > Date
                 return sortChats(updatedList);
             } else {
-                // Veio de outro estado (ex: desarquivou)
+                // Caso o chat passe a pertencer a esta lista (ex: ganhou um ai_draft_reply)
                 const newList = [typedRecord, ...currentChats];
                 return sortChats(newList);
             }
@@ -270,9 +262,9 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
       supabase.removeChannel(tagsSub);
       supabase.removeChannel(messagesSub);
     };
-  }, [isViewingArchived, searchTerm]); // Recria se mudar visualização ou busca
+  }, [isViewingArchived, isViewingDrafts, searchTerm]); // ADICIONADO: isViewingDrafts nas dependências
 
-  // --- AÇÕES (EXPOSTAS PARA A UI) ---
+  // --- AÇÕES ---
 
   const handleCreateChat = (newChat: Chat) => {
     const exists = chats.find(c => c.id === newChat.id);
@@ -285,7 +277,6 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
   };
 
   const handleSelectChat = async (chat: Chat) => {
-    // Zera contador visualmente
     setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread_count: 0 } : c));
     
     if ((chat.unread_count || 0) > 0) {
@@ -306,7 +297,6 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
       ? currentTags.filter(t => t !== tagIdStr) 
       : [...currentTags, tagIdStr];
     
-    // Otimista
     setChats(prev => prev.map(c => c.id === chat.id ? { ...c, tags: newTags } : c));
     await supabase.from('chats').update({ tags: newTags }).eq('id', chat.id);
     
@@ -339,14 +329,12 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
 
         if (action === 'delete') {
             if (!(await askConfirm("Apagar permanentemente esta conversa?", "Excluir conversa"))) return;
-            setChats(prev => prev.filter(c => c.id !== chat.id)); // Remove da UI
+            setChats(prev => prev.filter(c => c.id !== chat.id));
             await supabase.from('chat_messages').delete().eq('chat_id', chat.id);
             await supabase.from('chats').delete().eq('id', chat.id);
             return true;
         }
 
-        // Aplica update no banco (UI atualiza via Realtime ou Otimista se quiser implementar complexidade extra)
-        // Aqui confiamos no Realtime para reordenar, mas podemos fazer otimista simples:
         if (action === 'archive') {
              setChats(prev => prev.filter(c => c.id !== chat.id));
         }
@@ -356,7 +344,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
 
     } catch (e) {
         console.error("Erro na ação:", e);
-        fetchChats(); // Reverte em caso de erro
+        fetchChats();
         return false;
     }
   };
@@ -367,7 +355,6 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
       if (!(await askConfirm(`Deseja ${confirmText} as ${selectedIds.length} conversas?`, 'Confirmar ação'))) return false;
 
       try {
-        // Otimista
         setChats(prev => prev.filter(c => !selectedIds.includes(c.id)));
         
         if (action === 'archive') {
@@ -388,7 +375,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
     chats,
     tags,
     isLoading,
-    fetchTags, // Exposto caso precise forçar refresh
+    fetchTags,
     actions: {
         create: handleCreateChat,
         updateContact: handleUpdateContact,

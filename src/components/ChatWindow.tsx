@@ -12,6 +12,7 @@ import ChatHeader from './chat/ChatHeader';
 import ChatInput from './chat/ChatInput';
 import MessageList from './chat/MessageList';
 import ChatSidebar from './chat/ChatSidebar';
+import AIDraftBanner from './chat/AIDraftBanner'; // NOVO: Importação do Banner da IA
 
 // Modais de suporte
 import MacroModal from './chat/modals/MacroModal';
@@ -571,6 +572,29 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     setIsCreateScheduleOpen(true);
   }, []);
 
+  // --- NOVO: Handler para o Banner da IA ---
+  const handleClearDraft = useCallback(async () => {
+    if (!chat) return;
+    try {
+      await supabase
+        .from('chats')
+        .update({ ai_draft_reply: null, ai_draft_reason: null })
+        .eq('id', chat.id);
+      
+      // Atualiza o objeto do chat em memória localmente para o banner sumir
+      chat.ai_draft_reply = null;
+      chat.ai_draft_reason = null;
+    } catch (e) {
+      console.error('Falha ao limpar rascunho:', e);
+    }
+  }, [chat]);
+
+  const handleApproveDraft = useCallback(async (text: string) => {
+    await handleSendMessage(text); // Aproveita a função existente de envio
+    await handleClearDraft(); // Limpa as colunas do DB
+    toast.success('Sugestão enviada!');
+  }, [handleSendMessage, handleClearDraft, toast]);
+
   useEffect(() => {
     const onShortcut = (e: KeyboardEvent) => {
       if (!chat) return;
@@ -691,6 +715,18 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
                 onPreviewImage={(src) => setPreviewMedia({ src, type: 'image' })}
                 onPreviewVideo={(src) => setPreviewMedia({ src, type: 'video' })}
             />
+            
+            {/* NOVO: Renderização do Banner de Sugestão da IA Logo Acima do Input */}
+            {chat?.ai_draft_reply && (
+              <div className="z-10 bg-gradient-to-t from-[#efeae2] dark:from-[#0b141a] pt-2 pb-1">
+                <AIDraftBanner 
+                  draftText={chat.ai_draft_reply}
+                  draftReason={chat.ai_draft_reason || ''}
+                  onApprove={handleApproveDraft}
+                  onDiscard={handleClearDraft}
+                />
+              </div>
+            )}
             
             <ChatInput 
                 onSendMessage={handleSendMessage}

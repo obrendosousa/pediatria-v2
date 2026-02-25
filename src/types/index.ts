@@ -90,6 +90,13 @@ export interface Chat {
   ai_summary?: string; 
   ai_sentiment?: 'neutral' | 'positive' | 'negative';
   
+  // --- CAMPOS DO AGENTE AUTÔNOMO E COPILOTO ---
+  ai_draft_reply?: string | null;
+  ai_draft_reason?: string | null;
+  ai_draft_schedule_text?: string | null;
+  ai_draft_schedule_date?: string | null;
+  ai_draft_schedule_reason?: string | null;
+  
   // Recepção
   reception_status?: 'waiting' | 'called' | 'in_service' | 'finished' | string;
   appointment_date?: string;

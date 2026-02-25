@@ -4,24 +4,22 @@ import { useState, useRef, useEffect } from 'react';
 import { 
   Search, Plus, MoreVertical, Archive, 
   Trash2, Filter, User, X,
-  Settings, ArrowLeft, Tag, Loader2, Pause, Play
+  Settings, ArrowLeft, Tag, Loader2, Pause, Play, Sparkles
 } from 'lucide-react';
 
 import { Chat } from '@/types';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 
-// --- IMPORTANTE: Verifique se este arquivo existe exatamente neste caminho ---
-import { useChatList } from './sidebar/useChatList';import ChatListItem from './sidebar/ChatListItem';
+import { useChatList } from './sidebar/useChatList';
+import ChatListItem from './sidebar/ChatListItem';
 import TagsManager from './sidebar/TagsManager';
 import TagSelector from './sidebar/TagSelector';
 
-// Modais existentes
 import NewChatModal from './chat/modals/NewChatModal';
 import EditContactModal from './chat/modals/EditContactModal';
 import PauseServiceModal from './sidebar/PauseServiceModal';
 import ConfirmModal from './ui/ConfirmModal';
 
-// Hooks e utilitários
 import { useAutoPauseMessages } from '@/hooks/useAutoPauseMessages';
 import { activatePause, deactivatePause, isPauseActive } from '@/utils/pauseService';
 
@@ -34,6 +32,7 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
   // --- ESTADOS DE UI ---
   const [searchTerm, setSearchTerm] = useState('');
   const [isViewingArchived, setIsViewingArchived] = useState(false);
+  const [isViewingDrafts, setIsViewingDrafts] = useState(false); // NOVO: Estado para as sugestões da IA
   
   // Seleção Múltipla
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -72,30 +71,27 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
       setConfirmState({ message, title, resolve });
     });
 
-  // Hook para disparo automático de mensagens
   useAutoPauseMessages();
 
-  // Verificar status da pausa ao montar e quando modal fecha
   useEffect(() => {
     const checkPauseStatus = async () => {
       try {
         const active = await isPauseActive();
         setIsPaused(active);
       } catch {
-        // Ignorar erros silenciosamente - as colunas podem não existir ainda
         setIsPaused(false);
       }
     };
     
     checkPauseStatus();
     
-    // Verificar a cada 3 segundos
     const interval = setInterval(checkPauseStatus, 3000);
     return () => clearInterval(interval);
   }, [isPauseModalOpen]);
 
   // --- DADOS E AÇÕES (HOOK) ---
-  const { chats, tags, isLoading, actions, fetchTags } = useChatList(isViewingArchived, searchTerm, { confirm: confirmFn });
+  // NOVO: Passando isViewingDrafts para o hook
+  const { chats, tags, isLoading, actions, fetchTags } = useChatList(isViewingArchived, isViewingDrafts, searchTerm, { confirm: confirmFn });
 
   // --- EFEITOS DE UI ---
   useEffect(() => {
@@ -103,11 +99,9 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
       const target = event.target as Element;
       const isInsideChatMenu = target.closest('[data-chat-menu]');
       const isInsideGroup = target.closest('.group');
-      // Fecha menu do chat se clicar fora (não fecha ao clicar em itens do menu)
       if (activeMenuId !== null && !isInsideGroup && !isInsideChatMenu) {
         setActiveMenuId(null);
       }
-      // Fecha menu do header
       if (headerMenuRef.current && !headerMenuRef.current.contains(event.target as Node)) {
         setIsHeaderMenuOpen(false);
       }
@@ -116,8 +110,6 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [activeMenuId]);
 
-  // Mantém o chat selecionado do painel principal sincronizado com a fonte da lista.
-  // Isso evita divergência entre ChatListItem e ChatHeader quando o chat é atualizado em realtime.
   useEffect(() => {
     if (!onSelectChat || !selectedChatId) return;
 
@@ -142,7 +134,6 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
   }, [chats, selectedChatId, onSelectChat]);
 
   // --- HANDLERS ---
-
   const handleSelectChat = (chat: Chat) => {
     actions.select(chat);
     if (onSelectChat) onSelectChat(chat);
@@ -183,7 +174,6 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
     e.stopPropagation();
     e.preventDefault();
 
-    // Ações que abrem modais locais
     if (action === 'tags') {
       setActiveMenuId(null);
       setTagSelectorChat(chat);
@@ -203,7 +193,6 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
 
     setActiveMenuId(null);
 
-    // Ações de dados (delegadas ao hook)
     const wasDeleted = action === 'delete' ? await actions.singleAction(action, chat) : false;
     if (wasDeleted && selectedChatId === chat.id) {
       onSelectChat?.(null);
@@ -271,14 +260,13 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
         />
       )}
 
-      {/* Modal de Pausa */}
       <PauseServiceModal
         isOpen={isPauseModalOpen}
         onClose={() => setIsPauseModalOpen(false)}
         onConfirm={handlePauseConfirm}
       />
 
-      {/* --- HEADER (3 ESTADOS) --- */}
+      {/* --- HEADER (4 ESTADOS) --- */}
       
       {/* 1. MODO ARQUIVADOS */}
       {isViewingArchived ? (
@@ -299,7 +287,29 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
             </div>
         </div>
 
-      /* 2. MODO SELEÇÃO */
+      /* 2. MODO SUGESTÕES DA IA (NOVO) */
+      ) : isViewingDrafts ? (
+        <div className="flex flex-col animate-in fade-in duration-200 bg-[#f8f5ff] dark:bg-[#2a2536]">
+            <div className="h-[60px] flex items-center px-4 gap-4 border-b border-purple-200/50 dark:border-purple-900/50">
+                <button 
+                  onClick={() => setIsViewingDrafts(false)} 
+                  className="hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-full p-2 transition-colors -ml-2 text-[#54656f] dark:text-gray-300"
+                >
+                    <ArrowLeft size={20} />
+                </button>
+                <div className="flex items-center gap-2 text-[#111b21] dark:text-gray-100">
+                  <Sparkles size={20} className="text-purple-600 dark:text-purple-400" />
+                  <h2 className="text-[19px] font-medium">Sugestões da IA</h2>
+                </div>
+            </div>
+            <div className="py-4 px-8 text-center bg-purple-50/50 dark:bg-transparent border-b border-purple-100 dark:border-purple-900/30">
+               <p className="text-[13px] text-[#54656f] dark:text-gray-400 leading-relaxed">
+                 Chats aguardando aprovação das mensagens geradas pelo Agente Autônomo.
+               </p>
+            </div>
+        </div>
+
+      /* 3. MODO SELEÇÃO */
       ) : isSelectionMode ? (
         <div className="h-[60px] bg-primary/15 dark:bg-primary/20 flex items-center justify-between px-4 shrink-0 border-b border-primary/20 animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-3">
@@ -320,7 +330,7 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
             </div>
         </div>
 
-      /* 3. MODO PADRÃO */
+      /* 4. MODO PADRÃO */
       ) : (
         <>
           <div className="h-[60px] bg-[#f0f2f5] dark:bg-[#2a2d36] flex items-center justify-between px-4 shrink-0 border-b border-gray-200 dark:border-gray-700">
@@ -353,7 +363,6 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
                  <Plus size={22} />
                </button>
                
-               {/* Botão de Pausar Atendimento */}
                <button
                  onClick={() => isPaused ? handleDeactivatePause() : setIsPauseModalOpen(true)}
                  className={`relative hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors ${
@@ -413,8 +422,24 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
       {/* --- LISTAGEM --- */}
       <div className="flex-1 overflow-y-auto scrollbar-thin hover:scrollbar-thumb-gray-300 dark:hover:scrollbar-thumb-gray-600 bg-white dark:bg-[#1e2028] transition-colors duration-300">
         
-        {/* Botão de Arquivados */}
-        {!isViewingArchived && !isSelectionMode && !searchTerm && (
+        {/* BOTÕES DE NAVEGAÇÃO SUPERIORES */}
+        {!isViewingArchived && !isViewingDrafts && !isSelectionMode && !searchTerm && (
+          <>
+            {/* Botão de Sugestões da IA (NOVO) */}
+            <div 
+              onClick={() => setIsViewingDrafts(true)} 
+              className="flex items-center px-4 py-3 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/10 text-[#111b21] dark:text-gray-200 border-b border-gray-50 dark:border-gray-800 transition-all duration-200 ease-in-out"
+            >
+                <div className="w-8 flex justify-center">
+                  <Sparkles size={18} className="text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="flex flex-col ml-2">
+                  <span className="font-medium text-[15px]">Sugestões da IA</span>
+                  <span className="text-[12px] text-gray-500 dark:text-gray-400">Mensagens aguardando aprovação</span>
+                </div>
+            </div>
+
+            {/* Botão de Arquivados (ORIGINAL) */}
             <div 
               onClick={() => setIsViewingArchived(true)} 
               className="flex items-center px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 text-[#111b21] dark:text-gray-200 border-b border-gray-50 dark:border-gray-800 transition-all duration-200 ease-in-out"
@@ -424,6 +449,7 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
                 </div>
                 <span className="font-medium text-[15px] ml-2">Arquivadas</span>
             </div>
+          </>
         )}
         
         {/* ESTADO: CARREGANDO */}
@@ -433,7 +459,6 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
            </div>
         ) : (
           /* ESTADO: LISTA DE CHATS */
-          /* O uso de (chats || []) previne o erro de 'map' undefined */
           (chats || []).length > 0 ? (
             (chats || []).map((chat: Chat) => (
               <ChatListItem 
@@ -459,6 +484,8 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
             <div className="p-10 text-center text-gray-400 text-sm flex flex-col items-center gap-2">
                 {isViewingArchived ? (
                     <>Nenhuma conversa arquivada.</>
+                ) : isViewingDrafts ? (
+                    <>Nenhuma sugestão pendente de aprovação.</>
                 ) : searchTerm ? (
                     <>{`Nenhuma conversa encontrada para "${searchTerm}".`}</>
                 ) : (
