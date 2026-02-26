@@ -309,7 +309,7 @@ export default function ChatInput({
         </div>
       )}
 
-      {/* Strip compacto de sugestão da IA */}
+      {/* Balão flutuante de sugestão da IA — posicionado acima do botão Sparkles */}
       {aiDraftText && onApproveAIDraft && onDiscardAIDraft && (
         <AIDraftBanner
           draftText={aiDraftText}

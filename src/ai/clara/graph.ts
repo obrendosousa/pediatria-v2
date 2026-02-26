@@ -191,15 +191,26 @@ claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
           .join(" ")
         : "";
 
-  // Helper: salva mensagem de status no chat antes de iniciar execução complexa
-  async function saveStatusMessage(chatId: number, planSteps: string[]) {
-    if (!chatId) return;
+  // Helper: salva mensagem de status SEMPRE no chat interno da Clara (phone='00000000000').
+  // Nunca usa state.chat_id diretamente, pois quando chamado pelo heartbeat o chat_id
+  // pode ser de um paciente real, e a mensagem vazaria para o chat desse paciente.
+  async function saveStatusMessage(planSteps: string[]) {
     try {
       const supabase = getSupabaseAdminClient();
+
+      // Busca o ID do chat interno da Clara
+      const { data: claraChat } = await (supabase as any)
+        .from("chats")
+        .select("id")
+        .eq("phone", "00000000000")
+        .single();
+
+      if (!claraChat?.id) return; // Chat interno não encontrado — não salva nada
+
       const planText = planSteps.map((s, i) => `${i + 1}. ${s}`).join("\n");
       const statusText = `🔍 *Análise profunda iniciada.* Vou executar o seguinte plano:\n\n${planText}\n\n_Aguarde enquanto processo os dados..._`;
       await (supabase as any).from("chat_messages").insert({
-        chat_id: chatId,
+        chat_id: claraChat.id,
         sender: "AI_AGENT",
         message_text: statusText,
         bot_message: true,
@@ -220,7 +231,7 @@ claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
       "Buscar a lista de chats relevantes para a análise solicitada.",
       "Executar análise profunda nos chats encontrados e compilar os insights.",
     ];
-    await saveStatusMessage(state.chat_id, plan);
+    await saveStatusMessage(plan);
     return {
       is_deep_research: true,
       plan,
@@ -269,7 +280,7 @@ Responda APENAS:
   }
 
   if (isComplex && plan.length > 0) {
-    await saveStatusMessage(state.chat_id, plan);
+    await saveStatusMessage(plan);
     return { is_deep_research: true, plan, current_step_index: 0 };
   }
 
