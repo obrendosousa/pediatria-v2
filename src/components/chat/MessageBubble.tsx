@@ -30,9 +30,9 @@ interface MessageBubbleProps {
   isAIChat?: boolean;
 }
 
-export default function MessageBubble({ 
-  message, 
-  isMe, 
+export default function MessageBubble({
+  message,
+  isMe,
   chatId,
   chatPhoto,
   showAvatar,
@@ -171,7 +171,7 @@ export default function MessageBubble({
     };
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('scroll', handleScroll, true);
-    
+
     let el: HTMLElement | null = buttonRef.current;
     const scrollParents: HTMLElement[] = [];
     while (el) {
@@ -229,47 +229,69 @@ export default function MessageBubble({
     if (!text) return false;
     const cleanText = text.trim();
     const emojiRegex = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)+$/u;
-    return emojiRegex.test(cleanText) && [...cleanText].length <= 6; 
+    return emojiRegex.test(cleanText) && [...cleanText].length <= 6;
   };
 
   const renderTextContent = (text: string) => {
-      if (isOnlyEmojis(text)) {
-          const chars = [...text];
-          return (
-              <div className="flex flex-wrap gap-1 px-1 py-1">
-                  {chars.map((char, i) => {
-                      const codePoint = char.codePointAt(0)?.toString(16);
-                      if (!codePoint) return <span key={i}>{char}</span>;
-                      return (
-                        <div key={i} className="animate-in zoom-in duration-300">
-                             <Emoji 
-                                unified={codePoint} 
-                                emojiStyle={EmojiStyle.APPLE} 
-                                size={32} 
-                             />
-                        </div>
-                      );
-                  })}
-              </div>
-          );
-      }
-
+    if (isOnlyEmojis(text)) {
+      const chars = [...text];
       return (
-        <div className="pt-1">
-           <FormattedMessage text={text} />
+        <div className="flex flex-wrap gap-1 px-1 py-1">
+          {chars.map((char, i) => {
+            const codePoint = char.codePointAt(0)?.toString(16);
+            if (!codePoint) return <span key={i}>{char}</span>;
+            return (
+              <div key={i} className="animate-in zoom-in duration-300">
+                <Emoji
+                  unified={codePoint}
+                  emojiStyle={EmojiStyle.APPLE}
+                  size={32}
+                />
+              </div>
+            );
+          })}
         </div>
       );
+    }
+
+    const isPlanModeCard = text.includes('📋 *Plano gerado.*') && isAIChat && !isMe;
+
+    if (isPlanModeCard) {
+      return (
+        <div className="pt-1 w-full max-w-[280px]">
+          <FormattedMessage text={text} />
+          <div className="mt-3 flex gap-2 w-full">
+            <button
+              onClick={() => {
+                const planText = text.replace(/📋 \*Plano gerado\.\*|Clique em 'Executar' na aba abaixo para iniciar\./gi, '').trim();
+                window.dispatchEvent(new CustomEvent('clara:execute_plan', { detail: planText }));
+              }}
+              className="flex-1 bg-[#25D366] hover:bg-[#1DA851] text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors flex items-center justify-center gap-1.5"
+            >
+              <Play size={14} />
+              Executar
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="pt-1">
+        <FormattedMessage text={text} />
+      </div>
+    );
   };
 
-  const bgClass = isSticker 
+  const bgClass = isSticker
     ? 'bg-transparent shadow-none'
     : isImageMessage
       ? 'bg-transparent shadow-none'
-    : isVideoMessage
-      ? 'bg-transparent shadow-none'
-    : isMe 
-      ? 'bg-[#d9fdd3] dark:bg-[#005c4b]' 
-      : 'bg-white dark:bg-[#202c33]';
+      : isVideoMessage
+        ? 'bg-transparent shadow-none'
+        : isMe
+          ? 'bg-[#d9fdd3] dark:bg-[#005c4b]'
+          : 'bg-white dark:bg-[#202c33]';
 
   let roundedClass = 'rounded-lg';
   if (!isSticker && !isRevoked && !isVideoMessage && !isImageMessage) {
@@ -285,7 +307,7 @@ export default function MessageBubble({
   }
 
   const marginClass = (sequencePosition === 'first' || sequencePosition === 'middle') && !isSticker && !isRevoked
-    ? 'mb-[2px]' 
+    ? 'mb-[2px]'
     : 'mb-3';
 
   const msgStatus = (message.status ?? (message as any).status) || 'sent';
@@ -303,16 +325,16 @@ export default function MessageBubble({
     }
 
     if (isSticker && message.media_url) {
-        return (
-            <div className="overflow-hidden hover:scale-[1.02] transition-transform duration-200">
-                <img 
-                    src={message.media_url} 
-                    alt="Figurinha" 
-                    className="w-32 h-32 object-contain drop-shadow-sm" 
-                    loading="lazy" 
-                />
-            </div>
-        );
+      return (
+        <div className="overflow-hidden hover:scale-[1.02] transition-transform duration-200">
+          <img
+            src={message.media_url}
+            alt="Figurinha"
+            className="w-32 h-32 object-contain drop-shadow-sm"
+            loading="lazy"
+          />
+        </div>
+      );
     }
 
     if (message.message_type === 'image' && message.media_url) {
@@ -330,11 +352,11 @@ export default function MessageBubble({
             className="relative w-full max-w-[240px] sm:max-w-[260px] aspect-[3/4] cursor-pointer overflow-hidden rounded-md bg-black/5"
             onClick={() => onPreviewImage(message.media_url!)}
           >
-            <img 
-              src={message.media_url} 
-              alt="Mídia" 
+            <img
+              src={message.media_url}
+              alt="Mídia"
               loading="lazy"
-              className="w-full h-full object-cover" 
+              className="w-full h-full object-cover"
             />
           </div>
           {hasRealCaption && (
@@ -345,17 +367,17 @@ export default function MessageBubble({
         </>
       );
     }
-    
+
     if (message.message_type === 'audio' && message.media_url) {
-       return (
-         <div className="pt-2 pb-0 w-[280px] min-w-[240px] max-w-full">
-            <AudioMessage 
-              src={message.media_url as string} 
-              isCustomer={!isMe} 
-              simpleMode={true} 
-            />
-         </div>
-       );
+      return (
+        <div className="pt-2 pb-0 w-[280px] min-w-[240px] max-w-full">
+          <AudioMessage
+            src={message.media_url as string}
+            isCustomer={!isMe}
+            simpleMode={true}
+          />
+        </div>
+      );
     }
 
     if (message.message_type === 'video' && message.media_url) {
@@ -441,7 +463,7 @@ export default function MessageBubble({
   );
 
   return (
-    <div 
+    <div
       className={`group flex w-full min-w-0 ${isMe ? 'justify-end' : 'justify-start'} ${marginClass} select-none ${animate ? 'animate-message-fade-in' : ''} ${isSelectionMode ? 'cursor-pointer' : ''}`}
       onClick={isSelectionMode ? () => onToggleSelect?.(message) : undefined}
     >
@@ -449,114 +471,113 @@ export default function MessageBubble({
 
       {/* AVATAR */}
       {!isMe && (
-         <div className="w-[30px] mr-2 flex flex-col justify-end shrink-0">
-            {showAvatar ? (
-               isAIChat ? (
-                 <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm border border-indigo-400/30">
-                    <Bot size={16} className="text-white" />
-                 </div>
-               ) : (
-                 <div 
-                   className="w-[30px] h-[30px] rounded-full overflow-hidden border border-gray-100 dark:border-gray-700 flex items-center justify-center"
-                   style={!chatPhoto ? { backgroundColor: getAvatarColorHex(chatId) } : {}}
-                 >
-                    {chatPhoto && !imgError ? (
-                      <img 
-                        src={chatPhoto} 
-                        className="w-full h-full object-cover" 
-                        alt="Avatar"
-                        onError={() => setImgError(true)}
-                      />
-                    ) : (
-                      <User 
-                        className="w-4 h-4 opacity-90" 
-                        style={{ color: getAvatarTextColor(chatId) }}
-                      />
-                    )}
-                 </div>
-               )
+        <div className="w-[30px] mr-2 flex flex-col justify-end shrink-0">
+          {showAvatar ? (
+            isAIChat ? (
+              <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm border border-indigo-400/30">
+                <Bot size={16} className="text-white" />
+              </div>
             ) : (
-               <div className="w-[30px]" />
-            )}
-         </div>
+              <div
+                className="w-[30px] h-[30px] rounded-full overflow-hidden border border-gray-100 dark:border-gray-700 flex items-center justify-center"
+                style={!chatPhoto ? { backgroundColor: getAvatarColorHex(chatId) } : {}}
+              >
+                {chatPhoto && !imgError ? (
+                  <img
+                    src={chatPhoto}
+                    className="w-full h-full object-cover"
+                    alt="Avatar"
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <User
+                    className="w-4 h-4 opacity-90"
+                    style={{ color: getAvatarTextColor(chatId) }}
+                  />
+                )}
+              </div>
+            )
+          ) : (
+            <div className="w-[30px]" />
+          )}
+        </div>
       )}
 
       {/* BALÃO: min-w garante espaço para horário mesmo em mensagens de 1–2 caracteres */}
-      <div 
+      <div
         className={`relative max-w-[90%] sm:max-w-[85%] md:max-w-[65%] w-fit ${!isSticker && !isRevoked && !isVideoMessage && !isImageMessage ? 'min-w-[80px] shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]' : 'min-w-0'} ${finalBgClass} ${roundedClass} ${isSticker || isVideoMessage || isImageMessage ? 'p-0 overflow-hidden' : isRevoked ? 'px-3 py-2 pb-[20px]' : 'px-[9px] pb-[22px]'} flex flex-col overflow-visible ${isSelectionMode && isSelected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
       >
-        
+
         {/* Conteúdo */}
         <div className="min-w-0 overflow-hidden break-words">
-           {message.tool_data?.forwarded === true && !isMe && (
-             <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-               <Forward size={12} /> Encaminhada
-             </p>
-           )}
-           {hasReplyPreview && (
-             <div className="mb-1.5 rounded-md bg-black/5 dark:bg-white/5 px-2 py-1 border-l-[3px] border-green-500">
-               <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 truncate">
-                 {replyData?.sender === 'HUMAN_AGENT' || replyData?.sender === 'me' || replyData?.sender === 'AI_AGENT'
-                   ? 'Você'
-                   : (replyData?.sender === 'CUSTOMER' || replyData?.sender === 'contact') ? (replyData?.sender_name || 'Contato') : replyData?.sender || 'Contato'}
-               </p>
-               <p className="text-[12px] text-gray-600 dark:text-gray-300 truncate">
-                 {replyData?.message_type === 'audio'
-                   ? '🎵 Áudio'
-                   : replyData?.message_type === 'image'
-                   ? '📷 Foto'
-                   : replyData?.message_type === 'video'
-                   ? '🎬 Vídeo'
-                   : replyData?.message_type === 'sticker'
-                   ? '💟 Figurinha'
-                   : replyData?.message_type === 'document'
-                   ? '📄 Documento'
-                   : replyData?.message_text || 'Mensagem'}
-               </p>
-             </div>
-           )}
-           {renderContent()}
-           {groupedReactions.length > 0 && (
-             <div className="mt-1.5 flex flex-wrap items-center gap-1 pr-12">
-               {groupedReactions.map((reaction) => (
-                 <span
-                   key={reaction.emoji}
-                   className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-[2px] text-[11px] ${
-                     reaction.mine
-                       ? 'border-[#00a884]/40 bg-[#00a884]/10 text-[#007a63] dark:text-[#8fe3d5]'
-                       : 'border-black/10 bg-black/5 text-[#3b4a54] dark:text-[#c7d1d8]'
-                   }`}
-                 >
-                   <span>{reaction.emoji}</span>
-                   <span>{reaction.count}</span>
-                 </span>
-               ))}
-             </div>
-           )}
+          {message.tool_data?.forwarded === true && !isMe && (
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+              <Forward size={12} /> Encaminhada
+            </p>
+          )}
+          {hasReplyPreview && (
+            <div className="mb-1.5 rounded-md bg-black/5 dark:bg-white/5 px-2 py-1 border-l-[3px] border-green-500">
+              <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 truncate">
+                {replyData?.sender === 'HUMAN_AGENT' || replyData?.sender === 'me' || replyData?.sender === 'AI_AGENT'
+                  ? 'Você'
+                  : (replyData?.sender === 'CUSTOMER' || replyData?.sender === 'contact') ? (replyData?.sender_name || 'Contato') : replyData?.sender || 'Contato'}
+              </p>
+              <p className="text-[12px] text-gray-600 dark:text-gray-300 truncate">
+                {replyData?.message_type === 'audio'
+                  ? '🎵 Áudio'
+                  : replyData?.message_type === 'image'
+                    ? '📷 Foto'
+                    : replyData?.message_type === 'video'
+                      ? '🎬 Vídeo'
+                      : replyData?.message_type === 'sticker'
+                        ? '💟 Figurinha'
+                        : replyData?.message_type === 'document'
+                          ? '📄 Documento'
+                          : replyData?.message_text || 'Mensagem'}
+              </p>
+            </div>
+          )}
+          {renderContent()}
+          {groupedReactions.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1 pr-12">
+              {groupedReactions.map((reaction) => (
+                <span
+                  key={reaction.emoji}
+                  className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-[2px] text-[11px] ${reaction.mine
+                      ? 'border-[#00a884]/40 bg-[#00a884]/10 text-[#007a63] dark:text-[#8fe3d5]'
+                      : 'border-black/10 bg-black/5 text-[#3b4a54] dark:text-[#c7d1d8]'
+                    }`}
+                >
+                  <span>{reaction.emoji}</span>
+                  <span>{reaction.count}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Metadados: Hora + Check — sempre visível graças ao min-w do balão */}
         <div className={`absolute bottom-[3px] right-[7px] flex items-center gap-[3px] select-none h-[15px] shrink-0 ${isSticker ? 'bg-black/30 rounded-full px-1.5 py-0.5 backdrop-blur-sm' : ''}`}>
-           <span className={`text-[11px] tabular-nums leading-none ${isSticker ? 'text-white font-medium' : 'text-[rgba(17,27,33,0.6)] dark:text-[rgba(255,255,255,0.6)]'}`}>
-             {formatTime(message.created_at)}
-           </span>
-           
-           {isMe && !isSticker && !isRevoked && (
-             <span className={
-               msgStatus === 'uploading' || msgStatus === 'sending'
-                 ? 'text-[#8696a0]'
-                 :
-               msgStatus === 'read' ? 'text-[#53bdeb]' :
-               msgStatus === 'delivered' ? 'text-[#8696a0]' :
-               'text-[rgba(17,27,33,0.4)] dark:text-[rgba(255,255,255,0.5)]'
-             }>
-               {msgStatus === 'uploading' || msgStatus === 'sending'
-                 ? <Loader2 size={14} className="animate-spin" />
-                 : msgStatus === 'read' || msgStatus === 'delivered'
-                 ? <CheckCheck size={16} strokeWidth={1.5} />
-                 : <Check size={16} strokeWidth={1.5} />}
-             </span>
-           )}
+          <span className={`text-[11px] tabular-nums leading-none ${isSticker ? 'text-white font-medium' : 'text-[rgba(17,27,33,0.6)] dark:text-[rgba(255,255,255,0.6)]'}`}>
+            {formatTime(message.created_at)}
+          </span>
+
+          {isMe && !isSticker && !isRevoked && (
+            <span className={
+              msgStatus === 'uploading' || msgStatus === 'sending'
+                ? 'text-[#8696a0]'
+                :
+                msgStatus === 'read' ? 'text-[#53bdeb]' :
+                  msgStatus === 'delivered' ? 'text-[#8696a0]' :
+                    'text-[rgba(17,27,33,0.4)] dark:text-[rgba(255,255,255,0.5)]'
+            }>
+              {msgStatus === 'uploading' || msgStatus === 'sending'
+                ? <Loader2 size={14} className="animate-spin" />
+                : msgStatus === 'read' || msgStatus === 'delivered'
+                  ? <CheckCheck size={16} strokeWidth={1.5} />
+                  : <Check size={16} strokeWidth={1.5} />}
+            </span>
+          )}
         </div>
 
         {/* Botão de Menu - oculto para mensagens apagadas */}
@@ -578,21 +599,21 @@ export default function MessageBubble({
 
         {/* Botão de Menu - oculto para mensagens apagadas */}
         {!isSticker && !isRevoked && !isSelectionMode && !isVideoMessage && !isImageMessage && (
-            <button 
-              ref={buttonRef}
-              onClick={() => {
-                setShowReactionPopup(false);
-                setShowEmojiPicker(false);
-                setShowMenu(!showMenu);
-              }}
-              className={`absolute top-0 right-0 p-1 m-0.5 rounded-full bg-gradient-to-l from-[rgba(255,255,255,0.95)] via-[rgba(255,255,255,0.8)] to-transparent dark:from-[#202c33] opacity-0 group-hover:opacity-100 transition-all duration-150 z-20 ${showMenu ? 'opacity-100' : ''}`}
-              style={{
-                transform: showMenu ? 'scale(1.1)' : 'scale(1)',
-                transition: 'opacity 0.15s ease-out, transform 0.15s ease-out'
-              }}
-            >
-               <ChevronDown size={18} className="text-[#54656f] dark:text-[#aebac1] drop-shadow-sm"/>
-            </button>
+          <button
+            ref={buttonRef}
+            onClick={() => {
+              setShowReactionPopup(false);
+              setShowEmojiPicker(false);
+              setShowMenu(!showMenu);
+            }}
+            className={`absolute top-0 right-0 p-1 m-0.5 rounded-full bg-gradient-to-l from-[rgba(255,255,255,0.95)] via-[rgba(255,255,255,0.8)] to-transparent dark:from-[#202c33] opacity-0 group-hover:opacity-100 transition-all duration-150 z-20 ${showMenu ? 'opacity-100' : ''}`}
+            style={{
+              transform: showMenu ? 'scale(1.1)' : 'scale(1)',
+              transition: 'opacity 0.15s ease-out, transform 0.15s ease-out'
+            }}
+          >
+            <ChevronDown size={18} className="text-[#54656f] dark:text-[#aebac1] drop-shadow-sm" />
+          </button>
         )}
 
         {/* Popup de reação estilo WhatsApp */}
@@ -645,7 +666,7 @@ export default function MessageBubble({
 
         {/* Dropdown Menu - renderizado via Portal para evitar corte por overflow */}
         {showMenu && createPortal(
-          <div 
+          <div
             data-message-menu
             className={`fixed bg-white dark:bg-[#233138] py-2 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)] z-[9999] min-w-[160px] border border-gray-100 dark:border-gray-700 ${menuPosition.openUp ? 'origin-bottom-right' : 'origin-top-right'}`}
             style={{
@@ -657,60 +678,60 @@ export default function MessageBubble({
               willChange: 'opacity, transform'
             } as React.CSSProperties}
           >
-             <button 
-                onClick={() => { navigator.clipboard.writeText(message.message_text || ''); setShowMenu(false); }}
+            <button
+              onClick={() => { navigator.clipboard.writeText(message.message_text || ''); setShowMenu(false); }}
+              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+            >
+              <Copy size={16} /> Copiar
+            </button>
+            <button
+              onClick={() => { onSaveMacro(toMacroPayload()); setShowMenu(false); }}
+              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+            >
+              <BookmarkPlus size={16} /> Ad. Respostas Rápidas
+            </button>
+            <button
+              onClick={() => { onReply(message); setShowMenu(false); }}
+              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+            >
+              <Reply size={16} /> Responder
+            </button>
+            {onForward && message.message_type !== 'revoked' && (
+              <button
+                onClick={() => { onForward(message); setShowMenu(false); }}
                 className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
-             >
-                <Copy size={16}/> Copiar
-             </button>
-             <button 
-                onClick={() => { onSaveMacro(toMacroPayload()); setShowMenu(false); }}
+              >
+                <Forward size={16} /> Encaminhar
+              </button>
+            )}
+            <button
+              onClick={() => { onStartSelection?.(message); setShowMenu(false); }}
+              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+            >
+              <CheckCircle2 size={16} /> Selecionar mensagens
+            </button>
+            {canEdit && (
+              <button
+                onClick={() => { onEdit(message); setShowMenu(false); }}
                 className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
-             >
-                <BookmarkPlus size={16}/> Ad. Respostas Rápidas
-             </button>
-             <button
-                onClick={() => { onReply(message); setShowMenu(false); }}
-                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
-             >
-                <Reply size={16}/> Responder
-             </button>
-             {onForward && message.message_type !== 'revoked' && (
-               <button
-                 onClick={() => { onForward(message); setShowMenu(false); }}
-                 className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
-               >
-                 <Forward size={16}/> Encaminhar
-               </button>
-             )}
-             <button
-                onClick={() => { onStartSelection?.(message); setShowMenu(false); }}
-                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
-             >
-                <CheckCircle2 size={16}/> Selecionar mensagens
-             </button>
-             {canEdit && (
-               <button
-                  onClick={() => { onEdit(message); setShowMenu(false); }}
-                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
-               >
-                  <Pencil size={16}/> Editar
-               </button>
-             )}
-             {isMe && (
-               <button 
-                  onClick={() => onDelete(message, true)}
-                  className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-[14px] text-red-500 flex items-center gap-3"
-               >
-                  <Trash2 size={16}/> Apagar p/ todos
-               </button>
-             )}
-              <button 
-                  onClick={() => onDelete(message, false)}
-                  className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-[14px] text-red-500 flex items-center gap-3"
-               >
-                  <Trash2 size={16}/> Apagar p/ mim
-               </button>
+              >
+                <Pencil size={16} /> Editar
+              </button>
+            )}
+            {isMe && (
+              <button
+                onClick={() => onDelete(message, true)}
+                className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-[14px] text-red-500 flex items-center gap-3"
+              >
+                <Trash2 size={16} /> Apagar p/ todos
+              </button>
+            )}
+            <button
+              onClick={() => onDelete(message, false)}
+              className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-[14px] text-red-500 flex items-center gap-3"
+            >
+              <Trash2 size={16} /> Apagar p/ mim
+            </button>
           </div>,
           document.body
         )}

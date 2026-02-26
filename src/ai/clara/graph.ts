@@ -257,11 +257,15 @@ claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
 
     if (isPlanMode) {
       await saveStatusMessage(plan);
+      const outputMsg = new AIMessage(
+        `📋 *Plano gerado.*\n\n${plan.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nClique em 'Executar' na aba abaixo para iniciar.`
+      );
       return {
         is_deep_research: true,
         is_planning_phase: true, // Pausa o workflow
         plan,
         current_step_index: 0,
+        messages: [outputMsg],
       };
     }
 
@@ -317,7 +321,10 @@ Responda APENAS:
   if (isComplex && plan.length > 0) {
     if (isPlanMode) {
       await saveStatusMessage(plan);
-      return { is_deep_research: true, is_planning_phase: true, plan, current_step_index: 0 };
+      const outputMsg = new AIMessage(
+        `📋 *Plano gerado.*\n\n${plan.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nClique em 'Executar' na aba abaixo para iniciar.`
+      );
+      return { is_deep_research: true, is_planning_phase: true, plan, current_step_index: 0, messages: [outputMsg] };
     }
     return { is_deep_research: true, is_planning_phase: false, plan, current_step_index: 0 };
   }

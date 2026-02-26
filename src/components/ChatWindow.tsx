@@ -626,6 +626,18 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     return () => window.removeEventListener('keydown', onShortcut);
   }, [chat, setActiveTab]);
 
+  useEffect(() => {
+    const handleExecutePlanEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail && handleSendMessage) {
+        handleSendMessage(customEvent.detail);
+      }
+    };
+
+    window.addEventListener('clara:execute_plan', handleExecutePlanEvent);
+    return () => window.removeEventListener('clara:execute_plan', handleExecutePlanEvent);
+  }, [handleSendMessage]);
+
   if (!chat) {
     return (
       <div className="flex-1 bg-[#f0f2f5] dark:bg-[#111b21] flex items-center justify-center text-gray-400 dark:text-gray-600 border-b-[6px] border-[#25d366]">

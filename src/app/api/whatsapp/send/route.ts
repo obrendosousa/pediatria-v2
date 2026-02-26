@@ -136,6 +136,10 @@ export async function POST(req: Request) {
                 let statusLabel = `tool:${event.name}`;
                 if (event.name === 'deep_research_chats' || event.name === 'deep_research_chats_tool') {
                   statusLabel = 'tool:Analisando Lotes (Map-Reduce)...';
+                } else if (event.name === 'analisar_chat_especifico') {
+                  statusLabel = 'tool:Iniciando extração de dados do chat...';
+                } else if (event.name === 'gerar_relatorio_qualidade_chats') {
+                  statusLabel = 'tool:Consolidando qualidade do atendimento...';
                 }
                 broadcastStatus(statusLabel);
                 break;
@@ -150,6 +154,12 @@ export async function POST(req: Request) {
                 } else if (event.name === 'reporter_node') {
                   console.log("✍️ [Clara] Escrevendo relatório final...");
                   broadcastStatus('writing_report');
+                } else if (event.name === 'fetch_data') {
+                  broadcastStatus('tool:Baixando mensagens do chat...');
+                } else if (event.name === 'analyze_conversation') {
+                  broadcastStatus('tool:IA pensando e extraindo gargalos...');
+                } else if (event.name === 'save_to_db') {
+                  broadcastStatus('tool:Salvando insights no banco...');
                 }
                 break;
 

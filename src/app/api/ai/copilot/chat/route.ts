@@ -56,20 +56,20 @@ export async function POST(request: Request) {
 
     const chatHistory = messagesData
       ? (messagesData as any[])
-          .reverse()
-          .map((msg) => {
-            const isClinic =
-              msg.sender === "HUMAN_AGENT" || msg.sender === "AI_AGENT" || msg.sender === "me";
-            const senderName = isClinic ? "Clínica" : patientName;
-            const content =
-              msg.message_text?.trim() || `[Mídia: ${msg.message_type || "desconhecido"}]`;
-            const timeStr = new Date(msg.created_at).toLocaleTimeString("pt-BR", {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-            return `[${timeStr}] ${senderName}: ${content}`;
-          })
-          .join("\n")
+        .reverse()
+        .map((msg) => {
+          const isClinic =
+            msg.sender === "HUMAN_AGENT" || msg.sender === "AI_AGENT" || msg.sender === "me";
+          const senderName = isClinic ? "Clínica" : patientName;
+          const content =
+            msg.message_text?.trim() || `[Mídia: ${msg.message_type || "desconhecido"}]`;
+          const timeStr = new Date(msg.created_at).toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          return `[${timeStr}] ${senderName}: ${content}`;
+        })
+        .join("\n")
       : "";
 
     // Mensagem contextualizada para a Clara — ela sabe que está ajudando Joana, não o paciente
@@ -99,6 +99,8 @@ INSTRUÇÃO: Responda como Clara ajudando a secretária Joana a entender este ca
       plan: [],
       current_step_index: 0,
       is_deep_research: false,
+      is_planning_phase: true,
+      current_user_role: "admin",
     };
 
     const encoder = new TextEncoder();
@@ -124,6 +126,9 @@ INSTRUÇÃO: Responda como Clara ajudando a secretária Joana a entender este ca
               if (node === "router_and_planner_node") label = "🧠 Analisando complexidade da pergunta...";
               else if (node === "executor_node") label = "🔍 Executando etapa da pesquisa...";
               else if (node === "reporter_node") label = "✍️ Elaborando resposta final...";
+              else if (node === "fetch_data") label = "Baixando mensagens do chat para análise...";
+              else if (node === "analyze_conversation") label = "IA pensando e extraindo gargalos...";
+              else if (node === "save_to_db") label = "Salvando insights e histórico no banco...";
               if (label) enqueue({ type: "ui_log", content: label });
             }
 
@@ -137,7 +142,9 @@ INSTRUÇÃO: Responda como Clara ajudando a secretária Joana a entender este ca
               else if (toolName === "manage_long_term_memory") label = "💭 Consultando memória da Clara...";
               else if (toolName === "get_filtered_chats_list") label = "📋 Listando chats...";
               else if (toolName === "deep_research_chats_tool" || toolName === "deep_research_chats") label = "⚙️ Pesquisa profunda (Map-Reduce)...";
-              else label = `⚙️ ${toolName}...`;
+              else if (toolName === "analisar_chat_especifico") label = "🔎 Analisando atendimento detalhadamente...";
+              else if (toolName === "gerar_relatorio_qualidade_chats") label = "📊 Consolidando relatórios de qualidade...";
+              else label = `⚙️ Executando ação: ${toolName}...`;
               enqueue({ type: "ui_log", content: label });
             }
 

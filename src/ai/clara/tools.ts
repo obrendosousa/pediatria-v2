@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { HumanMessage } from "@langchain/core/messages";
+import { chatAnalyzerGraph } from "./chatAnalyzerGraph";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -396,6 +397,69 @@ export const saveReportTool = new DynamicStructuredTool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PASSO 3: NOVAS FERRAMENTAS DO SUB-GRAFO DE ANÁLISE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const analisarChatEspecificoTool = new DynamicStructuredTool({
+  name: "analisar_chat_especifico",
+  description: "Analisa um chat específico em profundidade (via Sub-Grafo), extraindo objeções, gargalos, sentimento e salvando no banco de dados. Use isso quando o usuário pedir para revisar os erros ou motivos de um atendimento não ter dado certo.",
+  schema: z.object({
+    chat_id: z.number().describe("O ID do chat a ser analisado"),
+  }),
+  func: async ({ chat_id }, runManager) => {
+    try {
+      // Usamos stream para emitir eventos para o frontend interceptar os "[SYSTEM_LOG]"
+      const stream = await chatAnalyzerGraph.streamEvents({ chat_id }, { version: "v2" });
+
+      for await (const event of stream) {
+        if (event.event === "on_node_start") {
+          let stepName = event.name;
+          if (stepName === "fetch_data") stepName = "Baixando mensagens do chat...";
+          if (stepName === "analyze_conversation") stepName = "IA pensando e extraindo gargalos...";
+          if (stepName === "save_to_db") stepName = "Salvando insights e memórias...";
+
+          runManager?.handleText(`[SYSTEM_LOG] Iniciando etapa: ${stepName}`);
+        }
+      }
+      return `Chat ${chat_id} analisado com sucesso e salvo no banco. Agora você pode sugerir um action plan para contornar as objeções levantadas.`;
+    } catch (e: any) {
+      return `Falha ao analisar chat ${chat_id}: ${e.message}`;
+    }
+  }
+});
+
+export const gerarRelatorioQualidadeTool = new DynamicStructuredTool({
+  name: "gerar_relatorio_qualidade_chats",
+  description: "Acessa a tabela chat_insights para buscar gargalos, nota de atendimento média e objeções cadastradas recentemente pelas análises do Sub-Grafo. Útil para fazer um consolidado de qualidade.",
+  schema: z.object({
+    dias_retroativos: z.number().describe("Quantos dias olhar para trás (ex: 7)."),
+  }),
+  func: async ({ dias_retroativos }) => {
+    try {
+      const date = new Date();
+      date.setDate(date.getDate() - dias_retroativos);
+
+      const { data, error } = await supabase
+        .from("chat_insights")
+        .select("id, chat_id, nota_atendimento, sentimento, gargalos, resumo_analise, metricas_extras")
+        .gte("created_at", date.toISOString());
+
+      if (error) throw error;
+      if (!data || data.length === 0) return "Nenhum insight de chat encontrado no período especificado.";
+
+      const notas = data.map(d => d.nota_atendimento).filter(Boolean) as number[];
+      const media = notas.length ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(1) : "N/A";
+
+      return `Análise consolidada de ${data.length} chats nos últimos ${dias_retroativos} dias:
+Média de nota: ${media}.
+Detalhes brutos: ${JSON.stringify(data, null, 2)}`;
+    } catch (e: any) {
+      return `Erro ao buscar relatórios de qualidade: ${e.message}`;
+    }
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // EXPORTS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -406,4 +470,6 @@ export const claraTools = [
   extractAndSaveKnowledgeTool,
   searchKnowledgeBaseTool,
   saveReportTool,
+  analisarChatEspecificoTool,
+  gerarRelatorioQualidadeTool,
 ];
