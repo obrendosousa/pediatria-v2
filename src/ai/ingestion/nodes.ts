@@ -7,7 +7,37 @@ import {
   normalizeJidToPhone,
   resolveLidToPhone,
   saveMessageToDb,
+  getContactNameByPhone,
 } from "./services";
+
+/** Extrai o contextInfo de qualquer tipo de mensagem (texto, imagem, vídeo, áudio, documento) */
+function extractContextInfo(message: unknown): Record<string, any> | null {
+  if (!message || typeof message !== "object") return null;
+  const msg = message as Record<string, any>;
+  return (
+    msg.extendedTextMessage?.contextInfo ??
+    msg.imageMessage?.contextInfo ??
+    msg.videoMessage?.contextInfo ??
+    msg.audioMessage?.contextInfo ??
+    msg.documentMessage?.contextInfo ??
+    null
+  );
+}
+
+/** Extrai texto e tipo da mensagem citada (quotedMessage do contextInfo) */
+function extractQuotedContent(quotedMsg: Record<string, any>): { text: string; type: string } {
+  if (quotedMsg.conversation) return { text: quotedMsg.conversation, type: "text" };
+  if (quotedMsg.extendedTextMessage?.text) return { text: quotedMsg.extendedTextMessage.text, type: "text" };
+  if (quotedMsg.imageMessage) return { text: quotedMsg.imageMessage.caption || "", type: "image" };
+  if (quotedMsg.videoMessage) return { text: quotedMsg.videoMessage.caption || "", type: "video" };
+  if (quotedMsg.audioMessage) return { text: "", type: "audio" };
+  if (quotedMsg.stickerMessage) return { text: "", type: "sticker" };
+  if (quotedMsg.documentMessage) return {
+    text: quotedMsg.documentMessage.fileName || quotedMsg.documentMessage.caption || "",
+    type: "document",
+  };
+  return { text: "", type: "text" };
+}
 
 function extractMediaUrl(message: unknown): string | undefined {
   if (!message || typeof message !== "object") return undefined;
@@ -136,6 +166,37 @@ export const processInputNode = async (
     mediaUrl = extractMediaUrl(msg);
   }
 
+  // Extração de dados de resposta/citação (quote reply)
+  const contextInfo = extractContextInfo(msg);
+  let quotedInfo: IngestionState["quoted_info"] = null;
+
+  if (contextInfo?.stanzaId && contextInfo.quotedMessage) {
+    const { text: quotedText, type: quotedType } = extractQuotedContent(contextInfo.quotedMessage);
+    // Determina o sender da mensagem citada comparando o participant com o remoteJid do chat
+    const participantPhone = normalizeJidToPhone(contextInfo.participant || "");
+    const remotePhone = normalizeJidToPhone(jid);
+    // Se participant == remoteJid → citou mensagem do contato; senão → citou nossa mensagem
+    const quotedSender: "HUMAN_AGENT" | "CUSTOMER" =
+      participantPhone && participantPhone === remotePhone ? "CUSTOMER" : "HUMAN_AGENT";
+
+    // Tentar descobrir o nome da pessoa citada (quando é CUSTOMER)
+    let senderName: string | null = null;
+    if (quotedSender === "CUSTOMER" && participantPhone) {
+      senderName = await getContactNameByPhone(participantPhone);
+    } else if (quotedSender === "HUMAN_AGENT") {
+      senderName = "Você"; // Ou "Atendente"
+    }
+
+    quotedInfo = {
+      wpp_id: String(contextInfo.stanzaId),
+      sender: quotedSender,
+      sender_name: senderName,
+      message_type: quotedType,
+      message_text: quotedText,
+      remote_jid: contextInfo.participant || jid,
+    };
+  }
+
   return {
     phone: resolvedPhone,
     contact_name: data.pushName || resolvedPhone || "contato_sem_telefone",
@@ -149,6 +210,7 @@ export const processInputNode = async (
     resolver_latency_ms: Date.now() - resolverStartedAt,
     resolver_error: resolverError,
     is_forwarded: data.isForwarded === true,
+    quoted_info: quotedInfo,
   };
 };
 
@@ -194,6 +256,7 @@ export const saveToDbNode = async (
     wpp_id: state.raw_input.key.id,
     message_timestamp_iso: state.message_timestamp_iso,
     forwarded: state.is_forwarded === true,
+    quoted_info: state.quoted_info ?? undefined,
   });
   return {};
 };

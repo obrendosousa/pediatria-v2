@@ -57,11 +57,11 @@ function extractUpdateItems(body: Record<string, unknown>): UpdateItem[] {
   // Lógica de extração de atualizações de status
   if (data && typeof data === "object" && !Array.isArray(data)) {
     const d = data as Record<string, unknown>;
-    
+
     // CORREÇÃO 1: Cast explícito de d.key para objeto antes de acessar .id
     const keyObj = d.key as Record<string, unknown> | undefined;
     const id = d.keyId ?? keyObj?.id ?? body.keyId;
-    
+
     const status = d.status ?? body.status;
     const fromMe = d.fromMe ?? keyObj?.fromMe ?? body.fromMe;
     const editedText = extractTextFromAnyMessage(d.message ?? d.update ?? body.message);
@@ -130,7 +130,7 @@ async function handleMessagesUpdate(body: Record<string, unknown>) {
     const wppId = String(key.id ?? "").trim();
     // Permite atualização de status
     const fromMe = Boolean(key.fromMe ?? key.from_me);
-    
+
     if (!wppId) continue;
 
     const { data: existing, error: existingError } = await supabase
@@ -316,7 +316,7 @@ async function handleRevokeMessage(message: EvolutionWebhookData) {
   }
 
   // Retorna true para impedir processamento duplicado
-  return true; 
+  return true;
 }
 
 function detectMessageType(message: unknown): string {
@@ -385,16 +385,16 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
 
     const remoteJid = toRemoteJid(
       keyRaw.remoteJid ??
-        item.remoteJid ??
-        item.jid ??
-        item.from ??
-        item.sender ??
-        item.number ??
-        item.phone
+      item.remoteJid ??
+      item.jid ??
+      item.from ??
+      item.sender ??
+      item.number ??
+      item.phone
     );
-    
+
     if (!remoteJid) continue;
-    
+
     // --- NOVO FILTRO: IGNORAR STATUS/STORIES ---
     if (remoteJid === "status@broadcast") {
       console.log(`[WEBHOOK] Ignorando status/stories (status@broadcast)`);
@@ -402,10 +402,10 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
     }
 
     const messageValue = (item.message ?? item.content ?? {}) as unknown;
-    
+
     const detectedType = detectMessageType(messageValue);
     const messageTypeValue = (item.messageType ?? item.contentType ?? detectedType) as string;
-    
+
     const timestampValue = (item.messageTimestamp ?? item.timestamp ?? Date.now()) as number | string;
     const forwarded = isMessageForwarded(messageValue);
 
@@ -546,7 +546,7 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
     }
 
     const rawMessages = normalizeMessagesFromWebhook(body);
-    
+
     // --- APLICAÇÃO DO FILTRO DE TEMPO: Bloqueia mensagens mais velhas que 24h ---
     const messages = rawMessages.filter(
       (msg) =>
@@ -577,13 +577,13 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
       }
 
       // 1. Verificação crítica: É uma ProtocolMessage?
-      const isProtocol = message.messageType === 'protocolMessage' || 
-                         (message.message as any)?.protocolMessage;
+      const isProtocol = message.messageType === 'protocolMessage' ||
+        (message.message as any)?.protocolMessage;
 
       if (isProtocol) {
         await handleRevokeMessage(message);
         // Impede duplicação: não envia para o grafo
-        continue; 
+        continue;
       }
 
       const isReaction =
@@ -606,6 +606,8 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
           },
         }
       );
+
+      require('fs').writeFileSync('debug_webhook.json', JSON.stringify(message, null, 2));
 
       // Copiloto agora é acionado manualmente pela secretária (botão ✨ no chat).
       // O trigger automático foi removido para não gerar ruído desnecessário a cada mensagem.

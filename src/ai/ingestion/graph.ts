@@ -74,6 +74,13 @@ export const ingestionWorkflow = new StateGraph<IngestionState>({
       reducer: (x: boolean | undefined, y: boolean | undefined) => y ?? x ?? true,
       default: () => true,
     },
+    quoted_info: {
+      reducer: (
+        x: IngestionState["quoted_info"] | undefined,
+        y: IngestionState["quoted_info"] | undefined
+      ) => y ?? x ?? null,
+      default: () => null as IngestionState["quoted_info"],
+    },
   },
 });
 

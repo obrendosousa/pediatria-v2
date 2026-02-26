@@ -496,7 +496,9 @@ export default function MessageBubble({
            {hasReplyPreview && (
              <div className="mb-1.5 rounded-md bg-black/5 dark:bg-white/5 px-2 py-1 border-l-[3px] border-green-500">
                <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 truncate">
-                 {replyData?.sender === 'HUMAN_AGENT' || replyData?.sender === 'me' ? 'Você' : replyData?.sender || 'Contato'}
+                 {replyData?.sender === 'HUMAN_AGENT' || replyData?.sender === 'me' || replyData?.sender === 'AI_AGENT'
+                   ? 'Você'
+                   : (replyData?.sender === 'CUSTOMER' || replyData?.sender === 'contact') ? (replyData?.sender_name || 'Contato') : replyData?.sender || 'Contato'}
                </p>
                <p className="text-[12px] text-gray-600 dark:text-gray-300 truncate">
                  {replyData?.message_type === 'audio'
@@ -505,6 +507,10 @@ export default function MessageBubble({
                    ? '📷 Foto'
                    : replyData?.message_type === 'video'
                    ? '🎬 Vídeo'
+                   : replyData?.message_type === 'sticker'
+                   ? '💟 Figurinha'
+                   : replyData?.message_type === 'document'
+                   ? '📄 Documento'
                    : replyData?.message_text || 'Mensagem'}
                </p>
              </div>

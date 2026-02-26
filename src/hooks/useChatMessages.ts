@@ -60,11 +60,18 @@ function mergeReactionsIntoMessages(baseMessages: Message[], reactionRows: Messa
       created_at: r.created_at,
     }));
 
+    let safeToolData = typeof msg.tool_data === 'string' ? {} : (msg.tool_data || {});
+    if (typeof msg.tool_data === 'string' && (msg.tool_data as string).trim().startsWith('{')) {
+      try {
+        safeToolData = JSON.parse(msg.tool_data as string);
+      } catch (e) { }
+    }
+
     return {
       ...msg,
       reactions: normalized,
       tool_data: {
-        ...(msg.tool_data || {}),
+        ...safeToolData,
         reactions: normalized,
       },
     };
@@ -94,7 +101,7 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSendingMsg, setIsSendingMsg] = useState(false);
-  
+
   // Ref para guardar o ID real caso ele mude de 'new_...' para número durante a sessão
   const currentChatIdRef = useRef<number | string | null>(null);
   // IDs removidos localmente por chat (deleteForMe) - evita reintrodução por fetch/realtime atrasado
@@ -218,6 +225,9 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
         };
         if (payload.eventType === 'INSERT') {
           const newMsg = payload.new as Message;
+          if (typeof newMsg.tool_data === 'string' && (newMsg.tool_data as string).trim().startsWith('{')) {
+            try { newMsg.tool_data = JSON.parse(newMsg.tool_data as string); } catch (e) { }
+          }
           setMessages((prev) => {
             const deleted = getDeletedSetForChat(chatId);
             if (deleted.has(newMsg.id)) return prev;
@@ -237,6 +247,9 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
             const next = prev.map((msg) => {
               if (msg.id !== payload.new?.id) return msg;
               const incoming = payload.new as Message;
+              if (typeof incoming.tool_data === 'string' && (incoming.tool_data as string).trim().startsWith('{')) {
+                try { incoming.tool_data = JSON.parse(incoming.tool_data as string); } catch (e) { }
+              }
               const currentUpdatedAt = new Date((msg as any)?.updated_at || msg.created_at || 0).getTime();
               const incomingUpdatedAt = new Date((incoming as any)?.updated_at || incoming.created_at || 0).getTime();
               // Evita sobrescrever edição local mais nova por update atrasado.
@@ -283,50 +296,50 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
 
   // Helper: Garante que o chat existe no banco antes de enviar
   const ensureChatExists = async (): Promise<number | null> => {
-     if (!activeChat) return null;
-     
-     // Se já é ID numérico (ou string numérica válida que não começa com new_), retorna ele
-     if (activeChat.id && !String(activeChat.id).startsWith('new_')) {
-        return Number(activeChat.id);
-     }
+    if (!activeChat) return null;
 
-     // Se for 'new_...', verifica ou cria
-     const cleanPhone = activeChat.phone.replace(/\D/g, '');
+    // Se já é ID numérico (ou string numérica válida que não começa com new_), retorna ele
+    if (activeChat.id && !String(activeChat.id).startsWith('new_')) {
+      return Number(activeChat.id);
+    }
 
-     // 1. Verifica se já criaram esse chat (concorrência)
-     const { data: existing } = await supabase
-        .from('chats')
-        .select('id')
-        .eq('phone', cleanPhone)
-        .maybeSingle();
-     
-     if (existing) {
-         currentChatIdRef.current = existing.id;
-         return existing.id;
-     }
+    // Se for 'new_...', verifica ou cria
+    const cleanPhone = activeChat.phone.replace(/\D/g, '');
 
-     // 2. Cria o chat
-     const { data: newChat, error } = await supabase
-        .from('chats')
-        .insert({
-           phone: cleanPhone,
-           contact_name: activeChat.contact_name || cleanPhone,
-           status: 'ACTIVE',
-           created_at: new Date().toISOString(),
-           last_interaction_at: new Date().toISOString(),
-           unread_count: 0
-        })
-        .select()
-        .single();
+    // 1. Verifica se já criaram esse chat (concorrência)
+    const { data: existing } = await supabase
+      .from('chats')
+      .select('id')
+      .eq('phone', cleanPhone)
+      .maybeSingle();
+
+    if (existing) {
+      currentChatIdRef.current = existing.id;
+      return existing.id;
+    }
+
+    // 2. Cria o chat
+    const { data: newChat, error } = await supabase
+      .from('chats')
+      .insert({
+        phone: cleanPhone,
+        contact_name: activeChat.contact_name || cleanPhone,
+        status: 'ACTIVE',
+        created_at: new Date().toISOString(),
+        last_interaction_at: new Date().toISOString(),
+        unread_count: 0
+      })
+      .select()
+      .single();
 
     if (error) {
-        const details = getErrorMessage(error);
-        console.error("Erro ao criar chat:", details, error);
-        throw new Error(`Falha ao criar chat: ${details}`);
-     }
-     
-     currentChatIdRef.current = newChat.id;
-     return newChat.id;
+      const details = getErrorMessage(error);
+      console.error("Erro ao criar chat:", details, error);
+      throw new Error(`Falha ao criar chat: ${details}`);
+    }
+
+    currentChatIdRef.current = newChat.id;
+    return newChat.id;
   };
 
   // 2. Enviar Mensagem de Texto
@@ -335,144 +348,155 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     setIsSendingMsg(true);
 
     try {
-        // --- PASSO CRÍTICO: Resolve o ID real do chat ---
-        const realChatId = await ensureChatExists();
-        if (!realChatId) throw new Error("Não foi possível resolver o ID do chat.");
+      // --- PASSO CRÍTICO: Resolve o ID real do chat ---
+      const realChatId = await ensureChatExists();
+      if (!realChatId) throw new Error("Não foi possível resolver o ID do chat.");
 
-        // Insere no Banco com o ID REAL
-        const replyTo = options?.replyTo ?? null;
-        const replyToolData = replyTo?.wpp_id
+      // Insere no Banco com o ID REAL
+      const replyTo = options?.replyTo ?? null;
+      const replyToolData = replyTo?.wpp_id || replyTo?.message_text
+        ? {
+          reply_to: {
+            wpp_id: replyTo.wpp_id || undefined,
+            message_text: replyTo.message_text || '',
+            message_type: replyTo.message_type || 'text',
+            sender: replyTo.sender || '',
+          },
+        }
+        : null;
+
+      const baseInsertPayload = {
+        chat_id: realChatId,
+        phone: activeChat.phone,
+        message_text: text,
+        sender: 'HUMAN_AGENT',
+        message_type: 'text',
+        status: 'sent',
+        tool_data: { source: 'manual_chat' },
+      } as Record<string, unknown>;
+
+      const extendedInsertPayload = {
+        ...baseInsertPayload,
+        ...(replyTo?.wpp_id ? { quoted_wpp_id: replyTo.wpp_id } : {}),
+        ...(replyToolData
           ? {
-              reply_to: {
-                wpp_id: replyTo.wpp_id,
-                message_text: replyTo.message_text || '',
-                message_type: replyTo.message_type || 'text',
-                sender: replyTo.sender || '',
-              },
-            }
-          : null;
+            tool_data: {
+              ...(baseInsertPayload.tool_data as Record<string, unknown>),
+              ...(replyToolData as Record<string, unknown>),
+            },
+          }
+          : {}),
+      };
 
-        const baseInsertPayload = {
-          chat_id: realChatId,
-          phone: activeChat.phone,
-          message_text: text,
-          sender: 'HUMAN_AGENT',
-          message_type: 'text',
-          status: 'sent',
-          tool_data: { source: 'manual_chat' },
-        } as Record<string, unknown>;
+      let { data: realMsg, error } = await supabase
+        .from('chat_messages')
+        .insert(extendedInsertPayload)
+        .select()
+        .single();
 
-        const extendedInsertPayload = {
-          ...baseInsertPayload,
-          ...(replyTo?.wpp_id ? { quoted_wpp_id: replyTo.wpp_id } : {}),
-          ...(replyToolData
-            ? {
+      // Fallback de compatibilidade para bancos ainda sem colunas novas.
+      if (error && (replyTo?.wpp_id || replyToolData)) {
+        const details = getErrorMessage(error).toLowerCase();
+        const isSchemaError =
+          details.includes('quoted_wpp_id') ||
+          details.includes('tool_data') ||
+          details.includes('column') ||
+          details.includes('schema cache');
+
+        if (isSchemaError) {
+          const fallbackPayload = {
+            ...baseInsertPayload,
+            ...(replyToolData
+              ? {
                 tool_data: {
                   ...(baseInsertPayload.tool_data as Record<string, unknown>),
                   ...(replyToolData as Record<string, unknown>),
                 },
               }
-            : {}),
-        };
+              : {}),
+          };
+          const retry = await supabase
+            .from('chat_messages')
+            .insert(fallbackPayload)
+            .select()
+            .single();
+          realMsg = retry.data;
+          error = retry.error;
+        }
+      }
 
-        let { data: realMsg, error } = await supabase
+      if (error) {
+        throw new Error(`Falha ao salvar mensagem no banco: ${getErrorMessage(error)}`);
+      }
+
+      // Se o chat era temporário, a subscription do useEffect ainda está ouvindo o ID antigo.
+      // Forçamos um fetch manual para atualizar a tela imediatamente.
+      if (String(activeChat.id).startsWith('new_')) {
+        const { data: updatedMsgs } = await supabase
           .from('chat_messages')
-          .insert(extendedInsertPayload)
-          .select()
-          .single();
-
-        // Fallback de compatibilidade para bancos ainda sem colunas novas.
-        if (error && (replyTo?.wpp_id || replyToolData)) {
-          const details = getErrorMessage(error).toLowerCase();
-          const isSchemaError =
-            details.includes('quoted_wpp_id') ||
-            details.includes('tool_data') ||
-            details.includes('column') ||
-            details.includes('schema cache');
-
-          if (isSchemaError) {
-            const retry = await supabase
-              .from('chat_messages')
-              .insert(baseInsertPayload)
-              .select()
-              .single();
-            realMsg = retry.data;
-            error = retry.error;
-          }
+          .select('*')
+          .eq('chat_id', realChatId)
+          .order('created_at', { ascending: true });
+        if (updatedMsgs) {
+          setMessages(updatedMsgs);
+          const toCache = updatedMsgs.length > MAX_CACHED_MESSAGES_PER_CHAT
+            ? updatedMsgs.slice(-MAX_CACHED_MESSAGES_PER_CHAT)
+            : updatedMsgs;
+          set(`chat_messages_${realChatId}`, toCache, TTL_MESSAGES_MS);
+          touchMessagesCacheKey(realChatId);
         }
-
-        if (error) {
-          throw new Error(`Falha ao salvar mensagem no banco: ${getErrorMessage(error)}`);
-        }
-
-        // Se o chat era temporário, a subscription do useEffect ainda está ouvindo o ID antigo.
-        // Forçamos um fetch manual para atualizar a tela imediatamente.
-        if (String(activeChat.id).startsWith('new_')) {
-            const { data: updatedMsgs } = await supabase
-                .from('chat_messages')
-                .select('*')
-                .eq('chat_id', realChatId)
-                .order('created_at', { ascending: true });
-            if (updatedMsgs) {
-              setMessages(updatedMsgs);
-              const toCache = updatedMsgs.length > MAX_CACHED_MESSAGES_PER_CHAT
-                ? updatedMsgs.slice(-MAX_CACHED_MESSAGES_PER_CHAT)
-                : updatedMsgs;
-              set(`chat_messages_${realChatId}`, toCache, TTL_MESSAGES_MS);
-              touchMessagesCacheKey(realChatId);
-            }
-        } else {
-            // Para chats existentes, adiciona a mensagem imediatamente (optimistic UI)
-            // A subscription vai confirmar depois, mas isso evita delay
-            if (realMsg) {
-                setMessages(prev => {
-                    // Evita duplicatas
-                    if (prev.some(m => m.id === realMsg.id)) return prev;
-                    return [...prev, realMsg as Message];
-                });
-            }
-        }
-
-        // Dispara API do WhatsApp em background (não bloqueia)
+      } else {
+        // Para chats existentes, adiciona a mensagem imediatamente (optimistic UI)
+        // A subscription vai confirmar depois, mas isso evita delay
         if (realMsg) {
-            const cleanPhone = activeChat.phone.replace(/\D/g, '');
-            const remoteJid = `${cleanPhone}@s.whatsapp.net`;
-            fetch('/api/whatsapp/send', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ 
-                    chatId: realChatId, // ID correto
-                    phone: activeChat.phone, 
-                    message: text, 
-                    type: 'text', 
-                    dbMessageId: realMsg.id,
-                    messageSource: 'manual_chat',
-                    ...(replyTo?.wpp_id
-                      ? {
-                          replyTo: {
-                            wppId: replyTo.wpp_id,
-                            remoteJid,
-                            fromMe:
-                              replyTo.sender === 'HUMAN_AGENT' ||
-                              replyTo.sender === 'me',
-                            quotedText: replyTo.message_text || '',
-                            message_type: replyTo.message_type || 'text',
-                            sender: replyTo.sender || '',
-                          },
-                        }
-                      : {}),
-                }), 
-            }).catch(err => {
-                console.error('Erro ao enviar via WhatsApp API:', err);
-                // Não bloqueia a UI, apenas loga o erro
-            });
+          setMessages(prev => {
+            // Evita duplicatas
+            if (prev.some(m => m.id === realMsg.id)) return prev;
+            return [...prev, realMsg as Message];
+          });
         }
+      }
+
+      // Dispara API do WhatsApp em background (não bloqueia)
+      if (realMsg) {
+        const cleanPhone = activeChat.phone.replace(/\D/g, '');
+        const remoteJid = `${cleanPhone}@s.whatsapp.net`;
+        fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: realChatId, // ID correto
+            phone: activeChat.phone,
+            message: text,
+            type: 'text',
+            dbMessageId: realMsg.id,
+            messageSource: 'manual_chat',
+            ...(replyTo?.wpp_id
+              ? {
+                replyTo: {
+                  wppId: replyTo.wpp_id,
+                  remoteJid,
+                  fromMe:
+                    replyTo.sender === 'HUMAN_AGENT' ||
+                    replyTo.sender === 'me',
+                  quotedText: replyTo.message_text || '',
+                  message_type: replyTo.message_type || 'text',
+                  sender: replyTo.sender || '',
+                },
+              }
+              : {}),
+          }),
+        }).catch(err => {
+          console.error('Erro ao enviar via WhatsApp API:', err);
+          // Não bloqueia a UI, apenas loga o erro
+        });
+      }
     } catch (e) {
-        const errorMessage = getErrorMessage(e);
-        console.error("Erro ao enviar mensagem:", errorMessage, e);
-        throw new Error(errorMessage); // Re-throw para o ChatWindow tratar
+      const errorMessage = getErrorMessage(e);
+      console.error("Erro ao enviar mensagem:", errorMessage, e);
+      throw new Error(errorMessage); // Re-throw para o ChatWindow tratar
     } finally {
-        setIsSendingMsg(false);
+      setIsSendingMsg(false);
     }
   };
 
@@ -502,16 +526,16 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
       prev.map((m) =>
         m.id === msg.id
           ? {
-              ...m,
-              message_text: normalizedText,
+            ...m,
+            message_text: normalizedText,
+            is_edited: true,
+            edited_at: new Date().toISOString(),
+            tool_data: {
+              ...previousToolData,
               is_edited: true,
               edited_at: new Date().toISOString(),
-              tool_data: {
-                ...previousToolData,
-                is_edited: true,
-                edited_at: new Date().toISOString(),
-              },
-            }
+            },
+          }
           : m
       )
     );
@@ -583,105 +607,105 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
 
   // 3. Deletar Mensagem
   const deleteMessage = async (msg: Message, deleteForEveryone: boolean) => {
-      const msgId = msg.id;
-      const isPending = typeof msgId === 'string' && (String(msgId).startsWith('pending_') || String(msgId).startsWith('temp_'));
+    const msgId = msg.id;
+    const isPending = typeof msgId === 'string' && (String(msgId).startsWith('pending_') || String(msgId).startsWith('temp_'));
 
-      // Se for mensagem pendente: encontrar a real correspondente em messages
-      let targetMsg: Message = msg;
-      if (isPending) {
-        const pTime = new Date(msg.created_at).getTime();
-        const pText = (msg.message_text || '').trim();
-        const real = messages.find(
-          (m) =>
-            (m.sender === 'HUMAN_AGENT' || m.sender === 'me') &&
-            (m.message_text || '').trim() === pText &&
-            Math.abs(new Date(m.created_at).getTime() - pTime) < 3000
-        );
-        if (real) {
-          targetMsg = real;
+    // Se for mensagem pendente: encontrar a real correspondente em messages
+    let targetMsg: Message = msg;
+    if (isPending) {
+      const pTime = new Date(msg.created_at).getTime();
+      const pText = (msg.message_text || '').trim();
+      const real = messages.find(
+        (m) =>
+          (m.sender === 'HUMAN_AGENT' || m.sender === 'me') &&
+          (m.message_text || '').trim() === pText &&
+          Math.abs(new Date(m.created_at).getTime() - pTime) < 3000
+      );
+      if (real) {
+        targetMsg = real;
+      } else {
+        // Pendente sem real ainda: só remove da UI
+        onRemovePending?.(String(msgId));
+        toast.info('Mensagem removida. Aguarde o envio concluir para apagar no WhatsApp.');
+        return;
+      }
+    }
+
+    try {
+      if (deleteForEveryone) {
+        setMessages(prev => prev.map(m =>
+          m.id === targetMsg.id ? { ...m, message_type: 'revoked', message_text: '', media_url: undefined } : m
+        ));
+      } else {
+        if (activeChat?.id) getDeletedSetForChat(activeChat.id).add(targetMsg.id);
+        setMessages(prev => prev.filter(m => m.id !== targetMsg.id));
+      }
+
+      if (isPending) onRemovePending?.(String(msgId));
+
+      if (!deleteForEveryone && msg.media_url && !msg.media_url.includes('undefined')) {
+        try {
+          const u = msg.media_url.split('/');
+          const f = u[u.length - 1];
+          if (f) await supabase.storage.from('midia').remove([decodeURIComponent(f)]);
+        } catch (err) { }
+      }
+
+      const phone = activeChat?.phone || (msg as any).phone || (targetMsg as any).phone || '';
+      const wppId = (targetMsg as any).wpp_id;
+
+      const res = await fetch('/api/whatsapp/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId: targetMsg.id,
+          wppId: wppId || null,
+          target: deleteForEveryone ? 'everyone' : 'system',
+          phone
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        toast.error(data?.error || 'Erro ao apagar mensagem');
+        if (deleteForEveryone) {
+          setMessages(prev => prev.map(m => m.id === targetMsg.id ? targetMsg : m));
         } else {
-          // Pendente sem real ainda: só remove da UI
-          onRemovePending?.(String(msgId));
-          toast.info('Mensagem removida. Aguarde o envio concluir para apagar no WhatsApp.');
-          return;
+          if (activeChat?.id) getDeletedSetForChat(activeChat.id).delete(targetMsg.id);
+          setMessages(prev => prev.some(m => m.id === targetMsg.id) ? prev : [...prev, targetMsg].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+        }
+        return;
+      }
+
+      if (deleteForEveryone) {
+        onRemovePendingForRevoked?.(targetMsg.created_at);
+        if (data.whatsappDeleted) {
+          toast.success('Mensagem apagada para todos');
+        } else if (data.skippedNoWppId) {
+          toast.info('Mensagem removida aqui. Aguarde o envio ao WhatsApp concluir para apagar para todos.');
+        } else {
+          toast.info('Mensagem removida aqui. Não foi possível apagar no WhatsApp.');
         }
       }
-
-      try {
-          if (deleteForEveryone) {
-            setMessages(prev => prev.map(m =>
-              m.id === targetMsg.id ? { ...m, message_type: 'revoked', message_text: '', media_url: undefined } : m
-            ));
-          } else {
-            if (activeChat?.id) getDeletedSetForChat(activeChat.id).add(targetMsg.id);
-            setMessages(prev => prev.filter(m => m.id !== targetMsg.id));
-          }
-
-          if (isPending) onRemovePending?.(String(msgId));
-
-          if (!deleteForEveryone && msg.media_url && !msg.media_url.includes('undefined')) {
-             try {
-                 const u = msg.media_url.split('/');
-                 const f = u[u.length-1];
-                 if (f) await supabase.storage.from('midia').remove([decodeURIComponent(f)]);
-             } catch (err) {}
-          }
-
-          const phone = activeChat?.phone || (msg as any).phone || (targetMsg as any).phone || '';
-          const wppId = (targetMsg as any).wpp_id;
-
-          const res = await fetch('/api/whatsapp/delete', {
-              method: 'POST',
-              headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({
-                  messageId: targetMsg.id,
-                  wppId: wppId || null,
-                  target: deleteForEveryone ? 'everyone' : 'system',
-                  phone
-              })
-          });
-
-          const data = await res.json().catch(() => ({}));
-
-          if (!res.ok) {
-            toast.error(data?.error || 'Erro ao apagar mensagem');
-            if (deleteForEveryone) {
-              setMessages(prev => prev.map(m => m.id === targetMsg.id ? targetMsg : m));
-            } else {
-              if (activeChat?.id) getDeletedSetForChat(activeChat.id).delete(targetMsg.id);
-              setMessages(prev => prev.some(m => m.id === targetMsg.id) ? prev : [...prev, targetMsg].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
-            }
-            return;
-          }
-
-          if (deleteForEveryone) {
-            onRemovePendingForRevoked?.(targetMsg.created_at);
-            if (data.whatsappDeleted) {
-              toast.success('Mensagem apagada para todos');
-            } else if (data.skippedNoWppId) {
-              toast.info('Mensagem removida aqui. Aguarde o envio ao WhatsApp concluir para apagar para todos.');
-            } else {
-              toast.info('Mensagem removida aqui. Não foi possível apagar no WhatsApp.');
-            }
-          }
-      } catch (e) {
-          console.error(e);
-          toast.error('Erro ao apagar mensagem');
-          if (deleteForEveryone) {
-            setMessages(prev => prev.map(m => m.id === targetMsg.id ? targetMsg : m));
-          } else {
-            if (activeChat?.id) getDeletedSetForChat(activeChat.id).delete(targetMsg.id);
-            setMessages(prev => prev.some(m => m.id === targetMsg.id) ? prev : [...prev, targetMsg].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
-          }
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao apagar mensagem');
+      if (deleteForEveryone) {
+        setMessages(prev => prev.map(m => m.id === targetMsg.id ? targetMsg : m));
+      } else {
+        if (activeChat?.id) getDeletedSetForChat(activeChat.id).delete(targetMsg.id);
+        setMessages(prev => prev.some(m => m.id === targetMsg.id) ? prev : [...prev, targetMsg].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
       }
+    }
   };
 
-  return { 
-    messages, 
-    setMessages, 
-    loading, 
-    isSendingMsg, 
-    sendMessage, 
+  return {
+    messages,
+    setMessages,
+    loading,
+    isSendingMsg,
+    sendMessage,
     deleteMessage,
     editMessage,
     reactToMessage,

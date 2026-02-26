@@ -399,14 +399,14 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
       status: 'sending',
       chat_id: chat.id,
       phone: chat.phone,
-      ...(replyMeta?.wpp_id
+      ...(replyMeta?.wpp_id || replyMeta?.message_text
         ? {
           tool_data: {
             reply_to: {
-              wpp_id: replyMeta.wpp_id,
-              sender: replyMeta.sender || '',
-              message_type: replyMeta.message_type || 'text',
-              message_text: replyMeta.message_text || '',
+              wpp_id: replyMeta?.wpp_id || undefined,
+              sender: replyMeta?.sender || '',
+              message_type: replyMeta?.message_type || 'text',
+              message_text: replyMeta?.message_text || '',
             },
           },
         }

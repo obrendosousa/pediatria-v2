@@ -35,6 +35,15 @@ export interface IngestionState {
   should_continue: boolean;
   /** Indica se a mensagem recebida foi encaminhada (para persistir em tool_data) */
   is_forwarded?: boolean;
+  /** Dados da mensagem citada/respondida (para exibir preview na UI) */
+  quoted_info?: {
+    wpp_id: string;
+    sender: 'HUMAN_AGENT' | 'CUSTOMER';
+    sender_name?: string | null;
+    message_type: string;
+    message_text: string;
+    remote_jid: string;
+  } | null;
 }
 
 // Mantém referência explícita ao tipo importado para futuras extensões de estado.

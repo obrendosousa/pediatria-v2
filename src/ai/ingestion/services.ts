@@ -249,6 +249,24 @@ export async function ensureChatExists(phone: string, pushName: string, fromMe: 
   return newChat;
 }
 
+export async function getContactNameByPhone(phone: string): Promise<string | null> {
+  const supabase = await getSupabase();
+  const normalizedPhone = normalizePhone(phone);
+  if (!normalizedPhone) return null;
+
+  const { data } = await supabase
+    .from("chats")
+    .select("contact_name")
+    .eq("phone", normalizedPhone)
+    .single();
+
+  if (data?.contact_name) {
+    const name = data.contact_name.trim();
+    return name === normalizedPhone ? null : name;
+  }
+  return null;
+}
+
 export async function saveMessageToDb(payload: {
   chat_id: number;
   phone: string;
@@ -260,6 +278,14 @@ export async function saveMessageToDb(payload: {
   message_timestamp_iso?: string;
   /** Se true, persiste tool_data.forwarded = true para exibir "Encaminhada" na UI */
   forwarded?: boolean;
+  /** Dados da mensagem citada/respondida, para exibir preview na UI */
+  quoted_info?: {
+    wpp_id: string;
+    sender: string;
+    message_type: string;
+    message_text: string;
+    remote_jid: string;
+  } | null;
 }) {
   const supabase = await getSupabase();
 
@@ -269,7 +295,7 @@ export async function saveMessageToDb(payload: {
 
   // Volta para undefined se for recebida para não estourar a trava do Postgres.
   const status = payload.sender === "HUMAN_AGENT" ? "sent" : undefined;
-  
+
   const messageCreatedAt = payload.message_timestamp_iso || new Date().toISOString();
 
   const insertPayload: Record<string, unknown> = {
@@ -282,12 +308,20 @@ export async function saveMessageToDb(payload: {
     wpp_id: payload.wpp_id,
     created_at: messageCreatedAt,
   };
-  
+
   if (status) insertPayload.status = status;
-  if (payload.forwarded === true) {
-    insertPayload.tool_data = { forwarded: true };
+
+  // Monta tool_data com forwarded e/ou reply_to, se presentes
+  const toolDataContent: Record<string, unknown> = {};
+  if (payload.forwarded === true) toolDataContent.forwarded = true;
+  if (payload.quoted_info) toolDataContent.reply_to = payload.quoted_info;
+  if (Object.keys(toolDataContent).length > 0) insertPayload.tool_data = toolDataContent;
+
+  // Persiste o wpp_id da mensagem citada no campo dedicado
+  if (payload.quoted_info?.wpp_id) {
+    insertPayload.quoted_wpp_id = payload.quoted_info.wpp_id;
   }
-  
+
   const { error } = await supabase.from("chat_messages").insert(insertPayload);
   if (error) {
     const lowerMessage = String(error.message || "").toLowerCase();
@@ -310,17 +344,17 @@ export async function saveMessageToDb(payload: {
     payload.type === "audio"
       ? "Áudio"
       : payload.type === "image"
-      ? "Foto"
-      : payload.type === "video"
-      ? "Vídeo"
-      : payload.type === "sticker"
-      ? "Figurinha"
-      : payload.type === "document"
-      ? "Documento"
-      : (payload.content || "").trim();
+        ? "Foto"
+        : payload.type === "video"
+          ? "Vídeo"
+          : payload.type === "sticker"
+            ? "Figurinha"
+            : payload.type === "document"
+              ? "Documento"
+              : (payload.content || "").trim();
 
   const chatUpdatePayload: Record<string, unknown> = {};
-  
+
   // Limpa o status visual de "lido" se for mensagem recebida, 
   // senão mantém o status de envio do atendente.
   const { data: chatRowForOrdering } = await supabase
@@ -401,7 +435,7 @@ export function fetchAndUpdateProfilePicture(phone: string, chatId: number): voi
       const supabase = await getSupabase();
       await supabase.from("chats").update({ profile_pic: url }).eq("id", chatId);
     })
-    .catch(() => {});
+    .catch(() => { });
 }
 
 /** Bucket Supabase para mídia (áudio, imagem, sticker) - mesmo bucket usado pelo app (ChatWindow, CRM) */
@@ -467,12 +501,12 @@ function extractMediaFromMessage(ctx: MediaUploadContext): {
       const prefix = mimeType.includes("video")
         ? "video_"
         : mimeType.includes("image")
-        ? "image_"
-        : mimeType.includes("webp")
-        ? "sticker_"
-        : mimeType.includes("application")
-        ? "document_"
-        : "audio_";
+          ? "image_"
+          : mimeType.includes("webp")
+            ? "sticker_"
+            : mimeType.includes("application")
+              ? "document_"
+              : "audio_";
       fileName = `${prefix}${keyId}.${ext}`;
     }
     base64 = bodyBase64;
@@ -541,7 +575,7 @@ async function uploadToSupabase(
 ): Promise<string | null> {
   const supabase = await getSupabase();
   const buf = Buffer.from(base64, "base64");
-  
+
   const safeFileName = fileName
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")

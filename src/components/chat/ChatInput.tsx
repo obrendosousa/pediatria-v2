@@ -377,7 +377,9 @@ export default function ChatInput({
                ) : (
                  <>
                    <span className="text-xs font-bold text-green-600 dark:text-green-400 block mb-0.5">
-                     {replyTo.sender === 'me' || replyTo.sender === 'HUMAN_AGENT' ? 'Você' : replyTo.sender}
+                     {replyTo.sender === 'me' || replyTo.sender === 'HUMAN_AGENT' || replyTo.sender === 'AI_AGENT'
+                       ? 'Você'
+                       : (replyTo.sender === 'CUSTOMER' || replyTo.sender === 'contact') ? (replyTo.sender_name || 'Contato') : replyTo.sender || 'Contato'}
                    </span>
                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                      {replyTo.message_type === 'audio'
@@ -388,6 +390,8 @@ export default function ChatInput({
                        ? '🎬 Vídeo'
                        : replyTo.message_type === 'document'
                        ? '📄 Documento'
+                       : replyTo.message_type === 'sticker'
+                       ? '💟 Figurinha'
                        : replyTo.message_text}
                    </p>
                  </>
