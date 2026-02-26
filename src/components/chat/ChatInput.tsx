@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Paperclip, X, Smile, Trash2, StopCircle } from 'lucide-react';
+import { Send, Mic, Paperclip, X, Smile, Trash2, Sparkles, Loader2 } from 'lucide-react';
+import AIDraftBanner from './AIDraftBanner';
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import { useToast } from '@/contexts/ToastContext';
 
 interface ChatInputProps {
   onSendMessage: (text: string, type: string, file?: File, metadata?: any) => Promise<void> | void;
-  onSendAudio: (blob: Blob, duration: number) => void; 
+  onSendAudio: (blob: Blob, duration: number) => void;
   onSendMedia: (file: File) => void;
   onTyping: (isTyping: boolean) => void;
   replyTo: any;
@@ -15,18 +16,31 @@ interface ChatInputProps {
   editingMessage?: any;
   onCancelEdit?: () => void;
   isRecordingProp?: boolean;
+  // Copiloto
+  aiDraftText?: string | null;
+  aiDraftReason?: string | null;
+  isLoadingAISuggestion?: boolean;
+  onRequestAISuggestion?: () => void;
+  onApproveAIDraft?: (text: string) => Promise<void>;
+  onDiscardAIDraft?: () => Promise<void>;
 }
 
-export default function ChatInput({ 
-  onSendMessage, 
-  onSendAudio, 
+export default function ChatInput({
+  onSendMessage,
+  onSendAudio,
   onSendMedia,
   onTyping,
   replyTo,
   onCancelReply,
   editingMessage = null,
   onCancelEdit = () => {},
-  isRecordingProp = false
+  isRecordingProp = false,
+  aiDraftText,
+  aiDraftReason,
+  isLoadingAISuggestion = false,
+  onRequestAISuggestion,
+  onApproveAIDraft,
+  onDiscardAIDraft,
 }: ChatInputProps) {
   const { toast } = useToast();
   // --- ESTADOS ---
@@ -265,7 +279,17 @@ export default function ChatInput({
   }
 
   return (
-    <div className="min-h-[62px] px-2 py-2 flex items-end gap-2 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700 relative z-20">
+    <div className="flex flex-col bg-[#f0f2f5] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700 relative z-20">
+      {/* Strip compacto de sugestão da IA */}
+      {aiDraftText && onApproveAIDraft && onDiscardAIDraft && (
+        <AIDraftBanner
+          draftText={aiDraftText}
+          draftReason={aiDraftReason || ''}
+          onApprove={onApproveAIDraft}
+          onDiscard={onDiscardAIDraft}
+        />
+      )}
+    <div className="min-h-[62px] px-2 py-2 flex items-end gap-2">
       
       {showEmojiPicker && (
         <div ref={pickerRef} className="absolute bottom-[70px] left-2 z-50 shadow-2xl rounded-2xl animate-in slide-in-from-bottom-2 fade-in duration-200">
@@ -367,16 +391,35 @@ export default function ChatInput({
         />
       </div>
 
-      <div className="pb-2 pl-1">
+      <div className="pb-2 pl-1 flex items-center gap-1">
+        {/* Botão Copiloto — sugere uma resposta com um clique */}
+        {onRequestAISuggestion && (
+          <button
+            onClick={onRequestAISuggestion}
+            disabled={isLoadingAISuggestion}
+            title={isLoadingAISuggestion ? 'Gerando sugestão...' : 'Sugerir resposta com IA'}
+            className={`p-2 rounded-full transition-all active:scale-95 ${
+              aiDraftText
+                ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-800/50'
+                : 'text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-purple-500'
+            } disabled:opacity-40`}
+          >
+            {isLoadingAISuggestion
+              ? <Loader2 size={18} className="animate-spin" />
+              : <Sparkles size={18} />
+            }
+          </button>
+        )}
+
         {message.trim() ? (
-          <button 
+          <button
             onClick={handleSend}
             className="p-3 bg-[#00a884] hover:bg-[#008f6f] text-white rounded-full transition-all shadow-sm active:scale-95 animate-in zoom-in duration-200"
           >
             <Send size={20} />
           </button>
         ) : (
-          <button 
+          <button
             onClick={startRecording}
             className="p-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-full transition-all active:scale-95"
             title="Gravar Áudio"
@@ -385,6 +428,7 @@ export default function ChatInput({
           </button>
         )}
       </div>
+    </div>
     </div>
   );
 }

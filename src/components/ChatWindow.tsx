@@ -12,7 +12,6 @@ import ChatHeader from './chat/ChatHeader';
 import ChatInput from './chat/ChatInput';
 import MessageList from './chat/MessageList';
 import ChatSidebar from './chat/ChatSidebar';
-import AIDraftBanner from './chat/AIDraftBanner';
 
 // Modais de suporte
 import MacroModal from './chat/modals/MacroModal';
@@ -157,6 +156,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   // Estado reativo do draft da IA (atualizado em tempo real via Supabase Realtime)
   const [aiDraftText, setAiDraftText] = useState<string | null>(chat?.ai_draft_reply ?? null);
   const [aiDraftReason, setAiDraftReason] = useState<string | null>(chat?.ai_draft_reason ?? null);
+  const [isLoadingAISuggestion, setIsLoadingAISuggestion] = useState(false);
 
   const handleSendFile = useCallback(async (file: File | Blob, caption: string, typeOverride?: string, metadata?: any) => {
     if (!chat) return;
@@ -497,6 +497,24 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     setIsCreateScheduleOpen(true);
   }, []);
 
+  const handleRequestAISuggestion = useCallback(async () => {
+    if (!chat?.id || isLoadingAISuggestion) return;
+    setIsLoadingAISuggestion(true);
+    try {
+      const res = await fetch('/api/ai/copilot/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chat.id }),
+      });
+      if (!res.ok) throw new Error('Falha ao acionar o copiloto');
+      // O draft chegará via Supabase Realtime — não precisa ler o body
+    } catch (e) {
+      toast.error('Não foi possível gerar a sugestão.');
+    } finally {
+      setIsLoadingAISuggestion(false);
+    }
+  }, [chat?.id, isLoadingAISuggestion, toast]);
+
   const handleClearDraft = useCallback(async () => {
     if (!chat) return;
     const capturedDraft = aiDraftText;
@@ -664,18 +682,6 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           onPreviewVideo={(src) => setPreviewMedia({ src, type: 'video' })}
         />
 
-        {/* Banner de Sugestão da IA Logo Acima do Input — reativo via Supabase Realtime */}
-        {aiDraftText && (
-          <div className="z-10 bg-gradient-to-t from-[#efeae2] dark:from-[#0b141a] pt-2 pb-1">
-            <AIDraftBanner
-              draftText={aiDraftText}
-              draftReason={aiDraftReason || ''}
-              onApprove={handleApproveDraft}
-              onDiscard={handleClearDraft}
-            />
-          </div>
-        )}
-
         <ChatInput
           onSendMessage={handleSendMessage}
           onSendAudio={handleSendAudio}
@@ -685,6 +691,12 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           onCancelReply={() => setReplyTo(null)}
           editingMessage={editingMessage}
           onCancelEdit={() => setEditingMessage(null)}
+          aiDraftText={aiDraftText}
+          aiDraftReason={aiDraftReason}
+          isLoadingAISuggestion={isLoadingAISuggestion}
+          onRequestAISuggestion={handleRequestAISuggestion}
+          onApproveAIDraft={handleApproveDraft}
+          onDiscardAIDraft={handleClearDraft}
         />
       </div>
 

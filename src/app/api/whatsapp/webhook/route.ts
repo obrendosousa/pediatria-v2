@@ -607,25 +607,8 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
         }
       );
 
-      // --- INTEGRAÇÃO DO COPILOTO ---
-      // Usa o chat_id diretamente do resultado da ingestão — mais confiável do que fazer
-      // uma segunda query ao banco pelo wpp_id (que pode ser vazio ou ainda não indexado).
-      const chatIdFromIngestion = (ingestionResult as any)?.chat_id as number | undefined;
-      const isFromPatient = !message.key?.fromMe;
-      const shouldContinue = (ingestionResult as any)?.should_continue !== false;
-
-      if (chatIdFromIngestion && isFromPatient && shouldContinue) {
-        console.log(`🤖 [WEBHOOK] Acionando Copiloto para o chat_id: ${chatIdFromIngestion}`);
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
-                        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-        // Dispara em background para não atrasar a resposta ao webhook da Evolution
-        fetch(`${baseUrl}/api/ai/copilot/trigger`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: chatIdFromIngestion })
-        }).catch(err => console.error("🚨 [WEBHOOK] Erro ao acionar o Copiloto:", err));
-      }
-      // -----------------------------------
+      // Copiloto agora é acionado manualmente pela secretária (botão ✨ no chat).
+      // O trigger automático foi removido para não gerar ruído desnecessário a cada mensagem.
     }
 
     return NextResponse.json({ status: "processed", messages: messages.length });
