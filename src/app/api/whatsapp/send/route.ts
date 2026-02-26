@@ -176,9 +176,14 @@ export async function POST(req: Request) {
           }
 
           const lastMsg = finalMessages[finalMessages.length - 1];
-          const aiResponseText =
-            lastMsg?.content?.toString() ??
-            '⚠️ Não consegui gerar uma resposta. Verifique os logs.';
+          const rawContent = lastMsg?.content;
+          const aiResponseText = typeof rawContent === "string"
+            ? rawContent
+            : Array.isArray(rawContent)
+              ? (rawContent as Array<any>).map((c) => (typeof c === "string" ? c : c?.text ?? "")).filter(Boolean).join("")
+              : rawContent
+                ? String(rawContent)
+                : '⚠️ Não consegui gerar uma resposta. Verifique os logs.';
 
           console.log("💾 [Clara] Salvando resposta final no banco...");
 

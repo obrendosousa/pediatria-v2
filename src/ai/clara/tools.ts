@@ -5,6 +5,19 @@ import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain
 import { HumanMessage } from "@langchain/core/messages";
 import { chatAnalyzerGraph } from "./chatAnalyzerGraph";
 
+// Extrai texto de forma segura de respostas LLM — conteúdo pode ser string ou array de partes.
+// Usar .toString() em array retorna "[object Object],[object Object]" — este helper resolve isso.
+function extractTextContent(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((c: any) => (typeof c === "string" ? c : c?.text ?? ""))
+      .filter(Boolean)
+      .join("");
+  }
+  return String(content ?? "");
+}
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -231,7 +244,7 @@ function normalizeSenderLabel(sender: string | null): string {
 export const deepResearchChatsTool = new DynamicStructuredTool({
   name: "deep_research_chats",
   description:
-    "OBRIGATÓRIO: Ferramenta de análise profunda de múltiplos chats via processamento em lote (Map-Reduce). Use sempre que precisar ler 2 ou mais conversas ao mesmo tempo para encontrar padrões, objeções ou resumir situações. Processa os chats em lotes para não estourar a memória.",
+    "Análise rápida e exploratória de múltiplos chats via processamento em lote (Map-Reduce). Use para identificar padrões gerais SEM salvar resultados estruturados no banco. Para análise profunda com salvamento de insights por chat (objeções, nota, gargalos), prefira analisar_chat_especifico.",
   schema: z.object({
     objetivo_da_analise: z
       .string()
@@ -307,7 +320,7 @@ Transcrições para análise rigorosa:
 ${transcripts.join("\n\n")}`;
 
         const response = await internalModel.invoke([new HumanMessage(mapPrompt)]);
-        const insight = response.content.toString().trim();
+        const insight = extractTextContent(response.content).trim();
         if (insight) {
           batch_insights.push(insight);
         }
@@ -348,7 +361,7 @@ ${batch_insights
           .join("\n\n")}`;
 
       const consolidated = await consolidationModel.invoke([new HumanMessage(reducePrompt)]);
-      return consolidated.content.toString();
+      return extractTextContent(consolidated.content);
     } catch {
       return batch_insights.join("\n\n---\n\n");
     }
@@ -402,36 +415,63 @@ export const saveReportTool = new DynamicStructuredTool({
 
 export const analisarChatEspecificoTool = new DynamicStructuredTool({
   name: "analisar_chat_especifico",
-  description: "Analisa um ou mais chats em profundidade (via Sub-Grafo Novo), extraindo objeções, gargalos, sentimento e salvando no banco de dados. Use isso quando o usuário pedir expressamente para usar o 'novo grafo', 'nova ferramenta', ou quiser analisar os erros e métricas profundas de VÁRIOS chats listados.",
+  description:
+    "Análise ESTRUTURADA E PROFUNDA de chats via Sub-Grafo de Análise. Extrai objeções, gargalos, sentimento, nota de atendimento e decisão de CADA conversa individualmente, salvando resultados estruturados na tabela chat_insights. Use quando o usuário pedir 'novo grafo', 'nova ferramenta', 'análise profunda estruturada', ou quando precisar de dados persistidos para relatórios posteriores.",
   schema: z.object({
-    chat_ids: z.array(z.number()).describe("Uma lista de IDs de chats a serem analisados em profundidade."),
+    chat_ids: z.array(z.number()).describe("Lista de IDs numéricos dos chats a serem analisados (máx. 30 por chamada)."),
   }),
-  func: async ({ chat_ids }, runManager) => {
+  func: async ({ chat_ids }) => {
     if (!chat_ids || chat_ids.length === 0) return "Nenhum chat_id fornecido.";
 
-    try {
-      for (const chat_id of chat_ids) {
-        runManager?.handleText(`[SYSTEM_LOG] Preparando análise profunda do chat ID ${chat_id}...`);
+    // Limite de segurança para evitar execuções excessivamente longas
+    const safeIds = chat_ids.slice(0, 30);
+    const skipped = chat_ids.length - safeIds.length;
 
-        // Usamos stream para emitir eventos para o frontend interceptar os "[SYSTEM_LOG]"
-        const stream = await chatAnalyzerGraph.streamEvents({ chat_id }, { version: "v2" });
+    const allInsights: string[] = [];
+    let successCount = 0;
+    let errorCount = 0;
 
-        for await (const event of stream) {
-          if (event.event === "on_node_start") {
-            let stepName = event.name;
-            if (stepName === "fetch_data") stepName = "Baixando mensagens do chat...";
-            if (stepName === "analyze_conversation") stepName = "IA pensando e extraindo gargalos...";
-            if (stepName === "save_to_db") stepName = "Salvando insights e memórias...";
+    for (const chat_id of safeIds) {
+      try {
+        // Usa invoke() para obter o estado final com insights reais (streamEvents tinha nome de evento errado)
+        const finalState = await chatAnalyzerGraph.invoke({ chat_id });
+        successCount++;
 
-            runManager?.handleText(`[SYSTEM_LOG] Chat ${chat_id} - ${stepName}`);
-          }
+        if (finalState.insights) {
+          const i = finalState.insights as {
+            sentimento?: string | null;
+            nota_atendimento?: number | null;
+            objecoes?: string[];
+            gargalos?: string[];
+            decisao?: string | null;
+            resumo_analise?: string | null;
+          };
+          const insightText = [
+            `**Chat #${chat_id}**`,
+            `- Sentimento: ${i.sentimento ?? "não identificado"}`,
+            `- Nota de Atendimento: ${i.nota_atendimento ?? "N/A"}/10`,
+            `- Objeções: ${i.objecoes?.length ? i.objecoes.join("; ") : "nenhuma identificada"}`,
+            `- Gargalos: ${i.gargalos?.length ? i.gargalos.join("; ") : "nenhum"}`,
+            `- Decisão: ${i.decisao ?? "não identificada"}`,
+            `- Resumo: ${i.resumo_analise ?? "sem resumo"}`,
+          ].join("\n");
+          allInsights.push(insightText);
         }
+      } catch (e: any) {
+        errorCount++;
+        allInsights.push(`**Chat #${chat_id}**: Erro na análise — ${e.message}`);
       }
-      return `${chat_ids.length} chat(s) analisado(s) com sucesso via Sub-Grafo e salvos no banco de dados. Agora você pode sugerir um action plan para contornar as objeções levantadas nesses chats ou usar a ferramenta de relatórios para gerar um compilado da qualidade.`;
-    } catch (e: any) {
-      return `Falha ao processar análise através do sub-grafo: ${e.message}`;
     }
-  }
+
+    const header = [
+      `${successCount} chat(s) analisado(s) com sucesso via Sub-Grafo${errorCount > 0 ? `, ${errorCount} com erro` : ""}. Insights salvos em chat_insights.`,
+      skipped > 0 ? `(${skipped} chat(s) ignorados — limite de 30 por chamada)` : "",
+    ].filter(Boolean).join(" ");
+
+    if (allInsights.length === 0) return header;
+
+    return `${header}\n\n## Insights Extraídos por Chat:\n\n${allInsights.join("\n\n")}`;
+  },
 });
 
 export const gerarRelatorioQualidadeTool = new DynamicStructuredTool({
