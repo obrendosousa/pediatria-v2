@@ -1,6 +1,6 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { IngestionState, EvolutionWebhookData } from "./state";
-import { processInputNode, saveToDbNode, sessionManagerNode } from "./nodes";
+import { processInputNode, saveToDbNode, sessionManagerNode, insightExtractorNode } from "./nodes";
 import { getAutomationCheckpointer } from "@/lib/automation/checkpointer";
 
 export const ingestionWorkflow = new StateGraph<IngestionState>({
@@ -88,10 +88,12 @@ ingestionWorkflow
   .addNode("processar_entrada", processInputNode)
   .addNode("gerenciar_sessao", sessionManagerNode)
   .addNode("salvar_banco", saveToDbNode)
+  .addNode("insight_extractor_node", insightExtractorNode)
   .addEdge(START, "processar_entrada")
   .addEdge("processar_entrada", "gerenciar_sessao")
   .addEdge("gerenciar_sessao", "salvar_banco")
-  .addEdge("salvar_banco", END);
+  .addEdge("salvar_banco", "insight_extractor_node")
+  .addEdge("insight_extractor_node", END);
 
 export const ingestionGraph = ingestionWorkflow.compile();
 

@@ -1,7 +1,7 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { HumanMessage } from "@langchain/core/messages";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -83,18 +83,66 @@ export const updateBrainFileTool = new DynamicStructuredTool({
 
 export const manageLongTermMemoryTool = new DynamicStructuredTool({
   name: "manage_long_term_memory",
-  description: "Salva fatos importantes ou consulta aprendizados passados na tabela 'clara_memories'.",
+  description: "Salva fatos importantes ou consulta aprendizados passados na tabela 'clara_memories'. No modo salvar faz Upsert Semântico para não duplicar informações similiares.",
   schema: z.object({
     action: z.enum(["salvar", "consultar"]),
     memory_type: z.string().describe("Categoria da memória (ex: 'preferencia_paciente')."),
     content: z.string().optional().describe("O fato a ser salvo ou a palavra-chave para busca."),
+    source_role: z.string().optional().default("system").describe("O autor/fonte do conhecimento (ex: 'admin', 'doctor', 'system')."),
   }),
-  func: async ({ action, memory_type, content }) => {
+  func: async ({ action, memory_type, content, source_role }) => {
     if (action === "salvar") {
       if (!content) return "Erro: 'content' é obrigatório para salvar.";
-      const { error } = await supabase.from("clara_memories").insert({ memory_type, content });
-      if (error) return `Erro ao salvar memória: ${error.message}`;
-      return `Memória salva com sucesso na categoria '${memory_type}'.`;
+
+      try {
+        const embeddings = new GoogleGenerativeAIEmbeddings({
+          model: "text-embedding-004",
+          apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+        });
+
+        const embedding = await embeddings.embedQuery(content);
+
+        // Chamar a RPC para achar similares (Passo 3)
+        const { data: matches, error: rpcError } = await supabase.rpc("match_memories", {
+          query_embedding: embedding,
+          match_threshold: 0.85,
+          match_count: 1
+        });
+
+        if (rpcError) throw rpcError;
+
+        if (matches && matches.length > 0) {
+          // Upsert Semântico - Encontrou memória muito similar
+          const matchedId = matches[0].id;
+          const { error: updateError } = await supabase
+            .from("clara_memories")
+            .update({
+              content,
+              embedding,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", matchedId);
+
+          if (updateError) throw updateError;
+          return `Memória atualizada com sucesso (Upsert Semântico sobrescrevendo info antiga) na categoria '${memory_type}'.`;
+        } else {
+          // Inserção normal
+          const { error: insertError } = await supabase
+            .from("clara_memories")
+            .insert({
+              memory_type,
+              content,
+              embedding,
+              source_role: source_role || "system",
+              updated_at: new Date().toISOString()
+            });
+
+          if (insertError) throw insertError;
+          return `Nova memória salva com sucesso na categoria '${memory_type}'.`;
+        }
+      } catch (e: any) {
+        return `Erro ao processar memória com embeddings: ${e.message}`;
+      }
     } else {
       let query = supabase
         .from("clara_memories")

@@ -9,6 +9,9 @@ import {
   saveMessageToDb,
   getContactNameByPhone,
 } from "./services";
+import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { HumanMessage } from "@langchain/core/messages";
 
 /** Extrai o contextInfo de qualquer tipo de mensagem (texto, imagem, vídeo, áudio, documento) */
 function extractContextInfo(message: unknown): Record<string, any> | null {
@@ -258,5 +261,91 @@ export const saveToDbNode = async (
     forwarded: state.is_forwarded === true,
     quoted_info: state.quoted_info ?? undefined,
   });
+  return {};
+};
+
+async function runBackgroundInsightExtraction(chatId: number) {
+  try {
+    const supabase = getSupabaseAdminClient();
+
+    const { data: messages } = await (supabase as any)
+      .from("chat_messages")
+      .select("sender, message_text, bot_message, user_message")
+      .eq("chat_id", chatId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (!messages || messages.length < 3) return;
+
+    const history = messages.reverse().map((m: any) => {
+      const senderStr = String(m.sender || "").toUpperCase();
+      const label = senderStr === "AI_AGENT" ? "BOT" : senderStr.includes("HUMAN") ? "SECRETÁRIA" : "PACIENTE";
+      const txt = m.message_text || m.user_message || m.bot_message || "";
+      return `[${label}]: ${txt}`;
+    }).join("\n");
+
+    const model = new ChatGoogleGenerativeAI({
+      model: "gemini-3-flash-preview",
+      apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+      temperature: 0.1,
+    });
+
+    const extractionPrompt = `Você é um observador silencioso. Leia as últimas mensagens do chat abaixo e identifique se algo de relevante aconteceu.
+Extraia os insights no seguinte formato JSON estrito:
+{
+  "topico": "Assunto principal das mensagens",
+  "decisao": "O que foi decidido (ex: agendado, preço informado, paciente disse que vai pensar)",
+  "novo_conhecimento": boolean (true se houver uma nova preferência do paciente ou regra que deve ser memorizada a longo prazo, false caso contrário)
+}
+
+HISTÓRICO:
+${history}
+
+Responda APENAS o JSON estruturado.`;
+
+    const response = await model.invoke([new HumanMessage(extractionPrompt)]);
+    const resultText = Array.isArray(response.content)
+      ? response.content.map(c => (c as any).text ?? "").join("")
+      : response.content.toString();
+
+    const jsonText = resultText.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch {
+      return;
+    }
+
+    await (supabase as any).from("chat_insights").insert({
+      chat_id: chatId,
+      topico: parsed.topico || "Indefinido",
+      decisao: parsed.decisao || "Nenhuma conclusão",
+      novo_conhecimento: Boolean(parsed.novo_conhecimento)
+    });
+
+    if (parsed.novo_conhecimento) {
+      const { manageLongTermMemoryTool } = await import("../clara/tools");
+      const memoryContent = `Insight do chat ${chatId}: Tópico: ${parsed.topico}. Decisão/Fato Relevante: ${parsed.decisao}`;
+      await manageLongTermMemoryTool.invoke({
+        action: "salvar",
+        memory_type: "insight_observador",
+        content: memoryContent,
+        source_role: "system"
+      });
+    }
+
+  } catch (error) {
+    console.error(`[Insight Extractor] Erro ao extrair insights do chat ${chatId}:`, error);
+  }
+}
+
+export const insightExtractorNode = async (
+  state: IngestionState
+): Promise<Partial<IngestionState>> => {
+  if (state.chat_id && state.should_continue && state.phone) {
+    // Engatilha execução assíncrona (não-bloqueante na esteira principal)
+    Promise.resolve().then(() => runBackgroundInsightExtraction(state.chat_id!));
+  }
   return {};
 };

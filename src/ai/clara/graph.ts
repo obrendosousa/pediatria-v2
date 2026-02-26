@@ -30,6 +30,7 @@ export interface ClaraState {
   plan: string[];
   current_step_index: number;
   is_deep_research: boolean;
+  current_user_role: "admin" | "doctor" | "receptionist" | "patient" | "system";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -85,8 +86,14 @@ async function loadBrainFiles() {
   return { company: parts.company, rules: parts.custom_rules };
 }
 
-function buildSystemPrompt(company: string, custom_rules: string, chatId: number): string {
+function buildSystemPrompt(company: string, custom_rules: string, chatId: number, currentUserRole: string = "patient"): string {
   const now = new Date().toISOString();
+  let authorityRule = "";
+
+  if (currentUserRole === "admin" || currentUserRole === "doctor") {
+    authorityRule = `\n\n[ALERTA DE AUTORIDADE]: Você está conversando com a diretoria/médico. Qualquer instrução dada aqui é uma REGRA DE NEGÓCIO ABSOLUTA. Atualize sua memória sobrescrevendo regras antigas quando solicitado.`;
+  }
+
   return `${CLARA_SYSTEM_PROMPT}
 
 ════════════════════════════════════════════
@@ -103,7 +110,8 @@ ${custom_rules || "Nenhuma regra personalizada adicionada ainda."}
 SESSÃO ATUAL
 ════════════════════════════════════════════
 DATA E HORA: ${now}
-CHAT ID: ${chatId}`;
+CHAT ID: ${chatId}
+PERFIL DO USUÁRIO: ${currentUserRole}${authorityRule}`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,6 +149,10 @@ const claraWorkflow = new StateGraph<ClaraState>({
     is_deep_research: {
       reducer: (_x: boolean, y: boolean) => typeof y === "boolean" ? y : _x ?? false,
       default: () => false,
+    },
+    current_user_role: {
+      reducer: (_x: any, y: any) => y ?? _x ?? "patient",
+      default: () => "patient" as const,
     },
   },
 });
@@ -427,7 +439,7 @@ claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
   });
 
   const modelWithTools = model.bindTools(claraTools);
-  const systemPrompt = buildSystemPrompt(company, rules, state.chat_id);
+  const systemPrompt = buildSystemPrompt(company, rules, state.chat_id, state.current_user_role);
 
   // CORREÇÃO: Garante que haja pelo menos um HumanMessage.
   const safeMessages = state.messages.length > 0

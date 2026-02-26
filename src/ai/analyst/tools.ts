@@ -112,6 +112,11 @@ const keywordSearchSchema = z.object({
   keyword: z.string().describe("Termo para busca textual nas mensagens."),
 });
 
+const aggregatedInsightsSchema = z.object({
+  start_date: z.string().describe("Data inicial em ISO string."),
+  end_date: z.string().describe("Data final em ISO string."),
+});
+
 // ----------------------------------------------------------------------
 // TOOLS
 // ----------------------------------------------------------------------
@@ -334,9 +339,65 @@ export const searchChatsByKeywordTool = new DynamicStructuredTool({
   },
 });
 
+export const getAggregatedInsightsTool = new DynamicStructuredTool({
+  name: "get_aggregated_insights",
+  description:
+    "Ferramenta OBRIGATÓRIA para resumos e relatórios de alto nível. Consulta a tabela de chat_insights e traz estatísticas agregadas ultra-rápidas do período: tópicos mais frequentes, principais objeções e decisões tomadas. Use para responder perguntas amplas antes de detalhar.",
+  schema: aggregatedInsightsSchema,
+  func: async ({ start_date, end_date }) => {
+    const { startIso, endIso } = normalizeDateRange(start_date, end_date);
+    const supabase = getSupabaseAdminClient();
+
+    const pageSize = 1000;
+    let offset = 0;
+    const allInsights: Array<{ topico: string | null; decisao: string | null; novo_conhecimento: boolean | null }> = [];
+
+    while (true) {
+      const { data, error } = await supabase
+        .from("chat_insights")
+        .select("topico, decisao, novo_conhecimento")
+        .gte("created_at", startIso)
+        .lte("created_at", endIso)
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        throw new Error(`Falha ao consultar insights agregados: ${error.message}`);
+      }
+      if (!data || data.length === 0) break;
+
+      allInsights.push(...data as any[]);
+      if (data.length < pageSize) break;
+      offset += pageSize;
+    }
+
+    const topicsCount: Record<string, number> = {};
+    const decisionsCount: Record<string, number> = {};
+    let novosConhecimentosCount = 0;
+
+    for (const row of allInsights) {
+      const topic = row.topico?.trim() || "Indefinido";
+      const decision = row.decisao?.trim() || "Indefinido";
+      topicsCount[topic] = (topicsCount[topic] || 0) + 1;
+      decisionsCount[decision] = (decisionsCount[decision] || 0) + 1;
+      if (row.novo_conhecimento) novosConhecimentosCount++;
+    }
+
+    const sortMap = (map: Record<string, number>) => Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([k, v]) => `${k} (${v}x)`);
+
+    return JSON.stringify({
+      period: { start_date: startIso, end_date: endIso },
+      total_insights_analisados: allInsights.length,
+      top_topicos: sortMap(topicsCount),
+      top_decisoes_e_objecoes: sortMap(decisionsCount),
+      novos_conhecimentos_extraidos: novosConhecimentosCount
+    });
+  },
+});
+
 export const analystTools = [
   getAttendanceOverviewMetricsTool,
   getFilteredChatsListTool,
   getChatCascadeHistoryTool,
   searchChatsByKeywordTool,
+  getAggregatedInsightsTool,
 ];
