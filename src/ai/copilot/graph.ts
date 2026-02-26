@@ -36,7 +36,7 @@ const copilotWorkflow = new StateGraph<CopilotState>({
 copilotWorkflow.addNode("agent", async (state: CopilotState) => {
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-2.0-flash",
-    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+    apiKey: process.env.GOOGLE_API_KEY,
     temperature: 0.1,
   });
 
