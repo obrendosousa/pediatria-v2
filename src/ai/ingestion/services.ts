@@ -1,13 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 
-const DEBUG_LOG_ENDPOINT = "http://127.0.0.1:7242/ingest/4058191e-4081-4adb-b80d-3c22067fcea5";
-const debugLog = (payload: Record<string, unknown>) =>
-  fetch(DEBUG_LOG_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  }).catch(() => {});
-
 // Função auxiliar para pegar cliente supabase no server action/route
 async function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -270,35 +262,8 @@ export async function saveMessageToDb(payload: {
   forwarded?: boolean;
 }) {
   const supabase = await getSupabase();
-  // #region agent log
-  debugLog({
-    runId: "pre-fix",
-    hypothesisId: "H5",
-    location: "ingestion/services.ts:saveMessageToDb-entry",
-    message: "Saving incoming/outgoing message",
-    data: {
-      chatId: payload.chat_id,
-      sender: payload.sender,
-      type: payload.type,
-      hasMedia: Boolean(payload.media_url),
-    },
-    timestamp: Date.now(),
-  });
-  // #endregion
 
   if (payload.type === "reaction") {
-    // #region agent log
-    debugLog({
-      runId: "post-fix",
-      hypothesisId: "H5",
-      location: "ingestion/services.ts:saveMessageToDb-skip-reaction",
-      message: "Skipping chat_messages insert for reaction type",
-      data: {
-        chatId: payload.chat_id,
-      },
-      timestamp: Date.now(),
-    });
-    // #endregion
     return;
   }
 
@@ -334,20 +299,6 @@ export async function saveMessageToDb(payload: {
       return;
     }
 
-    // #region agent log
-    debugLog({
-      runId: "post-fix",
-      hypothesisId: "H5",
-      location: "ingestion/services.ts:saveMessageToDb-insert-error",
-      message: "Failed to insert message",
-      data: {
-        chatId: payload.chat_id,
-        sender: payload.sender,
-        error: error.message,
-      },
-      timestamp: Date.now(),
-    });
-    // #endregion
     console.error("Erro fatal ao salvar mensagem:", error);
     return;
   }
@@ -400,35 +351,10 @@ export async function saveMessageToDb(payload: {
     }
   }
 
-  const { error: chatUpdateError } = await supabase
+  await supabase
     .from("chats")
     .update(chatUpdatePayload)
     .eq("id", payload.chat_id);
-
-  const { data: chatAfterUpdate } = await supabase
-    .from("chats")
-    .select("id, unread_count, last_message_sender, last_interaction_at")
-    .eq("id", payload.chat_id)
-    .maybeSingle();
-
-  // #region agent log
-  debugLog({
-    runId: "post-fix",
-    hypothesisId: "H5",
-    location: "ingestion/services.ts:after-chat-update",
-    message: "Chat row state after server-side update",
-    data: {
-      chatId: payload.chat_id,
-      sender: payload.sender,
-      chatUpdateError: chatUpdateError?.message || null,
-      unreadCount: Number(chatAfterUpdate?.unread_count || 0),
-      lastMessageSender: String(chatAfterUpdate?.last_message_sender || ""),
-      messageCreatedAt,
-      isNewerOrEqual,
-    },
-    timestamp: Date.now(),
-  });
-  // #endregion
 }
 
 /**

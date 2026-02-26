@@ -3,14 +3,6 @@ import { NextResponse } from "next/server";
 import { EvolutionWebhookData } from "@/ai/ingestion/state";
 import { createClient } from "@supabase/supabase-js";
 
-const DEBUG_LOG_ENDPOINT = "http://127.0.0.1:7242/ingest/4058191e-4081-4adb-b80d-3c22067fcea5";
-const debugLog = (payload: Record<string, unknown>) =>
-  fetch(DEBUG_LOG_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  }).catch(() => {});
-
 // Política anti-restauração: após reconnect, ignora backlog/histórico e segue apenas mensagens novas.
 const INGESTION_START_TS_MS = Date.now();
 const INCOMING_CLOCK_SKEW_MS = 30_000;
@@ -579,20 +571,6 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
 
     const persistedIngestionGraph = await getPersistedIngestionGraph();
     for (const message of messages) {
-      // #region agent log
-      debugLog({
-        runId: "pre-fix",
-        hypothesisId: "H1",
-        location: "webhook/route.ts:for-message-start",
-        message: "Incoming normalized message",
-        data: {
-          wppId: String(message.key?.id || ""),
-          fromMe: Boolean(message.key?.fromMe),
-          messageType: String(message.messageType || ""),
-        },
-        timestamp: Date.now(),
-      });
-      // #endregion
       const wppId = String(message.key?.id || "").trim();
       if (wppId && (await alreadyProcessedByWppId(wppId))) {
         continue;
@@ -629,61 +607,25 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
         }
       );
 
-      // --- NOVA INTEGRAÇÃO DO COPILOTO ---
-      // Busca o chat_id no banco de dados da mensagem que a ingestão acabou de salvar
-      const supabase = getSupabase();
-      const { data: savedMsg } = await supabase
-        .from("chat_messages")
-        .select("chat_id")
-        .eq("wpp_id", wppId)
-        .maybeSingle();
-
-      // Aciona o Copiloto apenas para mensagens RECEBIDAS do paciente (não para eco de mensagens enviadas pela clínica)
+      // --- INTEGRAÇÃO DO COPILOTO ---
+      // Usa o chat_id diretamente do resultado da ingestão — mais confiável do que fazer
+      // uma segunda query ao banco pelo wpp_id (que pode ser vazio ou ainda não indexado).
+      const chatIdFromIngestion = (ingestionResult as any)?.chat_id as number | undefined;
       const isFromPatient = !message.key?.fromMe;
-      if (savedMsg?.chat_id && isFromPatient) {
-        console.log(`🤖 [WEBHOOK] Acionando Copiloto para o chat_id: ${savedMsg.chat_id}`);
-        // Determina a URL base dinamicamente (útil para localhost ou Vercel em produção)
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+      const shouldContinue = (ingestionResult as any)?.should_continue !== false;
+
+      if (chatIdFromIngestion && isFromPatient && shouldContinue) {
+        console.log(`🤖 [WEBHOOK] Acionando Copiloto para o chat_id: ${chatIdFromIngestion}`);
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
                         (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-        
-        // Dispara o acionamento via POST em "background" (sem 'await' para não atrasar a Evolution API)
+        // Dispara em background para não atrasar a resposta ao webhook da Evolution
         fetch(`${baseUrl}/api/ai/copilot/trigger`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: savedMsg.chat_id })
+          body: JSON.stringify({ chat_id: chatIdFromIngestion })
         }).catch(err => console.error("🚨 [WEBHOOK] Erro ao acionar o Copiloto:", err));
       }
       // -----------------------------------
-
-      // #region agent log
-      debugLog({
-        runId: "pre-fix",
-        hypothesisId: "H1",
-        location: "webhook/route.ts:after-ingestion-invoke",
-        message: "Message sent to ingestion graph",
-        data: {
-          wppId,
-          remoteJid: String(message.key?.remoteJid || ""),
-          jid_original:
-            String((ingestionResult as Record<string, unknown>)?.source_jid ?? message.key?.remoteJid ?? ""),
-          jid_resolvido:
-            String((ingestionResult as Record<string, unknown>)?.resolved_jid ?? message.key?.remoteJid ?? ""),
-          resolver_strategy: String(
-            (ingestionResult as Record<string, unknown>)?.resolver_strategy ?? "direct"
-          ),
-          resolver_latency_ms: Number(
-            (ingestionResult as Record<string, unknown>)?.resolver_latency_ms ?? 0
-          ),
-          resolver_error:
-            (ingestionResult as Record<string, unknown>)?.resolver_error
-              ? String((ingestionResult as Record<string, unknown>)?.resolver_error)
-              : null,
-          should_continue: Boolean((ingestionResult as Record<string, unknown>)?.should_continue ?? true),
-          fromMe: Boolean(message.key?.fromMe),
-        },
-        timestamp: Date.now(),
-      });
-      // #endregion
     }
 
     return NextResponse.json({ status: "processed", messages: messages.length });

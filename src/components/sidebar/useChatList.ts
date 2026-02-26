@@ -5,13 +5,6 @@ import { get, set, TTL_CHATS_LIST_MS, TTL_TAGS_MS } from '@/lib/chatCache';
 import { Chat } from '@/types';
 import { TagData } from '@/utils/sidebarUtils';
 
-const DEBUG_LOG_ENDPOINT = "http://127.0.0.1:7242/ingest/4058191e-4081-4adb-b80d-3c22067fcea5";
-const debugLog = (payload: Record<string, unknown>) =>
-  fetch(DEBUG_LOG_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  }).catch(() => {});
 
 export interface UseChatListOptions {
   confirm?: (message: string, title?: string) => Promise<boolean>;
@@ -102,23 +95,6 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
       // ----------------------------------
 
       const sortedChats = sortChats(fetchedData);
-      
-      debugLog({
-        runId: 'pre-fix',
-        hypothesisId: 'H2',
-        location: 'useChatList.ts:fetchChats-after-query',
-        message: 'Fetched chats for sidebar',
-        data: {
-          totalChats: sortedChats.length,
-          unreadChats: sortedChats.filter((c) => (c.unread_count || 0) > 0).length,
-          sample: sortedChats.slice(0, 5).map((c) => ({
-            id: c.id,
-            unread: c.unread_count || 0,
-            lastInteractionAt: c.last_interaction_at || null,
-          })),
-        },
-        timestamp: Date.now(),
-      });
       
       setChats(sortedChats);
       set(chatsListCacheKey, sortedChats, TTL_CHATS_LIST_MS);
@@ -325,30 +301,48 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
     }
 
     try {
-        const updates: any = {};
-        
-        if (action === 'pin') updates.is_pinned = !chat.is_pinned;
-        if (action === 'archive') updates.is_archived = !chat.is_archived;
-        if (action === 'unread') updates.unread_count = (chat.unread_count || 0) > 0 ? 0 : 1;
-        if (action === 'block') {
-            if (!(await askConfirm("Bloquear contato?", "Bloquear contato"))) return;
-            updates.is_blocked = !chat.is_blocked;
-        }
-
         if (action === 'delete') {
-            if (!(await askConfirm("Apagar permanentemente esta conversa?", "Excluir conversa"))) return;
+            if (!(await askConfirm("Apagar permanentemente esta conversa?", "Excluir conversa"))) return false;
             setChats(prev => prev.filter(c => c.id !== chat.id));
             await supabase.from('chat_messages').delete().eq('chat_id', chat.id);
             await supabase.from('chats').delete().eq('id', chat.id);
             return true;
         }
 
-        if (action === 'archive') {
-             setChats(prev => prev.filter(c => c.id !== chat.id));
+        const updates: any = {};
+
+        if (action === 'pin') {
+            const newPinned = !chat.is_pinned;
+            updates.is_pinned = newPinned;
+            // Atualização otimista: reflete o estado imediatamente na UI
+            setChats(prev => sortChats(prev.map(c => c.id === chat.id ? { ...c, is_pinned: newPinned } : c)));
         }
-        
+
+        if (action === 'archive') {
+            updates.is_archived = !chat.is_archived;
+            // Remove da lista atual imediatamente (seja arquivando ou desarquivando)
+            setChats(prev => prev.filter(c => c.id !== chat.id));
+        }
+
+        if (action === 'unread') {
+            const newCount = (chat.unread_count || 0) > 0 ? 0 : 1;
+            updates.unread_count = newCount;
+            // Atualização otimista: reflete o contador imediatamente na UI
+            setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread_count: newCount } : c));
+        }
+
+        if (action === 'block') {
+            if (!(await askConfirm("Bloquear contato?", "Bloquear contato"))) return false;
+            const newBlocked = !chat.is_blocked;
+            updates.is_blocked = newBlocked;
+            setChats(prev => prev.map(c => c.id === chat.id ? { ...c, is_blocked: newBlocked } : c));
+        }
+
+        if (Object.keys(updates).length === 0) return false;
+
         await supabase.from('chats').update(updates).eq('id', chat.id);
-        return false;
+        // Retorna true para archive para que o ChatWindow seja limpo ao arquivar o chat selecionado
+        return action === 'archive';
 
     } catch (e) {
         console.error("Erro na ação:", e);

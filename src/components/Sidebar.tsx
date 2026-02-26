@@ -193,8 +193,8 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
 
     setActiveMenuId(null);
 
-    const wasDeleted = action === 'delete' ? await actions.singleAction(action, chat) : false;
-    if (wasDeleted && selectedChatId === chat.id) {
+    const shouldClearSelection = await actions.singleAction(action, chat);
+    if (shouldClearSelection && selectedChatId === chat.id) {
       onSelectChat?.(null);
     }
   };
