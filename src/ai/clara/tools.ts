@@ -298,7 +298,12 @@ export const deepResearchChatsTool = new DynamicStructuredTool({
           temperature: 0.1,
         });
 
-        const mapPrompt = `Você é um operário de extração de dados. O objetivo principal é: ${objetivo_da_analise}. Leia as transcrições abaixo e extraia apenas os pontos relevantes para o objetivo. Seja conciso. Formate como uma lista de bullets com os achados mais importantes.\n\nTranscrições:\n${transcripts.join("\n\n")}`;
+        const mapPrompt = `Você é um analista de dados restrito e objetivo. Seu objetivo principal é: "${objetivo_da_analise}". 
+REGRA DE OURO: Leia as transcrições fornecidas EXATAMENTE como estão. NÃO INVENTE nomes de pacientes, doenças, preços ou situações que não estejam EXPLÍCITAS no texto. Se um chat não tiver nada relevante para o objetivo, apenas ignore-o.
+Extraia apenas os pontos relevantes. Responda em formato de lista (bullets).
+
+Transcrições para análise rigorosa:
+${transcripts.join("\n\n")}`;
 
         const response = await internalModel.invoke([new HumanMessage(mapPrompt)]);
         const insight = response.content.toString().trim();
@@ -326,9 +331,20 @@ export const deepResearchChatsTool = new DynamicStructuredTool({
         temperature: 0.1,
       });
 
-      const reducePrompt = `Aqui estão as análises parciais de ${batch_insights.length} lotes de conversas. Consolide-as em um único relatório estruturado focado no objetivo: "${objetivo_da_analise}". Remova duplicações, agrupe por tema e organize por relevância/frequência.\n\n${batch_insights
-        .map((insight, i) => `=== Análise do Lote ${i + 1} ===\n${insight}`)
-        .join("\n\n")}`;
+      const reducePrompt = `Você é um Analista de Relatórios rigoroso. 
+Aqui estão as análises parciais de ${batch_insights.length} lotes de conversas. 
+Seu DEVER é consolidar essas informações em um ÚNICO relatório estruturado focado no objetivo: "${objetivo_da_analise}".
+
+REGRAS DE OURO:
+1. NUNCA INVENTE OU DEDUZ DA PRÓPRIA MENTE. 
+2. Use EXATAMENTE os dados fornecidos nas análises parciais abaixo. 
+3. Se um paciente não for mencionado nas análises parciais, não o invente.
+4. Remova duplicações, agrupe os achados por tema e organize por relevância/frequência.
+
+ANÁLISES PARCIAIS:
+${batch_insights
+          .map((insight, i) => `=== Lote ${i + 1} ===\n${insight}`)
+          .join("\n\n")}`;
 
       const consolidated = await consolidationModel.invoke([new HumanMessage(reducePrompt)]);
       return consolidated.content.toString();

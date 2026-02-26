@@ -30,6 +30,7 @@ export interface ClaraState {
   plan: string[];
   current_step_index: number;
   is_deep_research: boolean;
+  is_planning_phase: boolean;
   current_user_role: "admin" | "doctor" | "receptionist" | "patient" | "system";
 }
 
@@ -150,6 +151,10 @@ const claraWorkflow = new StateGraph<ClaraState>({
       reducer: (_x: boolean, y: boolean) => typeof y === "boolean" ? y : _x ?? false,
       default: () => false,
     },
+    is_planning_phase: {
+      reducer: (_x: boolean, y: boolean) => typeof y === "boolean" ? y : _x ?? false,
+      default: () => false,
+    },
     current_user_role: {
       reducer: (_x: any, y: any) => y ?? _x ?? "patient",
       default: () => "patient" as const,
@@ -234,18 +239,36 @@ claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
   }
 
   // ── Fast-path: classificação por heurísticas sem LLM ─────────────────────
-  const fastResult = classifyMessageFast(userText);
-  if (fastResult === "simple") {
-    return { is_deep_research: false };
+
+  // Verifica se o usuário enviou a mensagem com a flag [PLANEJAR]
+  const isPlanMode = userText.startsWith("[PLANEJAR] ");
+  const cleanUserText = isPlanMode ? userText.replace("[PLANEJAR] ", "") : userText;
+
+  const fastResult = classifyMessageFast(cleanUserText);
+  if (fastResult === "simple" && !isPlanMode) {
+    return { is_deep_research: false, is_planning_phase: false };
   }
-  if (fastResult === "complex") {
+
+  if (fastResult === "complex" || isPlanMode) {
     const plan = [
       "Buscar a lista de chats relevantes para a análise solicitada.",
       "Executar análise profunda nos chats encontrados e compilar os insights.",
     ];
-    await saveStatusMessage(plan);
+
+    if (isPlanMode) {
+      await saveStatusMessage(plan);
+      return {
+        is_deep_research: true,
+        is_planning_phase: true, // Pausa o workflow
+        plan,
+        current_step_index: 0,
+      };
+    }
+
+    // Se não estivar no modo planejamento explicito (execução real ativada)
     return {
       is_deep_research: true,
+      is_planning_phase: false,
       plan,
       current_step_index: 0,
     };
@@ -292,11 +315,14 @@ Responda APENAS:
   }
 
   if (isComplex && plan.length > 0) {
-    await saveStatusMessage(plan);
-    return { is_deep_research: true, plan, current_step_index: 0 };
+    if (isPlanMode) {
+      await saveStatusMessage(plan);
+      return { is_deep_research: true, is_planning_phase: true, plan, current_step_index: 0 };
+    }
+    return { is_deep_research: true, is_planning_phase: false, plan, current_step_index: 0 };
   }
 
-  return { is_deep_research: false };
+  return { is_deep_research: false, is_planning_phase: false };
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -464,7 +490,10 @@ claraWorkflow.addNode("tools", new ToolNode(claraTools));
 claraWorkflow.addEdge(START, "router_and_planner_node");
 
 // @ts-expect-error
-claraWorkflow.addConditionalEdges("router_and_planner_node", (state: ClaraState) => state.is_deep_research ? "executor_node" : "simple_agent");
+claraWorkflow.addConditionalEdges("router_and_planner_node", (state: ClaraState) => {
+  if (state.is_planning_phase) return END; // Pausa após gerar o plano no painel (que envia via saveStatusMessage)
+  return state.is_deep_research ? "executor_node" : "simple_agent";
+});
 
 // @ts-expect-error
 claraWorkflow.addConditionalEdges("executor_node", (state: ClaraState) => state.current_step_index >= state.plan.length ? "reporter_node" : "executor_node");
