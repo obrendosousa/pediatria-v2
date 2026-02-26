@@ -2,6 +2,7 @@ import { AIMessage, BaseMessage, SystemMessage, HumanMessage } from "@langchain/
 import { START, StateGraph } from "@langchain/langgraph";
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { copilotTools } from "./tools";
 
 export interface CopilotState {
@@ -43,6 +44,51 @@ copilotWorkflow.addNode("agent", async (state: CopilotState) => {
 
   const now = new Date().toISOString();
 
+  // ── RAG: busca exemplos aprovados pela secretária para few-shot prompting ──
+  let fewShotBlock = "";
+  try {
+    const supabase = getSupabaseAdminClient();
+
+    // Extrai a última mensagem do paciente para usar como query de busca
+    const historyLines = (state.chat_history || "").split("\n").reverse();
+    const lastPatientLine = historyLines.find(
+      (line) => line.includes(`${state.patient_name}:`) || line.toLowerCase().includes("paciente:")
+    ) || historyLines[0] || "";
+
+    // Obtém a primeira palavra significativa (>4 chars) para o ilike
+    const searchWord = lastPatientLine
+      .replace(/^\[[\d:]+\]\s*[^:]+:\s*/, "")
+      .trim()
+      .split(/\s+/)
+      .find((w) => w.length > 4) || "";
+
+    if (searchWord) {
+      const { data: examples } = await (supabase as any)
+        .from("knowledge_base")
+        .select("pergunta, resposta_ideal")
+        .eq("categoria", "copiloto_feedback")
+        .ilike("pergunta", `%${searchWord}%`)
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (examples && examples.length > 0) {
+        fewShotBlock =
+          `\n\nEXEMPLOS DE RESPOSTAS APROVADAS PELA SECRETÁRIA (use como referência de tom e formato):\n` +
+          examples
+            .map(
+              (ex: any, i: number) =>
+                `[${i + 1}] Resposta aprovada: "${ex.resposta_ideal}"`
+            )
+            .join("\n");
+        console.log(`🎯 [Copiloto RAG] ${examples.length} exemplo(s) encontrado(s) para "${searchWord}".`);
+      }
+    }
+  } catch (ragError) {
+    // RAG é best-effort: falha silenciosamente para não bloquear a sugestão
+    console.warn("[Copiloto RAG] Falha na busca de exemplos:", ragError);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   const SYSTEM_PROMPT = `Você é o Agente Copiloto de Atendimento de uma clínica de saúde.
 Sua função é analisar a "Janela Deslizante" (o histórico recente) da conversa com o paciente e decidir OBRIGATORIAMENTE uma ação através das suas ferramentas.
 
@@ -57,7 +103,7 @@ REGRAS DE CONDUTA E LÓGICA:
 6. Use SEMPRE um tom de voz empático, profissional e acolhedor, típico de uma clínica de alto padrão.
 7. Nunca ofereça descontos a menos que isso tenha sido explicitamente autorizado no histórico.
 
-NOME DO PACIENTE PARA CONTEXTO: ${state.patient_name || "Paciente"}`;
+NOME DO PACIENTE PARA CONTEXTO: ${state.patient_name || "Paciente"}${fewShotBlock}`;
 
   const HUMAN_PROMPT = `Aqui está o histórico cronológico exato da conversa:
 -------------------------------------------------

@@ -59,6 +59,32 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     setPreviewMedia(null);
   }, [chat?.id]);
 
+  // Sincroniza o estado local com o prop ao trocar de conversa
+  useEffect(() => {
+    setAiDraftText(chat?.ai_draft_reply ?? null);
+    setAiDraftReason(chat?.ai_draft_reason ?? null);
+  }, [chat?.id, chat?.ai_draft_reply, chat?.ai_draft_reason]);
+
+  // Subscrição Realtime: captura drafts gerados pelo Copiloto após o carregamento inicial
+  useEffect(() => {
+    if (!chat?.id) return;
+
+    const channel = supabase
+      .channel(`copilot-draft-${chat.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'chats', filter: `id=eq.${chat.id}` },
+        (payload) => {
+          const updated = payload.new as any;
+          setAiDraftText(updated.ai_draft_reply ?? null);
+          setAiDraftReason(updated.ai_draft_reason ?? null);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [chat?.id]);
+
   // Prefetch da lista de chats para o modal de encaminhar (abre instantâneo)
   useEffect(() => {
     if (!chat?.id || String(chat.id).startsWith('new_')) {
@@ -127,6 +153,10 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const [editingMessage, setEditingMessage] = useState<any>(null);
   const [forwardMessage, setForwardMessage] = useState<Message | null>(null);
   const [forwardChatsCache, setForwardChatsCache] = useState<Chat[] | null>(null);
+
+  // Estado reativo do draft da IA (atualizado em tempo real via Supabase Realtime)
+  const [aiDraftText, setAiDraftText] = useState<string | null>(chat?.ai_draft_reply ?? null);
+  const [aiDraftReason, setAiDraftReason] = useState<string | null>(chat?.ai_draft_reason ?? null);
 
   const handleSendFile = useCallback(async (file: File | Blob, caption: string, typeOverride?: string, metadata?: any) => {
     if (!chat) return;
@@ -469,24 +499,49 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
 
   const handleClearDraft = useCallback(async () => {
     if (!chat) return;
+    const capturedDraft = aiDraftText;
+    // Limpa a UI imediatamente (sem aguardar a rede)
+    setAiDraftText(null);
+    setAiDraftReason(null);
     try {
-      await supabase
-        .from('chats')
-        .update({ ai_draft_reply: null, ai_draft_reason: null })
-        .eq('id', chat.id);
-
-      chat.ai_draft_reply = null;
-      chat.ai_draft_reason = null;
+      await fetch('/api/ai/copilot/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chat.id,
+          action: 'discarded',
+          original_context: conversationSummary,
+          draft_text: capturedDraft,
+          final_text: null,
+        }),
+      });
     } catch (e) {
-      console.error('Falha ao limpar rascunho:', e);
+      console.error('Falha ao registrar descarte do draft:', e);
     }
-  }, [chat]);
+  }, [chat, aiDraftText, conversationSummary]);
 
   const handleApproveDraft = useCallback(async (text: string) => {
+    // Limpa a UI imediatamente antes de enviar
+    setAiDraftText(null);
+    setAiDraftReason(null);
     await handleSendMessage(text);
-    await handleClearDraft();
     toast.success('Sugestão enviada!');
-  }, [handleSendMessage, handleClearDraft, toast]);
+    try {
+      await fetch('/api/ai/copilot/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chat?.id,
+          action: 'approved',
+          original_context: conversationSummary,
+          draft_text: text,
+          final_text: text,
+        }),
+      });
+    } catch (e) {
+      console.error('Falha ao registrar aprovação do draft:', e);
+    }
+  }, [handleSendMessage, chat?.id, conversationSummary, toast]);
 
   useEffect(() => {
     const onShortcut = (e: KeyboardEvent) => {
@@ -609,12 +664,12 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           onPreviewVideo={(src) => setPreviewMedia({ src, type: 'video' })}
         />
 
-        {/* Banner de Sugestão da IA Logo Acima do Input */}
-        {chat?.ai_draft_reply && (
+        {/* Banner de Sugestão da IA Logo Acima do Input — reativo via Supabase Realtime */}
+        {aiDraftText && (
           <div className="z-10 bg-gradient-to-t from-[#efeae2] dark:from-[#0b141a] pt-2 pb-1">
             <AIDraftBanner
-              draftText={chat.ai_draft_reply}
-              draftReason={chat.ai_draft_reason || ''}
+              draftText={aiDraftText}
+              draftReason={aiDraftReason || ''}
               onApprove={handleApproveDraft}
               onDiscard={handleClearDraft}
             />
