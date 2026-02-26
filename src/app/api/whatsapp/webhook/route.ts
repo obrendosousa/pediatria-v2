@@ -629,6 +629,32 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
         }
       );
 
+      // --- NOVA INTEGRAÇÃO DO COPILOTO ---
+      // Busca o chat_id no banco de dados da mensagem que a ingestão acabou de salvar
+      const supabase = getSupabase();
+      const { data: savedMsg } = await supabase
+        .from("chat_messages")
+        .select("chat_id")
+        .eq("wpp_id", wppId)
+        .maybeSingle();
+
+      // Aciona o Copiloto apenas para mensagens RECEBIDAS do paciente (não para eco de mensagens enviadas pela clínica)
+      const isFromPatient = !message.key?.fromMe;
+      if (savedMsg?.chat_id && isFromPatient) {
+        console.log(`🤖 [WEBHOOK] Acionando Copiloto para o chat_id: ${savedMsg.chat_id}`);
+        // Determina a URL base dinamicamente (útil para localhost ou Vercel em produção)
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+        
+        // Dispara o acionamento via POST em "background" (sem 'await' para não atrasar a Evolution API)
+        fetch(`${baseUrl}/api/ai/copilot/trigger`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: savedMsg.chat_id })
+        }).catch(err => console.error("🚨 [WEBHOOK] Erro ao acionar o Copiloto:", err));
+      }
+      // -----------------------------------
+
       // #region agent log
       debugLog({
         runId: "pre-fix",

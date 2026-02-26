@@ -1,32 +1,36 @@
-import { 
-  FileText, 
-  Mic, 
-  Image as ImageIcon, 
-  Scroll, 
-  Workflow, 
-  CalendarClock, 
-  Search, 
-  Clock, 
-  Edit2, 
-  Trash2, 
-  Send, 
-  Loader2, 
-  Plus, 
-  Play, 
-  Orbit, 
+import {
+  FileText,
+  Mic,
+  Image as ImageIcon,
+  Scroll,
+  Workflow,
+  CalendarClock,
+  Search,
+  Clock,
+  Edit2,
+  Trash2,
+  Send,
+  Loader2,
+  Plus,
+  Play,
+  Orbit,
   Sparkles,
   CircleDashed,
   ChevronsRight,
-  Menu
+  Menu,
+  BotMessageSquare,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import AudioMessage from './AudioMessage'; 
+import AudioMessage from './AudioMessage';
 import { Macro, Funnel, ScheduledMessage } from '@/types';
-import { ExecutionItem } from '@/hooks/useChatAutomation'; 
+import { ExecutionItem } from '@/hooks/useChatAutomation';
+import CopilotChat from './CopilotChat';
 
 interface ChatSidebarProps {
-  activeTab: 'text' | 'audio' | 'image' | 'script' | 'funnels' | 'schedule' | 'executions' | null;
-  setActiveTab: (tab: 'text' | 'audio' | 'image' | 'script' | 'funnels' | 'schedule' | 'executions' | null) => void;
+  activeTab: 'text' | 'audio' | 'image' | 'script' | 'funnels' | 'schedule' | 'executions' | 'copiloto' | null;
+  setActiveTab: (tab: 'text' | 'audio' | 'image' | 'script' | 'funnels' | 'schedule' | 'executions' | 'copiloto' | null) => void;
+  chatId: number;
+  patientName: string;
   macros: Macro[];
   funnels: Funnel[];
   scheduledMessages: ScheduledMessage[];
@@ -52,6 +56,8 @@ interface ChatSidebarProps {
 export default function ChatSidebar({
   activeTab,
   setActiveTab,
+  chatId,
+  patientName,
   macros,
   funnels,
   scheduledMessages,
@@ -159,6 +165,7 @@ export default function ChatSidebar({
                               {activeTab === 'funnels' && <><Workflow size={18} className="text-indigo-500"/> Funis Automáticos</>}
                               {activeTab === 'schedule' && <><CalendarClock size={18} className="text-pink-500"/> Agenda de Envios</>}
                               {activeTab === 'executions' && <><Orbit size={18} className="text-cyan-500"/> Centro de Execução</>}
+                              {activeTab === 'copiloto' && <><BotMessageSquare size={18} className="text-violet-500"/> Copiloto IA</>}
                           </h3>
                           <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Atalhos: Alt+1..5, Ctrl/Cmd+K</p>
                         </div>
@@ -168,7 +175,7 @@ export default function ChatSidebar({
                     </div>
 
                     {/* Barra de Busca */}
-                    {activeTab !== 'schedule' && activeTab !== 'executions' && (
+                    {activeTab !== 'schedule' && activeTab !== 'executions' && activeTab !== 'copiloto' && (
                         <div className="px-4 py-3 bg-white dark:bg-[#202c33] border-b border-gray-100 dark:border-gray-700 transition-colors">
                             <div className="relative group">
                                 <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
@@ -182,9 +189,17 @@ export default function ChatSidebar({
                         </div>
                     )}
 
-                    {/* --- CONTEÚDO SCROLLÁVEL --- */}
+                    {/* --- ABA COPILOTO (sem padding extra, ocupa todo o espaço) --- */}
+                    {activeTab === 'copiloto' && (
+                        <div className="flex-1 overflow-hidden">
+                            <CopilotChat chatId={chatId} patientName={patientName} />
+                        </div>
+                    )}
+
+                    {/* --- CONTEÚDO SCROLLÁVEL (demais abas) --- */}
+                    {activeTab !== 'copiloto' && (
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-gray-50/50 dark:bg-[#111b21] transition-colors">
-                        
+
                         {/* 1. LISTA DE EXECUÇÕES */}
                         {activeTab === 'executions' && (
                             <div className="space-y-3">
@@ -523,9 +538,10 @@ export default function ChatSidebar({
                             </>
                         )}
                     </div>
+                    )} {/* fim: activeTab !== 'copiloto' */}
 
                     {/* Footer do Painel (Botão Criar para templates) */}
-                    {['text', 'audio', 'image', 'script', 'funnels'].includes(activeTab) && (
+                    {['text', 'audio', 'image', 'script', 'funnels'].includes(activeTab ?? '') && (
                         <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-[#202c33] shrink-0 transition-colors">
                             <button 
                                 onClick={() => {
@@ -581,6 +597,10 @@ export default function ChatSidebar({
             {renderSidebarIcon({ id:"schedule", icon:CalendarClock, label:"Agenda", colorClass:"bg-pink-600" })}
 
             <div className="flex-1" />
+
+            {/* Grupo: IA */}
+            {renderSidebarIcon({ id: "copiloto", icon: BotMessageSquare, label: "Copiloto IA", colorClass: "bg-violet-600" })}
+
             <button
                 onClick={() => setActiveTab(null)}
                 className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition-all text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"

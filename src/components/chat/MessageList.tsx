@@ -2,9 +2,16 @@
 
 import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { ChevronDown, Trash2, X } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 import { Message, Chat } from '@/types';
 import MessageBubble from './MessageBubble';
+import ClaraStatusIndicator from './ClaraStatusIndicator';
 import { useToast } from '@/contexts/ToastContext';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface MessageListProps {
   messages: Message[];
@@ -126,6 +133,36 @@ export default function MessageList({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<Array<number | string>>([]);
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+  const [claraStatus, setClaraStatus] = useState<string | null>(null);
+
+  // Variável segura para identificar o chat da IA
+  const isAIChat = chat?.phone === '00000000000';
+
+  // Subscrição ao canal de broadcast da Clara para receber status em tempo real
+  useEffect(() => {
+    if (!isAIChat || !chat?.id) return;
+
+    setClaraStatus(null);
+
+    const channel = supabase
+      .channel(`clara:${chat.id}`)
+      .on('broadcast', { event: 'status' }, ({ payload }) => {
+        if (payload?.status === 'done') {
+          setClaraStatus(null);
+        } else {
+          setClaraStatus(payload?.status ?? null);
+          // Auto-scroll para mostrar o indicador
+          requestAnimationFrame(() => {
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [chat?.id, isAIChat]);
 
   // Defesa extra: evita múltiplos "Esta mensagem foi apagada" idênticos.
   const dedupedMessages = useMemo(() => {
@@ -139,9 +176,7 @@ export default function MessageList({
     });
   }, [messages]);
 
-  // Memoizar todas as mensagens combinadas evitando duplicatas:
-  // - Exclui pending cuja mensagem foi revogada OU que já tem correspondente real
-  // - CRÍTICO: quando há revoked, o pending NUNCA deve aparecer (substituir no lugar, não duplicar)
+  // Memoizar todas as mensagens combinadas evitando duplicatas
   const allMessages = useMemo(() => {
     const revokedList = dedupedMessages.filter((m) => (m as any).message_type === 'revoked');
     const revokedTimes = revokedList.map((m) => new Date(m.created_at).getTime());
@@ -149,29 +184,40 @@ export default function MessageList({
       const pTime = new Date(p.created_at || 0).getTime();
       const pText = (p.message_text || '').trim();
       const pIsFromMe = p.sender === 'HUMAN_AGENT' || p.sender === 'me';
-      // Exclui se há revoked no mesmo horário (janela 10s — cobre race conditions)
+      
       if (revokedTimes.some((t) => Math.abs(t - pTime) < 10000)) return false;
-      // Exclui se já tem real correspondente (mesmo texto/hora)
+      
       const hasReal = dedupedMessages.some((m) => {
         const mTime = new Date(m.created_at).getTime();
         const mText = (m.message_text || '').trim();
         const mIsFromMe = m.sender === 'HUMAN_AGENT' || m.sender === 'me';
         return pIsFromMe && mIsFromMe && mText === pText && Math.abs(mTime - pTime) < 3000;
       });
-      // Fallback: se existir qualquer real enviado por mim na mesma janela, não duplica pending
+      
       const hasRealNearTime = dedupedMessages.some((m) => {
         const mTime = new Date(m.created_at).getTime();
         const mIsFromMe = m.sender === 'HUMAN_AGENT' || m.sender === 'me';
         return pIsFromMe && mIsFromMe && Math.abs(mTime - pTime) < 10000;
       });
+      
       return !hasReal && !hasRealNearTime;
     });
+    
     return [...dedupedMessages, ...filteredPending].sort((a, b) => {
       const t = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       if (t !== 0) return t;
       return String(a.id).localeCompare(String(b.id));
     });
   }, [dedupedMessages, pendingMessages]);
+
+  // Limpa o indicador quando a resposta da Clara chega (fallback de segurança)
+  useEffect(() => {
+    if (!isAIChat) return;
+    const lastMsg = allMessages[allMessages.length - 1];
+    if (lastMsg?.sender === 'contact') {
+      setClaraStatus(null);
+    }
+  }, [allMessages, isAIChat]);
 
   const selectedMessages = useMemo(
     () => allMessages.filter((msg) => selectedMessageIds.includes(msg.id)),
@@ -182,37 +228,29 @@ export default function MessageList({
     prevLengthRef.current = allMessages.length;
   }, [allMessages.length]);
 
-  // Memoizar data de hoje para evitar recriação
   const todayDateString = useMemo(() => new Date().toLocaleDateString(), []);
 
-  // Ao abrir um chat, sempre rolar até a última mensagem
   useEffect(() => {
-    lastMessageCountRef.current = 0; // Força scroll quando mensagens carregarem
+    lastMessageCountRef.current = 0;
     shouldAutoScrollRef.current = true;
     setShowScrollToBottom(false);
     requestAnimationFrame(() => {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     });
-  }, [chat.id]);
+  }, [chat?.id]);
 
-  // Auto-scroll inteligente - apenas quando novas mensagens chegam
   useEffect(() => {
     const newMessageCount = allMessages.length;
     const hadNewMessages = newMessageCount > lastMessageCountRef.current;
     lastMessageCountRef.current = newMessageCount;
 
-    // Só faz scroll se:
-    // 1. Houve novas mensagens
-    // 2. O usuário não está scrollado para cima (dentro de 200px do bottom)
     if (hadNewMessages && shouldAutoScrollRef.current && bottomRef.current) {
       requestAnimationFrame(() => {
-        // Scroll instantâneo evita "dois pulos" (scroll + animação da mensagem)
         bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
       });
     }
   }, [allMessages.length]);
 
-  // Detectar quando usuário scrolla para cima (mostrar seta + desabilitar auto-scroll)
   const updateScrollState = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -252,15 +290,14 @@ export default function MessageList({
       observer.disconnect();
       container.removeEventListener('scroll', updateScrollState);
     };
-  }, [chat.id, updateScrollState]);
+  }, [chat?.id, updateScrollState]);
 
-  // Recalcular estado de scroll quando mensagens carregam (ex: ao trocar de chat)
   useEffect(() => {
     const id = requestAnimationFrame(() => {
       updateScrollState();
     });
     return () => cancelAnimationFrame(id);
-  }, [allMessages.length, chat.id, updateScrollState]);
+  }, [allMessages.length, chat?.id, updateScrollState]);
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -329,7 +366,6 @@ export default function MessageList({
     }
   }, [selectedMessages, isBatchDeleting, onDelete, clearSelectionMode, isMyOutgoingMessage, toast]);
 
-  // Memoizar callbacks para evitar re-renders desnecessários
   const handleDelete = useCallback((msg: Message, deleteForEveryone: boolean) => {
     onDelete(msg, deleteForEveryone);
   }, [onDelete]);
@@ -358,33 +394,26 @@ export default function MessageList({
     onPreviewVideo(url);
   }, [onPreviewVideo]);
 
-  // Memoizar renderização das mensagens
   const renderedMessages = useMemo(() => {
     return allMessages.map((msg, index) => {
       const prevMsg = allMessages[index - 1];
       const nextMsg = allMessages[index + 1];
 
-      // --- Lógica de Data (memoizada) ---
       const currentDate = new Date(msg.created_at).toLocaleDateString();
       const prevDate = prevMsg ? new Date(prevMsg.created_at).toLocaleDateString() : null;
       const showDateDivider = currentDate !== prevDate;
 
-      // --- Lógica de Sequência (Grouping) ---
       const isMe = msg.sender === 'me' || msg.sender === 'HUMAN_AGENT';
       const isRevoked = msg.message_type === 'revoked';
-      // Mensagens apagadas não agrupam (igual WhatsApp)
       const isPrevSameSender = prevMsg && !isRevoked && (prevMsg as any).message_type !== 'revoked' && (prevMsg.sender === 'me' || prevMsg.sender === 'HUMAN_AGENT') === isMe;
       const isNextSameSender = nextMsg && !isRevoked && (nextMsg as any).message_type !== 'revoked' && (nextMsg.sender === 'me' || nextMsg.sender === 'HUMAN_AGENT') === isMe;
 
-      // Define a posição na sequência para ajustar bordas
       let sequencePosition: 'single' | 'first' | 'middle' | 'last' = 'single';
       if (!isRevoked && isPrevSameSender && isNextSameSender) sequencePosition = 'middle';
       else if (!isRevoked && !isPrevSameSender && isNextSameSender) sequencePosition = 'first';
       else if (!isRevoked && isPrevSameSender && !isNextSameSender) sequencePosition = 'last';
 
       const showAvatar = !isMe && (sequencePosition === 'last' || sequencePosition === 'single');
-
-      // Anima só quando a contagem AUMENTA (nova msg). Não anima na troca otimista→real (mesma contagem)
       const isNewMessage = index === allMessages.length - 1 && allMessages.length > prevLengthRef.current && prevLengthRef.current > 0;
 
       return (
@@ -406,8 +435,8 @@ export default function MessageList({
           <MessageBubble 
             message={msg} 
             isMe={isMe}
-            chatId={chat.id}
-            chatPhoto={chat.profile_pic}
+            chatId={chat?.id}
+            chatPhoto={chat?.profile_pic}
             showAvatar={showAvatar}
             sequencePosition={sequencePosition}
             onDelete={handleDelete}
@@ -423,30 +452,33 @@ export default function MessageList({
             onToggleSelect={toggleSelectedMessage}
             onStartSelection={startSelectionMode}
             animate={isNewMessage}
+            isAIChat={isAIChat} // Repasse garantido do ID para ativar o avatar
           />
         </div>
       );
     });
   }, [
     allMessages,
-    chat.id,
-    chat.profile_pic,
+    chat?.id,
+    chat?.profile_pic,
     todayDateString,
     handleDelete,
     handleSaveMacro,
     handleReply,
     handleEdit,
     handlePreviewImage,
+    handlePreviewVideo,
     isSelectionMode,
     selectedMessageIds,
     toggleSelectedMessage,
     startSelectionMode,
     handleForward,
+    onReact,
+    isAIChat // Variável correta no array de dependências
   ]);
 
   return (
     <div className="relative flex-1 min-w-0 min-h-0 flex flex-col">
-      {/* Área de scroll - conteúdo separado do botão para evitar clipping */}
       <div
         ref={containerRef}
         className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:px-[5%] space-y-0 bg-[#efeae2] dark:bg-[#0b141a] scrollbar-thin scrollbar-thumb-black/10 dark:scrollbar-thumb-white/10"
@@ -487,10 +519,15 @@ export default function MessageList({
           </div>
         )}
         {renderedMessages}
+
+        {/* Indicador animado de status da Clara */}
+        {isAIChat && claraStatus && (
+          <ClaraStatusIndicator status={claraStatus} />
+        )}
+
         <div ref={bottomRef} className="h-4" />
       </div>
 
-      {/* Seta para rolar até a última mensagem - entrada/saída suave */}
       <button
         onClick={scrollToBottom}
         className={`absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[#00a884]/50 hover:bg-[#00a884]/70 text-white shadow-lg flex items-center justify-center z-50 transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${

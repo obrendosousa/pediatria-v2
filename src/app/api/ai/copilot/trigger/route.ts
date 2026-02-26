@@ -24,13 +24,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Chat não encontrado." }, { status: 404 });
     }
 
-    // 2. A JANELA DESLIZANTE: Busca as últimas 50 mensagens do chat
+    // 2. A JANELA DESLIZANTE: Busca as últimas 15 mensagens do chat
     const { data: messagesData, error: messagesError } = await supabase
       .from("chat_messages")
       .select("sender, message_text, message_type, created_at")
       .eq("chat_id", chat_id)
-      .order("created_at", { ascending: false }) // Pega do mais recente para o mais antigo para limitar em 50
-      .limit(50);
+      .order("created_at", { ascending: false })
+      .limit(15);
 
     if (messagesError || !messagesData || messagesData.length === 0) {
       return NextResponse.json({ message: "Nenhuma mensagem para analisar." }, { status: 200 });

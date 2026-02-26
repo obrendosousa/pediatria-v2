@@ -1,16 +1,16 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Message } from '@/types';
-import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2, Play, Smile, Plus, Forward } from 'lucide-react';
+import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2, Play, Smile, Plus, Forward, Bot } from 'lucide-react';
 import AudioMessage from './AudioMessage';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 import EmojiPicker, { Emoji, EmojiStyle, Theme } from 'emoji-picker-react';
-import FormattedMessage from '@/components/ui/FormattedMessage'; // Importação do novo componente
+import FormattedMessage from '@/components/ui/FormattedMessage';
 
 interface MessageBubbleProps {
   message: Message;
   isMe: boolean;
-  chatId: number | string; // ID do chat para determinar cor
+  chatId: number | string;
   chatPhoto?: string | null;
   showAvatar: boolean;
   sequencePosition: 'single' | 'first' | 'middle' | 'last';
@@ -27,6 +27,7 @@ interface MessageBubbleProps {
   onToggleSelect?: (msg: Message) => void;
   onStartSelection?: (msg: Message) => void;
   animate?: boolean;
+  isAIChat?: boolean;
 }
 
 export default function MessageBubble({ 
@@ -48,7 +49,8 @@ export default function MessageBubble({
   isSelected = false,
   onToggleSelect,
   onStartSelection,
-  animate = false
+  animate = false,
+  isAIChat = false
 }: MessageBubbleProps) {
   const toMacroPayload = useCallback(() => {
     const msgType = String(message.message_type || 'text').toLowerCase();
@@ -125,7 +127,6 @@ export default function MessageBubble({
     setReactionPosition({ top, left, openUp });
   }, [isMe, showEmojiPicker, MENU_OFFSET, VIEWPORT_MARGIN]);
 
-  // Recalcular posição do dropdown ao abrir (useLayoutEffect evita flash)
   useLayoutEffect(() => {
     if (!showMenu) return;
 
@@ -150,7 +151,6 @@ export default function MessageBubble({
     };
   }, [showReactionPopup, showEmojiPicker, recalculateReactionPosition]);
 
-  // Fechar menu ao clicar fora ou ao rolar (menu está em Portal)
   useEffect(() => {
     if (!showMenu && !showReactionPopup) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -171,7 +171,7 @@ export default function MessageBubble({
     };
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('scroll', handleScroll, true);
-    // Container do chat tem overflow-y-auto - scroll não propaga para window
+    
     let el: HTMLElement | null = buttonRef.current;
     const scrollParents: HTMLElement[] = [];
     while (el) {
@@ -225,7 +225,6 @@ export default function MessageBubble({
       .values()
   );
 
-  // Função para verificar se a mensagem contém APENAS emojis (para exibir grande)
   const isOnlyEmojis = (text: string) => {
     if (!text) return false;
     const cleanText = text.trim();
@@ -233,9 +232,7 @@ export default function MessageBubble({
     return emojiRegex.test(cleanText) && [...cleanText].length <= 6; 
   };
 
-  // Renderizador de Texto
   const renderTextContent = (text: string) => {
-      // 1. Se for APENAS emojis, mantém a lógica de "Big Emoji"
       if (isOnlyEmojis(text)) {
           const chars = [...text];
           return (
@@ -257,7 +254,6 @@ export default function MessageBubble({
           );
       }
 
-      // 2. Se for texto normal ou misturado, usa o FormattedMessage
       return (
         <div className="pt-1">
            <FormattedMessage text={text} />
@@ -265,7 +261,6 @@ export default function MessageBubble({
       );
   };
 
-  // Mensagens recebidas sempre brancas, enviadas verdes
   const bgClass = isSticker 
     ? 'bg-transparent shadow-none'
     : isImageMessage
@@ -295,12 +290,10 @@ export default function MessageBubble({
 
   const msgStatus = (message.status ?? (message as any).status) || 'sent';
 
-  // Mensagens apagadas: balão discreto na mesma posição (igual WhatsApp)
   const bgClassRevoked = isRevoked ? 'bg-[#e7e7e7] dark:bg-[#2a3942]' : '';
   const finalBgClass = isRevoked ? bgClassRevoked : bgClass;
 
   const renderContent = () => {
-    // 0. Mensagem apagada (igual WhatsApp - balão discreto no fluxo)
     if (isRevoked) {
       return (
         <span className="text-[#667781] dark:text-[#9aa6ad] text-[14px] line-through decoration-[1.5px]">
@@ -309,7 +302,6 @@ export default function MessageBubble({
       );
     }
 
-    // 1. Sticker
     if (isSticker && message.media_url) {
         return (
             <div className="overflow-hidden hover:scale-[1.02] transition-transform duration-200">
@@ -323,7 +315,6 @@ export default function MessageBubble({
         );
     }
 
-    // 2. Imagem
     if (message.message_type === 'image' && message.media_url) {
       const rawText = (message.message_text || '').trim();
       const normalizedText = rawText
@@ -355,7 +346,6 @@ export default function MessageBubble({
       );
     }
     
-    // 3. Áudio - dimensões fixas para evitar oscilação, proporção adequada
     if (message.message_type === 'audio' && message.media_url) {
        return (
          <div className="pt-2 pb-0 w-[280px] min-w-[240px] max-w-full">
@@ -368,7 +358,6 @@ export default function MessageBubble({
        );
     }
 
-    // 4. Vídeo
     if (message.message_type === 'video' && message.media_url) {
       const rawText = (message.message_text || '').trim();
       const normalizedText = rawText
@@ -404,7 +393,6 @@ export default function MessageBubble({
       );
     }
 
-    // 5. Documento/PDF
     if (message.message_type === 'document' && message.media_url) {
       const toolData = (message.tool_data && typeof message.tool_data === 'object' ? message.tool_data : {}) as any;
       const fileName = String(toolData.file_name || message.message_text || 'Documento');
@@ -435,7 +423,6 @@ export default function MessageBubble({
       );
     }
 
-    // 6. Texto
     return renderTextContent(message.message_text || '');
   };
 
@@ -464,24 +451,30 @@ export default function MessageBubble({
       {!isMe && (
          <div className="w-[30px] mr-2 flex flex-col justify-end shrink-0">
             {showAvatar ? (
-               <div 
-                 className="w-[30px] h-[30px] rounded-full overflow-hidden border border-gray-100 dark:border-gray-700 flex items-center justify-center"
-                 style={!chatPhoto ? { backgroundColor: getAvatarColorHex(chatId) } : {}}
-               >
-                  {chatPhoto && !imgError ? (
-                    <img 
-                      src={chatPhoto} 
-                      className="w-full h-full object-cover" 
-                      alt="Avatar"
-                      onError={() => setImgError(true)}
-                    />
-                  ) : (
-                    <User 
-                      className="w-4 h-4 opacity-90" 
-                      style={{ color: getAvatarTextColor(chatId) }}
-                    />
-                  )}
-               </div>
+               isAIChat ? (
+                 <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm border border-indigo-400/30">
+                    <Bot size={16} className="text-white" />
+                 </div>
+               ) : (
+                 <div 
+                   className="w-[30px] h-[30px] rounded-full overflow-hidden border border-gray-100 dark:border-gray-700 flex items-center justify-center"
+                   style={!chatPhoto ? { backgroundColor: getAvatarColorHex(chatId) } : {}}
+                 >
+                    {chatPhoto && !imgError ? (
+                      <img 
+                        src={chatPhoto} 
+                        className="w-full h-full object-cover" 
+                        alt="Avatar"
+                        onError={() => setImgError(true)}
+                      />
+                    ) : (
+                      <User 
+                        className="w-4 h-4 opacity-90" 
+                        style={{ color: getAvatarTextColor(chatId) }}
+                      />
+                    )}
+                 </div>
+               )
             ) : (
                <div className="w-[30px]" />
             )}

@@ -21,8 +21,7 @@ export function useChatAutomation(activeChat: Chat | null) {
   const [funnels, setFunnels] = useState<Funnel[]>([]);
   const [scheduledMessages, setScheduledMessages] = useState<ScheduledMessage[]>([]);
   
-  // CORREÇÃO AQUI: Adicionado 'executions' ao tipo do estado - Inicia minimizado (null)
-  const [activeTab, setActiveTab] = useState<'text' | 'audio' | 'image' | 'script' | 'funnels' | 'schedule' | 'executions' | null>(null); 
+  const [activeTab, setActiveTab] = useState<'text' | 'audio' | 'image' | 'script' | 'funnels' | 'schedule' | 'executions' | 'copiloto' | null>(null);
   
   const [isProcessingMacro, setIsProcessingMacro] = useState(false);
   const [processingActionId, setProcessingActionId] = useState<string | null>(null);

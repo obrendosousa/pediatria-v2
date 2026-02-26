@@ -70,5 +70,25 @@ export const suggestScheduledMessageTool = new DynamicStructuredTool({
   },
 });
 
-// Exportamos ambas para acoplamento no Grafo
-export const copilotTools = [suggestImmediateReplyTool, suggestScheduledMessageTool];
+// ---------------------------------------------------------------------------
+// FERRAMENTA 3: IGNORAR AÇÃO (ENCERRAMENTO NATURAL)
+// ---------------------------------------------------------------------------
+const ignoreSchema = z.object({
+  chat_id: z.number().describe("O ID numérico do chat (obrigatório)."),
+  reason: z.string().describe("A justificativa lógica do porquê esta conversa deve ser ignorada no momento."),
+});
+
+export const suggestIgnoreTool = new DynamicStructuredTool({
+  name: "suggest_ignore",
+  description: "Use esta ferramenta APENAS quando a mensagem for um ok, um agradecimento final, ou se a conversa não exigir NENHUMA resposta da clínica ou acompanhamento futuro.",
+  schema: ignoreSchema,
+  func: async ({ chat_id, reason }) => {
+    // Apenas sinalizamos no log do servidor que a IA optou por ignorar,
+    // sem necessidade de gravar nenhum rascunho inútil no banco de dados.
+    console.log(`🤖 [Copiloto] Chat ID ${chat_id} ignorado. Motivo: ${reason}`);
+    return `Ação ignorada com sucesso. Nenhuma mensagem ou agendamento gerado.`;
+  },
+});
+
+// Exportamos todas para acoplamento no Grafo
+export const copilotTools = [suggestImmediateReplyTool, suggestScheduledMessageTool, suggestIgnoreTool];

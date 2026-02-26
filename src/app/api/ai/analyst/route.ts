@@ -9,23 +9,6 @@ type AnalystHistoryItem = {
   content: string;
 };
 
-function toTextContent(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((item) => {
-        if (typeof item === "string") return item;
-        if (item && typeof item === "object" && "text" in item) {
-          return String((item as { text?: unknown }).text ?? "");
-        }
-        return "";
-      })
-      .join("\n")
-      .trim();
-  }
-  return "";
-}
-
 function buildMessages(question: string, history?: AnalystHistoryItem[]): BaseMessage[] {
   const prior = (history ?? [])
     .filter((item) => item && typeof item.content === "string" && item.content.trim().length > 0)
@@ -38,9 +21,10 @@ function buildMessages(question: string, history?: AnalystHistoryItem[]): BaseMe
 
 export async function POST(request: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    // Validando chave do Gemini em vez de apenas OpenAI
+    if (!process.env.OPENAI_API_KEY && !process.env.GOOGLE_API_KEY) {
       return NextResponse.json(
-        { error: "OPENAI_API_KEY nao configurada." },
+        { error: "Nenhuma API_KEY (OpenAI ou Google) configurada no ambiente." },
         { status: 500 }
       );
     }
@@ -56,7 +40,7 @@ export async function POST(request: Request) {
     const question = typeof body.question === "string" ? body.question.trim() : "";
     if (!question) {
       return NextResponse.json(
-        { error: "Campo 'question' e obrigatorio." },
+        { error: "Campo 'question' é obrigatório." },
         { status: 400 }
       );
     }
@@ -66,24 +50,73 @@ export async function POST(request: Request) {
       : undefined;
 
     const graph = await getAnalystGraph();
-    const finalState = await graph.invoke({
+    const inputs = {
       messages: buildMessages(question, history),
       current_analysis_context: undefined,
       active_filters: undefined,
+    };
+
+    const encoder = new TextEncoder();
+
+    // ─────────────────────────────────────────────────────────────────
+    // WEBSOCKET/STREAM DE EVENTOS (Evita o Timeout de 15s/30s)
+    // ─────────────────────────────────────────────────────────────────
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // streamEvents captura todos os eventos internos do LangGraph
+          const events = await graph.streamEvents(inputs, { version: "v2" });
+
+          for await (const event of events) {
+
+            // 1. EVENTO: A IA decidiu usar uma ferramenta (O "Efeito Cursor")
+            if (event.event === "on_tool_start") {
+              let toolLabel = event.name;
+
+              // Traduzindo nomes técnicos para o frontend
+              if (toolLabel === "get_filtered_chats_list") toolLabel = "🔍 Buscando amostra de chats no banco de dados...";
+              else if (toolLabel === "get_chat_cascade_history") toolLabel = "📖 Lendo histórico completo e linha do tempo das mensagens...";
+              else if (toolLabel === "get_attendance_overview_metrics") toolLabel = "📊 Consultando métricas macro de atendimento...";
+              else if (toolLabel === "search_chats_by_keyword") toolLabel = "🔎 Pesquisando palavra-chave nos chats...";
+              else if (toolLabel === "deep_research_chats_tool" || toolLabel === "deep_research_chats") toolLabel = "⚙️ Processando conversas em lote (Map-Reduce)...";
+              else toolLabel = `⚙️ Executando ação: ${toolLabel}...`;
+
+              const payload = JSON.stringify({ type: "ui_log", content: toolLabel });
+              controller.enqueue(encoder.encode(payload + "\n"));
+            }
+
+            // 2. EVENTO: A IA está "falando" o resultado final (Efeito máquina de escrever)
+            if (event.event === "on_chat_model_stream") {
+              const content = event.data?.chunk?.content;
+              if (typeof content === "string" && content.length > 0) {
+                const payload = JSON.stringify({ type: "chunk", content });
+                controller.enqueue(encoder.encode(payload + "\n"));
+              }
+            }
+          }
+          controller.close();
+        } catch (streamError) {
+          console.error("[/api/ai/analyst] erro no stream:", streamError);
+          const errorMessage = streamError instanceof Error ? streamError.message : "Erro durante a execução da análise.";
+          const payload = JSON.stringify({ type: "error", content: errorMessage });
+          controller.enqueue(encoder.encode(payload + "\n"));
+          controller.close();
+        }
+      },
     });
 
-    const allMessages = (finalState?.messages ?? []) as BaseMessage[];
-    const lastAssistant = [...allMessages]
-      .reverse()
-      .find((m) => m instanceof AIMessage) as AIMessage | undefined;
-
-    return NextResponse.json({
-      answer: lastAssistant ? toTextContent(lastAssistant.content) : "Nao foi possivel gerar resposta.",
+    // Retorna NDJSON (Newline Delimited JSON)
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/x-ndjson",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
     });
   } catch (error) {
-    console.error("[/api/ai/analyst] erro:", error);
+    console.error("[/api/ai/analyst] erro setup:", error);
     const message =
-      error instanceof Error ? error.message : "Erro inesperado ao processar analise.";
+      error instanceof Error ? error.message : "Erro inesperado ao iniciar análise.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
