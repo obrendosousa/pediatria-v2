@@ -3,8 +3,6 @@ import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage } from "@langchain/core/messages";
-import fs from "fs/promises";
-import path from "path";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -12,36 +10,58 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false },
 });
 
-const BRAIN_DIR = path.join(process.cwd(), "src", "ai", "clara");
+// ─────────────────────────────────────────────────────────────────────────────
+// FERRAMENTAS ORIGINAIS DA CLARA
+// Brain files agora persistidos no Supabase (tabela agent_config)
+// para que atualizações entrem em vigor imediatamente sem restart.
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FERRAMENTAS ORIGINAIS DA CLARA (Ajustadas para segurança)
-// ─────────────────────────────────────────────────────────────────────────────
+const CONFIG_KEY_MAP: Record<string, string> = {
+  "soul.ts": "soul",
+  "company.ts": "company",
+  "rules.ts": "rules",
+};
 
 export const readBrainFilesTool = new DynamicStructuredTool({
   name: "read_brain_files",
   description:
-    "Lê o conteúdo atual dos seus arquivos de personalidade, empresa e regras (soul.ts, company.ts, rules.ts) para você saber quem você é e como opera no momento.",
+    "Lê o conteúdo atual da sua personalidade, contexto da empresa e regras operacionais (soul, company, rules) diretamente do banco de dados.",
   schema: z.object({
     filename: z
       .enum(["soul.ts", "company.ts", "rules.ts"])
       .optional()
-      .describe("Especifique um arquivo para ler, ou deixe em branco para ler todos."),
+      .describe("Especifique qual módulo ler, ou deixe em branco para ler todos."),
   }),
   func: async ({ filename }) => {
     try {
       if (filename) {
-        const content = await fs.readFile(path.join(BRAIN_DIR, filename), "utf-8");
-        return `CONTEÚDO DE ${filename}:\n\n${content}`;
+        const configKey = CONFIG_KEY_MAP[filename];
+        const { data, error } = await supabase
+          .from("agent_config")
+          .select("content")
+          .eq("agent_id", "clara")
+          .eq("config_key", configKey)
+          .single();
+        if (error || !data) return `Módulo '${configKey}' não encontrado no banco.`;
+        return `CONTEÚDO DE ${filename}:\n\n${data.content}`;
       }
-      const [soul, company, rules] = await Promise.all([
-        fs.readFile(path.join(BRAIN_DIR, "soul.ts"), "utf-8"),
-        fs.readFile(path.join(BRAIN_DIR, "company.ts"), "utf-8"),
-        fs.readFile(path.join(BRAIN_DIR, "rules.ts"), "utf-8"),
-      ]);
-      return `SOUL:\n${soul}\n\nCOMPANY:\n${company}\n\nRULES:\n${rules}`;
+
+      const { data, error } = await supabase
+        .from("agent_config")
+        .select("config_key, content")
+        .eq("agent_id", "clara")
+        .in("config_key", ["soul", "company", "rules"]);
+
+      if (error || !data || data.length === 0) return "Nenhum módulo encontrado no banco.";
+
+      const map = Object.fromEntries(data.map((row: any) => [row.config_key, row.content]));
+      return [
+        map.soul ? `SOUL:\n${map.soul}` : "",
+        map.company ? `COMPANY:\n${map.company}` : "",
+        map.rules ? `RULES:\n${map.rules}` : "",
+      ].filter(Boolean).join("\n\n");
     } catch (error: any) {
-      return `Erro ao ler arquivos do cérebro: ${error.message}`;
+      return `Erro ao ler configurações do cérebro: ${error.message}`;
     }
   },
 });
@@ -49,17 +69,24 @@ export const readBrainFilesTool = new DynamicStructuredTool({
 export const updateBrainFileTool = new DynamicStructuredTool({
   name: "update_brain_file",
   description:
-    "Reescreve os seus arquivos de configuração (company.ts ou rules.ts) para aprender novas regras e processos perpetuamente. ATENÇÃO: Envie o CÓDIGO TYPESCRIPT COMPLETO que substituirá o arquivo.",
+    "Atualiza sua configuração (company ou rules) no banco de dados para aprender novas regras permanentemente. As alterações entram em vigor imediatamente, sem necessidade de restart. Envie o TEXTO COMPLETO que substituirá o módulo.",
   schema: z.object({
-    filename: z.enum(["company.ts", "rules.ts"]).describe("Qual arquivo você deseja atualizar."),
-    new_content: z.string().describe("O código TypeScript completo que será salvo."),
+    filename: z.enum(["company.ts", "rules.ts"]).describe("Qual módulo atualizar."),
+    new_content: z.string().describe("O texto completo e atualizado que substituirá o módulo."),
   }),
   func: async ({ filename, new_content }) => {
     try {
-      await fs.writeFile(path.join(BRAIN_DIR, filename), new_content, "utf-8");
-      return `Sucesso! O arquivo ${filename} foi reescrito. Seu cérebro foi atualizado.`;
+      const configKey = CONFIG_KEY_MAP[filename];
+      const { error } = await supabase
+        .from("agent_config")
+        .upsert(
+          { agent_id: "clara", config_key: configKey, content: new_content },
+          { onConflict: "agent_id,config_key" }
+        );
+      if (error) throw error;
+      return `Sucesso! O módulo '${configKey}' foi atualizado no banco de dados. As alterações estão ativas imediatamente.`;
     } catch (error: any) {
-      return `Erro ao atualizar arquivo: ${error.message}`;
+      return `Erro ao atualizar configuração: ${error.message}`;
     }
   },
 });

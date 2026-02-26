@@ -8,8 +8,7 @@ import {
 import { END, START, StateGraph } from "@langchain/langgraph";
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import fs from "fs/promises";
-import path from "path";
+import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 
 import {
   claraTools,
@@ -52,20 +51,32 @@ const researchToolsMap = new Map<string, (typeof researchTools)[number]>(
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BRAIN_DIR = path.join(process.cwd(), "src", "ai", "clara");
-
+// Carrega configurações do Supabase (tabela agent_config) com fallback nas constantes estáticas.
+// Isso garante que atualizações feitas pela Clara em produção entrem em vigor imediatamente,
+// sem necessidade de rebuild ou restart do servidor.
 async function loadBrainFiles(): Promise<{
   soul: string;
   company: string;
   rules: string;
 }> {
   try {
-    const [soul, company, rules] = await Promise.all([
-      fs.readFile(path.join(BRAIN_DIR, "soul.ts"), "utf-8"),
-      fs.readFile(path.join(BRAIN_DIR, "company.ts"), "utf-8"),
-      fs.readFile(path.join(BRAIN_DIR, "rules.ts"), "utf-8"),
-    ]);
-    return { soul, company, rules };
+    const supabase = getSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("agent_config")
+      .select("config_key, content")
+      .eq("agent_id", "clara")
+      .in("config_key", ["soul", "company", "rules"]);
+
+    if (error || !data || data.length === 0) {
+      return { soul: CLARA_SOUL, company: CLARA_COMPANY, rules: CLARA_RULES };
+    }
+
+    const map = Object.fromEntries((data as any[]).map((row) => [row.config_key, row.content]));
+    return {
+      soul: map.soul ?? CLARA_SOUL,
+      company: map.company ?? CLARA_COMPANY,
+      rules: map.rules ?? CLARA_RULES,
+    };
   } catch {
     return { soul: CLARA_SOUL, company: CLARA_COMPANY, rules: CLARA_RULES };
   }
@@ -146,13 +157,37 @@ const claraWorkflow = new StateGraph<ClaraState>({
 // NODE 1: router_and_planner_node
 // ─────────────────────────────────────────────────────────────────────────────
 
-claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
-  const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-pro-preview",
-    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-    temperature: 0.1,
-  });
+// Palavras-chave que indicam DEEP RESEARCH (análise de múltiplos chats).
+// Fast-path: se encontrarmos uma, classificamos como complexo imediatamente (sem LLM).
+const DEEP_RESEARCH_KEYWORDS = [
+  "analise", "analis", "padrão", "padroes", "objeç", "objecao", "objeções",
+  "leia as conversas", "leia os chats", "pesquise os chats", "pesquise as conversas",
+  "quais chats", "quais conversas", "todos os chats", "varios chats", "vários chats",
+  "relatório", "relatorio", "mapeie", "mapeamento", "tendência", "tendencias",
+];
 
+// Palavras-chave que indicam resposta SIMPLES (sem LLM no router).
+const SIMPLE_KEYWORDS = [
+  "oi", "olá", "ola", "tudo bem", "bom dia", "boa tarde", "boa noite",
+  "obrigado", "obrigada", "valeu", "ok", "certo", "entendi", "beleza",
+];
+
+function classifyMessageFast(text: string): "complex" | "simple" | "unknown" {
+  const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (DEEP_RESEARCH_KEYWORDS.some((kw) => lower.includes(kw.normalize("NFD").replace(/[\u0300-\u036f]/g, "")))) {
+    return "complex";
+  }
+  if (SIMPLE_KEYWORDS.some((kw) => lower === kw || lower.startsWith(kw + " ") || lower.endsWith(" " + kw))) {
+    return "simple";
+  }
+  // Mensagens muito curtas (≤ 6 palavras) sem palavras de pesquisa → provavelmente simples
+  if (lower.split(/\s+/).filter(Boolean).length <= 6) {
+    return "simple";
+  }
+  return "unknown";
+}
+
+claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
   const lastMessage = state.messages[state.messages.length - 1];
   const userText =
     typeof lastMessage?.content === "string"
@@ -164,30 +199,43 @@ claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
           .join(" ")
         : "";
 
-  const ROUTER_PROMPT = `Você é o classificador de tarefas da Clara. Analise a mensagem abaixo e responda SOMENTE com um JSON válido no formato especificado.
+  // ── Fast-path: classificação por heurísticas sem LLM ─────────────────────
+  const fastResult = classifyMessageFast(userText);
+  if (fastResult === "simple") {
+    return { is_deep_research: false };
+  }
+  if (fastResult === "complex") {
+    // Plano genérico de 2 passos para deep research detectado via heurística
+    return {
+      is_deep_research: true,
+      plan: [
+        "Buscar a lista de chats relevantes para a análise solicitada.",
+        "Executar análise profunda nos chats encontrados e compilar os insights.",
+      ],
+      current_step_index: 0,
+    };
+  }
+  // ── Fallback: classificação via LLM (apenas para mensagens ambíguas) ──────
+  const model = new ChatGoogleGenerativeAI({
+    model: "gemini-3-flash-preview",  // Flash é suficiente para classificação
+    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+    temperature: 0,
+  });
+
+  const ROUTER_PROMPT = `Você é o classificador de tarefas da Clara. Analise a mensagem e responda SOMENTE com JSON.
 
 MENSAGEM: "${userText}"
 
-CRITÉRIOS PARA DEEP RESEARCH (is_complex = true):
-- O gestor pede análise de MÚLTIPLOS chats ou conversas (ex: "analise", "padrão", "objeção", "leia as conversas").
+DEEP RESEARCH (is_complex: true): pedido de análise de MÚLTIPLOS chats, padrões, relatórios.
+RESPOSTA DIRETA (is_complex: false): tudo mais (perguntas, instruções, conversas, regras).
 
-CRITÉRIOS PARA RESPOSTA DIRETA (is_complex = false):
-- Conversas normais com pacientes.
-- Perguntas sobre regras ou memórias.
-- Saudações e tarefas simples.
-
-Responda APENAS com este JSON:
-{
-  "is_complex": boolean,
-  "plan": ["passo 1", "passo 2"],
-  "reasoning": "justificativa em 1 frase"
-}`;
+Responda APENAS:
+{"is_complex":boolean,"plan":["passo 1","passo 2"],"reasoning":"1 frase"}`;
 
   let isComplex = false;
   let plan: string[] = [];
 
   try {
-    // Aqui usamos HumanMessage, o que é seguro para o Gemini.
     const response = await model.invoke([new HumanMessage(ROUTER_PROMPT)]);
     const rawText =
       typeof response.content === "string"
@@ -201,7 +249,6 @@ Responda APENAS com este JSON:
 
     const jsonText = rawText.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
     const parsed = JSON.parse(jsonText);
-
     isComplex = Boolean(parsed.is_complex);
     plan = Array.isArray(parsed.plan) ? parsed.plan.filter(Boolean) : [];
   } catch {
