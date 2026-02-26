@@ -16,52 +16,43 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 // para que atualizações entrem em vigor imediatamente sem restart.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CONFIG_KEY_MAP: Record<string, string> = {
-  "soul.ts": "soul",
-  "company.ts": "company",
-  "rules.ts": "rules",
+// Módulos editáveis pela Clara (soul é imutável — definido em system_prompt.ts)
+const EDITABLE_MODULES = ["company", "rules"] as const;
+type EditableModule = (typeof EDITABLE_MODULES)[number];
+
+const MODULE_LABELS: Record<EditableModule, string> = {
+  company: "Contexto da Empresa",
+  rules: "Regras Personalizadas",
 };
 
 export const readBrainFilesTool = new DynamicStructuredTool({
   name: "read_brain_files",
   description:
-    "Lê o conteúdo atual da sua personalidade, contexto da empresa e regras operacionais (soul, company, rules) diretamente do banco de dados.",
+    "Lê o conteúdo atual do contexto da empresa (company) e das regras personalizadas aprendidas (rules) diretamente do banco de dados. Use para consultar sua configuração atual antes de editar.",
   schema: z.object({
-    filename: z
-      .enum(["soul.ts", "company.ts", "rules.ts"])
+    module: z
+      .enum(["company", "rules", "all"])
       .optional()
-      .describe("Especifique qual módulo ler, ou deixe em branco para ler todos."),
+      .default("all")
+      .describe("Qual módulo ler: 'company', 'rules' ou 'all' para ambos."),
   }),
-  func: async ({ filename }) => {
+  func: async ({ module }) => {
     try {
-      if (filename) {
-        const configKey = CONFIG_KEY_MAP[filename];
-        const { data, error } = await supabase
-          .from("agent_config")
-          .select("content")
-          .eq("agent_id", "clara")
-          .eq("config_key", configKey)
-          .single();
-        if (error || !data) return `Módulo '${configKey}' não encontrado no banco.`;
-        return `CONTEÚDO DE ${filename}:\n\n${data.content}`;
-      }
-
+      const keys = module === "all" ? EDITABLE_MODULES : [module as EditableModule];
       const { data, error } = await supabase
         .from("agent_config")
         .select("config_key, content")
         .eq("agent_id", "clara")
-        .in("config_key", ["soul", "company", "rules"]);
+        .in("config_key", keys);
 
       if (error || !data || data.length === 0) return "Nenhum módulo encontrado no banco.";
 
       const map = Object.fromEntries(data.map((row: any) => [row.config_key, row.content]));
-      return [
-        map.soul ? `SOUL:\n${map.soul}` : "",
-        map.company ? `COMPANY:\n${map.company}` : "",
-        map.rules ? `RULES:\n${map.rules}` : "",
-      ].filter(Boolean).join("\n\n");
+      return keys
+        .map((k) => (map[k] ? `### ${MODULE_LABELS[k]}\n${map[k]}` : `### ${MODULE_LABELS[k]}\n(vazio)`))
+        .join("\n\n");
     } catch (error: any) {
-      return `Erro ao ler configurações do cérebro: ${error.message}`;
+      return `Erro ao ler configurações: ${error.message}`;
     }
   },
 });
@@ -69,22 +60,21 @@ export const readBrainFilesTool = new DynamicStructuredTool({
 export const updateBrainFileTool = new DynamicStructuredTool({
   name: "update_brain_file",
   description:
-    "Atualiza sua configuração (company ou rules) no banco de dados para aprender novas regras permanentemente. As alterações entram em vigor imediatamente, sem necessidade de restart. Envie o TEXTO COMPLETO que substituirá o módulo.",
+    "Atualiza o contexto da empresa ('company') ou as regras personalizadas ('rules') no banco de dados. As alterações entram em vigor IMEDIATAMENTE sem precisar reiniciar. Envie o TEXTO COMPLETO que substituirá o módulo — não use código, apenas texto puro.",
   schema: z.object({
-    filename: z.enum(["company.ts", "rules.ts"]).describe("Qual módulo atualizar."),
+    module: z.enum(["company", "rules"]).describe("Qual módulo atualizar: 'company' ou 'rules'."),
     new_content: z.string().describe("O texto completo e atualizado que substituirá o módulo."),
   }),
-  func: async ({ filename, new_content }) => {
+  func: async ({ module, new_content }) => {
     try {
-      const configKey = CONFIG_KEY_MAP[filename];
       const { error } = await supabase
         .from("agent_config")
         .upsert(
-          { agent_id: "clara", config_key: configKey, content: new_content },
+          { agent_id: "clara", config_key: module, content: new_content, updated_at: new Date().toISOString() },
           { onConflict: "agent_id,config_key" }
         );
       if (error) throw error;
-      return `Sucesso! O módulo '${configKey}' foi atualizado no banco de dados. As alterações estão ativas imediatamente.`;
+      return `Sucesso! O módulo '${MODULE_LABELS[module]}' foi atualizado no banco de dados. As alterações já estão ativas.`;
     } catch (error: any) {
       return `Erro ao atualizar configuração: ${error.message}`;
     }
@@ -301,7 +291,48 @@ export const deepResearchChatsTool = new DynamicStructuredTool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EXPORTS (Removido query_database_table e get_database_schema)
+// FERRAMENTA DE RELATÓRIO — save_report
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const saveReportTool = new DynamicStructuredTool({
+  name: "save_report",
+  description:
+    "Salva um relatório estruturado na tabela 'clara_reports' para visualização como documento HTML formatado. Use após concluir uma análise profunda para disponibilizar o relatório completo ao gestor.",
+  schema: z.object({
+    titulo: z.string().describe("Título do relatório (ex: 'Análise de Objeções — Fev 2026')."),
+    conteudo_markdown: z
+      .string()
+      .describe(
+        "O conteúdo completo do relatório em Markdown. Use títulos, listas e tabelas para estruturar."
+      ),
+    tipo: z
+      .enum(["analise_chats", "financeiro", "agendamento", "geral"])
+      .describe("Categoria do relatório."),
+  }),
+  func: async ({ titulo, conteudo_markdown, tipo }) => {
+    try {
+      const { data, error } = await supabase
+        .from("clara_reports")
+        .insert({
+          titulo,
+          conteudo_markdown,
+          tipo,
+          created_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+      const reportId = (data as any)?.id;
+      return `Relatório salvo com sucesso! ID: ${reportId}. O gestor pode acessá-lo em /relatorios/${reportId}.`;
+    } catch (error: any) {
+      return `Erro ao salvar relatório: ${error.message}`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPORTS
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const claraTools = [
@@ -310,4 +341,5 @@ export const claraTools = [
   manageLongTermMemoryTool,
   extractAndSaveKnowledgeTool,
   searchKnowledgeBaseTool,
+  saveReportTool,
 ];

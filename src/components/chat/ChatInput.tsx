@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Paperclip, X, Smile, Trash2, Sparkles, Loader2 } from 'lucide-react';
+import { Send, Mic, Paperclip, X, Smile, Trash2, Sparkles, Loader2, PlayCircle, ClipboardList } from 'lucide-react';
 import AIDraftBanner from './AIDraftBanner';
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import { useToast } from '@/contexts/ToastContext';
@@ -23,6 +23,11 @@ interface ChatInputProps {
   onRequestAISuggestion?: () => void;
   onApproveAIDraft?: (text: string) => Promise<void>;
   onDiscardAIDraft?: () => Promise<void>;
+  // Modo Plano (apenas para o chat da Clara)
+  isPlanMode?: boolean;
+  onTogglePlanMode?: () => void;
+  hasPendingPlan?: boolean;
+  onExecutePlan?: () => void;
 }
 
 export default function ChatInput({
@@ -41,6 +46,10 @@ export default function ChatInput({
   onRequestAISuggestion,
   onApproveAIDraft,
   onDiscardAIDraft,
+  isPlanMode = false,
+  onTogglePlanMode,
+  hasPendingPlan = false,
+  onExecutePlan,
 }: ChatInputProps) {
   const { toast } = useToast();
   // --- ESTADOS ---
@@ -280,6 +289,26 @@ export default function ChatInput({
 
   return (
     <div className="flex flex-col bg-[#f0f2f5] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700 relative z-20">
+      {/* Banner de Modo Plano — visível somente no chat da Clara */}
+      {onTogglePlanMode && isPlanMode && (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200/70 dark:border-amber-700/40">
+          <ClipboardList size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="flex-1 text-[12px] text-amber-700 dark:text-amber-300 leading-snug">
+            Modo Plano ativo — Clara gerará um plano sem executar
+          </p>
+          {hasPendingPlan && onExecutePlan && (
+            <button
+              onClick={onExecutePlan}
+              className="flex items-center gap-1 text-[12px] font-semibold px-2.5 py-1 rounded-full bg-green-500 hover:bg-green-600 text-white transition-colors"
+              title="Executar o plano gerado"
+            >
+              <PlayCircle size={13} />
+              Executar
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Strip compacto de sugestão da IA */}
       {aiDraftText && onApproveAIDraft && onDiscardAIDraft && (
         <AIDraftBanner
@@ -392,6 +421,21 @@ export default function ChatInput({
       </div>
 
       <div className="pb-2 pl-1 flex items-center gap-1">
+        {/* Botão Modo Plano — visível somente no chat da Clara */}
+        {onTogglePlanMode && (
+          <button
+            onClick={onTogglePlanMode}
+            title={isPlanMode ? 'Desativar Modo Plano' : 'Ativar Modo Plano (Clara planeja sem executar)'}
+            className={`p-2 rounded-full transition-all active:scale-95 ${
+              isPlanMode
+                ? 'text-amber-600 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50'
+                : 'text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-amber-500'
+            }`}
+          >
+            <ClipboardList size={18} />
+          </button>
+        )}
+
         {/* Botão Copiloto — sugere uma resposta com um clique */}
         {onRequestAISuggestion && (
           <button

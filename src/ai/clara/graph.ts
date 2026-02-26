@@ -15,7 +15,7 @@ import {
   deepResearchChatsTool,
 } from "./tools";
 import { getFilteredChatsListTool, getChatCascadeHistoryTool } from "@/ai/analyst/tools";
-import { CLARA_SOUL } from "./soul";
+import { CLARA_SYSTEM_PROMPT } from "./system_prompt";
 import { CLARA_COMPANY } from "./company";
 import { CLARA_RULES } from "./rules";
 
@@ -51,13 +51,11 @@ const researchToolsMap = new Map<string, (typeof researchTools)[number]>(
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Carrega configurações do Supabase (tabela agent_config) com fallback nas constantes estáticas.
-// Isso garante que atualizações feitas pela Clara em produção entrem em vigor imediatamente,
-// sem necessidade de rebuild ou restart do servidor.
-async function loadBrainFiles(): Promise<{
-  soul: string;
+// Carrega apenas as partes DINÂMICAS do prompt (company e custom_rules) do Supabase.
+// O núcleo imutável (identidade + regras absolutas) vem do arquivo system_prompt.ts.
+async function loadDynamicPromptParts(): Promise<{
   company: string;
-  rules: string;
+  custom_rules: string;
 }> {
   try {
     const supabase = getSupabaseAdminClient();
@@ -65,53 +63,47 @@ async function loadBrainFiles(): Promise<{
       .from("agent_config")
       .select("config_key, content")
       .eq("agent_id", "clara")
-      .in("config_key", ["soul", "company", "rules"]);
+      .in("config_key", ["company", "rules"]);
 
     if (error || !data || data.length === 0) {
-      return { soul: CLARA_SOUL, company: CLARA_COMPANY, rules: CLARA_RULES };
+      return { company: CLARA_COMPANY, custom_rules: CLARA_RULES };
     }
 
     const map = Object.fromEntries((data as any[]).map((row) => [row.config_key, row.content]));
     return {
-      soul: map.soul ?? CLARA_SOUL,
       company: map.company ?? CLARA_COMPANY,
-      rules: map.rules ?? CLARA_RULES,
+      custom_rules: map.rules ?? CLARA_RULES,
     };
   } catch {
-    return { soul: CLARA_SOUL, company: CLARA_COMPANY, rules: CLARA_RULES };
+    return { company: CLARA_COMPANY, custom_rules: CLARA_RULES };
   }
 }
 
-function buildSimpleAgentPrompt(
-  soul: string,
-  company: string,
-  rules: string,
-  chatId: number
-): string {
+// Mantido por compatibilidade com reporter_node
+async function loadBrainFiles() {
+  const parts = await loadDynamicPromptParts();
+  return { company: parts.company, rules: parts.custom_rules };
+}
+
+function buildSystemPrompt(company: string, custom_rules: string, chatId: number): string {
   const now = new Date().toISOString();
-  return `Você é a Clara, um Agente Autônomo com arquitetura ReAct (Reasoning and Acting).
-DATA E HORA ATUAL DO SISTEMA: ${now}
+  return `${CLARA_SYSTEM_PROMPT}
 
------------------------------------------------------------
-[MÓDULO DE IDENTIDADE E PERSONALIDADE]
-${soul}
-
-[MÓDULO DE CONTEXTO DA EMPRESA]
+════════════════════════════════════════════
+CONTEXTO DA EMPRESA (DINÂMICO — ATUALIZADO VIA SUPABASE)
+════════════════════════════════════════════
 ${company}
 
-[MÓDULO DE REGRAS ESTRITAS DE OPERAÇÃO]
-${rules}
------------------------------------------------------------
+════════════════════════════════════════════
+REGRAS PERSONALIZADAS APRENDIDAS (DINÂMICO)
+════════════════════════════════════════════
+${custom_rules || "Nenhuma regra personalizada adicionada ainda."}
 
-OBJETIVO ATUAL:
-Você está operando. O ID deste chat é ${chatId}.
-
-DIRETRIZES DE PENSAMENTO, APRENDIZADO E AÇÃO:
-1. GABARITOS (BASE DE CONHECIMENTO): Se você receber a rotina de estudos do Heartbeat, analise os logs, encontre as melhores respostas dadas pelos humanos aos pacientes, e USE a ferramenta 'extract_and_save_knowledge' para salvar esse padrão no banco.
-2. CONSULTA ANTES DE FALAR: Se alguém te perguntar como resolver o problema de um paciente, use a ferramenta 'search_knowledge_base' PRIMEIRO para ver se você já aprendeu o gabarito no passado.
-3. ZERO ACHISMO: Se te perguntarem sobre dados, use a ferramenta 'query_database_table' para descobrir a verdade. Nunca invente relatórios.
-4. AUTO-MODIFICAÇÃO: Se te ensinarem uma nova regra permanente, use 'update_brain_file'.
-5. Suas respostas finais para a equipe devem ser formatadas de forma clara, elegante e usando Markdown.`;
+════════════════════════════════════════════
+SESSÃO ATUAL
+════════════════════════════════════════════
+DATA E HORA: ${now}
+CHAT ID: ${chatId}`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -199,19 +191,39 @@ claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
           .join(" ")
         : "";
 
+  // Helper: salva mensagem de status no chat antes de iniciar execução complexa
+  async function saveStatusMessage(chatId: number, planSteps: string[]) {
+    if (!chatId) return;
+    try {
+      const supabase = getSupabaseAdminClient();
+      const planText = planSteps.map((s, i) => `${i + 1}. ${s}`).join("\n");
+      const statusText = `🔍 *Análise profunda iniciada.* Vou executar o seguinte plano:\n\n${planText}\n\n_Aguarde enquanto processo os dados..._`;
+      await (supabase as any).from("chat_messages").insert({
+        chat_id: chatId,
+        sender: "AI_AGENT",
+        message_text: statusText,
+        bot_message: true,
+        message_type: "text",
+      });
+    } catch {
+      // Falha silenciosa — não bloqueia a execução
+    }
+  }
+
   // ── Fast-path: classificação por heurísticas sem LLM ─────────────────────
   const fastResult = classifyMessageFast(userText);
   if (fastResult === "simple") {
     return { is_deep_research: false };
   }
   if (fastResult === "complex") {
-    // Plano genérico de 2 passos para deep research detectado via heurística
+    const plan = [
+      "Buscar a lista de chats relevantes para a análise solicitada.",
+      "Executar análise profunda nos chats encontrados e compilar os insights.",
+    ];
+    await saveStatusMessage(state.chat_id, plan);
     return {
       is_deep_research: true,
-      plan: [
-        "Buscar a lista de chats relevantes para a análise solicitada.",
-        "Executar análise profunda nos chats encontrados e compilar os insights.",
-      ],
+      plan,
       current_step_index: 0,
     };
   }
@@ -257,6 +269,7 @@ Responda APENAS:
   }
 
   if (isComplex && plan.length > 0) {
+    await saveStatusMessage(state.chat_id, plan);
     return { is_deep_research: true, plan, current_step_index: 0 };
   }
 
@@ -353,7 +366,7 @@ Use as ferramentas necessárias para completar APENAS este passo. Quando termina
 // ─────────────────────────────────────────────────────────────────────────────
 
 claraWorkflow.addNode("reporter_node", async (state: ClaraState) => {
-  const { soul, rules } = await loadBrainFiles();
+  const { rules } = await loadBrainFiles();
 
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3-pro-preview",
@@ -365,21 +378,18 @@ claraWorkflow.addNode("reporter_node", async (state: ClaraState) => {
     .map((note, i) => `=== Nota ${i + 1} ===\n${note}`)
     .join("\n\n");
 
-  const REPORTER_SYSTEM = `Você é a Clara. Você concluiu sua pesquisa profunda e agora deve escrever o relatório final para o gestor.
+  const REPORTER_SYSTEM = `${CLARA_SYSTEM_PROMPT}
 
-[SUA IDENTIDADE]
-${soul}
+${rules ? `REGRAS APRENDIDAS ADICIONAIS:\n${rules}` : ""}
 
-[REGRAS DE FORMATAÇÃO]
-${rules}
-
-INSTRUÇÕES:
-Leia as anotações brutas do seu bloco de notas abaixo e escreva uma resposta final em Markdown elegante. NÃO mencione o "bloco de notas" ou o processo interno ao usuário.
+INSTRUÇÕES DO RELATÓRIO:
+Leia as anotações brutas do seu bloco de notas abaixo e escreva uma resposta final em Markdown elegante.
+NÃO mencione o "bloco de notas", "scratchpad" ou qualquer detalhe do processo interno ao usuário.
+Apresente os resultados de forma clara, estruturada e profissional.
 
 BLOCO DE NOTAS DA PESQUISA:
 ${scratchpadText}`;
 
-  // CORREÇÃO: Garante que haja pelo menos um HumanMessage para evitar crash.
   const safeMessages = state.messages.length > 0
     ? state.messages
     : [new HumanMessage("Por favor, conclua a análise baseada no bloco de notas.")];
@@ -397,16 +407,16 @@ ${scratchpadText}`;
 // ─────────────────────────────────────────────────────────────────────────────
 
 claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
-  const { soul, company, rules } = await loadBrainFiles();
+  const { company, rules } = await loadBrainFiles();
 
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-pro-preview",
+    model: "gemini-3-flash-preview", // Flash para respostas rápidas
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0.3,
   });
 
   const modelWithTools = model.bindTools(claraTools);
-  const systemPrompt = buildSimpleAgentPrompt(soul, company, rules, state.chat_id);
+  const systemPrompt = buildSystemPrompt(company, rules, state.chat_id);
 
   // CORREÇÃO: Garante que haja pelo menos um HumanMessage.
   const safeMessages = state.messages.length > 0
