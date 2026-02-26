@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { claraGraph } from '@/ai/clara/graph';
+import { claraGraph, ClaraState } from '@/ai/clara/graph';
 import { HumanMessage } from "@langchain/core/messages";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -40,7 +40,7 @@ Sua missão agora é:
         const result = await claraGraph.invoke({
           messages: [new HumanMessage(studyCommand)],
           chat_id: chatId
-        });
+        }) as unknown as ClaraState;
 
         const aiResponseText = result.messages[result.messages.length - 1].content.toString();
 
