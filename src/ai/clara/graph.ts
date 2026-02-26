@@ -356,7 +356,9 @@ claraWorkflow.addNode("executor_node", async (state: ClaraState) => {
 
   const STEP_INSTRUCTIONS = `Passo ${stepIndex + 1} de ${totalSteps}: "${currentStep}"
 
-Use as ferramentas necessárias para completar APENAS este passo. Quando terminar, forneça um resumo estruturado e conciso dos seus achados. Este resumo será salvo no bloco de notas para os próximos passos.${scratchpadContext}`;
+Use as ferramentas necessárias para completar APENAS este passo. Quando terminar, forneça um resumo estruturado e conciso dos seus achados. Este resumo será salvo no bloco de notas para os próximos passos.${scratchpadContext}
+
+CRÍTICO: VOCÊ DEVE USAR A INVOCAÇÃO DE FERRAMENTAS NATIVA (FUNCTION CALLING). É PROIBIDO ESCREVER BLOCOS DE CÓDIGO HTML/MARKDOWN COMO \`<tool_code>\` NAS SUAS RESPOSTAS. INVOQUE A FERRAMENTA DIRETAMENTE PELA API. RESPONDa EXPLICITAMENTE COMO FUNCTION CALL.`;
 
   // CORREÇÃO CRÍTICA: O Gemini exige obrigatoriamente um HumanMessage no array para não dar o erro de "contents is not specified".
   const internalMessages: BaseMessage[] = [
@@ -394,7 +396,7 @@ Use as ferramentas necessárias para completar APENAS este passo. Quando termina
         } catch (e: any) {
           return new ToolMessage({
             tool_call_id: tc.id ?? tc.name,
-            content: `Erro ao executar '${tc.name}': ${e.message}`,
+            content: `Erro ao executar '${tc.name}': ${e.message} `,
           });
         }
       })
@@ -412,7 +414,7 @@ Use as ferramentas necessárias para completar APENAS este passo. Quando termina
         : JSON.stringify(response.content);
 
   return {
-    scratchpad: [`[Passo ${stepIndex + 1}] ${stepResult}`],
+    scratchpad: [`[Passo ${stepIndex + 1}] ${stepResult} `],
     current_step_index: stepIndex + 1,
   };
 });
@@ -431,7 +433,7 @@ claraWorkflow.addNode("reporter_node", async (state: ClaraState) => {
   });
 
   const scratchpadText = state.scratchpad
-    .map((note, i) => `=== Nota ${i + 1} ===\n${note}`)
+    .map((note, i) => `=== Nota ${i + 1} ===\n${note} `)
     .join("\n\n");
 
   const REPORTER_SYSTEM = `${CLARA_SYSTEM_PROMPT}
@@ -439,12 +441,12 @@ claraWorkflow.addNode("reporter_node", async (state: ClaraState) => {
 ${rules ? `REGRAS APRENDIDAS ADICIONAIS:\n${rules}` : ""}
 
 INSTRUÇÕES DO RELATÓRIO:
-Leia as anotações brutas do seu bloco de notas abaixo e escreva uma resposta final em Markdown elegante.
+  Leia as anotações brutas do seu bloco de notas abaixo e escreva uma resposta final em Markdown elegante.
 NÃO mencione o "bloco de notas", "scratchpad" ou qualquer detalhe do processo interno ao usuário.
 Apresente os resultados de forma clara, estruturada e profissional.
 
 BLOCO DE NOTAS DA PESQUISA:
-${scratchpadText}`;
+${scratchpadText} `;
 
   const safeMessages = state.messages.length > 0
     ? state.messages

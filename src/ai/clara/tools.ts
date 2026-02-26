@@ -402,28 +402,34 @@ export const saveReportTool = new DynamicStructuredTool({
 
 export const analisarChatEspecificoTool = new DynamicStructuredTool({
   name: "analisar_chat_especifico",
-  description: "Analisa um chat específico em profundidade (via Sub-Grafo), extraindo objeções, gargalos, sentimento e salvando no banco de dados. Use isso quando o usuário pedir para revisar os erros ou motivos de um atendimento não ter dado certo.",
+  description: "Analisa um ou mais chats em profundidade (via Sub-Grafo Novo), extraindo objeções, gargalos, sentimento e salvando no banco de dados. Use isso quando o usuário pedir expressamente para usar o 'novo grafo', 'nova ferramenta', ou quiser analisar os erros e métricas profundas de VÁRIOS chats listados.",
   schema: z.object({
-    chat_id: z.number().describe("O ID do chat a ser analisado"),
+    chat_ids: z.array(z.number()).describe("Uma lista de IDs de chats a serem analisados em profundidade."),
   }),
-  func: async ({ chat_id }, runManager) => {
+  func: async ({ chat_ids }, runManager) => {
+    if (!chat_ids || chat_ids.length === 0) return "Nenhum chat_id fornecido.";
+
     try {
-      // Usamos stream para emitir eventos para o frontend interceptar os "[SYSTEM_LOG]"
-      const stream = await chatAnalyzerGraph.streamEvents({ chat_id }, { version: "v2" });
+      for (const chat_id of chat_ids) {
+        runManager?.handleText(`[SYSTEM_LOG] Preparando análise profunda do chat ID ${chat_id}...`);
 
-      for await (const event of stream) {
-        if (event.event === "on_node_start") {
-          let stepName = event.name;
-          if (stepName === "fetch_data") stepName = "Baixando mensagens do chat...";
-          if (stepName === "analyze_conversation") stepName = "IA pensando e extraindo gargalos...";
-          if (stepName === "save_to_db") stepName = "Salvando insights e memórias...";
+        // Usamos stream para emitir eventos para o frontend interceptar os "[SYSTEM_LOG]"
+        const stream = await chatAnalyzerGraph.streamEvents({ chat_id }, { version: "v2" });
 
-          runManager?.handleText(`[SYSTEM_LOG] Iniciando etapa: ${stepName}`);
+        for await (const event of stream) {
+          if (event.event === "on_node_start") {
+            let stepName = event.name;
+            if (stepName === "fetch_data") stepName = "Baixando mensagens do chat...";
+            if (stepName === "analyze_conversation") stepName = "IA pensando e extraindo gargalos...";
+            if (stepName === "save_to_db") stepName = "Salvando insights e memórias...";
+
+            runManager?.handleText(`[SYSTEM_LOG] Chat ${chat_id} - ${stepName}`);
+          }
         }
       }
-      return `Chat ${chat_id} analisado com sucesso e salvo no banco. Agora você pode sugerir um action plan para contornar as objeções levantadas.`;
+      return `${chat_ids.length} chat(s) analisado(s) com sucesso via Sub-Grafo e salvos no banco de dados. Agora você pode sugerir um action plan para contornar as objeções levantadas nesses chats ou usar a ferramenta de relatórios para gerar um compilado da qualidade.`;
     } catch (e: any) {
-      return `Falha ao analisar chat ${chat_id}: ${e.message}`;
+      return `Falha ao processar análise através do sub-grafo: ${e.message}`;
     }
   }
 });
