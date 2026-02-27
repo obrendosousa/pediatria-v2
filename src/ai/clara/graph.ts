@@ -175,6 +175,21 @@ const DEEP_RESEARCH_KEYWORDS = [
   "relatório", "relatorio", "mapeie", "mapeamento", "tendência", "tendencias",
 ];
 
+// Palavras-chave que indicam uso do Sub-Grafo estruturado (analisar_chat_especifico).
+// Quando detectadas, o plano nomeia as ferramentas explicitamente para evitar conflito.
+const STRUCTURED_GRAPH_KEYWORDS = [
+  "novo grafo", "novo graph", "novo grapho", "sub-grafo", "sub-graph",
+  "nova ferramenta", "novo sistema", "subgrafo", "subgraph", "novo agente",
+  "analisar_chat_especifico", "chatanalyzer",
+];
+
+function needsStructuredGraph(text: string): boolean {
+  const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return STRUCTURED_GRAPH_KEYWORDS.some((kw) =>
+    lower.includes(kw.normalize("NFD").replace(/[\u0300-\u036f]/g, ""))
+  );
+}
+
 // Palavras-chave que indicam resposta SIMPLES (sem LLM no router).
 const SIMPLE_KEYWORDS = [
   "oi", "olá", "ola", "tudo bem", "bom dia", "boa tarde", "boa noite",
@@ -250,10 +265,21 @@ claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
   }
 
   if (fastResult === "complex" || isPlanMode) {
-    const plan = [
-      "Buscar a lista de chats relevantes para a análise solicitada.",
-      "Executar análise profunda nos chats encontrados e compilar os insights.",
-    ];
+    const useStructuredGraph = needsStructuredGraph(cleanUserText);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+    const plan = useStructuredGraph
+      ? [
+          `Use a ferramenta get_filtered_chats_list com os parâmetros start_date='${yesterday}' e end_date='${today}' para buscar os chats ativos no período solicitado. Retorne a lista completa de IDs dos chats encontrados.`,
+          "Use a ferramenta analisar_chat_especifico passando TODOS os IDs obtidos no passo anterior. Ela analisará cada chat individualmente via Sub-Grafo e salvará os insights estruturados (objeções, gargalos, nota, decisão) na tabela chat_insights.",
+          "Use a ferramenta gerar_relatorio_qualidade_chats com dias_retroativos=2 para compilar as análises salvas e apresente o relatório final consolidado com as principais objeções identificadas e como foram tratadas.",
+        ]
+      : [
+          "Buscar a lista de chats relevantes para a análise solicitada usando get_filtered_chats_list com os filtros adequados (stage, sentiment, start_date, end_date).",
+          "Executar análise profunda nos chats encontrados usando deep_research_chats e compilar os insights em formato de relatório estruturado.",
+        ];
 
     if (isPlanMode) {
       await saveStatusMessage(plan);
@@ -318,15 +344,28 @@ Responda APENAS:
     plan = [];
   }
 
-  if (isComplex && plan.length > 0) {
-    if (isPlanMode) {
-      await saveStatusMessage(plan);
-      const outputMsg = new AIMessage(
-        `📋 *Plano gerado.*\n\n${plan.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nClique em 'Executar' na aba abaixo para iniciar.`
-      );
-      return { is_deep_research: true, is_planning_phase: true, plan, current_step_index: 0, messages: [outputMsg] };
+  if (isComplex) {
+    // Se o LLM classificou como complexo mas o texto pede o sub-grafo, sobrescreve o plano
+    if (needsStructuredGraph(cleanUserText)) {
+      const t = new Date().toISOString().slice(0, 10);
+      const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      plan = [
+        `Use a ferramenta get_filtered_chats_list com start_date='${y}' e end_date='${t}' para buscar os chats ativos no período solicitado. Retorne a lista completa de IDs.`,
+        "Use a ferramenta analisar_chat_especifico passando TODOS os IDs obtidos no passo anterior para análise estruturada via Sub-Grafo.",
+        "Use a ferramenta gerar_relatorio_qualidade_chats com dias_retroativos=2 para compilar as análises e apresente o relatório final consolidado.",
+      ];
     }
-    return { is_deep_research: true, is_planning_phase: false, plan, current_step_index: 0 };
+
+    if (plan.length > 0) {
+      if (isPlanMode) {
+        await saveStatusMessage(plan);
+        const outputMsg = new AIMessage(
+          `📋 *Plano gerado.*\n\n${plan.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nClique em 'Executar' na aba abaixo para iniciar.`
+        );
+        return { is_deep_research: true, is_planning_phase: true, plan, current_step_index: 0, messages: [outputMsg] };
+      }
+      return { is_deep_research: true, is_planning_phase: false, plan, current_step_index: 0 };
+    }
   }
 
   return { is_deep_research: false, is_planning_phase: false };

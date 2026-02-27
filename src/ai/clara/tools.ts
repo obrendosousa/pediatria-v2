@@ -423,54 +423,129 @@ export const analisarChatEspecificoTool = new DynamicStructuredTool({
   func: async ({ chat_ids }) => {
     if (!chat_ids || chat_ids.length === 0) return "Nenhum chat_id fornecido.";
 
-    // Limite de segurança para evitar execuções excessivamente longas
     const safeIds = chat_ids.slice(0, 30);
     const skipped = chat_ids.length - safeIds.length;
 
-    const allInsights: string[] = [];
+    // ── Busca o chat interno da Clara para enviar progresso em tempo real ──
+    const { data: claraChat } = await supabase
+      .from("chats")
+      .select("id")
+      .eq("phone", "00000000000")
+      .single();
+    const claraChatId = (claraChat as any)?.id as number | undefined;
+
+    // ── Pré-carrega nomes de contato de todos os chats em uma única query ──
+    const { data: chatsMeta } = await supabase
+      .from("chats")
+      .select("id, contact_name")
+      .in("id", safeIds);
+    const nameMap = new Map<number, string>(
+      ((chatsMeta ?? []) as any[]).map((c) => [c.id as number, (c.contact_name as string) ?? `#${c.id}`])
+    );
+
+    // ── Insere uma mensagem visível no chat da Clara (Supabase Realtime a entrega ao frontend) ──
+    async function sendToConversation(text: string): Promise<void> {
+      if (!claraChatId) return;
+      try {
+        await supabase.from("chat_messages").insert({
+          chat_id: claraChatId,
+          sender: "AI_AGENT",
+          message_text: text,
+          bot_message: true,
+          message_type: "text",
+          created_at: new Date().toISOString(),
+        });
+      } catch {
+        // Falha silenciosa — nunca bloqueia a análise principal
+      }
+    }
+
+    // ── Mensagem de abertura ─────────────────────────────────────────────────
+    await sendToConversation(
+      `🔬 *Sub-Grafo de Análise iniciado*\n\nAnalisando *${safeIds.length} conversa${safeIds.length !== 1 ? "s" : ""}* individualmente...${skipped > 0 ? `\n_Nota: ${skipped} chat(s) ignorados — limite de 30 por chamada._` : ""}\n\n_Cada conversa será lida, examinada pela IA e os dados salvos. Acompanhe os resultados abaixo em tempo real._`
+    );
+
+    const scratchpadInsights: string[] = [];
     let successCount = 0;
     let errorCount = 0;
 
     for (const chat_id of safeIds) {
       try {
-        // Usa invoke() para obter o estado final com insights reais (streamEvents tinha nome de evento errado)
         const finalState = await chatAnalyzerGraph.invoke({ chat_id });
         successCount++;
 
-        if (finalState.insights) {
-          const i = finalState.insights as {
-            sentimento?: string | null;
-            nota_atendimento?: number | null;
-            objecoes?: string[];
-            gargalos?: string[];
-            decisao?: string | null;
-            resumo_analise?: string | null;
-          };
-          const insightText = [
-            `**Chat #${chat_id}**`,
-            `- Sentimento: ${i.sentimento ?? "não identificado"}`,
-            `- Nota de Atendimento: ${i.nota_atendimento ?? "N/A"}/10`,
-            `- Objeções: ${i.objecoes?.length ? i.objecoes.join("; ") : "nenhuma identificada"}`,
-            `- Gargalos: ${i.gargalos?.length ? i.gargalos.join("; ") : "nenhum"}`,
-            `- Decisão: ${i.decisao ?? "não identificada"}`,
-            `- Resumo: ${i.resumo_analise ?? "sem resumo"}`,
-          ].join("\n");
-          allInsights.push(insightText);
+        const ins = (finalState.insights as {
+          sentimento?: string | null;
+          nota_atendimento?: number | null;
+          objecoes?: string[];
+          gargalos?: string[];
+          decisao?: string | null;
+          resumo_analise?: string | null;
+        } | null);
+
+        if (ins) {
+          const name = nameMap.get(chat_id) ?? `Chat #${chat_id}`;
+          const nota = ins.nota_atendimento;
+
+          // Ícones dinâmicos baseados nos dados reais
+          const sentimentEmoji =
+            ins.sentimento === "positivo" ? "😊" :
+            ins.sentimento === "negativo" ? "😔" : "😐";
+          const notaColor =
+            nota === null || nota === undefined ? "⚪" :
+            nota >= 8 ? "🟢" : nota >= 5 ? "🟡" : "🔴";
+
+          // ── Card visual por chat ─────────────────────────────────────────
+          const cardLines: string[] = [
+            `📊 *${name}*`,
+            ``,
+            `${sentimentEmoji} *Sentimento:* ${ins.sentimento ?? "não identificado"}   ${notaColor} *Nota:* ${nota ?? "N/A"}/10`,
+          ];
+
+          if (ins.objecoes?.length) {
+            cardLines.push(`🚫 *Objeções:* ${ins.objecoes.join(" · ")}`);
+          } else {
+            cardLines.push(`✅ *Objeções:* nenhuma identificada`);
+          }
+
+          if (ins.gargalos?.length) {
+            cardLines.push(`⚠️ *Gargalos:* ${ins.gargalos.join(" · ")}`);
+          }
+
+          cardLines.push(`📋 *Decisão:* ${ins.decisao ?? "não identificada"}`);
+
+          if (ins.resumo_analise) {
+            cardLines.push(``, `_${ins.resumo_analise}_`);
+          }
+
+          await sendToConversation(cardLines.join("\n"));
+
+          // Versão texto-plano para o scratchpad do reporter_node
+          scratchpadInsights.push([
+            `Chat #${chat_id} (${name}):`,
+            `  Sentimento: ${ins.sentimento ?? "N/A"} | Nota: ${nota ?? "N/A"}/10`,
+            `  Objeções: ${ins.objecoes?.join("; ") || "nenhuma"}`,
+            `  Gargalos: ${ins.gargalos?.join("; ") || "nenhum"}`,
+            `  Decisão: ${ins.decisao ?? "não identificada"}`,
+            `  Resumo: ${ins.resumo_analise ?? ""}`,
+          ].join("\n"));
         }
       } catch (e: any) {
         errorCount++;
-        allInsights.push(`**Chat #${chat_id}**: Erro na análise — ${e.message}`);
+        await sendToConversation(`❌ *Chat #${chat_id}* — Falha na análise: _${e.message}_`);
+        scratchpadInsights.push(`Chat #${chat_id}: Erro — ${e.message}`);
       }
     }
 
-    const header = [
-      `${successCount} chat(s) analisado(s) com sucesso via Sub-Grafo${errorCount > 0 ? `, ${errorCount} com erro` : ""}. Insights salvos em chat_insights.`,
-      skipped > 0 ? `(${skipped} chat(s) ignorados — limite de 30 por chamada)` : "",
-    ].filter(Boolean).join(" ");
+    // ── Mensagem de conclusão ────────────────────────────────────────────────
+    const conclusionEmoji = errorCount === 0 ? "✅" : "⚠️";
+    await sendToConversation(
+      `${conclusionEmoji} *Análise concluída!*\n\n*${successCount}* conversa${successCount !== 1 ? "s" : ""} processada${successCount !== 1 ? "s" : ""} com sucesso${errorCount > 0 ? `, *${errorCount}* com erro` : ""}.\n_Insights salvos em chat\\_insights. Gerando relatório consolidado..._`
+    );
 
-    if (allInsights.length === 0) return header;
-
-    return `${header}\n\n## Insights Extraídos por Chat:\n\n${allInsights.join("\n\n")}`;
+    const header = `${successCount} chat(s) analisado(s) com sucesso via Sub-Grafo${errorCount > 0 ? `, ${errorCount} com erro` : ""}. Insights salvos em chat_insights.`;
+    if (scratchpadInsights.length === 0) return header;
+    return `${header}\n\n## Insights por Chat:\n\n${scratchpadInsights.join("\n\n")}`;
   },
 });
 
@@ -488,17 +563,54 @@ export const gerarRelatorioQualidadeTool = new DynamicStructuredTool({
       const { data, error } = await supabase
         .from("chat_insights")
         .select("id, chat_id, nota_atendimento, sentimento, gargalos, resumo_analise, metricas_extras")
-        .gte("created_at", date.toISOString());
+        .gte("created_at", date.toISOString())
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       if (!data || data.length === 0) return "Nenhum insight de chat encontrado no período especificado.";
 
-      const notas = data.map(d => d.nota_atendimento).filter(Boolean) as number[];
+      // Agrega métricas
+      const notas = (data as any[]).map((d) => d.nota_atendimento).filter((n) => n !== null && n !== undefined) as number[];
       const media = notas.length ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(1) : "N/A";
 
-      return `Análise consolidada de ${data.length} chats nos últimos ${dias_retroativos} dias:
-Média de nota: ${media}.
-Detalhes brutos: ${JSON.stringify(data, null, 2)}`;
+      const countFreq = (arr: string[]) => {
+        const map: Record<string, number> = {};
+        for (const item of arr) { map[item] = (map[item] || 0) + 1; }
+        return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} (${v}x)`);
+      };
+
+      const allObjecoes: string[] = [];
+      const allGargalos: string[] = [];
+      const sentimentos: string[] = [];
+
+      for (const d of data as any[]) {
+        const extras = d.metricas_extras as Record<string, any> | null;
+        if (extras?.todas_objecoes && Array.isArray(extras.todas_objecoes)) {
+          allObjecoes.push(...extras.todas_objecoes);
+        }
+        if (d.gargalos && Array.isArray(d.gargalos)) {
+          allGargalos.push(...d.gargalos);
+        }
+        if (d.sentimento) sentimentos.push(d.sentimento);
+      }
+
+      // Resumo por chat (os 20 mais recentes)
+      const chatSummaries = (data as any[]).slice(0, 20).map((d) => {
+        const extras = d.metricas_extras as Record<string, any> | null;
+        const objs = extras?.todas_objecoes?.join("; ") || "nenhuma";
+        const decisao = extras?.decisao || d.resumo_analise?.substring(0, 60) || "não identificada";
+        return `Chat #${d.chat_id} | Nota: ${d.nota_atendimento ?? "N/A"}/10 | Sentimento: ${d.sentimento ?? "N/A"} | Objeções: ${objs} | Decisão: ${decisao}`;
+      });
+
+      return JSON.stringify({
+        periodo_analisado: `últimos ${dias_retroativos} dia(s)`,
+        total_chats_analisados: data.length,
+        media_nota_atendimento: media,
+        distribuicao_sentimento: countFreq(sentimentos),
+        principais_objecoes: countFreq(allObjecoes).slice(0, 15),
+        principais_gargalos: countFreq(allGargalos).slice(0, 10),
+        resumo_por_chat: chatSummaries,
+      });
     } catch (e: any) {
       return `Erro ao buscar relatórios de qualidade: ${e.message}`;
     }

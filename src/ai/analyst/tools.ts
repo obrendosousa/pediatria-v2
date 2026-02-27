@@ -24,7 +24,7 @@ type ChatMessageRow = {
   created_at: string | null;
 };
 
-const MAX_LIMIT = 50;
+const MAX_LIMIT = 100;
 
 function parseIsoDateOrThrow(value: string, fieldName: string): Date {
   const parsed = new Date(value);
@@ -97,11 +97,19 @@ const filteredChatsSchema = z.object({
     .optional()
     .default(false)
     .describe("Se true, busca chats ativos sem interacao nas ultimas 24h."),
+  start_date: z
+    .string()
+    .optional()
+    .describe("Data inicial (ISO ou YYYY-MM-DD, fuso America/Sao_Paulo) para filtrar por last_interaction_at. Ex: '2026-02-25' para ontem."),
+  end_date: z
+    .string()
+    .optional()
+    .describe("Data final (ISO ou YYYY-MM-DD, fuso America/Sao_Paulo) para filtrar por last_interaction_at. Ex: '2026-02-26' para hoje."),
   limit: z
     .number()
     .optional()
-    .default(10)
-    .describe("Quantidade maxima de chats retornados (max 50)."),
+    .default(50)
+    .describe("Quantidade maxima de chats retornados (max 100)."),
 });
 
 const chatCascadeSchema = z.object({
@@ -187,15 +195,14 @@ export const getFilteredChatsListTool = new DynamicStructuredTool({
   description:
     "Retorna lista de chats por filtros de stage, sentimento e estagnacao (24h sem interacao).",
   schema: filteredChatsSchema,
-  func: async ({ stage, sentiment, is_stalled = false, limit = 10 }) => {
-    // A trava de seguranca do limite (max 50) e feita aqui no codigo.
+  func: async ({ stage, sentiment, is_stalled = false, start_date, end_date, limit = 50 }) => {
     const safeLimit = Math.min(Math.max(limit, 1), MAX_LIMIT);
     const supabase = getSupabaseAdminClient();
 
     let query = supabase
       .from("chats")
       .select("id, contact_name, phone, stage, ai_sentiment, last_interaction_at, ai_summary, status")
-      .order("last_interaction_at", { ascending: true })
+      .order("last_interaction_at", { ascending: false })
       .limit(safeLimit);
 
     if (stage) query = query.eq("stage", stage);
@@ -206,13 +213,23 @@ export const getFilteredChatsListTool = new DynamicStructuredTool({
       query = query.eq("status", "ACTIVE").lt("last_interaction_at", threshold);
     }
 
+    if (start_date) {
+      const parsed = parseDateInput(start_date, "start_date", false);
+      query = query.gte("last_interaction_at", parsed.toISOString());
+    }
+
+    if (end_date) {
+      const parsed = parseDateInput(end_date, "end_date", true);
+      query = query.lte("last_interaction_at", parsed.toISOString());
+    }
+
     const { data, error } = await query;
     if (error) {
       throw new Error(`Falha ao consultar lista de chats: ${error.message}`);
     }
 
     return JSON.stringify({
-      filters: { stage: stage ?? null, sentiment: sentiment ?? null, is_stalled },
+      filters: { stage: stage ?? null, sentiment: sentiment ?? null, is_stalled, start_date: start_date ?? null, end_date: end_date ?? null },
       total: data?.length ?? 0,
       chats: (data ?? []) as ChatRow[],
     });
