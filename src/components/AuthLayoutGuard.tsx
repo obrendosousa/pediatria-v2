@@ -84,11 +84,11 @@ export default function AuthLayoutGuard({ children }: { children: React.ReactNod
   // Renderização da Aplicação Protegida
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full min-w-0 transition-colors duration-500">
+      <div className="flex h-screen w-full min-w-0 transition-colors duration-500 print:block print:h-auto print:bg-white">
         <SidebarWrapper>
           <Navigation />
         </SidebarWrapper>
-        <main className="flex-1 min-w-0 overflow-hidden relative w-full h-full transition-all duration-500 ease-in-out">
+        <main className="flex-1 min-w-0 overflow-hidden relative w-full h-full transition-all duration-500 ease-in-out print:overflow-visible print:h-auto">
           {children}
         </main>
       </div>

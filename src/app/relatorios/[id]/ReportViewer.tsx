@@ -77,7 +77,7 @@ export default function ReportViewer({ report }: { report: Report }) {
   }, [report.created_at]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0b141a] print:bg-white">
+    <div className="h-full overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-[#0b141a] print:bg-white print:overflow-visible">
       {/* Header */}
       <div className="sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-[#111b21]/90 backdrop-blur-sm print:hidden">
         <div className="mx-auto max-w-4xl px-4 py-3 flex items-center justify-between gap-4">

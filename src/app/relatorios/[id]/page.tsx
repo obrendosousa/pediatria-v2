@@ -3,10 +3,11 @@ import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin"
 import ReportViewer from "./ReportViewer";
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default async function ReportPage({ params }: Props) {
+export default async function ReportPage(props: Props) {
+  const params = await props.params;
   const id = Number(params.id);
   if (!id || isNaN(id)) notFound();
 
