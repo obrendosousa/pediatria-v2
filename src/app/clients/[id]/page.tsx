@@ -3,6 +3,7 @@
 import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { PatientMedicalRecordView } from '@/components/medical-record/PatientMedicalRecordView';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -10,6 +11,7 @@ interface PageProps {
 
 export default function ClientDetailPage({ params }: PageProps) {
   const router = useRouter();
+  const { profile } = useAuth();
   const resolvedParams = use(params);
   const patientId = parseInt(resolvedParams.id);
 
@@ -35,8 +37,9 @@ export default function ClientDetailPage({ params }: PageProps) {
     <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#0b141a] overflow-hidden">
       {/* Prontuário */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        <PatientMedicalRecordView 
+        <PatientMedicalRecordView
           patientId={patientId}
+          currentDoctorId={profile?.doctor_id}
           onRefresh={() => {
             // Refresh pode ser implementado se necessário
           }}

@@ -26,6 +26,8 @@ interface AttendanceLayoutProps {
   consultationDuration: number;
   onFinishConsultation: () => void;
   onRefresh?: () => void;
+  appointmentId?: number | null;
+  medicalRecordId?: number | null;
 }
 
 const screenComponents: Record<AttendanceTabKey, React.ComponentType<AttendanceScreenProps>> = {
@@ -52,7 +54,9 @@ export function AttendanceLayout({
   isConsultationActive,
   consultationDuration,
   onFinishConsultation,
-  onRefresh
+  onRefresh,
+  appointmentId,
+  medicalRecordId,
 }: AttendanceLayoutProps) {
   const [activeTab, setActiveTab] = useState<AttendanceTabKey>('overview');
 
@@ -75,7 +79,8 @@ export function AttendanceLayout({
           patientId={patientId}
           patientData={patientData}
           onRefresh={onRefresh}
-          appointmentId={undefined}
+          appointmentId={appointmentId ?? undefined}
+          medicalRecordId={medicalRecordId ?? undefined}
         />
       </div>
     </div>

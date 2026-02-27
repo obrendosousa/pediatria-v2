@@ -134,12 +134,20 @@ export async function POST(req: Request) {
 
                 // Traduz nomes técnicos para o frontend (se o frontend suportar)
                 let statusLabel = `tool:${event.name}`;
-                if (event.name === 'deep_research_chats' || event.name === 'deep_research_chats_tool') {
-                  statusLabel = 'tool:Analisando Lotes (Map-Reduce)...';
+                if (event.name === 'web_search') {
+                  statusLabel = 'tool:web_search';
+                } else if (event.name === 'query_database') {
+                  statusLabel = 'tool:query_database';
+                } else if (event.name === 'deep_research_chats' || event.name === 'deep_research_chats_tool') {
+                  statusLabel = 'tool:deep_research_chats';
+                } else if (event.name === 'get_filtered_chats_list') {
+                  statusLabel = 'tool:get_filtered_chats_list';
+                } else if (event.name === 'get_chat_cascade_history') {
+                  statusLabel = 'tool:get_chat_cascade_history';
                 } else if (event.name === 'analisar_chat_especifico') {
-                  statusLabel = 'tool:Iniciando extração de dados do chat...';
+                  statusLabel = 'tool:analisar_chat_especifico';
                 } else if (event.name === 'gerar_relatorio_qualidade_chats') {
-                  statusLabel = 'tool:Consolidando qualidade do atendimento...';
+                  statusLabel = 'tool:gerar_relatorio_qualidade_chats';
                 }
                 broadcastStatus(statusLabel);
                 break;

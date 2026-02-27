@@ -22,6 +22,7 @@ export interface AttendanceScreenProps {
   patientData: any;
   onRefresh?: () => void;
   appointmentId?: number | null;
+  medicalRecordId?: number | null;
 }
 
 export interface AttendanceMenuItem {

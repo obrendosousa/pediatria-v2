@@ -67,6 +67,127 @@ export interface DiagnosticHypothesisData {
   observations?: string | null;                  // OBSERVAÇÕES (rich text)
 }
 
+export interface EmergencyConsultationData {
+  acompanhantes?: string | null;
+  alergias?: string | null;
+  internacoes?: string | null;
+  antecedentes_mae?: string | null;
+  antecedentes_pai?: string | null;
+  estuda_turno?: string | null;
+  medicacoes_em_uso?: string | null;        // rich text
+  motivo_consulta?: string | null;          // rich text
+  ja_teve_quadro?: 'sim' | 'não' | null;
+  ronca_coriza_tosse?: 'sim' | 'não' | null;
+  alimentacao_mingal?: 'sim' | 'não' | null;
+  cafe_almoco_janta?: string | null;        // rich text
+  marca_produtos_banho?: string | null;
+  evacua_consistencia?: string | null;
+  diurese_sinequia_fimose?: 'sim' | 'não' | null;
+  exposicao_tela?: string | null;
+}
+
+export interface FollowUpData {
+  retorno?: string | null;      // rich text
+  fez_exames?: 'sim' | 'não' | null;
+  condutas?: string | null;     // rich text
+}
+
+export interface FirstConsultationAnamnesisData {
+  // Seção 1: Informações Pessoais
+  acompanhantes?: string | null;
+  mora_onde?: string | null;
+  profissoes_pais?: string | null;
+  escola_serie_turno?: string | null;
+  como_conheceu?: string | null;
+  indicacao_de_quem?: string | null;
+  naturalidade?: string | null;
+  rede_apoio_baba?: string | null;
+  antecedentes?: string | null;
+  alergias?: string | null;
+  historico_molestia_atual?: string | null;         // rich text
+  // Seção 2: Antecedentes
+  internacoes?: string | null;
+  antecedentes_dos_pais?: string | null;            // rich text
+  tem_irmaos?: string[] | null;                     // checkboxes: ['1','2','3']
+  nome_irmaos?: string | null;
+  medicamentos_em_uso?: string[] | null;            // checkboxes: vitamina_d, ferro, polivitaminico, redoxon
+  motivo_consulta?: string | null;                  // rich text
+  rede_apoio_opcoes?: string[] | null;              // checkboxes: avos_maternos, avos_paternos, baba, outros
+  baby_blues?: string | null;
+  entregar_escala_edimburgo?: string | null;
+  // Seção 3: Mãe e Alimentação
+  mae_sentindo_fraca?: string | null;
+  suplementacao_mae?: string | null;
+  historico_alimentar_ame_formula?: string | null;
+  dar_agua?: 'sim' | 'não' | null;
+  dar_cha?: 'sim' | 'não' | null;
+  formula_detalhes?: string | null;
+  amamentacao?: string | null;                      // rich text
+  // Seção 4: Adaptação e Sintomas do RN
+  adaptacao_nenem?: 'sim' | 'não' | null;
+  solucos?: 'sim' | 'não' | null;
+  colicas?: 'sim' | 'não' | null;
+  gorfo?: 'sim' | 'não' | null;
+  posicao_arrotar?: 'sim' | 'não' | null;
+  posicao_bb_dormir?: 'sim' | 'não' | null;
+  tem_dado_colo?: 'sim' | 'não' | null;
+  faz_banho_sol?: 'sim' | 'não' | null;
+  medicacao_em_uso_bebe?: string | null;
+  vacinas_em_dia?: 'sim' | 'não' | null;
+  usa_chupeta?: 'sim' | 'não' | null;
+  // Seção 5: Higiene e Cuidados
+  limpa_boca_apos_mamadas?: string | null;
+  olho_secrecao?: string | null;
+  limpa_ouvido?: string | null;
+  limpeza_coto_umbilical?: string[] | null;         // checkboxes: alcool_70, agua_sabao
+  coto_umbilical_dias?: string[] | null;            // checkboxes: <10dias, >10dias
+  banho_rn_frequencia?: string | null;              // dropdown
+  usa_perfume?: 'sim' | 'não' | null;
+  usa_talco?: 'sim' | 'não' | null;
+  corte_unha?: string[] | null;                     // checkboxes: redondo, quadrado
+  evacuacoes_cor_disquesia?: string | null;
+  troca_fraldas_material?: string[] | null;         // checkboxes: lenco_umedecido, agua_morna
+  qual_marca_fralda?: string | null;
+  usa_travesseiro?: 'sim' | 'não' | null;
+  // Seção 6: Sono e Desenvolvimento
+  sonecas_dorme_aonde?: string | null;
+  sono_noite?: string | null;
+  dnpm_observa_rosto?: string | null;
+  pedir_usg_quadril?: 'sim' | 'não' | null;
+  fontanela?: 'sim' | 'não' | null;
+  crosta_lactea?: string | null;
+  // Seção 7: Orientações Finais
+  que_sabao?: string | null;
+  mostrar_visao_bebe?: string | null;
+  ler_para_bebe?: string | null;
+  vacinas_2_meses?: string | null;
+  entregar_farmacinha?: 'sim' | 'não' | null;
+  sempre_marcar_retorno?: string | null;
+}
+
+export interface FoodHistoryData {
+  // Campos de texto
+  leite_materno_exclusivo?: string | null;       // LEITE MATERNO / ATÉ QUE IDADE EXCLUSIVO?
+  formula_infantil?: string | null;              // FÓRMULA INFANTIL / QUAL / COMO DILUIU?
+  idade_introducao_alimentar?: string | null;    // INTRODUÇÃO ALIMENTAR / QUE IDADE?
+  dificuldade_introducao?: string | null;        // QUAL MAIOR DIFICULDADE / INTRODUÇÃO ALIMENTAR? (rich text)
+  mingau_industrializado?: string | null;        // MINGAL INDUSTRIALIZADOS?
+  refeicoes_diarias?: string | null;             // CAFÉ, ALMOÇO, LANCHE E JANTA? (rich text)
+  alimento_nao_aceita?: string | null;           // ALGUM ALIMENTO QUE NÃO ACEITA?
+  textura_quantidade?: string | null;            // TEXTURA DA COMIDA, QUANTIDADE?
+  local_comida?: string | null;                  // LOCAL DA COMIDA?
+  // Campos radio (Sim/Não)
+  aceitou_introducao?: 'sim' | 'não' | null;    // ACEITAÇÃO INTRODUÇÃO ALIMENTAR?
+  aceita_suco?: 'sim' | 'não' | null;           // SUCO?
+  aceita_sopa?: 'sim' | 'não' | null;           // SOPA?
+  aceita_agua?: 'sim' | 'não' | null;           // ACEITA ÁGUA?
+  aceita_frutas?: 'sim' | 'não' | null;         // ACEITA FRUTAS?
+  aceita_legumes?: 'sim' | 'não' | null;        // ACEITA LEGUMES E VERDURAS?
+  aceita_proteinas?: 'sim' | 'não' | null;      // ACEITAS PROTEÍNAS, CARNES?
+  aceita_carboidratos?: 'sim' | 'não' | null;   // ACEITA ARROZ, MACARRÃO, FEIJÃO?
+  aceita_ovo_peixe?: 'sim' | 'não' | null;      // ACEITA OVO E PEIXE?
+}
+
 export interface MedicalRecordData {
   id?: number;
   appointment_id?: number | null;
@@ -89,6 +210,10 @@ export interface MedicalRecordData {
   adolescent_consultation?: AdolescentConsultationData | null;
   exam_results_data?: ExamResultsData | null;
   diagnostic_hypothesis_data?: DiagnosticHypothesisData | null;
+  food_history?: FoodHistoryData | null;
+  first_consultation_anamnesis?: FirstConsultationAnamnesisData | null;
+  follow_up_data?: FollowUpData | null;
+  emergency_consultation?: EmergencyConsultationData | null;
   started_at?: string | null;
   finished_at?: string | null;
   status?: 'draft' | 'signed';
@@ -149,6 +274,22 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
         // Parse diagnostic_hypothesis_data se for string
         if (data.diagnostic_hypothesis_data && typeof data.diagnostic_hypothesis_data === 'string') {
           data.diagnostic_hypothesis_data = JSON.parse(data.diagnostic_hypothesis_data);
+        }
+        // Parse food_history se for string
+        if (data.food_history && typeof data.food_history === 'string') {
+          data.food_history = JSON.parse(data.food_history);
+        }
+        // Parse first_consultation_anamnesis se for string
+        if (data.first_consultation_anamnesis && typeof data.first_consultation_anamnesis === 'string') {
+          data.first_consultation_anamnesis = JSON.parse(data.first_consultation_anamnesis);
+        }
+        // Parse follow_up_data se for string
+        if (data.follow_up_data && typeof data.follow_up_data === 'string') {
+          data.follow_up_data = JSON.parse(data.follow_up_data);
+        }
+        // Parse emergency_consultation se for string
+        if (data.emergency_consultation && typeof data.emergency_consultation === 'string') {
+          data.emergency_consultation = JSON.parse(data.emergency_consultation);
         }
         setRecord(data);
       } else {

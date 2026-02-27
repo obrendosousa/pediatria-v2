@@ -158,11 +158,6 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const [aiDraftReason, setAiDraftReason] = useState<string | null>(chat?.ai_draft_reason ?? null);
   const [isLoadingAISuggestion, setIsLoadingAISuggestion] = useState(false);
 
-  // Modo Plano — disponível apenas no chat interno da Clara (phone='00000000000')
-  const isClaraChat = chat?.phone === '00000000000';
-  const [isPlanMode, setIsPlanMode] = useState(false);
-  const [lastPlanTask, setLastPlanTask] = useState<string | null>(null);
-
   const handleSendFile = useCallback(async (file: File | Blob, caption: string, typeOverride?: string, metadata?: any) => {
     if (!chat) return;
 
@@ -375,12 +370,6 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const handleSendMessage = useCallback(async (txt: string, _type?: string, _file?: File, metadata?: any) => {
     if (!txt.trim() || !chat) return;
 
-    // Modo Plano: prefixar com [PLANEJAR] e guardar a tarefa original para o botão Executar
-    if (isClaraChat && isPlanMode && !metadata?.editingMessage) {
-      setLastPlanTask(txt);
-      txt = `[PLANEJAR] ${txt}`;
-    }
-
     if (metadata?.editingMessage) {
       await editMessage(metadata.editingMessage, txt);
       setEditingMessage(null);
@@ -507,18 +496,6 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     });
     setIsCreateScheduleOpen(true);
   }, []);
-
-  const handleTogglePlanMode = useCallback(() => {
-    setIsPlanMode((prev) => !prev);
-  }, []);
-
-  const handleExecutePlan = useCallback(() => {
-    if (!lastPlanTask) return;
-    const task = lastPlanTask;
-    setLastPlanTask(null);
-    setIsPlanMode(false);
-    handleSendMessage(task);
-  }, [lastPlanTask, handleSendMessage]);
 
   const handleRequestAISuggestion = useCallback(async () => {
     if (!chat?.id || isLoadingAISuggestion) return;
@@ -732,10 +709,6 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           onRequestAISuggestion={handleRequestAISuggestion}
           onApproveAIDraft={handleApproveDraft}
           onDiscardAIDraft={handleClearDraft}
-          isPlanMode={isPlanMode}
-          onTogglePlanMode={isClaraChat ? handleTogglePlanMode : undefined}
-          hasPendingPlan={!!lastPlanTask}
-          onExecutePlan={handleExecutePlan}
         />
       </div>
 

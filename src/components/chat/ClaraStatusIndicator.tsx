@@ -17,6 +17,7 @@ import {
   ClipboardList,
   CheckCircle2,
   FileText,
+  Globe,
 } from 'lucide-react';
 
 type StatusConfig = {
@@ -74,6 +75,15 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
     iconAnimation: 'pulse',
   },
 
+  // ── Busca Web ─────────────────────────────────────────────────────────────
+  'tool:web_search': {
+    Icon: Globe,
+    label: 'Pesquisando na internet...',
+    iconBg: 'from-sky-400 to-blue-500',
+    dotColor: 'bg-sky-400',
+    iconAnimation: 'spin',
+  },
+
   // ── Deep Research — ferramentas especializadas ────────────────────────────
   'tool:deep_research_chats': {
     Icon: Map,
@@ -98,6 +108,13 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
   },
 
   // ── Ferramentas originais da Clara ────────────────────────────────────────
+  'tool:query_database': {
+    Icon: Database,
+    label: 'Consultando banco de dados...',
+    iconBg: 'from-emerald-500 to-teal-600',
+    dotColor: 'bg-emerald-400',
+    iconAnimation: 'spin',
+  },
   'tool:query_database_table': {
     Icon: Database,
     label: 'Consultando banco de dados...',
@@ -132,6 +149,20 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
     iconBg: 'from-orange-500 to-amber-600',
     dotColor: 'bg-orange-400',
     iconAnimation: 'bounce',
+  },
+  'tool:analisar_chat_especifico': {
+    Icon: FileSearch,
+    label: 'Analisando conversa em profundidade...',
+    iconBg: 'from-violet-500 to-purple-600',
+    dotColor: 'bg-violet-400',
+    iconAnimation: 'spin',
+  },
+  'tool:gerar_relatorio_qualidade_chats': {
+    Icon: ClipboardList,
+    label: 'Compilando métricas de qualidade...',
+    iconBg: 'from-amber-500 to-orange-600',
+    dotColor: 'bg-amber-400',
+    iconAnimation: 'pulse',
   },
   'tool:extract_and_save_knowledge': {
     Icon: BookmarkPlus,

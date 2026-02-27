@@ -49,13 +49,13 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
 
   async function fetchPatientDetails(id: number) {
     setIsLoadingDetails(true);
-    
+
     const { data: pData } = await supabase
       .from('patients')
       .select('*')
       .eq('id', id)
       .single();
-      
+
     const { data: sData } = await supabase
       .from('clinical_summaries')
       .select('*')
@@ -64,7 +64,7 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
 
     if (pData) {
       setPatientData(pData);
-      
+
       // Buscar telefone principal
       const phones = await getPatientPhones(id);
       const primary = phones.find(p => p.is_primary) || phones[0];
@@ -74,7 +74,7 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
         setPrimaryPhone(pData.phone);
       }
     }
-    
+
     setSummaryData(sData);
     setIsLoadingDetails(false);
   }
@@ -108,11 +108,12 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
     try {
       await startConsultationTimer();
       setIsConsultationActive(true);
+      setActiveView('attendance');
     } catch (error) {
       console.error('Erro ao iniciar atendimento:', error);
     }
   };
-  
+
   const handleFinishConsultation = () => {
     setShowFinishModal(true);
   };
@@ -121,6 +122,8 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
     setIsConsultationActive(false);
     setConsultationTimer(0);
     setShowFinishModal(false);
+    setActiveView('summary');
+    setRefreshTrigger(prev => prev + 1);
     if (onRefresh) onRefresh();
   };
 
@@ -153,7 +156,7 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
 
   return (
     <div className="flex-1 flex flex-col min-w-0 h-full relative bg-slate-50/50 dark:bg-[#0b141a] animate-in fade-in duration-300">
-      <PatientStickyHeader 
+      <PatientStickyHeader
         patient={patientData}
         summary={summaryData}
         onStartConsultation={handleStartConsultation}
@@ -176,10 +179,9 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
             onClick={() => setActiveView('summary')}
             className={`
               px-4 py-3 font-medium text-sm transition-all duration-200 border-b-2
-              ${
-                activeView === 'summary'
-                  ? 'border-rose-500 text-rose-600 dark:text-rose-400'
-                  : 'border-transparent text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-300'
+              ${activeView === 'summary'
+                ? 'border-rose-500 text-rose-600 dark:text-rose-400'
+                : 'border-transparent text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-300'
               }
             `}
           >
@@ -188,23 +190,24 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
               Resumo
             </div>
           </button>
-          
-          <button
-            onClick={() => setActiveView('attendance')}
-            className={`
-              px-4 py-3 font-medium text-sm transition-all duration-200 border-b-2
-              ${
-                activeView === 'attendance'
+
+          {isConsultationActive && (
+            <button
+              onClick={() => setActiveView('attendance')}
+              className={`
+                px-4 py-3 font-medium text-sm transition-all duration-200 border-b-2
+                ${activeView === 'attendance'
                   ? 'border-rose-500 text-rose-600 dark:text-rose-400'
                   : 'border-transparent text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-300'
-              }
-            `}
-          >
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Atendimento
-            </div>
-          </button>
+                }
+              `}
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Atendimento
+              </div>
+            </button>
+          )}
         </div>
       </div>
 
@@ -212,13 +215,13 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
       {activeView === 'summary' ? (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 scroll-smooth">
           <div className="max-w-7xl mx-auto space-y-8 pb-20">
-            
+
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center gap-2 mb-4 px-1">
-                 <Activity className="w-5 h-5 text-rose-500" />
-                 <h2 className="text-lg font-bold text-slate-700 dark:text-gray-200">Resumo Clínico</h2>
+                <Activity className="w-5 h-5 text-rose-500" />
+                <h2 className="text-lg font-bold text-slate-700 dark:text-gray-200">Resumo Clínico</h2>
               </div>
-              <ClinicalSummaryGrid 
+              <ClinicalSummaryGrid
                 patientId={patientId}
                 summaryData={summaryData}
                 onRefresh={handleRefreshData}
@@ -228,17 +231,18 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
             <div className="border-t border-slate-200 dark:border-gray-800" />
 
             <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-               <div className="flex items-center justify-between mb-6 px-1">
-                  <div className="flex items-center gap-2">
-                    <Stethoscope className="w-5 h-5 text-rose-500" />
-                    <h2 className="text-lg font-bold text-slate-700 dark:text-gray-200">Histórico de Atendimentos</h2>
-                  </div>
-               </div>
-               
-               <ClinicalTimeline 
-                 patientId={patientId}
-                 refreshTrigger={refreshTrigger}
-               />
+              <div className="flex items-center justify-between mb-6 px-1">
+                <div className="flex items-center gap-2">
+                  <Stethoscope className="w-5 h-5 text-rose-500" />
+                  <h2 className="text-lg font-bold text-slate-700 dark:text-gray-200">Histórico de Atendimentos</h2>
+                </div>
+              </div>
+
+              <ClinicalTimeline
+                patientId={patientId}
+                refreshTrigger={refreshTrigger}
+                patientData={patientData}
+              />
             </section>
 
           </div>
@@ -252,6 +256,8 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
             consultationDuration={consultationTimer}
             onFinishConsultation={handleFinishConsultation}
             onRefresh={handleRefreshData}
+            appointmentId={appointmentId ?? undefined}
+            medicalRecordId={record?.id ?? undefined}
           />
         </div>
       )}
@@ -317,7 +323,7 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              <PatientPhonesManager 
+              <PatientPhonesManager
                 patientId={patientId}
                 onPhoneAdded={async () => {
                   await fetchPatientDetails(patientId);

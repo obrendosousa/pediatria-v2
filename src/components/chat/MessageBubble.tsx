@@ -6,6 +6,7 @@ import AudioMessage from './AudioMessage';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 import EmojiPicker, { Emoji, EmojiStyle, Theme } from 'emoji-picker-react';
 import FormattedMessage from '@/components/ui/FormattedMessage';
+import ClaraMarkdownMessage from '@/components/chat/ClaraMarkdownMessage';
 
 interface MessageBubbleProps {
   message: Message;
@@ -272,6 +273,15 @@ export default function MessageBubble({
               Executar
             </button>
           </div>
+        </div>
+      );
+    }
+
+    // Mensagens da Clara renderizam Markdown completo (títulos, tabelas, listas, código)
+    if (isAIChat && !isMe) {
+      return (
+        <div className="pt-1">
+          <ClaraMarkdownMessage text={text} />
         </div>
       );
     }

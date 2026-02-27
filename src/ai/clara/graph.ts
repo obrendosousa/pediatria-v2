@@ -5,6 +5,7 @@ import {
   SystemMessage,
   ToolMessage,
 } from "@langchain/core/messages";
+import { z } from "zod";
 import { END, START, StateGraph } from "@langchain/langgraph";
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
@@ -163,53 +164,26 @@ const claraWorkflow = new StateGraph<ClaraState>({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NODE 1: router_and_planner_node
+// NODE 1: router_and_planner_node — PLANEJADOR DINÂMICO (Camada 2)
+// Substituiu o sistema de keywords hardcoded + planos fixos por um LLM que gera
+// planos arbitrários baseados no esquema real do banco e nas ferramentas disponíveis.
+// Inspirado na arquitetura open_deep_research (langchain-ai/open_deep_research).
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Palavras-chave que indicam DEEP RESEARCH (análise de múltiplos chats).
-// Fast-path: se encontrarmos uma, classificamos como complexo imediatamente (sem LLM).
-const DEEP_RESEARCH_KEYWORDS = [
-  "analise", "analis", "padrão", "padroes", "objeç", "objecao", "objeções",
-  "leia as conversas", "leia os chats", "pesquise os chats", "pesquise as conversas",
-  "quais chats", "quais conversas", "todos os chats", "varios chats", "vários chats",
-  "relatório", "relatorio", "mapeie", "mapeamento", "tendência", "tendencias",
-];
-
-// Palavras-chave que indicam uso do Sub-Grafo estruturado (analisar_chat_especifico).
-// Quando detectadas, o plano nomeia as ferramentas explicitamente para evitar conflito.
-const STRUCTURED_GRAPH_KEYWORDS = [
-  "novo grafo", "novo graph", "novo grapho", "sub-grafo", "sub-graph",
-  "nova ferramenta", "novo sistema", "subgrafo", "subgraph", "novo agente",
-  "analisar_chat_especifico", "chatanalyzer",
-];
-
-function needsStructuredGraph(text: string): boolean {
-  const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  return STRUCTURED_GRAPH_KEYWORDS.some((kw) =>
-    lower.includes(kw.normalize("NFD").replace(/[\u0300-\u036f]/g, ""))
-  );
-}
-
-// Palavras-chave que indicam resposta SIMPLES (sem LLM no router).
+// Fast-path apenas para saudações/acks — evita chamar LLM para "oi", "ok", etc.
 const SIMPLE_KEYWORDS = [
   "oi", "olá", "ola", "tudo bem", "bom dia", "boa tarde", "boa noite",
-  "obrigado", "obrigada", "valeu", "ok", "certo", "entendi", "beleza",
+  "obrigado", "obrigada", "valeu", "ok", "certo", "entendi", "beleza", "ótimo", "otimo",
 ];
 
-function classifyMessageFast(text: string): "complex" | "simple" | "unknown" {
-  const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  if (DEEP_RESEARCH_KEYWORDS.some((kw) => lower.includes(kw.normalize("NFD").replace(/[\u0300-\u036f]/g, "")))) {
-    return "complex";
-  }
-  if (SIMPLE_KEYWORDS.some((kw) => lower === kw || lower.startsWith(kw + " ") || lower.endsWith(" " + kw))) {
-    return "simple";
-  }
-  // Mensagens muito curtas (≤ 6 palavras) sem palavras de pesquisa → provavelmente simples
-  if (lower.split(/\s+/).filter(Boolean).length <= 6) {
-    return "simple";
-  }
-  return "unknown";
-}
+// Schema de saída estruturada do planejador
+const PlanSchema = z.object({
+  classification: z
+    .enum(["simple", "complex"])
+    .describe("'simple' para perguntas diretas/conversas. 'complex' para análise de dados, relatórios, pesquisas."),
+  reasoning: z.string().describe("Justificativa em 1 frase do plano escolhido."),
+  plan: z.array(z.string()).describe("Lista de 1-5 passos de execução com ferramenta e parâmetros explícitos. Vazio se 'simple'."),
+});
 
 claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
   const lastMessage = state.messages[state.messages.length - 1];
@@ -223,152 +197,102 @@ claraWorkflow.addNode("router_and_planner_node", async (state: ClaraState) => {
           .join(" ")
         : "";
 
-  // Helper: salva mensagem de status SEMPRE no chat interno da Clara (phone='00000000000').
-  // Nunca usa state.chat_id diretamente, pois quando chamado pelo heartbeat o chat_id
-  // pode ser de um paciente real, e a mensagem vazaria para o chat desse paciente.
-  async function saveStatusMessage(planSteps: string[]) {
-    try {
-      const supabase = getSupabaseAdminClient();
-
-      // Busca o ID do chat interno da Clara
-      const { data: claraChat } = await (supabase as any)
-        .from("chats")
-        .select("id")
-        .eq("phone", "00000000000")
-        .single();
-
-      if (!claraChat?.id) return; // Chat interno não encontrado — não salva nada
-
-      const planText = planSteps.map((s, i) => `${i + 1}. ${s}`).join("\n");
-      const statusText = `🔍 *Análise profunda iniciada.* Vou executar o seguinte plano:\n\n${planText}\n\n_Aguarde enquanto processo os dados..._`;
-      await (supabase as any).from("chat_messages").insert({
-        chat_id: claraChat.id,
-        sender: "AI_AGENT",
-        message_text: statusText,
-        bot_message: true,
-        message_type: "text",
-      });
-    } catch {
-      // Falha silenciosa — não bloqueia a execução
-    }
-  }
-
-  // ── Fast-path: classificação por heurísticas sem LLM ─────────────────────
-
-  // Verifica se o usuário enviou a mensagem com a flag [PLANEJAR]
-  const isPlanMode = userText.startsWith("[PLANEJAR] ");
-  const cleanUserText = isPlanMode ? userText.replace("[PLANEJAR] ", "") : userText;
-
-  const fastResult = classifyMessageFast(cleanUserText);
-  if (fastResult === "simple" && !isPlanMode) {
+  // ── Fast-path: saudações/acks → simple_agent sem LLM ─────────────────────
+  const lower = userText.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const wordCount = lower.split(/\s+/).filter(Boolean).length;
+  const isGreeting = SIMPLE_KEYWORDS.some(
+    (kw) => lower === kw || lower.startsWith(kw + " ") || lower.endsWith(" " + kw)
+  );
+  if (isGreeting || wordCount <= 4) {
     return { is_deep_research: false, is_planning_phase: false };
   }
 
-  if (fastResult === "complex" || isPlanMode) {
-    const useStructuredGraph = needsStructuredGraph(cleanUserText);
+  // ── Planejador Dinâmico via LLM com Structured Output ────────────────────
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const nowBR = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+  const cleanUserText = userText;
 
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const PLANNER_SYSTEM = `Você é o Planejador Estratégico da Clara, assistente analítica de uma clínica médica.
 
-    const plan = useStructuredGraph
-      ? [
-          `Use a ferramenta get_filtered_chats_list com os parâmetros start_date='${yesterday}' e end_date='${today}' para buscar os chats ativos no período solicitado. Retorne a lista completa de IDs dos chats encontrados.`,
-          "Use a ferramenta analisar_chat_especifico passando TODOS os IDs obtidos no passo anterior. Ela analisará cada chat individualmente via Sub-Grafo e salvará os insights estruturados (objeções, gargalos, nota, decisão) na tabela chat_insights.",
-          "Use a ferramenta gerar_relatorio_qualidade_chats com dias_retroativos=2 para compilar as análises salvas e apresente o relatório final consolidado com as principais objeções identificadas e como foram tratadas.",
-        ]
-      : [
-          "Buscar a lista de chats relevantes para a análise solicitada usando get_filtered_chats_list com os filtros adequados (stage, sentiment, start_date, end_date).",
-          "Executar análise profunda nos chats encontrados usando deep_research_chats e compilar os insights em formato de relatório estruturado.",
-        ];
+CONTEXTO TEMPORAL:
+• Hoje: ${today} | Ontem: ${yesterday} | Hora atual (SP): ${nowBR}
 
-    if (isPlanMode) {
-      await saveStatusMessage(plan);
-      const outputMsg = new AIMessage(
-        `📋 *Plano gerado.*\n\n${plan.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nClique em 'Executar' na aba abaixo para iniciar.`
-      );
-      return {
-        is_deep_research: true,
-        is_planning_phase: true, // Pausa o workflow
-        plan,
-        current_step_index: 0,
-        messages: [outputMsg],
-      };
-    }
+════════════════════════════════════════════
+BANCO DE DADOS — ESQUEMA COMPLETO (Supabase)
+════════════════════════════════════════════
+• chats: id, phone, contact_name, stage (new|qualified|lost|won), ai_sentiment (positivo|neutro|negativo), last_interaction_at, ai_summary, status, is_archived, unread_count
+• chat_messages: id, chat_id, phone, sender (AI_AGENT|HUMAN_AGENT|CUSTOMER|me), message_text, created_at, message_type (text|audio|image|document)
+• chat_insights: id, chat_id, nota_atendimento (0-10), sentimento, objecoes[], gargalos[], decisao, resumo_analise, metricas_extras, created_at
+• clara_reports: id, titulo, conteudo_markdown, tipo (analise_chats|financeiro|agendamento|geral), created_at
+• clara_memories: id, memory_type, content, source_role, created_at
+• knowledge_base: pergunta, resposta_ideal, categoria, tags
 
-    // Se não estivar no modo planejamento explicito (execução real ativada)
-    return {
-      is_deep_research: true,
-      is_planning_phase: false,
-      plan,
-      current_step_index: 0,
-    };
-  }
-  // ── Fallback: classificação via LLM (apenas para mensagens ambíguas) ──────
-  const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-flash-preview",  // Flash é suficiente para classificação
-    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-    temperature: 0,
-  });
+════════════════════════════════════════════
+FERRAMENTAS DISPONÍVEIS (use nomes exatos)
+════════════════════════════════════════════
+BANCO DE DADOS:
+• query_database — Consulta qualquer tabela com filtros precisos. Parâmetros: table, columns, date_from (YYYY-MM-DD), date_to (YYYY-MM-DD), date_field, eq_filters {campo: valor}, ilike_filters {campo: "texto"}, order_by, limit (máx 200). Para chats inclua sempre "id, contact_name" em columns.
+• generate_sql_report — (NOVO) Consulta AVANÇADA e contagens precisas (COUNT, SUM, AVG) gerando SQL puro no PostgreSQL. Ideal para relatórios de métricas, total de leads, ticket médio ou agrupamentos. Parâmetro: pergunta_em_linguagem_natural.
+• get_filtered_chats_list — Lista IDs de chats. Parâmetros: stage, sentiment, start_date (YYYY-MM-DD), end_date (YYYY-MM-DD), limit (máx 100).
+• get_chat_cascade_history — Transcrição completa de UM chat. Parâmetros: chat_id.
 
-  const ROUTER_PROMPT = `Você é o classificador de tarefas da Clara. Analise a mensagem e responda SOMENTE com JSON.
+ANÁLISE DE CONVERSAS:
+• deep_research_chats — Análise exploratória rápida de múltiplos chats (Map-Reduce, NÃO persiste). Parâmetros: objetivo_da_analise, chat_ids[]. Use para investigar semântica e conteúdo.
+• analisar_chat_especifico — Análise estruturada profunda com persistência em chat_insights. Parâmetros: chat_ids[] (máx 30). Use quando precisar de nota, objeções, gargalos por chat.
+• gerar_relatorio_qualidade_chats — Compila métricas de chat_insights. Parâmetros: dias_retroativos.
 
-MENSAGEM: "${userText}"
+INTERNET:
+• web_search — Pesquisa na internet. Parâmetros: query, max_results.
 
-DEEP RESEARCH (is_complex: true): pedido de análise de MÚLTIPLOS chats, padrões, relatórios.
-RESPOSTA DIRETA (is_complex: false): tudo mais (perguntas, instruções, conversas, regras).
+MEMÓRIA & CONHECIMENTO:
+• manage_long_term_memory — Lê/salva memórias. Parâmetros: action (salvar|consultar), memory_type, content.
+• search_knowledge_base — Busca gabaritos. Parâmetros: termo_busca.
+• read_brain_files — Lê configurações. Parâmetros: module (company|rules|all).
+• update_brain_file — Atualiza configurações. Parâmetros: module, new_content.
 
-Responda APENAS:
-{"is_complex":boolean,"plan":["passo 1","passo 2"],"reasoning":"1 frase"}`;
+RELATÓRIOS:
+• save_report — Persiste relatório. Parâmetros: titulo, conteudo_markdown, tipo.
 
-  let isComplex = false;
-  let plan: string[] = [];
+════════════════════════════════════════════
+REGRAS DE PLANEJAMENTO
+════════════════════════════════════════════
+1. MÁXIMO 5 passos — seja cirúrgico e específico
+2. Use datas EXATAS: hoje=${today}, ontem=${yesterday}
+3. MÉTRICAS, CONTAGENS NUMÉRICAS E TOTAIS: SEMPRE USE 'generate_sql_report' como primeiro passo. NUNCA conte "na mão" (usando array .length no map_reduce).
+4. SEMPRE inclua "id, contact_name" nos resultados de chats ao usar query_database para gerar referências precisas
+5. ANÁLISE SEMÂNTICA EM LOTE: Para investigar razões de desistência (lost) ou feedbacks narrativos (resumos e objeções), use a rota: query_database (buscar IDs) → deep_research_chats (analisar contexto de dezenas simultaneamente).
+6. ANÁLISE COM PERSISTÊNCIA: Use avaliar_chat_especifico apenas quando o usuário exigir o salvamento da Nota, Feeback Unitário e Metadados persistidos no \`chat_insights\`.
+7. O 'deep_research_chats' recebe chat_ids como array numérico direto.
+8. Para fechar um dashboard consolidado complexo, use \`save_report\`.
+9. Mensagens simples (saudação, pergunta de regra, instrução pontual, pergunta sobre configuração) → classification: "simple"`;
 
   try {
-    const response = await model.invoke([new HumanMessage(ROUTER_PROMPT)]);
-    const rawText =
-      typeof response.content === "string"
-        ? response.content
-        : Array.isArray(response.content)
-          ? (response.content as Array<{ type: string; text?: string }>)
-            .filter((c) => c.type === "text")
-            .map((c) => c.text ?? "")
-            .join("")
-          : "";
+    const plannerModel = new ChatGoogleGenerativeAI({
+      model: "gemini-3-flash-preview", // Flash para planning — rápido e suficiente
+      apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+      temperature: 0,
+    }).withStructuredOutput(PlanSchema);
 
-    const jsonText = rawText.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-    const parsed = JSON.parse(jsonText);
-    isComplex = Boolean(parsed.is_complex);
-    plan = Array.isArray(parsed.plan) ? parsed.plan.filter(Boolean) : [];
+    const result = await plannerModel.invoke([
+      new SystemMessage(PLANNER_SYSTEM),
+      new HumanMessage(cleanUserText),
+    ]);
+
+    if (result.classification === "simple") {
+      return { is_deep_research: false, is_planning_phase: false };
+    }
+
+    const plan = result.plan.filter(Boolean);
+    if (plan.length === 0) {
+      return { is_deep_research: false, is_planning_phase: false };
+    }
+
+    return { is_deep_research: true, is_planning_phase: false, plan, current_step_index: 0 };
   } catch {
-    isComplex = false;
-    plan = [];
+    // Fallback seguro: se o planejador falhar, usa simple_agent
+    return { is_deep_research: false, is_planning_phase: false };
   }
-
-  if (isComplex) {
-    // Se o LLM classificou como complexo mas o texto pede o sub-grafo, sobrescreve o plano
-    if (needsStructuredGraph(cleanUserText)) {
-      const t = new Date().toISOString().slice(0, 10);
-      const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-      plan = [
-        `Use a ferramenta get_filtered_chats_list com start_date='${y}' e end_date='${t}' para buscar os chats ativos no período solicitado. Retorne a lista completa de IDs.`,
-        "Use a ferramenta analisar_chat_especifico passando TODOS os IDs obtidos no passo anterior para análise estruturada via Sub-Grafo.",
-        "Use a ferramenta gerar_relatorio_qualidade_chats com dias_retroativos=2 para compilar as análises e apresente o relatório final consolidado.",
-      ];
-    }
-
-    if (plan.length > 0) {
-      if (isPlanMode) {
-        await saveStatusMessage(plan);
-        const outputMsg = new AIMessage(
-          `📋 *Plano gerado.*\n\n${plan.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nClique em 'Executar' na aba abaixo para iniciar.`
-        );
-        return { is_deep_research: true, is_planning_phase: true, plan, current_step_index: 0, messages: [outputMsg] };
-      }
-      return { is_deep_research: true, is_planning_phase: false, plan, current_step_index: 0 };
-    }
-  }
-
-  return { is_deep_research: false, is_planning_phase: false };
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -381,7 +305,7 @@ claraWorkflow.addNode("executor_node", async (state: ClaraState) => {
   const totalSteps = state.plan.length;
 
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-pro-preview",
+    model: "gemini-3-flash-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0.1,
   }).bindTools(researchTools);
@@ -466,7 +390,7 @@ claraWorkflow.addNode("reporter_node", async (state: ClaraState) => {
   const { rules } = await loadBrainFiles();
 
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-pro-preview",
+    model: "gemini-3-flash-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0.3,
   });
@@ -475,25 +399,35 @@ claraWorkflow.addNode("reporter_node", async (state: ClaraState) => {
     .map((note, i) => `=== Nota ${i + 1} ===\n${note} `)
     .join("\n\n");
 
+  const todayReporter = new Date().toISOString().slice(0, 10);
   const REPORTER_SYSTEM = `${CLARA_SYSTEM_PROMPT}
 
 ${rules ? `REGRAS APRENDIDAS ADICIONAIS:\n${rules}` : ""}
 
-INSTRUÇÕES DO RELATÓRIO:
-  Leia as anotações brutas do seu bloco de notas abaixo e escreva uma resposta final em Markdown elegante.
-NÃO mencione o "bloco de notas", "scratchpad" ou qualquer detalhe do processo interno ao usuário.
-Apresente os resultados de forma clara, estruturada e profissional.
+════════════════════════════════════════════
+INSTRUÇÕES DO RELATÓRIO FINAL
+════════════════════════════════════════════
+Você recebeu as anotações brutas de uma pesquisa de dados. Sua tarefa é transformá-las em um relatório Markdown elegante, estruturado e profissional.
+
+REGRAS OBRIGATÓRIAS:
+1. NÃO mencione "bloco de notas", "scratchpad", "passo X", "nota Y" ou qualquer detalhe do processo interno. Escreva APENAS o relatório final.
+2. REFERÊNCIAS DE CHATS — OBRIGATÓRIO: Se as notas contiverem IDs de chats (id) e nomes (contact_name), inclua uma seção "📋 Chats Analisados" com uma tabela Markdown no formato:
+   | # | Chat ID | Contato | Sentimento | Estágio |
+   |---|---------|---------|------------|---------|
+   | 1 | 42      | João Silva | positivo | qualified |
+3. Use Markdown completo: títulos (##, ###), negrito, tabelas, listas, separadores (---).
+4. Termine com um bloco "💡 Conclusão e Recomendações" com insights acionáveis.
+5. Se o relatório for extenso, salve-o usando a ferramenta save_report (tipo: analise_chats) e mencione ao usuário que o relatório completo foi salvo.
+6. Data de referência desta análise: ${todayReporter}
 
 BLOCO DE NOTAS DA PESQUISA:
-${scratchpadText} `;
+${scratchpadText}`;
 
-  const safeMessages = state.messages.length > 0
-    ? state.messages
-    : [new HumanMessage("Por favor, conclua a análise baseada no bloco de notas.")];
-
+  // CRÍTICO: NÃO passar state.messages aqui — o modelo receberia o HumanMessage original
+  // e geraria um plano futuro em vez de sintetizar os resultados já coletados.
   const response = (await model.invoke([
     new SystemMessage(REPORTER_SYSTEM),
-    ...safeMessages,
+    new HumanMessage("Os dados acima já foram coletados e estão no bloco de notas. NÃO planeje nem liste próximas etapas. Escreva APENAS o relatório final em Markdown com os resultados obtidos."),
   ])) as AIMessage;
 
   return { messages: [response] };

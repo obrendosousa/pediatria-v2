@@ -1,76 +1,69 @@
 // Registro central de configurações de gráficos de crescimento disponíveis
-// Baseado nos dados importados do banco de dados (WHO e CDC)
 
 export interface ChartRegistryConfig {
-  label: string; // Nome exibido no dropdown
+  label: string;
   dbType: 'wfa' | 'lhfa' | 'bmifa' | 'hcfa' | 'wfl' | 'wfh';
   source: 'WHO' | 'CDC';
-  recommendedAgeMin?: number; // Idade mínima recomendada (meses)
-  recommendedAgeMax?: number; // Idade máxima recomendada (meses)
-  isXAxisLength?: boolean; // true se eixo X é altura/comprimento (não idade)
-  xAxisLabel: string; // Label do eixo X
-  yAxisLabel: string; // Label do eixo Y
-  value: string; // Identificador único para o gráfico
+  dbAgeRange: string;          // age_range exato na tabela growth_standards
+  recommendedAgeMin?: number;  // Idade mínima recomendada (meses)
+  recommendedAgeMax?: number;  // Idade máxima recomendada (meses)
+  isXAxisLength?: boolean;     // true se eixo X é comprimento/altura (não idade)
+  xAxisLabel: string;
+  yAxisLabel: string;
+  value: string;               // Identificador único
 }
 
-/**
- * Lista completa de gráficos disponíveis baseada nos dados do banco
- * Apenas WHO e CDC (não incluir Unicamp/Síndrome de Down por enquanto)
- */
 export const AVAILABLE_CHARTS: ChartRegistryConfig[] = [
-  // ========== PESO PARA IDADE (Weight for Age) ==========
+
+  // ── PESO PARA IDADE ──────────────────────────────────────────────────────
   {
-    label: 'Peso para idade (0-2 anos) - OMS',
+    label: 'Peso para idade (0-5 anos) — OMS',
     dbType: 'wfa',
     source: 'WHO',
-    recommendedAgeMax: 24,
-    xAxisLabel: 'Idade (Meses)',
-    yAxisLabel: 'Peso (kg)',
-    value: 'wfa_who_0_2',
-  },
-  {
-    label: 'Peso para idade (0-5 anos) - OMS',
-    dbType: 'wfa',
-    source: 'WHO',
+    dbAgeRange: '0_5',
     recommendedAgeMax: 60,
     xAxisLabel: 'Idade',
     yAxisLabel: 'Peso (kg)',
     value: 'wfa_who_0_5',
   },
   {
-    label: 'Peso para idade (2-20 anos) - CDC',
+    label: 'Peso para idade (2-20 anos) — CDC',
     dbType: 'wfa',
     source: 'CDC',
+    dbAgeRange: '2_20',
     recommendedAgeMin: 24,
     recommendedAgeMax: 240,
-    xAxisLabel: 'Idade (Anos)',
+    xAxisLabel: 'Idade',
     yAxisLabel: 'Peso (kg)',
     value: 'wfa_cdc_2_20',
   },
 
-  // ========== ESTATURA/COMPRIMENTO PARA IDADE (Length/Height for Age) ==========
+  // ── ESTATURA / COMPRIMENTO PARA IDADE ─────────────────────────────────────
   {
-    label: 'Comprimento para idade (0-2 anos) - OMS',
+    label: 'Comprimento para idade (0-2 anos) — OMS',
     dbType: 'lhfa',
     source: 'WHO',
+    dbAgeRange: '0_2',
     recommendedAgeMax: 24,
-    xAxisLabel: 'Idade (Meses)',
+    xAxisLabel: 'Idade',
     yAxisLabel: 'Comprimento (cm)',
     value: 'lhfa_who_0_2',
   },
   {
-    label: 'Estatura para idade (0-5 anos) - OMS',
+    label: 'Estatura para idade (0-5 anos) — OMS',
     dbType: 'lhfa',
     source: 'WHO',
+    dbAgeRange: '0_5',
     recommendedAgeMax: 60,
     xAxisLabel: 'Idade',
     yAxisLabel: 'Estatura (cm)',
     value: 'lhfa_who_0_5',
   },
   {
-    label: 'Estatura para idade (2-5 anos) - OMS',
+    label: 'Estatura para idade (2-5 anos) — OMS',
     dbType: 'lhfa',
     source: 'WHO',
+    dbAgeRange: '2_5',
     recommendedAgeMin: 24,
     recommendedAgeMax: 60,
     xAxisLabel: 'Idade',
@@ -78,72 +71,69 @@ export const AVAILABLE_CHARTS: ChartRegistryConfig[] = [
     value: 'lhfa_who_2_5',
   },
   {
-    label: 'Estatura para idade (2-20 anos) - CDC',
+    label: 'Estatura para idade (2-20 anos) — CDC',
     dbType: 'lhfa',
     source: 'CDC',
+    dbAgeRange: '2_20',
     recommendedAgeMin: 24,
     recommendedAgeMax: 240,
-    xAxisLabel: 'Idade (Anos)',
+    xAxisLabel: 'Idade',
     yAxisLabel: 'Estatura (cm)',
     value: 'lhfa_cdc_2_20',
   },
 
-  // ========== IMC PARA IDADE (BMI for Age) ==========
+  // ── IMC PARA IDADE ────────────────────────────────────────────────────────
   {
-    label: 'IMC para idade (0-2 anos) - OMS',
+    label: 'IMC para idade (0-2 anos) — OMS',
     dbType: 'bmifa',
     source: 'WHO',
+    dbAgeRange: '0_2',
     recommendedAgeMax: 24,
-    xAxisLabel: 'Idade (Meses)',
-    yAxisLabel: 'IMC',
+    xAxisLabel: 'Idade',
+    yAxisLabel: 'IMC (kg/m²)',
     value: 'bmifa_who_0_2',
   },
   {
-    label: 'IMC para idade (0-5 anos) - OMS',
+    label: 'IMC para idade (2-5 anos) — OMS',
     dbType: 'bmifa',
     source: 'WHO',
-    recommendedAgeMax: 60,
-    xAxisLabel: 'Idade',
-    yAxisLabel: 'IMC',
-    value: 'bmifa_who_0_5',
-  },
-  {
-    label: 'IMC para idade (2-5 anos) - OMS',
-    dbType: 'bmifa',
-    source: 'WHO',
+    dbAgeRange: '2_5',
     recommendedAgeMin: 24,
     recommendedAgeMax: 60,
     xAxisLabel: 'Idade',
-    yAxisLabel: 'IMC',
+    yAxisLabel: 'IMC (kg/m²)',
     value: 'bmifa_who_2_5',
   },
   {
-    label: 'IMC para idade (2-20 anos) - CDC',
+    label: 'IMC para idade (2-20 anos) — CDC',
     dbType: 'bmifa',
     source: 'CDC',
+    dbAgeRange: '2_20',
     recommendedAgeMin: 24,
     recommendedAgeMax: 240,
-    xAxisLabel: 'Idade (Anos)',
-    yAxisLabel: 'IMC',
+    xAxisLabel: 'Idade',
+    yAxisLabel: 'IMC (kg/m²)',
     value: 'bmifa_cdc_2_20',
   },
 
-  // ========== PERÍMETRO CEFÁLICO PARA IDADE (Head Circumference for Age) ==========
+  // ── PERÍMETRO CEFÁLICO PARA IDADE ─────────────────────────────────────────
   {
-    label: 'Perímetro Cefálico para idade (0-5 anos) - OMS',
+    label: 'Perímetro Cefálico para idade (0-5 anos) — OMS',
     dbType: 'hcfa',
     source: 'WHO',
+    dbAgeRange: '0_5',
     recommendedAgeMax: 60,
     xAxisLabel: 'Idade',
-    yAxisLabel: 'Perímetro Cefálico (cm)',
+    yAxisLabel: 'PC (cm)',
     value: 'hcfa_who_0_5',
   },
 
-  // ========== PESO PARA COMPRIMENTO/ESTATURA (Weight for Length/Height) ==========
+  // ── PESO PARA COMPRIMENTO / ESTATURA ─────────────────────────────────────
   {
-    label: 'Peso para comprimento (0-2 anos) - OMS',
+    label: 'Peso para comprimento (0-2 anos) — OMS',
     dbType: 'wfl',
     source: 'WHO',
+    dbAgeRange: '0_2',
     recommendedAgeMax: 24,
     isXAxisLength: true,
     xAxisLabel: 'Comprimento (cm)',
@@ -151,9 +141,10 @@ export const AVAILABLE_CHARTS: ChartRegistryConfig[] = [
     value: 'wfl_who_0_2',
   },
   {
-    label: 'Peso para estatura (2-5 anos) - OMS',
+    label: 'Peso para estatura (2-5 anos) — OMS',
     dbType: 'wfh',
     source: 'WHO',
+    dbAgeRange: '2_5',
     recommendedAgeMin: 24,
     recommendedAgeMax: 60,
     isXAxisLength: true,
@@ -163,20 +154,14 @@ export const AVAILABLE_CHARTS: ChartRegistryConfig[] = [
   },
 ];
 
-/**
- * Busca uma configuração de gráfico pelo valor
- */
 export function getChartConfig(value: string): ChartRegistryConfig | undefined {
-  return AVAILABLE_CHARTS.find(chart => chart.value === value);
+  return AVAILABLE_CHARTS.find(c => c.value === value);
 }
 
-/**
- * Filtra gráficos disponíveis baseado na idade do paciente
- */
 export function getRecommendedCharts(ageMonths: number): ChartRegistryConfig[] {
-  return AVAILABLE_CHARTS.filter(chart => {
-    if (chart.recommendedAgeMin && ageMonths < chart.recommendedAgeMin) return false;
-    if (chart.recommendedAgeMax && ageMonths > chart.recommendedAgeMax) return false;
+  return AVAILABLE_CHARTS.filter(c => {
+    if (c.recommendedAgeMin !== undefined && ageMonths < c.recommendedAgeMin) return false;
+    if (c.recommendedAgeMax !== undefined && ageMonths > c.recommendedAgeMax) return false;
     return true;
   });
 }

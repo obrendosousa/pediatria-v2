@@ -2,8 +2,9 @@ import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
-import { HumanMessage } from "@langchain/core/messages";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { chatAnalyzerGraph } from "./chatAnalyzerGraph";
+import { Pool } from "pg";
 
 // Extrai texto de forma segura de respostas LLM — conteúdo pode ser string ou array de partes.
 // Usar .toString() em array retorna "[object Object],[object Object]" — este helper resolve isso.
@@ -307,7 +308,7 @@ export const deepResearchChatsTool = new DynamicStructuredTool({
         if (transcripts.length === 0) continue;
 
         const internalModel = new ChatGoogleGenerativeAI({
-          model: "gemini-3-pro-preview",
+          model: "gemini-3-flash-preview",
           apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
           temperature: 0.1,
         });
@@ -340,7 +341,7 @@ ${transcripts.join("\n\n")}`;
     // ── REDUCE: Consolida todos os insights em um único relatório ───────────
     try {
       const consolidationModel = new ChatGoogleGenerativeAI({
-        model: "gemini-3-pro-preview",
+        model: "gemini-3-flash-preview",
         apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
         temperature: 0.1,
       });
@@ -592,10 +593,197 @@ export const gerarRelatorioQualidadeTool = new DynamicStructuredTool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CONSULTA AO BANCO DE DADOS — query_database
+// Permite à Clara acessar qualquer tabela do Supabase com filtros precisos.
+// É a ferramenta central para "conversar com os dados" da clínica.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const queryDatabaseTool = new DynamicStructuredTool({
+  name: "query_database",
+  description:
+    "Consulta tabelas do banco de dados Supabase com filtros de data, campo e valor. " +
+    "Use para acessar dados precisos de chats, mensagens, insights, relatórios e memórias. " +
+    "Tabelas disponíveis: chats, chat_messages, chat_insights, clara_reports, clara_memories, knowledge_base. " +
+    "Sempre retorna id e contact_name nos resultados de chats para permitir referências precisas.",
+  schema: z.object({
+    table: z
+      .enum(["chats", "chat_messages", "chat_insights", "clara_reports", "clara_memories", "knowledge_base"])
+      .describe("Nome da tabela a consultar."),
+    columns: z
+      .string()
+      .optional()
+      .default("*")
+      .describe("Colunas a selecionar separadas por vírgula. Para chats inclua sempre 'id, contact_name'. Ex: 'id, contact_name, stage, ai_sentiment, last_interaction_at'"),
+    date_from: z
+      .string()
+      .optional()
+      .describe("Data inicial no formato YYYY-MM-DD (ex: '2026-02-26' para ontem)."),
+    date_to: z
+      .string()
+      .optional()
+      .describe("Data final no formato YYYY-MM-DD (ex: '2026-02-27' para hoje)."),
+    date_field: z
+      .string()
+      .optional()
+      .default("created_at")
+      .describe("Campo de data para filtrar. Para chats use 'last_interaction_at'. Para mensagens use 'created_at'."),
+    eq_filters: z
+      .string()
+      .optional()
+      .describe('Filtros de igualdade exata como JSON string. Ex: \'{"stage":"qualified","is_archived":false}\' ou \'{"chat_id":42}\''),
+    ilike_filters: z
+      .string()
+      .optional()
+      .describe('Filtros de texto parcial (case-insensitive) como JSON string. Ex: \'{"contact_name":"João"}\' ou \'{"ai_summary":"urgência"}\''),
+    order_by: z
+      .string()
+      .optional()
+      .default("created_at")
+      .describe("Campo para ordenar os resultados."),
+    ascending: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe("Ordem crescente? false = mais recente primeiro (padrão)."),
+    limit: z
+      .number()
+      .max(200)
+      .optional()
+      .default(50)
+      .describe("Número máximo de registros a retornar (padrão: 50, máximo: 200)."),
+  }),
+  func: async ({ table, columns, date_from, date_to, date_field, eq_filters, ilike_filters, order_by, ascending, limit }) => {
+    try {
+      let query = (supabase.from(table) as any).select(columns ?? "*");
+
+      const dateCol = date_field ?? "created_at";
+      if (date_from) query = query.gte(dateCol, `${date_from}T00:00:00.000Z`);
+      if (date_to) query = query.lte(dateCol, `${date_to}T23:59:59.999Z`);
+
+      if (eq_filters) {
+        const parsedEq = typeof eq_filters === "string" ? JSON.parse(eq_filters) : eq_filters;
+        for (const [key, value] of Object.entries(parsedEq)) {
+          query = query.eq(key, value);
+        }
+      }
+
+      if (ilike_filters) {
+        const parsedIlike = typeof ilike_filters === "string" ? JSON.parse(ilike_filters) : ilike_filters;
+        for (const [key, value] of Object.entries(parsedIlike)) {
+          query = query.ilike(key, `%${value}%`);
+        }
+      }
+
+      query = query.order(order_by ?? "created_at", { ascending: ascending ?? false });
+      query = query.limit(Math.min(limit ?? 50, 200));
+
+      const { data, error } = await query;
+
+      if (error) return `Erro ao consultar tabela '${table}': ${error.message}`;
+      if (!data || data.length === 0) return `Nenhum registro encontrado na tabela '${table}' com os filtros especificados.`;
+
+      // Para chats: formata lista com referências legíveis
+      if (table === "chats") {
+        const header = `### Tabela 'chats' — ${data.length} registro(s) encontrado(s)\n\n`;
+        const rows = (data as any[]).map((row) =>
+          `- **Chat #${row.id}** — ${row.contact_name ?? "Sem nome"} | Stage: ${row.stage ?? "N/A"} | Sentimento: ${row.ai_sentiment ?? "N/A"} | Última interação: ${row.last_interaction_at ? new Date(row.last_interaction_at).toLocaleString("pt-BR") : "N/A"}`
+        );
+        return header + rows.join("\n");
+      }
+
+      // Para insights: formata com notas e referências
+      if (table === "chat_insights") {
+        const header = `### Tabela 'chat_insights' — ${data.length} registro(s)\n\n`;
+        const rows = (data as any[]).map((row) =>
+          `- **Chat #${row.chat_id}** | Nota: ${row.nota_atendimento ?? "N/A"}/10 | Sentimento: ${row.sentimento ?? "N/A"} | Gargalos: ${Array.isArray(row.gargalos) ? row.gargalos.join(", ") : "nenhum"}`
+        );
+        return header + rows.join("\n");
+      }
+
+      // Para outras tabelas: JSON compacto
+      return `### Tabela '${table}' — ${data.length} registro(s)\n\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
+    } catch (e: any) {
+      return `Erro ao acessar banco de dados: ${e.message}`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // EXPORTS
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// NOVA FERRAMENTA DE ANÁLISE SQL — EXATA E DIRETA NO BANCO
+// ─────────────────────────────────────────────────────────────────────────────
+
+const dbPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export const generateSqlReportTool = new DynamicStructuredTool({
+  name: "generate_sql_report",
+  description:
+    "Gera insights precisos e cálculos matemáticos reais (COUNT, AVG, SUM, GROUP BY) rodando consultas SQL relativas a chats e atendimentos.\\n" +
+    "Use esta ferramenta SEMPRE que precisar contar número de contatos, métricas financeiras, taxas de conversão ou médias.\\n" +
+    "A ferramenta recebe a pergunta do usuário e um LLM escreve uma query PostgreSQL otimizada e read-only.\\n" +
+    "As tabelas mapeadas são: 'chats', 'chat_messages', 'chat_insights', 'clara_memories'.",
+  schema: z.object({
+    pergunta_em_linguagem_natural: z.string().describe("O que você precisa descobrir. Ex: 'Qual a média das notas de atendimento neste mês?' ou 'Quantos chats caíram em lost hoje?'"),
+  }),
+  func: async ({ pergunta_em_linguagem_natural }) => {
+    try {
+      if (!process.env.DATABASE_URL) return "Erro: DATABASE_URL não está configurada no ambiente.";
+
+      const sqlAgent = new ChatGoogleGenerativeAI({
+        model: "gemini-3-flash-preview",
+        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+        temperature: 0,
+      });
+
+      const dbSchema = `
+Tabelas disponíveis e suas colunas(PostgreSQL):
+        - chats: id(int), phone(text), contact_name(text), stage(text: new, qualified, lost, won), ai_sentiment(text), last_interaction_at(timestamptz), is_archived(bool)
+      - chat_messages: id(int), chat_id(int), sender(text: AI_AGENT, HUMAN_AGENT, CUSTOMER), message_text(text), created_at(timestamptz), message_type(text)
+      - chat_insights: id(int), chat_id(int), nota_atendimento(numeric), sentimento(text), created_at(timestamptz)
+
+REGRAS:
+        1. Responda APENAS com código SQL puro e válido para PostgreSQL.Sem crases, sem explicações.
+2. É ESTRITAMENTE read - only(SELECT).Proibido INSERT / UPDATE / DELETE / DROP.
+3. Se precisar de data atual, use CURRENT_DATE ou NOW().
+4. Se o usuário referir - se a "avaliação" ou "nota", junte 'chats' com 'chat_insights' via chat_id.`;
+
+      const instruction = `Crie uma query PostgreSQL para responder a esta pergunta: "${pergunta_em_linguagem_natural}".`;
+
+      const response = await sqlAgent.invoke([
+        new SystemMessage(dbSchema),
+        new HumanMessage(instruction)
+      ]);
+
+      let sqlCode = extractTextContent(response.content).trim();
+
+      sqlCode = sqlCode.replace(/^\\s*\\x60{3}(sql)?/i, "").replace(/\\x60{3}\\s*$/i, "").trim();
+
+      if (!sqlCode.toUpperCase().startsWith("SELECT") && !sqlCode.toUpperCase().startsWith("WITH")) {
+        return "Erro: A consulta SQL gerada não é de leitura (SELECT). Proteção de segurança ativada.";
+      }
+
+      const client = await dbPool.connect();
+      try {
+        const result = await client.query(sqlCode);
+        if (result.rows.length === 0) return "A consulta não retornou dados (0 registros).";
+        return `Query executada com sucesso.\nResultados: \n` + JSON.stringify(result.rows, null, 2);
+      } finally {
+        client.release();
+      }
+
+    } catch (e: any) {
+      return `Erro ao analisar dados com SQL: ${e.message}`;
+    }
+  },
+});
+
 export const claraTools = [
+  queryDatabaseTool,
   readBrainFilesTool,
   updateBrainFileTool,
   manageLongTermMemoryTool,
@@ -604,4 +792,5 @@ export const claraTools = [
   saveReportTool,
   analisarChatEspecificoTool,
   gerarRelatorioQualidadeTool,
+  generateSqlReportTool,
 ];

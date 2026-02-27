@@ -214,7 +214,7 @@ async function saveToDbNode(state: ChatAnalysisState): Promise<Partial<ChatAnaly
                 sentimento: insights.sentimento,
                 objecao_principal: insights.objecoes.length > 0 ? insights.objecoes[0] : null,
                 decisao: insights.decisao,
-                nota_atendimento: insights.nota_atendimento,
+                nota_atendimento: insights.nota_atendimento != null ? Math.round(insights.nota_atendimento) : null,
                 gargalos: insights.gargalos,
                 resumo_analise: insights.resumo_analise,
                 novo_conhecimento: state.learnings.length > 0,

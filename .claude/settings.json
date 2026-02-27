@@ -1,7 +1,35 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc --noEmit --project tsconfig.json)"
+      "Bash(npx tsc --noEmit --project tsconfig.json)",
+      "Read(//Users/brendosousa/.gemini/antigravity/brain/dcc5eb71-ea16-427d-9635-8273a87470c1/**)",
+      "mcp__supabase__list_tables",
+      "Read(//Users/brendosousa/Downloads/**)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:dados.gov.br)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(xargs ls -lh)",
+      "Bash(grep -l \"medical_records\\\\|exam_requests\\\\|prescriptions\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(grep -r \"exam_requests\\\\|CREATE TABLE\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(grep -r \"tuss_procedures\\\\|exam_requests\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(ls -la /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(find /Users/brendosousa/Downloads/painel-clinica-main/database -name \"*.sql\" -exec basename {} ;)",
+      "Bash(grep -l \"prescription\\\\|exam_request\\\\|tuss_procedure\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(grep -r \"CREATE TABLE\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(find /Users/brendosousa/Downloads/painel-clinica-main -type f -name \"*.sql\" -exec grep -H \"CREATE TABLE.*prescription\\\\|CREATE TABLE.*exam_request\\\\|CREATE TABLE.*tuss_procedure\\\\|CREATE TABLE.*vaccine\" {} ;)",
+      "Bash(xargs -0 cat)",
+      "Bash(grep -n \"vaccine\\\\|vacina\\\\|vaccine_schedule\\\\|immuniz\" /Users/brendosousa/Downloads/painel-clinica-main/src/components/medical-record/attendance/screens/*.tsx)",
+      "Bash(grep -l \"medical_records\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(grep -r \"medical_records\" /Users/brendosousa/Downloads/painel-clinica-main/supabase*.sql)",
+      "Bash(npm install @langchain/community tavily)",
+      "Bash(node -e \"require\\(''@langchain/community''\\); console.log\\(''ok''\\)\")",
+      "Bash(node -e \"require\\(''tavily''\\); console.log\\(''ok''\\)\")",
+      "Bash(node -e \":*)",
+      "Bash(npm install react-markdown remark-gfm)",
+      "Bash(node -e \"require\\(''react-markdown''\\); console.log\\(''react-markdown ok''\\)\")",
+      "Bash(node -e \"require\\(''remark-gfm''\\); console.log\\(''remark-gfm ok''\\)\")",
+      "Bash(node -e \"const z = require\\(''zod''\\); console.log\\(z.version || require\\(''./node_modules/zod/package.json''\\).version\\)\")"
     ]
   }
 }
