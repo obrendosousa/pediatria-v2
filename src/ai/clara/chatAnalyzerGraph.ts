@@ -19,6 +19,7 @@ export interface ChatAnalysisState {
     messages: any[]; // Mensagens brutas do banco
     formatted_transcript: string; // Mensagens formatadas para a IA ler
     insights: {
+        topico: string | null;
         nota_atendimento: number | null;
         sentimento: string | null;
         objecoes: string[];
@@ -115,6 +116,7 @@ async function analyzeConversationNode(state: ChatAnalysisState): Promise<Partia
     if (!state.formatted_transcript || state.formatted_transcript.startsWith("[")) {
         return {
             insights: {
+                topico: null,
                 nota_atendimento: null,
                 sentimento: null,
                 objecoes: [],
@@ -133,6 +135,7 @@ async function analyzeConversationNode(state: ChatAnalysisState): Promise<Partia
     });
 
     const schema = z.object({
+        topico: z.string().describe("Assunto principal da conversa em poucas palavras (ex: 'Agendamento de consulta', 'Dúvida sobre plano', 'Reclamação de atendimento')."),
         nota_atendimento: z.number().min(0).max(10).describe("Nota de 0 a 10 avaliando a qualidade do atendimento da clínica (cortesia, clareza, resolutividade)."),
         sentimento: z.enum(["positivo", "neutro", "negativo"]).describe("Sentimento geral do paciente ao final da conversa."),
         objecoes: z.array(z.string()).describe("Lista de objeções levantadas pelo paciente (ex: 'achou caro', 'longe', 'horário ruim')."),
@@ -156,6 +159,7 @@ async function analyzeConversationNode(state: ChatAnalysisState): Promise<Partia
 
         return {
             insights: {
+                topico: analysisResult.topico ?? null,
                 nota_atendimento: analysisResult.nota_atendimento,
                 sentimento: analysisResult.sentimento,
                 objecoes: analysisResult.objecoes,
@@ -169,6 +173,7 @@ async function analyzeConversationNode(state: ChatAnalysisState): Promise<Partia
         console.error("Erro na análise via LLM:", error);
         return {
             insights: {
+                topico: null,
                 nota_atendimento: null,
                 sentimento: null,
                 objecoes: [],
@@ -194,24 +199,23 @@ async function saveToDbNode(state: ChatAnalysisState): Promise<Partial<ChatAnaly
 
     if (insights) {
         // 1. Inserir ou atualizar na tabela chat_insights
-        // Assumimos que a tabela usa o chat_id como chave ou relacionamos diretamente
         const { error: insightsError } = await supabase
             .from("chat_insights")
             .upsert({
                 chat_id: state.chat_id,
-                summary: insights.resumo_analise, // compatibilidade com schema atual (assumindo que seja o campo original)
+                topico: insights.topico,
                 sentimento: insights.sentimento,
                 objecao_principal: insights.objecoes.length > 0 ? insights.objecoes[0] : null,
-                decisao: insights.decisao, // (adapte este campo caso não exista originalmente, ou coloque no metricas_extras)
+                decisao: insights.decisao,
                 nota_atendimento: insights.nota_atendimento,
                 gargalos: insights.gargalos,
                 resumo_analise: insights.resumo_analise,
+                novo_conhecimento: state.learnings.length > 0,
                 metricas_extras: {
                     todas_objecoes: insights.objecoes,
-                    decisao: insights.decisao
                 },
-                updated_at: new Date().toISOString()
-            }, { onConflict: "chat_id" }); // Ajuste o onConflict conforme constraint de unicidade no banco (geralmente chat_id)
+                updated_at: new Date().toISOString(),
+            }, { onConflict: "chat_id" });
 
         if (insightsError) {
             console.error("Erro ao salvar insights:", insightsError);
