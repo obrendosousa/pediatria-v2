@@ -112,8 +112,15 @@ async function fetchDataNode(state: ChatAnalysisState): Promise<Partial<ChatAnal
     };
 }
 
+// Marcadores exatos que indicam transcrição vazia — NÃO usar startsWith("[") pois
+// todas as transcrições válidas também começam com "[LABEL]: texto".
+const EMPTY_TRANSCRIPT_MARKERS: string[] = [
+    "[Nenhuma mensagem encontrada para este chat.]",
+    "[Apenas mensagens de mídia na conversa.]",
+];
+
 async function analyzeConversationNode(state: ChatAnalysisState): Promise<Partial<ChatAnalysisState>> {
-    if (!state.formatted_transcript || state.formatted_transcript.startsWith("[")) {
+    if (!state.formatted_transcript || EMPTY_TRANSCRIPT_MARKERS.includes(state.formatted_transcript)) {
         return {
             insights: {
                 topico: null,

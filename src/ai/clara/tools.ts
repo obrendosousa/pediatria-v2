@@ -424,15 +424,33 @@ export const analisarChatEspecificoTool = new DynamicStructuredTool({
     if (!chat_ids || chat_ids.length === 0) return "Nenhum chat_id fornecido.";
 
     const safeIds = chat_ids.slice(0, 30);
-    const skipped = chat_ids.length - safeIds.length;
 
-    // ── Busca o chat interno da Clara para enviar progresso em tempo real ──
+    // ── Busca o chat interno da Clara para enviar status ao indicador ──────
     const { data: claraChat } = await supabase
       .from("chats")
       .select("id")
       .eq("phone", "00000000000")
       .single();
     const claraChatId = (claraChat as any)?.id as number | undefined;
+
+    // ── Envia status ao indicador da Clara via Realtime Broadcast ───────────
+    // Aparece no ClaraStatusIndicator (header) — NÃO insere mensagem no chat.
+    async function broadcastProgress(status: string): Promise<void> {
+      if (!claraChatId) return;
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+          },
+          body: JSON.stringify({
+            messages: [{ topic: `clara:${claraChatId}`, event: "status", payload: { status } }],
+          }),
+        });
+      } catch { /* falha silenciosa */ }
+    }
 
     // ── Pré-carrega nomes de contato de todos os chats em uma única query ──
     const { data: chatsMeta } = await supabase
@@ -443,38 +461,21 @@ export const analisarChatEspecificoTool = new DynamicStructuredTool({
       ((chatsMeta ?? []) as any[]).map((c) => [c.id as number, (c.contact_name as string) ?? `#${c.id}`])
     );
 
-    // ── Insere uma mensagem visível no chat da Clara (Supabase Realtime a entrega ao frontend) ──
-    async function sendToConversation(text: string): Promise<void> {
-      if (!claraChatId) return;
-      try {
-        await supabase.from("chat_messages").insert({
-          chat_id: claraChatId,
-          sender: "AI_AGENT",
-          message_text: text,
-          bot_message: true,
-          message_type: "text",
-          created_at: new Date().toISOString(),
-        });
-      } catch {
-        // Falha silenciosa — nunca bloqueia a análise principal
-      }
-    }
-
-    // ── Mensagem de abertura ─────────────────────────────────────────────────
-    await sendToConversation(
-      `🔬 *Sub-Grafo de Análise iniciado*\n\nAnalisando *${safeIds.length} conversa${safeIds.length !== 1 ? "s" : ""}* individualmente...${skipped > 0 ? `\n_Nota: ${skipped} chat(s) ignorados — limite de 30 por chamada._` : ""}\n\n_Cada conversa será lida, examinada pela IA e os dados salvos. Acompanhe os resultados abaixo em tempo real._`
-    );
-
     const scratchpadInsights: string[] = [];
     let successCount = 0;
+    let skippedCount = 0;
     let errorCount = 0;
 
-    for (const chat_id of safeIds) {
+    for (let i = 0; i < safeIds.length; i++) {
+      const chat_id = safeIds[i];
+      const name = nameMap.get(chat_id) ?? `#${chat_id}`;
+      await broadcastProgress(`tool:🔬 Analisando ${i + 1}/${safeIds.length}: ${name}`);
+
       try {
         const finalState = await chatAnalyzerGraph.invoke({ chat_id });
-        successCount++;
 
         const ins = (finalState.insights as {
+          topico?: string | null;
           sentimento?: string | null;
           nota_atendimento?: number | null;
           objecoes?: string[];
@@ -484,45 +485,18 @@ export const analisarChatEspecificoTool = new DynamicStructuredTool({
         } | null);
 
         if (ins) {
-          const name = nameMap.get(chat_id) ?? `Chat #${chat_id}`;
           const nota = ins.nota_atendimento;
+          const semTexto = ins.gargalos?.includes("sem_texto_analisavel");
 
-          // Ícones dinâmicos baseados nos dados reais
-          const sentimentEmoji =
-            ins.sentimento === "positivo" ? "😊" :
-            ins.sentimento === "negativo" ? "😔" : "😐";
-          const notaColor =
-            nota === null || nota === undefined ? "⚪" :
-            nota >= 8 ? "🟢" : nota >= 5 ? "🟡" : "🔴";
-
-          // ── Card visual por chat ─────────────────────────────────────────
-          const cardLines: string[] = [
-            `📊 *${name}*`,
-            ``,
-            `${sentimentEmoji} *Sentimento:* ${ins.sentimento ?? "não identificado"}   ${notaColor} *Nota:* ${nota ?? "N/A"}/10`,
-          ];
-
-          if (ins.objecoes?.length) {
-            cardLines.push(`🚫 *Objeções:* ${ins.objecoes.join(" · ")}`);
+          if (semTexto) {
+            skippedCount++;
           } else {
-            cardLines.push(`✅ *Objeções:* nenhuma identificada`);
+            successCount++;
           }
 
-          if (ins.gargalos?.length) {
-            cardLines.push(`⚠️ *Gargalos:* ${ins.gargalos.join(" · ")}`);
-          }
-
-          cardLines.push(`📋 *Decisão:* ${ins.decisao ?? "não identificada"}`);
-
-          if (ins.resumo_analise) {
-            cardLines.push(``, `_${ins.resumo_analise}_`);
-          }
-
-          await sendToConversation(cardLines.join("\n"));
-
-          // Versão texto-plano para o scratchpad do reporter_node
           scratchpadInsights.push([
             `Chat #${chat_id} (${name}):`,
+            `  Tópico: ${ins.topico ?? "N/A"}`,
             `  Sentimento: ${ins.sentimento ?? "N/A"} | Nota: ${nota ?? "N/A"}/10`,
             `  Objeções: ${ins.objecoes?.join("; ") || "nenhuma"}`,
             `  Gargalos: ${ins.gargalos?.join("; ") || "nenhum"}`,
@@ -532,18 +506,18 @@ export const analisarChatEspecificoTool = new DynamicStructuredTool({
         }
       } catch (e: any) {
         errorCount++;
-        await sendToConversation(`❌ *Chat #${chat_id}* — Falha na análise: _${e.message}_`);
-        scratchpadInsights.push(`Chat #${chat_id}: Erro — ${e.message}`);
+        scratchpadInsights.push(`Chat #${chat_id} (${name}): Erro — ${e.message}`);
       }
     }
 
-    // ── Mensagem de conclusão ────────────────────────────────────────────────
-    const conclusionEmoji = errorCount === 0 ? "✅" : "⚠️";
-    await sendToConversation(
-      `${conclusionEmoji} *Análise concluída!*\n\n*${successCount}* conversa${successCount !== 1 ? "s" : ""} processada${successCount !== 1 ? "s" : ""} com sucesso${errorCount > 0 ? `, *${errorCount}* com erro` : ""}.\n_Insights salvos em chat\\_insights. Gerando relatório consolidado..._`
-    );
+    await broadcastProgress(`tool:✅ Sub-Grafo concluído — ${successCount} analisados, ${skippedCount} sem texto`);
 
-    const header = `${successCount} chat(s) analisado(s) com sucesso via Sub-Grafo${errorCount > 0 ? `, ${errorCount} com erro` : ""}. Insights salvos em chat_insights.`;
+    const header = [
+      `Sub-Grafo concluído. Total processado: ${safeIds.length} chats.`,
+      `  Com análise: ${successCount} | Sem texto suficiente: ${skippedCount} | Erros: ${errorCount}`,
+      `  Insights salvos em chat_insights.`,
+    ].join("\n");
+
     if (scratchpadInsights.length === 0) return header;
     return `${header}\n\n## Insights por Chat:\n\n${scratchpadInsights.join("\n\n")}`;
   },
