@@ -74,6 +74,26 @@ const workerDev = spawn("npm", ["run", "worker:dev"], {
 });
 pipeOutput("worker", workerDev);
 
+// Kokoro TTS via Python nativo (CPU)
+const ttsCommand = `
+  cd src/ai/voice
+  if [ ! -d ".venv" ]; then
+    echo "[TTS] Criando ambiente virtual Python..."
+    python3 -m venv .venv
+  fi
+  source .venv/bin/activate
+  echo "[TTS] Instalando dependencias (se necessario)..."
+  pip install -r requirements.txt -q
+  echo "[TTS] Iniciando Kokoro TTS nativo - voz da Clara (Porta 8880)..."
+  python server.py
+`;
+
+const ttsDev = spawn("bash", ["-c", ttsCommand], {
+  stdio: ["inherit", "pipe", "pipe"],
+  env: process.env,
+});
+pipeOutput("kokoro-tts", ttsDev);
+
 let cloudflared = null;
 
 if (commandExists("cloudflared")) {
@@ -99,11 +119,13 @@ function shutdown() {
 
   nextDev.kill("SIGTERM");
   workerDev.kill("SIGTERM");
+  ttsDev.kill("SIGTERM");
   if (cloudflared) cloudflared.kill("SIGTERM");
 
   setTimeout(() => {
     nextDev.kill("SIGKILL");
     workerDev.kill("SIGKILL");
+    ttsDev.kill("SIGKILL");
     if (cloudflared) cloudflared.kill("SIGKILL");
     process.exit(0);
   }, 2000);
@@ -111,4 +133,3 @@ function shutdown() {
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
-

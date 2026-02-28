@@ -32,12 +32,13 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Módulos editáveis pela Clara (soul é imutável — definido em system_prompt.ts)
-const EDITABLE_MODULES = ["company", "rules"] as const;
+const EDITABLE_MODULES = ["company", "rules", "voice_rules"] as const;
 type EditableModule = (typeof EDITABLE_MODULES)[number];
 
 const MODULE_LABELS: Record<EditableModule, string> = {
   company: "Contexto da Empresa",
   rules: "Regras Personalizadas",
+  voice_rules: "Diretrizes de Personalidade da Voz",
 };
 
 export const readBrainFilesTool = new DynamicStructuredTool({
@@ -46,10 +47,10 @@ export const readBrainFilesTool = new DynamicStructuredTool({
     "Lê o conteúdo atual do contexto da empresa (company) e das regras personalizadas aprendidas (rules) diretamente do banco de dados. Use para consultar sua configuração atual antes de editar.",
   schema: z.object({
     module: z
-      .enum(["company", "rules", "all"])
+      .enum(["company", "rules", "voice_rules", "all"])
       .optional()
       .default("all")
-      .describe("Qual módulo ler: 'company', 'rules' ou 'all' para ambos."),
+      .describe("Qual módulo ler: 'company', 'rules', 'voice_rules' ou 'all' para todos."),
   }),
   func: async ({ module }) => {
     try {
@@ -77,7 +78,7 @@ export const updateBrainFileTool = new DynamicStructuredTool({
   description:
     "Atualiza o contexto da empresa ('company') ou as regras personalizadas ('rules') no banco de dados. As alterações entram em vigor IMEDIATAMENTE sem precisar reiniciar. Envie o TEXTO COMPLETO que substituirá o módulo — não use código, apenas texto puro.",
   schema: z.object({
-    module: z.enum(["company", "rules"]).describe("Qual módulo atualizar: 'company' ou 'rules'."),
+    module: z.enum(["company", "rules", "voice_rules"]).describe("Qual módulo atualizar: 'company', 'rules', ou 'voice_rules'."),
     new_content: z.string().describe("O texto completo e atualizado que substituirá o módulo."),
   }),
   func: async ({ module, new_content }) => {
@@ -174,6 +175,45 @@ export const manageLongTermMemoryTool = new DynamicStructuredTool({
         )
         .join("\n")}`;
     }
+  },
+});
+
+export const manageChatNotesTool = new DynamicStructuredTool({
+  name: "manage_chat_notes",
+  description: `Gerencia suas anotações privadas sobre um chat específico.
+Use para registrar e atualizar contexto relevante:
+- Se é chat interno (equipe) ou de cliente/paciente
+- Perfil do contato (interesses, histórico, objeções recorrentes)
+- Decisões importantes tomadas no chat
+- Qualquer contexto que ajude a orientar interações futuras
+As notas são injetadas automaticamente no início de cada conversa como contexto.
+Use action='write' para criar ou atualizar. action='read' para consultar explicitamente.`,
+  schema: z.object({
+    chat_id: z.number().describe("ID numérico do chat"),
+    action: z.enum(["read", "write"]).describe("read: consulta as notas existentes | write: cria ou atualiza as notas"),
+    notes: z.string().optional().describe("Conteúdo das notas (obrigatório quando action=write)"),
+  }),
+  func: async ({ chat_id, action, notes }) => {
+    if (action === "read") {
+      const { data, error } = await supabase
+        .from("chat_notes")
+        .select("notes, updated_at")
+        .eq("chat_id", chat_id)
+        .single();
+      if (error || !data) return "Nenhuma observação registrada para este chat.";
+      const updatedAt = new Date(data.updated_at).toLocaleString("pt-BR");
+      return `Observações sobre o chat ${chat_id} (atualizado em ${updatedAt}):\n\n${data.notes}`;
+    }
+    // action === "write"
+    if (!notes?.trim()) return "Erro: o campo notes é obrigatório para action=write.";
+    const { error } = await supabase
+      .from("chat_notes")
+      .upsert(
+        { chat_id, notes: notes.trim(), updated_at: new Date().toISOString() },
+        { onConflict: "chat_id" }
+      );
+    if (error) return `Erro ao salvar observações: ${error.message}`;
+    return `Observações do chat ${chat_id} atualizadas com sucesso.`;
   },
 });
 
@@ -537,9 +577,9 @@ export const gerarRelatorioQualidadeTool = new DynamicStructuredTool({
 
       const { data, error } = await supabase
         .from("chat_insights")
-        .select("id, chat_id, nota_atendimento, sentimento, gargalos, resumo_analise, metricas_extras")
-        .gte("created_at", date.toISOString())
-        .order("created_at", { ascending: false });
+        .select("id, chat_id, nota_atendimento, sentimento, gargalos, resumo_analise, metricas_extras, updated_at")
+        .gte("updated_at", date.toISOString())
+        .order("updated_at", { ascending: false });
 
       if (error) throw error;
       if (!data || data.length === 0) return "Nenhum insight de chat encontrado no período especificado.";
@@ -787,10 +827,26 @@ export const claraTools = [
   readBrainFilesTool,
   updateBrainFileTool,
   manageLongTermMemoryTool,
+  manageChatNotesTool,
   extractAndSaveKnowledgeTool,
   searchKnowledgeBaseTool,
   saveReportTool,
   analisarChatEspecificoTool,
   gerarRelatorioQualidadeTool,
   generateSqlReportTool,
+];
+
+// Ferramentas expostas aos Researchers do subgrafo de pesquisa paralela.
+// Inclui todas as ferramentas de acesso a dados + análise, mas NÃO inclui
+// as ferramentas de configuração de brain (update_brain_file) para segurança.
+// Importado pelo researcher_graph.ts para evitar dependência circular.
+export const allResearchTools = [
+  queryDatabaseTool,
+  generateSqlReportTool,
+  deepResearchChatsTool,
+  analisarChatEspecificoTool,
+  gerarRelatorioQualidadeTool,
+  searchKnowledgeBaseTool,
+  manageLongTermMemoryTool,
+  saveReportTool,
 ];

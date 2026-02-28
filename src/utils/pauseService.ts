@@ -119,10 +119,10 @@ export async function isPauseActive(): Promise<boolean> {
       // Verificar se é erro de coluna não existente
       const errorMessage = error.message || String(error);
       const errorCode = error.code || error.hint || '';
-      
+
       if (
-        errorCode === '42703' || 
-        errorMessage.includes('column') || 
+        errorCode === '42703' ||
+        errorMessage.includes('column') ||
         errorMessage.includes('does not exist') ||
         errorMessage.includes('pause_auto_message') ||
         errorMessage.includes('pause_session_id')
@@ -130,7 +130,7 @@ export async function isPauseActive(): Promise<boolean> {
         // Colunas não existem - retornar false silenciosamente
         return false;
       }
-      
+
       // Outro tipo de erro - logar apenas se tiver mensagem útil
       if (errorMessage && errorMessage !== '{}' && errorMessage !== '[object Object]') {
         console.warn('[pauseService] Erro ao verificar pausa:', errorMessage);
@@ -142,18 +142,18 @@ export async function isPauseActive(): Promise<boolean> {
   } catch (error: any) {
     // Capturar qualquer erro não esperado
     const errorMessage = error?.message || error?.toString() || String(error);
-    
+
     // Se for erro de coluna não existente, retornar false silenciosamente
     if (
-      error?.code === '42703' || 
-      errorMessage.includes('column') || 
+      error?.code === '42703' ||
+      errorMessage.includes('column') ||
       errorMessage.includes('does not exist') ||
       errorMessage.includes('pause_auto_message') ||
       errorMessage.includes('pause_session_id')
     ) {
       return false;
     }
-    
+
     // Logar apenas se tiver mensagem útil (não objetos vazios)
     if (errorMessage && errorMessage !== '{}' && errorMessage !== '[object Object]') {
       console.warn('[pauseService] Erro ao verificar pausa:', errorMessage);
@@ -178,11 +178,23 @@ export async function getPauseConfig(): Promise<{ message: string; sessionId: st
 
     // Se não encontrou dados ou erro, retornar null
     if (error) {
+      const errorMessage = error.message || String(error);
+      const errorCode = error.code || '';
+
       // Se for erro de coluna não existente, retornar null silenciosamente
-      if (error.code === '42703' || error.message?.includes('column') || error.message?.includes('does not exist')) {
+      if (
+        errorCode === '42703' ||
+        errorMessage.includes('column') ||
+        errorMessage.includes('does not exist') ||
+        errorMessage.includes('pause_auto_message') ||
+        errorMessage.includes('pause_session_id')
+      ) {
         return null;
       }
-      console.error('[pauseService] Erro ao obter configuração de pausa:', error);
+
+      if (errorMessage && errorMessage !== '{}' && errorMessage !== '[object Object]') {
+        console.error('[pauseService] Erro ao obter configuração de pausa:', errorMessage);
+      }
       return null;
     }
 
@@ -195,11 +207,23 @@ export async function getPauseConfig(): Promise<{ message: string; sessionId: st
       sessionId: data.pause_session_id
     };
   } catch (error: any) {
+    const errorMessage = error?.message || error?.toString() || String(error);
+    const errorCode = error?.code || '';
+
     // Se for erro de coluna não existente, retornar null silenciosamente
-    if (error?.code === '42703' || error?.message?.includes('column') || error?.message?.includes('does not exist')) {
+    if (
+      errorCode === '42703' ||
+      errorMessage.includes('column') ||
+      errorMessage.includes('does not exist') ||
+      errorMessage.includes('pause_auto_message') ||
+      errorMessage.includes('pause_session_id')
+    ) {
       return null;
     }
-    console.error('[pauseService] Erro ao obter configuração de pausa:', error?.message || error);
+
+    if (errorMessage && errorMessage !== '{}' && errorMessage !== '[object Object]') {
+      console.error('[pauseService] Erro ao obter configuração de pausa:', errorMessage);
+    }
     return null;
   }
 }
@@ -220,21 +244,43 @@ export async function hasChatReceivedAutoMessage(
       .limit(1);
 
     if (error) {
+      const errorMessage = error.message || String(error);
+      const errorCode = error.code || '';
+
       // Se for erro de coluna não existente, retornar false (assumir que não recebeu)
-      if (error.code === '42703' || error.message?.includes('column') || error.message?.includes('does not exist')) {
+      if (
+        errorCode === '42703' ||
+        errorMessage.includes('column') ||
+        errorMessage.includes('does not exist') ||
+        errorMessage.includes('auto_sent_pause_session')
+      ) {
         return false;
       }
-      console.error('[pauseService] Erro ao verificar mensagem automática:', error);
+
+      if (errorMessage && errorMessage !== '{}' && errorMessage !== '[object Object]') {
+        console.error('[pauseService] Erro ao verificar mensagem automática:', errorMessage);
+      }
       return false;
     }
 
     return (data && data.length > 0) ? true : false;
   } catch (error: any) {
+    const errorMessage = error?.message || error?.toString() || String(error);
+    const errorCode = error?.code || '';
+
     // Se for erro de coluna não existente, retornar false (assumir que não recebeu)
-    if (error?.code === '42703' || error?.message?.includes('column') || error?.message?.includes('does not exist')) {
+    if (
+      errorCode === '42703' ||
+      errorMessage.includes('column') ||
+      errorMessage.includes('does not exist') ||
+      errorMessage.includes('auto_sent_pause_session')
+    ) {
       return false;
     }
-    console.error('[pauseService] Erro ao verificar mensagem automática:', error?.message || error);
+
+    if (errorMessage && errorMessage !== '{}' && errorMessage !== '[object Object]') {
+      console.error('[pauseService] Erro ao verificar mensagem automática:', errorMessage);
+    }
     return false;
   }
 }

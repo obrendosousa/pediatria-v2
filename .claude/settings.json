@@ -29,7 +29,28 @@
       "Bash(npm install react-markdown remark-gfm)",
       "Bash(node -e \"require\\(''react-markdown''\\); console.log\\(''react-markdown ok''\\)\")",
       "Bash(node -e \"require\\(''remark-gfm''\\); console.log\\(''remark-gfm ok''\\)\")",
-      "Bash(node -e \"const z = require\\(''zod''\\); console.log\\(z.version || require\\(''./node_modules/zod/package.json''\\).version\\)\")"
+      "Bash(node -e \"const z = require\\(''zod''\\); console.log\\(z.version || require\\(''./node_modules/zod/package.json''\\).version\\)\")",
+      "Bash(test -d /Users/brendosousa/Downloads/painel-clinica-main/src/ai/voice/.venv)",
+      "Bash(./.venv/bin/pip list)",
+      "Bash(./.venv/bin/pip install git+https://github.com/resemble-ai/chatterbox.git)",
+      "Bash(./.venv/bin/python3 -c \"from chatterbox.mtl_tts import ChatterboxMultilingualTTS; print\\(''multilingual OK''\\)\")",
+      "Bash(brew list --formula)",
+      "Bash(xz --version)",
+      "Read(//usr/lib/**)",
+      "Bash(lsof -ti:8000)",
+      "Bash(./.venv/bin/python3 -m uvicorn server:app --host 0.0.0.0 --port 8000)",
+      "Bash(xargs kill -9)",
+      "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
+      "Bash(uv pip install --python .venv \"setuptools>=65\")",
+      "Bash(.venv/bin/python3 -c \"import pkg_resources; print\\(''OK:'', pkg_resources.__file__\\)\")",
+      "Bash(.venv/bin/python3 -c \":*)",
+      "Bash(curl -s -X POST http://localhost:8000/tts -H \"Content-Type: application/json\" -d \"{\"\"text\"\": \"\"Ola! Eu sou a Clara.\"\", \"\"language_id\"\": \"\"pt\"\", \"\"model_type\"\": \"\"multilingual\"\"}\")",
+      "Bash(.venv/bin/python3 -:*)",
+      "Bash(say -v \"?\")",
+      "WebFetch(domain:www.inferless.com)",
+      "Bash(docker ps --filter name=kokoro-clara --format \"{{.Status}}\")",
+      "Bash(/usr/local/bin/docker --version)",
+      "Bash(/Applications/Docker.app/Contents/Resources/bin/docker --version)"
     ]
   }
 }

@@ -356,7 +356,7 @@ export default function ChatInput({
                         : (replyTo.sender === 'CUSTOMER' || replyTo.sender === 'contact') ? (replyTo.sender_name || 'Contato') : replyTo.sender || 'Contato'}
                     </span>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {replyTo.message_type === 'audio'
+                      {replyTo.message_type === 'audio' || replyTo.message_type === 'voice'
                         ? '🎵 Áudio'
                         : replyTo.message_type === 'image'
                           ? '📷 Foto'

@@ -609,8 +609,74 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
 
       require('fs').writeFileSync('debug_webhook.json', JSON.stringify(message, null, 2));
 
-      // Copiloto agora é acionado manualmente pela secretária (botão ✨ no chat).
-      // O trigger automático foi removido para não gerar ruído desnecessário a cada mensagem.
+      // ── COPILOTO PROATIVO ────────────────────────────────────────────────
+      // Dispara automaticamente quando detecta momento crítico na conversa.
+      // Requisitos: (1) mensagem do paciente, (2) IA pausada (Joana atuando),
+      // (3) mensagem contém sinal de objeção, preço, dúvida ou urgência.
+      if (!message.key?.fromMe) {
+        const phone = extractPhoneFromRemoteJid(message.key?.remoteJid);
+        if (phone) {
+          // Fire-and-forget: não bloqueia o processamento do webhook
+          (async () => {
+            try {
+              const { data: chatRow } = await getSupabase()
+                .from("chats")
+                .select("id, is_ai_paused, contact_name")
+                .eq("phone", phone)
+                .maybeSingle();
+
+              // Só dispara se a Joana está atuando (IA pausada)
+              if (!chatRow?.id || !chatRow.is_ai_paused) return;
+
+              const text = extractTextFromAnyMessage(message.message) || "";
+              const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+              // Classificador rápido por keywords — sem LLM call
+              const OBJECTION_KEYWORDS = [
+                "caro", "muito caro", "vou pensar", "vou ver", "depois", "marido",
+                "esposa", "nao sei", "nao tenho certeza", "nao posso", "dificil",
+                "complicado", "nao da", "sem dinheiro", "nao vale", "achei caro",
+                "ta caro", "preco alto", "nao agora", "outro dia", "vou avaliar",
+                "preciso pensar", "deixa pra la", "desisto", "cancela", "cancelar",
+              ];
+              const PRICE_KEYWORDS = [
+                "quanto custa", "valor", "preco", "quanto", "tabela",
+                "convenio", "plano", "plano de saude", "unimed", "bradesco",
+                "aceita", "parcela", "parcelar", "desconto", "promocao",
+                "forma de pagamento", "pix", "cartao",
+              ];
+              const CLINICAL_KEYWORDS = [
+                "doi", "como funciona", "precisa de exame", "exame",
+                "efeito colateral", "risco", "anestesia", "recuperacao",
+                "quanto tempo", "demora", "resultado", "retorno",
+              ];
+              const URGENCY_KEYWORDS = [
+                "dor", "urgente", "emergencia", "hoje", "agora",
+                "socorro", "febre", "sangue", "grave",
+              ];
+
+              const isCritical =
+                OBJECTION_KEYWORDS.some((kw) => lower.includes(kw)) ||
+                PRICE_KEYWORDS.some((kw) => lower.includes(kw)) ||
+                CLINICAL_KEYWORDS.some((kw) => lower.includes(kw)) ||
+                URGENCY_KEYWORDS.some((kw) => lower.includes(kw));
+
+              if (!isCritical) return;
+
+              console.log(`🤖 [Copiloto Proativo] Momento crítico detectado no chat ${chatRow.id}: "${text.slice(0, 60)}..."`);
+
+              // Dispara o copiloto via API interna (fire-and-forget)
+              fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL ? 'http://localhost:3000' : ''}/api/ai/copilot/trigger`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatRow.id }),
+              }).catch((e) => console.warn("[Copiloto Proativo] Falha no trigger:", e.message));
+            } catch (e) {
+              // Best-effort: não deve nunca bloquear o webhook
+            }
+          })();
+        }
+      }
     }
 
     return NextResponse.json({ status: "processed", messages: messages.length });

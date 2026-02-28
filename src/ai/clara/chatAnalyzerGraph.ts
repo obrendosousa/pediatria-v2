@@ -136,7 +136,7 @@ async function analyzeConversationNode(state: ChatAnalysisState): Promise<Partia
     }
 
     const model = new ChatGoogleGenerativeAI({
-        model: "gemini-3-pro-preview",
+        model: "gemini-3-flash-preview",
         apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
         temperature: 0.1,
     });

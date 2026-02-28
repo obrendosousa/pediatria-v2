@@ -37,10 +37,13 @@ Sua missão agora é:
     // Dispara a IA em background para o endpoint do Cron não dar timeout (Edge Functions/Serverless limit)
     (async () => {
       try {
-        const result = await claraGraph.invoke({
-          messages: [new HumanMessage(studyCommand)],
-          chat_id: chatId
-        }) as unknown as ClaraState;
+        const result = await claraGraph.invoke(
+          {
+            messages: [new HumanMessage(studyCommand)],
+            chat_id: chatId
+          },
+          { configurable: { thread_id: "clara_heartbeat_cron" } }
+        ) as unknown as ClaraState;
 
         const aiResponseText = result.messages[result.messages.length - 1].content.toString();
 

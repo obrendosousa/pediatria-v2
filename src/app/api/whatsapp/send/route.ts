@@ -4,6 +4,10 @@ import { fetchAndUpdateProfilePicture } from '@/ai/ingestion/services';
 import { evolutionRequest, getEvolutionConfig } from '@/lib/evolution';
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 import { claraGraph } from '@/ai/clara/graph';
+import { parseVoiceSegments, generateAndUploadVoice } from '@/ai/voice/client';
+
+// Ignorar erro de self-signed certificate no node-fetch (usado pela LangChain/PostgresSaver)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 // Cliente Admin (Service Role) para bypassar RLS se necessário
 const supabase = createClient(
@@ -76,33 +80,19 @@ export async function POST(req: Request) {
         };
 
         try {
-          const { data: history } = await supabase.from('chat_messages')
-            .select('sender, message_text')
+          const { data: chatNotesRow } = await supabase.from('chat_notes')
+            .select('notes')
             .eq('chat_id', chatId)
-            .neq('wpp_id', fakeWppId)
-            .order('created_at', { ascending: false })
-            .limit(15);
+            .maybeSingle();
 
-          const langChainMessages: BaseMessage[] = [];
-
-          if (history) {
-            history.reverse().forEach(m => {
-              if (m.sender === 'contact') {
-                langChainMessages.push(new AIMessage(m.message_text || ''));
-              } else {
-                langChainMessages.push(new HumanMessage(m.message_text || ''));
-              }
-            });
+          let userText = message || 'Mídia enviada.';
+          if (chatNotesRow?.notes) {
+            userText = `[NOTAS INTERNAS RESTABELECIDAS DA TELA DO CHAT:\n${chatNotesRow.notes}\n-- FIM NOTAS]\n\nMensagem do usuário: ` + userText;
           }
 
-          let humanContent: any[] = [{
-            type: "text",
-            text: message || 'Mídia enviada.'
-          }];
+          const langChainMessages = [new HumanMessage(userText)];
 
-          langChainMessages.push(new HumanMessage({ content: humanContent }));
-
-          console.log("\n🧠 [Clara] Iniciando motor LangGraph...");
+          console.log("\n🧠 [Clara] Iniciando motor LangGraph (com PostgresSaver)...");
           broadcastStatus('thinking');
 
           let finalMessages: BaseMessage[] = [];
@@ -110,7 +100,11 @@ export async function POST(req: Request) {
 
           const stream = claraGraph.streamEvents(
             { messages: langChainMessages, chat_id: chatId },
-            { version: 'v2' }
+            {
+              version: 'v2',
+              configurable: { thread_id: String(chatId) },
+              streamMode: "values"
+            }
           );
 
           // Loop otimizado sem await bloqueante em chamadas externas
@@ -153,16 +147,26 @@ export async function POST(req: Request) {
                 break;
 
               case 'on_chain_start':
-                if (event.name === 'router_and_planner_node') {
-                  console.log("🗺️ [Clara] Planejando os passos da execução...");
+                // Nós da nova arquitetura open_deep_research
+                if (event.name === 'classify_node') {
+                  console.log("🔀 [Clara] Classificando intenção...");
+                  broadcastStatus('thinking');
+                } else if (event.name === 'write_research_brief_node') {
+                  console.log("🗺️ [Clara] Elaborando brief de pesquisa...");
                   broadcastStatus('planning');
-                } else if (event.name === 'executor_node') {
-                  console.log("⚙️ [Clara] Executando um passo do plano...");
+                } else if (event.name === 'research_supervisor_node') {
+                  console.log("⚙️ [Clara] Supervisor orquestrando researchers paralelos...");
                   broadcastStatus('executing_step');
-                } else if (event.name === 'reporter_node') {
-                  console.log("✍️ [Clara] Escrevendo relatório final...");
+                } else if (event.name === 'final_report_node') {
+                  console.log("✍️ [Clara] Sintetizando relatório final...");
                   broadcastStatus('writing_report');
-                } else if (event.name === 'fetch_data') {
+                } else if (event.name === 'researcher') {
+                  broadcastStatus('tool:Pesquisador coletando dados...');
+                } else if (event.name === 'compress_research') {
+                  broadcastStatus('tool:Comprimindo achados...');
+                }
+                // Nós do chatAnalyzerGraph (sub-grafo de análise estruturada)
+                else if (event.name === 'fetch_data') {
                   broadcastStatus('tool:Baixando mensagens do chat...');
                 } else if (event.name === 'analyze_conversation') {
                   broadcastStatus('tool:IA pensando e extraindo gargalos...');
@@ -172,19 +176,41 @@ export async function POST(req: Request) {
                 break;
 
               case 'on_chain_end':
-                if (event.name === 'executor_node') {
-                  console.log("✅ [Clara] Passo concluído e salvo no scratchpad.");
+                if (event.name === 'research_supervisor_node') {
+                  console.log("✅ [Clara] Rodada de researchers concluída.");
                   broadcastStatus('step_done');
                 }
+                // Captura a resposta final diretamente dos nós produtores de mensagem.
+                // Mais robusto do que depender do evento 'LangGraph' que pode não disparar
+                // corretamente quando há subgrafos compilados (researcher_graph) aninhados.
+                if (event.name === 'simple_agent' || event.name === 'final_report_node') {
+                  const nodeMessages = (event.data?.output as { messages?: BaseMessage[] })?.messages;
+                  if (nodeMessages && nodeMessages.length > 0) {
+                    // Sempre sobrescreve — se o nó rodou múltiplas vezes (ReAct loop),
+                    // queremos sempre a última mensagem gerada.
+                    finalMessages = nodeMessages;
+                    console.log(`📨 [Clara] Resposta capturada de '${event.name}' (${nodeMessages.length} msg(s))`);
+                  }
+                }
+                // Fallback: extrai do evento de conclusão do grafo principal se ainda vazio
                 if (event.name === 'LangGraph') {
-                  finalMessages = (event.data?.output as { messages: BaseMessage[] })?.messages ?? [];
+                  const graphMessages = (event.data?.output as { messages?: BaseMessage[] })?.messages ?? [];
+                  if (finalMessages.length === 0 && graphMessages.length > 0) {
+                    finalMessages = graphMessages;
+                    console.log(`📨 [Clara] Resposta capturada via fallback 'LangGraph' (${graphMessages.length} msg(s))`);
+                  }
                 }
                 break;
             }
           }
 
-          const lastMsg = finalMessages[finalMessages.length - 1];
-          const rawContent = lastMsg?.content;
+          // Busca o último AIMessage — mais robusto que pegar apenas o último item do array,
+          // pois evita capturar o HumanMessage do usuário se finalMessages vier do estado completo.
+          const lastAiMsg = [...finalMessages].reverse().find(
+            (m) => (m as any)._getType?.() === 'ai' || (m as any).type === 'ai' || m instanceof AIMessage
+          ) ?? finalMessages[finalMessages.length - 1];
+
+          const rawContent = lastAiMsg?.content;
           const aiResponseText = typeof rawContent === "string"
             ? rawContent
             : Array.isArray(rawContent)
@@ -193,22 +219,55 @@ export async function POST(req: Request) {
                 ? String(rawContent)
                 : '⚠️ Não consegui gerar uma resposta. Verifique os logs.';
 
-          console.log("💾 [Clara] Salvando resposta final no banco...");
+          console.log(`💾 [Clara] Salvando resposta final no banco... (finalMessages: ${finalMessages.length}, chars: ${aiResponseText.length})`);
 
-          await supabase.from('chat_messages').insert({
-            chat_id: chatId,
-            phone,
-            sender: 'contact',
-            message_text: aiResponseText,
-            message_type: 'text',
-            status: 'read',
-            created_at: new Date().toISOString(),
-            wpp_id: `ai_reply_${Date.now()}`
-          });
+          // Parse síncrono — identifica segmentos <voice> e <text>
+          const segments = parseVoiceSegments(aiResponseText);
+          const baseTs = Date.now();
 
+          // Pré-gera todos os áudios SEQUENCIALMENTE antes de inserir no banco.
+          // Sequencial (não paralelo) porque o Kokoro é CPU single-worker e
+          // rejeita requests simultâneos. Fazer ANTES elimina o efeito placeholder→áudio.
+          const voiceIndices = segments.reduce<number[]>((acc, s, i) => s.type === 'voice' ? [...acc, i] : acc, []);
+          const voiceUrlMap = new Map<number, string | null>();
+
+          for (const idx of voiceIndices) {
+            console.log(`[Voice] Gerando segmento de voz ${voiceIndices.indexOf(idx) + 1}/${voiceIndices.length} (${segments[idx].content.length} chars)...`);
+            const url = await generateAndUploadVoice(segments[idx].content).catch(e => {
+              console.error(`[Voice] Falha no segmento ${idx}:`, e);
+              return null as string | null;
+            });
+            voiceUrlMap.set(idx, url);
+            console.log(`[Voice] Segmento ${idx}: ${url ? '✅ URL gerada' : '⚠️ geração falhou (será inserido sem áudio)'}`);
+          }
+
+          // Insere todas as mensagens de uma vez com URLs já resolvidas.
+          // Se o áudio falhou (url null), degrada para texto com o conteúdo falado —
+          // jamais insere voice sem media_url para evitar placeholder travado.
+          for (let i = 0; i < segments.length; i++) {
+            const seg = segments[i];
+            const mediaUrl = seg.type === 'voice' ? (voiceUrlMap.get(i) ?? null) : null;
+            const hasAudio = seg.type === 'voice' && mediaUrl !== null;
+            const effectiveType = hasAudio ? 'voice' : (seg.type === 'voice' ? 'text' : seg.type);
+            const effectiveText = hasAudio ? '🎵 Áudio da Clara' : seg.content;
+
+            await supabase.from('chat_messages').insert({
+              chat_id: chatId,
+              phone,
+              sender: 'contact',
+              message_text: effectiveText,
+              message_type: effectiveType,
+              media_url: mediaUrl,
+              status: 'read',
+              created_at: new Date(baseTs + i * 1000).toISOString(),
+              wpp_id: `ai_reply_${baseTs}_${i}`
+            });
+          }
+
+          const lastSeg = segments[segments.length - 1];
           await supabase.from('chats').update({
-            last_message: aiResponseText,
-            last_message_type: 'text',
+            last_message: lastSeg?.content || aiResponseText,
+            last_message_type: lastSeg?.type || 'text',
             last_message_sender: 'contact',
             last_message_status: 'read',
             last_interaction_at: new Date().toISOString()

@@ -95,11 +95,13 @@ INSTRUÇÃO: Responda como Clara ajudando a secretária Joana a entender este ca
     const inputs: ClaraState = {
       messages: [...priorMessages, new HumanMessage(contextualMessage)],
       chat_id: chatId,   // Chat ID do PACIENTE — Clara usa para ferramentas de pesquisa
-      scratchpad: [],
-      plan: [],
-      current_step_index: 0,
       is_deep_research: false,
-      is_planning_phase: true,
+      is_planning_mode: false,
+      research_brief: "",
+      raw_notes: [],
+      supervisor_messages: [],
+      supervisor_iteration: 0,
+      research_complete: false,
       current_user_role: "admin",
     };
 
@@ -111,9 +113,11 @@ INSTRUÇÃO: Responda como Clara ajudando a secretária Joana a entender este ca
           controller.enqueue(encoder.encode(JSON.stringify(payload) + "\n"));
 
         try {
-          // streamEvents v2: intercepta TODOS os eventos do grafo, inclusive tokens de cada modelo
-          // Uso de 'as any' validado: limitação de tipagem genérica do LangGraph StateGraph
-          const events = claraGraph.streamEvents(inputs as any, { version: "v2" });
+          const events = claraGraph.streamEvents(inputs as any, {
+            version: "v2",
+            configurable: { thread_id: `copilot_${chatId}_${Date.now()}` },
+            streamMode: "values"
+          });
 
           // Flag para o fallback: se nenhum chunk de texto for emitido, usa on_chain_end
           let chunksEmitted = 0;

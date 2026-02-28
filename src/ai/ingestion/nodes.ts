@@ -12,6 +12,7 @@ import {
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage } from "@langchain/core/messages";
+import { analyzeChatInteraction } from "../clara/analyzer";
 
 /** Extrai o contextInfo de qualquer tipo de mensagem (texto, imagem, vídeo, áudio, documento) */
 function extractContextInfo(message: unknown): Record<string, any> | null {
@@ -344,8 +345,8 @@ export const insightExtractorNode = async (
   state: IngestionState
 ): Promise<Partial<IngestionState>> => {
   if (state.chat_id && state.should_continue && state.phone) {
-    // Engatilha execução assíncrona (não-bloqueante na esteira principal)
-    Promise.resolve().then(() => runBackgroundInsightExtraction(state.chat_id!));
+    // Fire and forget the Analyzer to prevent blocking the ingestion pipeline
+    Promise.resolve().then(() => analyzeChatInteraction(state.chat_id!));
   }
   return {};
 };

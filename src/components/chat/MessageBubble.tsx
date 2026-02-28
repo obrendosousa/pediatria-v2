@@ -55,12 +55,12 @@ export default function MessageBubble({
 }: MessageBubbleProps) {
   const toMacroPayload = useCallback(() => {
     const msgType = String(message.message_type || 'text').toLowerCase();
-    const supportedMediaType = msgType === 'audio' || msgType === 'image' || msgType === 'video' || msgType === 'document';
+    const supportedMediaType = msgType === 'audio' || msgType === 'voice' || msgType === 'image' || msgType === 'video' || msgType === 'document';
 
     if (supportedMediaType) {
       return {
         title: '',
-        type: msgType as 'audio' | 'image' | 'video' | 'document',
+        type: (msgType === 'voice' ? 'audio' : msgType) as 'audio' | 'image' | 'video' | 'document',
         content: message.media_url || '',
       };
     }
@@ -378,7 +378,7 @@ export default function MessageBubble({
       );
     }
 
-    if (message.message_type === 'audio' && message.media_url) {
+    if ((message.message_type === 'audio' || message.message_type === 'voice') && message.media_url) {
       return (
         <div className="pt-2 pb-0 w-[280px] min-w-[240px] max-w-full">
           <AudioMessage
@@ -533,7 +533,7 @@ export default function MessageBubble({
                   : (replyData?.sender === 'CUSTOMER' || replyData?.sender === 'contact') ? (replyData?.sender_name || 'Contato') : replyData?.sender || 'Contato'}
               </p>
               <p className="text-[12px] text-gray-600 dark:text-gray-300 truncate">
-                {replyData?.message_type === 'audio'
+                {replyData?.message_type === 'audio' || replyData?.message_type === 'voice'
                   ? '🎵 Áudio'
                   : replyData?.message_type === 'image'
                     ? '📷 Foto'
@@ -554,8 +554,8 @@ export default function MessageBubble({
                 <span
                   key={reaction.emoji}
                   className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-[2px] text-[11px] ${reaction.mine
-                      ? 'border-[#00a884]/40 bg-[#00a884]/10 text-[#007a63] dark:text-[#8fe3d5]'
-                      : 'border-black/10 bg-black/5 text-[#3b4a54] dark:text-[#c7d1d8]'
+                    ? 'border-[#00a884]/40 bg-[#00a884]/10 text-[#007a63] dark:text-[#8fe3d5]'
+                    : 'border-black/10 bg-black/5 text-[#3b4a54] dark:text-[#c7d1d8]'
                     }`}
                 >
                   <span>{reaction.emoji}</span>

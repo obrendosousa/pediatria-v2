@@ -1,0 +1,41 @@
+
+> painel-clinica@0.1.0 dev
+> node scripts/dev-with-webhook.mjs
+
+
+cloudflared nao encontrado no PATH.
+Instale para ter URL publica automatica no npm run dev:
+  brew install cloudflared
+Enquanto isso, rode manualmente outro tunel (ex.: ngrok).
+
+[TTS] Instalando dependencias (se necessario)...
+
+> painel-clinica@0.1.0 worker:dev
+> DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config worker/src/main.ts
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   ▲ Next.js 16.0.10 (Turbopack)
+   - Local:         http://localhost:3000
+   - Network:       http://192.168.68.104:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+ ✓ Ready in 1605ms
+
+[notice] A new release of pip is available: 24.0 -> 26.0.1
+[notice] To update, run: pip install --upgrade pip
+[TTS] Iniciando Kokoro TTS nativo - voz da Clara (Porta 8880)...
+[Worker] online at :4040
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+/Users/brendosousa/Downloads/painel-clinica-main/src/ai/voice/.venv/lib/python3.11/site-packages/torch/nn/modules/rnn.py:123: UserWarning: dropout option adds dropout after all but last recurrent layer, so non-zero dropout expects num_layers greater than 1, but got dropout=0.2 and num_layers=1
+  warnings.warn(
+/Users/brendosousa/Downloads/painel-clinica-main/src/ai/voice/.venv/lib/python3.11/site-packages/torch/nn/utils/weight_norm.py:143: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+ ○ Compiling / ...
+INFO:     Started server process [24538]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8880 (Press CTRL+C to quit)
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[?25h

@@ -10,7 +10,7 @@ export interface UseChatListOptions {
   confirm?: (message: string, title?: string) => Promise<boolean>;
 }
 
-export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean, searchTerm: string, options?: UseChatListOptions) {
+export function useChatList(isViewingArchived: boolean, searchTerm: string, options?: UseChatListOptions) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [tags, setTags] = useState<TagData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +34,7 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
     });
   };
 
-  const chatsListCacheKey = `chats_list_${isViewingArchived}_${isViewingDrafts}_${searchTerm || ''}`;
+  const chatsListCacheKey = `chats_list_${isViewingArchived}_${searchTerm || ''}`;
   const tagsCacheKey = 'chats_tags';
 
   useEffect(() => {
@@ -49,15 +49,13 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
   const fetchChats = async (showLoading = true) => {
     try {
       if (showLoading) setIsLoading(true);
-      
+
       let query = supabase
         .from('chats')
         .select('*')
         .eq('is_archived', isViewingArchived);
 
-      if (isViewingDrafts) {
-        query = query.not('ai_draft_reply', 'is', null);
-      }
+
 
       if (searchTerm) {
         query = query.or(`contact_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
@@ -69,12 +67,12 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
 
       // --- AUTO-CRIAÇÃO DO CHAT DA IA ---
       // Só injeta se estivermos na visualização principal (sem filtros ativos)
-      if (!isViewingArchived && !isViewingDrafts && !searchTerm) {
+      if (!isViewingArchived && !searchTerm) {
         const aiChatExists = fetchedData.some(c => c.phone === '00000000000');
         if (!aiChatExists) {
           // Tenta buscar no banco caso tenha ficado de fora da paginação (se houver no futuro)
           const { data: existingAi } = await supabase.from('chats').select('*').eq('phone', '00000000000').maybeSingle();
-          
+
           if (existingAi) {
             fetchedData.push(existingAi);
           } else {
@@ -85,7 +83,7 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
               is_pinned: true,
               unread_count: 0
             }).select().single();
-            
+
             if (newAi) {
               fetchedData.push(newAi);
             }
@@ -95,7 +93,7 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
       // ----------------------------------
 
       const sortedChats = sortChats(fetchedData);
-      
+
       setChats(sortedChats);
       set(chatsListCacheKey, sortedChats, TTL_CHATS_LIST_MS);
     } catch (e) {
@@ -129,15 +127,15 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
       .subscribe();
 
     const messagesSub = supabase.channel('public:chat_messages_for_list')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'chat_messages' 
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages'
       }, async (payload) => {
         const newMessage = payload.new as any;
         const chatId = newMessage.chat_id;
         const sender = newMessage.sender;
-        
+
         const isFromUs = sender === 'HUMAN_AGENT' || sender === 'AI_AGENT' || sender === 'me';
         if (isFromUs) {
           setChats(currentChats => {
@@ -163,7 +161,7 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
 
           const updatedChats = [...currentChats];
           const chat = updatedChats[chatIndex];
-          
+
           updatedChats[chatIndex] = {
             ...chat,
             last_interaction_at: newMessage.created_at || new Date().toISOString(),
@@ -180,7 +178,7 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
     const chatsSub = supabase.channel('public:chats')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, (payload) => {
         const { eventType, new: newRecord, old: oldRecord } = payload;
-        
+
         setChats(currentChats => {
           if (eventType === 'DELETE') {
             return currentChats.filter(chat => chat.id !== oldRecord.id);
@@ -188,23 +186,22 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
 
           if (eventType === 'INSERT') {
             const typedRecord = newRecord as Chat;
-            
+
             if (!!typedRecord.is_archived !== isViewingArchived) return currentChats;
-            if (isViewingDrafts && !typedRecord.ai_draft_reply) return currentChats;
 
             if (currentChats.some(c => c.id === typedRecord.id)) {
-                const updatedList = currentChats.map(c => c.id === typedRecord.id ? typedRecord : c);
-                return sortChats(updatedList);
+              const updatedList = currentChats.map(c => c.id === typedRecord.id ? typedRecord : c);
+              return sortChats(updatedList);
             }
-            
-            const tempChatIndex = currentChats.findIndex(c => 
-                String(c.id).startsWith('new_') && c.phone === typedRecord.phone
+
+            const tempChatIndex = currentChats.findIndex(c =>
+              String(c.id).startsWith('new_') && c.phone === typedRecord.phone
             );
-            
+
             if (tempChatIndex !== -1) {
-                const updatedList = [...currentChats];
-                updatedList[tempChatIndex] = typedRecord;
-                return sortChats(updatedList);
+              const updatedList = [...currentChats];
+              updatedList[tempChatIndex] = typedRecord;
+              return sortChats(updatedList);
             }
 
             const newList = [typedRecord, ...currentChats];
@@ -213,21 +210,18 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
 
           if (eventType === 'UPDATE') {
             const typedRecord = newRecord as Chat;
-            
+
             if (!!typedRecord.is_archived !== isViewingArchived) {
-                return currentChats.filter(chat => chat.id !== typedRecord.id);
-            }
-            if (isViewingDrafts && !typedRecord.ai_draft_reply) {
-                return currentChats.filter(chat => chat.id !== typedRecord.id);
+              return currentChats.filter(chat => chat.id !== typedRecord.id);
             }
 
             const exists = currentChats.some(c => c.id === typedRecord.id);
             if (exists) {
-                const updatedList = currentChats.map(chat => chat.id === typedRecord.id ? typedRecord : chat);
-                return sortChats(updatedList);
+              const updatedList = currentChats.map(chat => chat.id === typedRecord.id ? typedRecord : chat);
+              return sortChats(updatedList);
             } else {
-                const newList = [typedRecord, ...currentChats];
-                return sortChats(newList);
+              const newList = [typedRecord, ...currentChats];
+              return sortChats(newList);
             }
           }
           return currentChats;
@@ -240,7 +234,7 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
       supabase.removeChannel(tagsSub);
       supabase.removeChannel(messagesSub);
     };
-  }, [isViewingArchived, isViewingDrafts, searchTerm]);
+  }, [isViewingArchived, searchTerm]);
 
   // --- AÇÕES ---
 
@@ -256,7 +250,7 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
 
   const handleSelectChat = async (chat: Chat) => {
     setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread_count: 0 } : c));
-    
+
     if ((chat.unread_count || 0) > 0) {
       await fetch('/api/chats/mark-read', {
         method: 'POST',
@@ -269,15 +263,15 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
   };
 
   const toggleTagOnChat = async (chat: Chat, tagId: number) => {
-    const currentTags = (chat.tags || []) as string[]; 
+    const currentTags = (chat.tags || []) as string[];
     const tagIdStr = tagId.toString();
-    const newTags = currentTags.includes(tagIdStr) 
-      ? currentTags.filter(t => t !== tagIdStr) 
+    const newTags = currentTags.includes(tagIdStr)
+      ? currentTags.filter(t => t !== tagIdStr)
       : [...currentTags, tagIdStr];
-    
+
     setChats(prev => prev.map(c => c.id === chat.id ? { ...c, tags: newTags } : c));
     await supabase.from('chats').update({ tags: newTags }).eq('id', chat.id);
-    
+
     return { ...chat, tags: newTags };
   };
 
@@ -301,88 +295,88 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
     }
 
     try {
-        if (action === 'delete') {
-            if (!(await askConfirm("Apagar permanentemente esta conversa?", "Excluir conversa"))) return false;
-            setChats(prev => prev.filter(c => c.id !== chat.id));
-            await supabase.from('chat_messages').delete().eq('chat_id', chat.id);
-            await supabase.from('chats').delete().eq('id', chat.id);
-            return true;
-        }
+      if (action === 'delete') {
+        if (!(await askConfirm("Apagar permanentemente esta conversa?", "Excluir conversa"))) return false;
+        setChats(prev => prev.filter(c => c.id !== chat.id));
+        await supabase.from('chat_messages').delete().eq('chat_id', chat.id);
+        await supabase.from('chats').delete().eq('id', chat.id);
+        return true;
+      }
 
-        const updates: any = {};
+      const updates: any = {};
 
-        if (action === 'pin') {
-            const newPinned = !chat.is_pinned;
-            updates.is_pinned = newPinned;
-            // Atualização otimista: reflete o estado imediatamente na UI
-            setChats(prev => sortChats(prev.map(c => c.id === chat.id ? { ...c, is_pinned: newPinned } : c)));
-        }
+      if (action === 'pin') {
+        const newPinned = !chat.is_pinned;
+        updates.is_pinned = newPinned;
+        // Atualização otimista: reflete o estado imediatamente na UI
+        setChats(prev => sortChats(prev.map(c => c.id === chat.id ? { ...c, is_pinned: newPinned } : c)));
+      }
 
-        if (action === 'archive') {
-            updates.is_archived = !chat.is_archived;
-            // Remove da lista atual imediatamente (seja arquivando ou desarquivando)
-            setChats(prev => prev.filter(c => c.id !== chat.id));
-        }
+      if (action === 'archive') {
+        updates.is_archived = !chat.is_archived;
+        // Remove da lista atual imediatamente (seja arquivando ou desarquivando)
+        setChats(prev => prev.filter(c => c.id !== chat.id));
+      }
 
-        if (action === 'unread') {
-            const newCount = (chat.unread_count || 0) > 0 ? 0 : 1;
-            updates.unread_count = newCount;
-            // Atualização otimista: reflete o contador imediatamente na UI
-            setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread_count: newCount } : c));
-        }
+      if (action === 'unread') {
+        const newCount = (chat.unread_count || 0) > 0 ? 0 : 1;
+        updates.unread_count = newCount;
+        // Atualização otimista: reflete o contador imediatamente na UI
+        setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread_count: newCount } : c));
+      }
 
-        if (action === 'block') {
-            if (!(await askConfirm("Bloquear contato?", "Bloquear contato"))) return false;
-            const newBlocked = !chat.is_blocked;
-            updates.is_blocked = newBlocked;
-            setChats(prev => prev.map(c => c.id === chat.id ? { ...c, is_blocked: newBlocked } : c));
-        }
+      if (action === 'block') {
+        if (!(await askConfirm("Bloquear contato?", "Bloquear contato"))) return false;
+        const newBlocked = !chat.is_blocked;
+        updates.is_blocked = newBlocked;
+        setChats(prev => prev.map(c => c.id === chat.id ? { ...c, is_blocked: newBlocked } : c));
+      }
 
-        if (Object.keys(updates).length === 0) return false;
+      if (Object.keys(updates).length === 0) return false;
 
-        await supabase.from('chats').update(updates).eq('id', chat.id);
-        // Retorna true para archive para que o ChatWindow seja limpo ao arquivar o chat selecionado
-        return action === 'archive';
+      await supabase.from('chats').update(updates).eq('id', chat.id);
+      // Retorna true para archive para que o ChatWindow seja limpo ao arquivar o chat selecionado
+      return action === 'archive';
 
     } catch (e) {
-        console.error("Erro na ação:", e);
-        fetchChats();
-        return false;
+      console.error("Erro na ação:", e);
+      fetchChats();
+      return false;
     }
   };
 
   const handleBulkAction = async (action: 'archive' | 'delete', selectedIds: number[]) => {
-      // PROTEÇÃO: Filtra a IA para que ela não seja deletada em massa
-      const aiChat = chats.find(c => c.phone === '00000000000');
-      let validIds = selectedIds;
-      
-      if (aiChat && selectedIds.includes(aiChat.id)) {
-        validIds = selectedIds.filter(id => id !== aiChat.id);
-        if (validIds.length === 0) {
-            alert("Operação não permitida no chat do Assistente IA.");
-            return false;
-        }
-      }
+    // PROTEÇÃO: Filtra a IA para que ela não seja deletada em massa
+    const aiChat = chats.find(c => c.phone === '00000000000');
+    let validIds = selectedIds;
 
-      if (validIds.length === 0) return false;
-      const confirmText = action === 'archive' ? 'arquivar' : 'excluir permanentemente';
-      if (!(await askConfirm(`Deseja ${confirmText} as ${validIds.length} conversas?`, 'Confirmar ação'))) return false;
-
-      try {
-        setChats(prev => prev.filter(c => !validIds.includes(c.id)));
-        
-        if (action === 'archive') {
-            await supabase.from('chats').update({ is_archived: true }).in('id', validIds);
-        } else {
-            await supabase.from('chat_messages').delete().in('chat_id', validIds);
-            await supabase.from('chats').delete().in('id', validIds);
-        }
-        return true;
-      } catch (e) {
-          console.error(e);
-          fetchChats();
-          return false;
+    if (aiChat && selectedIds.includes(aiChat.id)) {
+      validIds = selectedIds.filter(id => id !== aiChat.id);
+      if (validIds.length === 0) {
+        alert("Operação não permitida no chat do Assistente IA.");
+        return false;
       }
+    }
+
+    if (validIds.length === 0) return false;
+    const confirmText = action === 'archive' ? 'arquivar' : 'excluir permanentemente';
+    if (!(await askConfirm(`Deseja ${confirmText} as ${validIds.length} conversas?`, 'Confirmar ação'))) return false;
+
+    try {
+      setChats(prev => prev.filter(c => !validIds.includes(c.id)));
+
+      if (action === 'archive') {
+        await supabase.from('chats').update({ is_archived: true }).in('id', validIds);
+      } else {
+        await supabase.from('chat_messages').delete().in('chat_id', validIds);
+        await supabase.from('chats').delete().in('id', validIds);
+      }
+      return true;
+    } catch (e) {
+      console.error(e);
+      fetchChats();
+      return false;
+    }
   };
 
   return {
@@ -391,13 +385,13 @@ export function useChatList(isViewingArchived: boolean, isViewingDrafts: boolean
     isLoading,
     fetchTags,
     actions: {
-        create: handleCreateChat,
-        updateContact: handleUpdateContact,
-        select: handleSelectChat,
-        toggleTag: toggleTagOnChat,
-        setTagsOnChat,
-        singleAction: performAction,
-        bulkAction: handleBulkAction
+      create: handleCreateChat,
+      updateContact: handleUpdateContact,
+      select: handleSelectChat,
+      toggleTag: toggleTagOnChat,
+      setTagsOnChat,
+      singleAction: performAction,
+      bulkAction: handleBulkAction
     }
   };
 }
