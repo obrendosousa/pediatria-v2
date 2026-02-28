@@ -8,6 +8,10 @@ import { chatAnalyzerGraph } from "./chatAnalyzerGraph";
 import { Pool } from "pg";
 // Analyst tools são importados diretamente em graph.ts/researcher_graph.ts — não re-exportar aqui
 
+// Garante bypass de certificado SSL auto-assinado independente da ordem de importação dos módulos.
+// O checkpointer.ts também define isso, mas tools.ts pode ser carregado antes em alguns contextos.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 // Helper para gerar embeddings 768d compatíveis com o schema vector(768) do banco.
 // Usa gemini-embedding-001 via @google/genai (text-embedding-004 não está disponível via v1beta).
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY! });

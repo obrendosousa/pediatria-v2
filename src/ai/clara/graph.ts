@@ -177,6 +177,11 @@ FERRAMENTAS DE DADOS (use nesta ordem de prioridade):
 7. get_aggregated_insights(start_date, end_date) ← Insights agregados de chat_insights
 8. save_report(titulo, conteudo, tipo) ← Salvar relatório no banco
 
+COMO VERIFICAR UM CHAT ESPECÍFICO POR NOME (2 passos):
+→ Passo 1: execute_sql("SELECT id, contact_name, phone FROM chats WHERE contact_name ILIKE '%[nome]%' LIMIT 5") — localiza o ID pelo nome
+→ Passo 2: get_chat_cascade_history(chat_id=[ID encontrado]) — lê o histórico completo
+Use este fluxo quando o usuário mencionar o nome de um paciente, questionar uma análise anterior, ou pedir para "ver a conversa de [nome]".
+
 ⛔ REGRA CRÍTICA: NUNCA chame save_report automaticamente. Salve APENAS quando o usuário pedir explicitamente ("gere um relatório", "salve", "quero o PDF"). Para perguntas diretas, responda com texto simples.
 
 ════════════════════════════════════════════
@@ -301,8 +306,8 @@ claraWorkflow.addNode("classify_node", async (state: ClaraState) => {
 Hoje: ${today}
 
 REGRA FUNDAMENTAL:
-"simple" = a resposta pode vir de MÉTRICAS, LISTAS, DADOS ESTRUTURADOS ou INSIGHTS JÁ PROCESSADOS (tabela chat_insights). Inclui perguntas sobre objeções, gargalos, qualidade e notas, pois já existem insights salvos.
-"research" = SOMENTE quando é necessário LER o TEXTO BRUTO das conversas para análise semântica profunda (ex: tom de voz, padrões de linguagem, análise de persuasão).
+"simple" = a resposta pode vir de MÉTRICAS, LISTAS, DADOS ESTRUTURADOS, INSIGHTS JÁ PROCESSADOS (tabela chat_insights), ou VERIFICAÇÃO DE UM CHAT ESPECÍFICO por nome/ID.
+"research" = SOMENTE quando é necessário LER e ANALISAR o TEXTO BRUTO de MÚLTIPLAS conversas para análise semântica profunda (ex: padrões de linguagem em 30+ chats).
 
 → EXEMPLOS "simple" — responde com ferramentas diretas (SEM pipeline de pesquisa):
   • "Quantas conversas tivemos esta semana?" → simple
@@ -316,13 +321,19 @@ REGRA FUNDAMENTAL:
   • "Qual a nota média de atendimento?" → simple ← usa gerar_relatorio_qualidade_chats
   • "Relatório de qualidade desta semana" → simple ← usa gerar_relatorio_qualidade_chats
   • "Mostre os leads com sentimento negativo" → simple ← usa get_filtered_chats_list
+  • "Me mostra a conversa da Karol" → simple ← execute_sql (acha ID) + get_chat_cascade_history
+  • "Verifica o chat da [nome]" → simple ← execute_sql (acha ID) + get_chat_cascade_history
+  • "Estava olhando o chat de [nome] e não encontrei o que você disse" → simple ← lê a conversa pra verificar
+  • "Não achei essa parte na conversa da [nome], você leu errado" → simple ← relê o chat específico
+  • "Confirma se [nome] realmente disse isso" → simple ← lê o chat específico
+  • "Abre o chat [ID numérico]" → simple ← get_chat_cascade_history direto
 
-→ EXEMPLOS "research" — SOMENTE para ler texto bruto de mensagens:
-  • "Leia as conversas e me diga o que os pacientes mais reclamam" → research (precisa LER texto)
-  • "Analise o tom e linguagem das conversas desta semana" → research (análise semântica)
-  • "Quais argumentos de vendas funcionaram melhor?" → research (precisa LER transcrições)
+→ EXEMPLOS "research" — SOMENTE para análise semântica de MÚLTIPLAS conversas:
+  • "Leia as conversas e me diga o que os pacientes mais reclamam" → research (múltiplos chats)
+  • "Analise o tom e linguagem das conversas desta semana" → research (múltiplos chats)
+  • "Quais argumentos de vendas funcionaram melhor?" → research (múltiplos chats)
 
-REGRA DE OURO: Se pode ser respondido com dados estruturados (contagens, listas, insights salvos) → "simple". "research" é APENAS para leitura e análise de texto bruto.`;
+REGRA DE OURO: Verificar, corrigir ou confirmar o conteúdo de UM chat específico = SEMPRE "simple". "research" é APENAS para análise de padrões em múltiplas conversas.`;
 
   try {
     const classifierModel = new ChatGoogleGenerativeAI({
