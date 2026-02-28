@@ -10,8 +10,9 @@ type HistoryItem = {
   content: string;
 };
 
-// Nós do grafo da Clara que produzem a resposta final visível para Joana
-const RESPONSE_NODES = new Set(["simple_agent", "reporter_node"]);
+// Nós do grafo da Clara que produzem a resposta final visível para o usuário
+// CORREÇÃO: Adicionado o "final_report_node" para que o relatório chegue à tela
+const RESPONSE_NODES = new Set(["simple_agent", "final_report_node"]);
 
 export async function POST(request: Request) {
   try {
@@ -72,18 +73,22 @@ export async function POST(request: Request) {
         .join("\n")
       : "";
 
-    // Mensagem contextualizada para a Clara — ela sabe que está ajudando Joana, não o paciente
-    const contextualMessage = `[MODO COPILOTO — ANÁLISE DE CASO PARA SECRETÁRIA]
-Joana está me consultando sobre o(a) paciente: ${patientName} (chat_id do paciente: ${chatId})
+    // MENSAGEM CONTEXTUALIZADA CORRIGIDA: 
+    // Libera a IA para gerar relatórios globais mesmo estando na tela de um paciente
+    const contextualMessage = `[MODO COPILOTO — ASSISTENTE DA CLÍNICA]
+Você é a Clara, assistente de inteligência artificial da clínica. O usuário atual (admin/secretária) está visualizando a tela do chat do paciente: ${patientName} (chat_id: ${chatId}).
 
-HISTÓRICO RECENTE DO PACIENTE (últimas 20 mensagens):
+HISTÓRICO RECENTE DESTE PACIENTE (últimas 20 mensagens):
 ------------------------------------------------------
 ${chatHistory || "Nenhuma mensagem disponível ainda."}
 ------------------------------------------------------
 
-PERGUNTA DA JOANA: ${message}
+PERGUNTA DO USUÁRIO: ${message}
 
-INSTRUÇÃO: Responda como Clara ajudando a secretária Joana a entender este caso. Use as ferramentas se precisar de mais dados. Seja direta e prática.`;
+INSTRUÇÕES CRÍTICAS DE CONTEXTO:
+1. FOCO LOCAL: Se a pergunta for sobre ESTE paciente específico, use o histórico acima e ajude a entender/resolver o caso.
+2. FOCO GLOBAL (RELATÓRIOS): Se a pergunta for GERAL sobre a clínica (ex: "quantos atendimentos tivemos", "gere um relatório", "qual a média de notas", "resumo do dia", "faturamento"), IGNORE o paciente atual. Você tem a permissão e o DEVER de usar suas ferramentas (como query_database, generate_sql_report, get_aggregated_insights, etc.) para varrer TODO o banco de dados e entregar o relatório geral exato.
+3. Não invente dados. Use sempre as ferramentas de banco de dados para responder perguntas globais com absoluta certeza.`;
 
     // Reconstrói histórico do mini-chat como messages LangChain (sem tool calls anteriores)
     const priorMessages = history
@@ -94,7 +99,7 @@ INSTRUÇÃO: Responda como Clara ajudando a secretária Joana a entender este ca
 
     const inputs: ClaraState = {
       messages: [...priorMessages, new HumanMessage(contextualMessage)],
-      chat_id: chatId,   // Chat ID do PACIENTE — Clara usa para ferramentas de pesquisa
+      chat_id: chatId,   // Chat ID do PACIENTE
       is_deep_research: false,
       is_planning_mode: false,
       research_brief: "",
@@ -133,6 +138,7 @@ INSTRUÇÃO: Responda como Clara ajudando a secretária Joana a entender este ca
               else if (node === "fetch_data") label = "Baixando mensagens do chat para análise...";
               else if (node === "analyze_conversation") label = "IA pensando e extraindo gargalos...";
               else if (node === "save_to_db") label = "Salvando insights e histórico no banco...";
+              else if (node === "final_report_node") label = "✍️ Escrevendo relatório final...";
               if (label) enqueue({ type: "ui_log", content: label });
             }
 
@@ -148,6 +154,7 @@ INSTRUÇÃO: Responda como Clara ajudando a secretária Joana a entender este ca
               else if (toolName === "deep_research_chats_tool" || toolName === "deep_research_chats") label = "⚙️ Pesquisa profunda (Map-Reduce)...";
               else if (toolName === "analisar_chat_especifico") label = "🔎 Analisando atendimento detalhadamente...";
               else if (toolName === "gerar_relatorio_qualidade_chats") label = "📊 Consolidando relatórios de qualidade...";
+              else if (toolName === "generate_sql_report" || toolName === "query_database") label = "📊 Consultando banco de dados global...";
               else label = `⚙️ Executando ação: ${toolName}...`;
               enqueue({ type: "ui_log", content: label });
             }

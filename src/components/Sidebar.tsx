@@ -136,6 +136,36 @@ export default function Sidebar({ onSelectChat, selectedChatId }: SidebarProps) 
     if (onSelectChat) onSelectChat(chat);
   };
 
+  // --- HANDLER: abre chat via evento customizado (ex: links clicáveis nos relatórios da Clara) ---
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const chatId = (e as CustomEvent<{ chatId: number }>).detail?.chatId;
+      if (!chatId) return;
+
+      // Sai do modo arquivados para garantir que o chat apareça
+      setIsViewingArchived(false);
+
+      // Tenta encontrar o chat na lista atual
+      const found = chats.find((c) => c.id === chatId);
+      if (found) {
+        handleSelectChat(found);
+        return;
+      }
+
+      // Chat não está na lista visível — busca direto no Supabase
+      fetch(`/api/chats/${chatId}`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data) handleSelectChat(data as Chat);
+        })
+        .catch(() => {});
+    };
+
+    window.addEventListener('clara:open_chat', handler);
+    return () => window.removeEventListener('clara:open_chat', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chats]);
+
   const toggleSelectionMode = () => {
     if (isSelectionMode) {
       setSelectedChatIds([]);

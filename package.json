@@ -19,7 +19,8 @@
     "postinstall": "echo '✅ Dependências instaladas com sucesso!'",
     "git:commit": "node git-commit.mjs",
     "git:push": "node git-push.mjs",
-    "tts": "cd src/ai/voice && source .venv/bin/activate && python server.py"
+    "tts": "cd src/ai/voice && source .venv/bin/activate && python server.py",
+    "backfill-memories": "npx tsx --env-file=.env.local scripts/backfill-memory-embeddings.mts"
   },
   "dependencies": {
     "@google/genai": "^1.43.0",

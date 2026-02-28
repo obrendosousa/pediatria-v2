@@ -3,9 +3,16 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
+import { MessageSquare } from 'lucide-react';
 
 interface Props {
   text: string;
+}
+
+// Converte [[chat:ID|Label]] → [Label](#chat-id-ID) antes de passar ao ReactMarkdown.
+// Usa fragmento de hash para evitar URL-encoding do scheme chat-open:// por remark-gfm.
+function preprocessChatLinks(text: string): string {
+  return text.replace(/\[\[chat:(\d+)\|([^\]]+)\]\]/g, '[$2](#chat-id-$1)');
 }
 
 const components: Components = {
@@ -115,17 +122,39 @@ const components: Components = {
     </blockquote>
   ),
 
-  // Links (sem navegação — segurança)
-  a: ({ children, href }) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-[#027eb5] dark:text-[#53bdeb] underline underline-offset-2 break-all"
-    >
-      {children}
-    </a>
-  ),
+  // Links — detecta #chat-id-N para abrir chat interno, resto abre em nova aba
+  a: ({ children, href }) => {
+    if (href?.startsWith('#chat-id-')) {
+      const chatId = parseInt(href.replace('#chat-id-', ''), 10);
+      if (!isNaN(chatId)) {
+        return (
+          <button
+            type="button"
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('clara:open_chat', { detail: { chatId } })
+              )
+            }
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#d9fdd3] dark:bg-[#025c4c]/60 text-[#027eb5] dark:text-[#53bdeb] text-[12px] font-medium cursor-pointer hover:bg-[#c3f8bc] dark:hover:bg-[#025c4c] transition-colors border border-[#a8e6a0] dark:border-[#128c7e]/40 align-middle mx-0.5"
+            title="Abrir este chat"
+          >
+            <MessageSquare className="w-3 h-3 flex-shrink-0" />
+            {children}
+          </button>
+        );
+      }
+    }
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-[#027eb5] dark:text-[#53bdeb] underline underline-offset-2 break-all"
+      >
+        {children}
+      </a>
+    );
+  },
 };
 
 // Listas não-ordenadas com bullet customizado (sem o marcador padrão do browser)
@@ -155,13 +184,16 @@ const componentsWithCustomBullet: Components = {
 };
 
 export default function ClaraMarkdownMessage({ text }: Props) {
+  // Pré-processa o texto para converter [[chat:ID|Label]] em links clicáveis
+  const processedText = preprocessChatLinks(text);
+
   return (
     <div className="clara-markdown text-[14.2px] leading-relaxed break-words min-w-0">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={componentsWithCustomBullet}
       >
-        {text}
+        {processedText}
       </ReactMarkdown>
     </div>
   );

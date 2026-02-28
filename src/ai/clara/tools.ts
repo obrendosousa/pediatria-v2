@@ -1,10 +1,24 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { GoogleGenAI } from "@google/genai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { chatAnalyzerGraph } from "./chatAnalyzerGraph";
 import { Pool } from "pg";
+// Analyst tools são importados diretamente em graph.ts/researcher_graph.ts — não re-exportar aqui
+
+// Helper para gerar embeddings 768d compatíveis com o schema vector(768) do banco.
+// Usa gemini-embedding-001 via @google/genai (text-embedding-004 não está disponível via v1beta).
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY! });
+async function embedText768(text: string): Promise<number[]> {
+  const response = await genAI.models.embedContent({
+    model: "gemini-embedding-001",
+    contents: text,
+    config: { outputDimensionality: 768 },
+  });
+  return response.embeddings?.[0]?.values ?? [];
+}
 
 // Extrai texto de forma segura de respostas LLM — conteúdo pode ser string ou array de partes.
 // Usar .toString() em array retorna "[object Object],[object Object]" — este helper resolve isso.
@@ -111,12 +125,7 @@ export const manageLongTermMemoryTool = new DynamicStructuredTool({
       if (!content) return "Erro: 'content' é obrigatório para salvar.";
 
       try {
-        const embeddings = new GoogleGenerativeAIEmbeddings({
-          model: "text-embedding-004",
-          apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-        });
-
-        const embedding = await embeddings.embedQuery(content);
+        const embedding = await embedText768(content);
 
         // Chamar a RPC para achar similares (Passo 3)
         const { data: matches, error: rpcError } = await supabase.rpc("match_memories", {
@@ -160,6 +169,25 @@ export const manageLongTermMemoryTool = new DynamicStructuredTool({
         return `Erro ao processar memória com embeddings: ${e.message}`;
       }
     } else {
+      // Busca vetorial (semântica) quando há conteúdo, ilike como fallback
+      if (content) {
+        try {
+          const queryEmbedding = await embedText768(content);
+          const { data: vecMatches, error: vecError } = await supabase.rpc("match_memories", {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.7,
+            match_count: 5,
+          });
+          if (!vecError && vecMatches && vecMatches.length > 0) {
+            return `Memórias encontradas (busca semântica):\n${(vecMatches as any[])
+              .map((m) => `- ${m.content} (similaridade: ${(m.similarity * 100).toFixed(0)}%)`)
+              .join("\n")}`;
+          }
+        } catch {
+          // Fallback para ilike se a busca vetorial falhar
+        }
+      }
+      // Fallback: busca por categoria + texto
       let query = supabase
         .from("clara_memories")
         .select("content, created_at")
@@ -171,7 +199,7 @@ export const manageLongTermMemoryTool = new DynamicStructuredTool({
       return `Memórias encontradas:\n${data
         .map(
           (m) =>
-            `- ${m.content} (salvo em ${new Date(m.created_at).toLocaleDateString()})`
+            `- ${m.content} (salvo em ${new Date((m as any).created_at).toLocaleDateString()})`
         )
         .join("\n")}`;
     }
@@ -278,7 +306,7 @@ function normalizeSenderLabel(sender: string | null): string {
   const s = String(sender ?? "").toUpperCase();
   if (s === "AI_AGENT") return "BOT";
   if (s === "HUMAN_AGENT" || s === "ME") return "SECRETÁRIA";
-  if (s === "CONTACT") return "BOT";
+  if (s === "CONTACT") return "PACIENTE";
   return "PACIENTE";
 }
 
@@ -572,17 +600,49 @@ export const gerarRelatorioQualidadeTool = new DynamicStructuredTool({
   }),
   func: async ({ dias_retroativos }) => {
     try {
-      const date = new Date();
-      date.setDate(date.getDate() - dias_retroativos);
+      const fetchInsights = async (days: number) => {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        return supabase
+          .from("chat_insights")
+          .select("id, chat_id, nota_atendimento, sentimento, gargalos, resumo_analise, metricas_extras, updated_at")
+          .gte("updated_at", cutoff.toISOString())
+          .order("updated_at", { ascending: false });
+      };
 
-      const { data, error } = await supabase
-        .from("chat_insights")
-        .select("id, chat_id, nota_atendimento, sentimento, gargalos, resumo_analise, metricas_extras, updated_at")
-        .gte("updated_at", date.toISOString())
-        .order("updated_at", { ascending: false });
-
+      let { data, error } = await fetchInsights(dias_retroativos);
       if (error) throw error;
-      if (!data || data.length === 0) return "Nenhum insight de chat encontrado no período especificado.";
+
+      // Auto-expansão de janela: se não há dados no período solicitado, tenta janelas maiores
+      let periodoEfetivo = dias_retroativos;
+      if (!data || data.length === 0) {
+        for (const fallback of [60, 90, 180]) {
+          const res = await fetchInsights(fallback);
+          if (!res.error && res.data && res.data.length > 0) {
+            data = res.data;
+            periodoEfetivo = fallback;
+            break;
+          }
+        }
+      }
+
+      if (!data || data.length === 0) return "Nenhum insight de chat encontrado. Execute get_filtered_chats_list e depois analisar_chat_especifico para gerar insights em tempo real.";
+
+      // Busca nome e telefone dos chats em uma única query (JOIN programático)
+      const chatIds = (data as any[]).map((d) => d.chat_id).filter(Boolean);
+      const { data: chatsData } = await supabase
+        .from("chats")
+        .select("id, contact_name, phone")
+        .in("id", chatIds);
+      const chatMetaMap = new Map<number, { name: string; phone: string }>(
+        ((chatsData ?? []) as any[]).map((c) => [
+          c.id as number,
+          {
+            name: (c.contact_name as string) || "",
+            phone: (c.phone as string) || "",
+          },
+        ])
+      );
 
       // Agrega métricas
       const notas = (data as any[]).map((d) => d.nota_atendimento).filter((n) => n !== null && n !== undefined) as number[];
@@ -609,22 +669,28 @@ export const gerarRelatorioQualidadeTool = new DynamicStructuredTool({
         if (d.sentimento) sentimentos.push(d.sentimento);
       }
 
-      // Resumo por chat (os 20 mais recentes)
+      // Resumo por chat (os 20 mais recentes) — inclui nome e telefone para links auditáveis
       const chatSummaries = (data as any[]).slice(0, 20).map((d) => {
         const extras = d.metricas_extras as Record<string, any> | null;
         const objs = extras?.todas_objecoes?.join("; ") || "nenhuma";
-        const decisao = extras?.decisao || d.resumo_analise?.substring(0, 60) || "não identificada";
-        return `Chat #${d.chat_id} | Nota: ${d.nota_atendimento ?? "N/A"}/10 | Sentimento: ${d.sentimento ?? "N/A"} | Objeções: ${objs} | Decisão: ${decisao}`;
+        const decisao = extras?.decisao || d.resumo_analise?.substring(0, 80) || "não identificada";
+        const meta = chatMetaMap.get(d.chat_id as number);
+        const label = meta?.name && meta?.phone
+          ? `${meta.name} (${meta.phone})`
+          : meta?.name || meta?.phone || `#${d.chat_id}`;
+        // Formato de link clicável para auditoria
+        return `[[chat:${d.chat_id}|${label}]] | Nota: ${d.nota_atendimento ?? "N/A"}/10 | Sentimento: ${d.sentimento ?? "N/A"} | Objeções: ${objs} | Decisão: ${decisao}`;
       });
 
       return JSON.stringify({
-        periodo_analisado: `últimos ${dias_retroativos} dia(s)`,
+        periodo_analisado: `últimos ${periodoEfetivo} dia(s)${periodoEfetivo !== dias_retroativos ? ` (solicitado: ${dias_retroativos} dias — expandido automaticamente pois não havia dados no período original)` : ""}`,
         total_chats_analisados: data.length,
         media_nota_atendimento: media,
         distribuicao_sentimento: countFreq(sentimentos),
         principais_objecoes: countFreq(allObjecoes).slice(0, 15),
         principais_gargalos: countFreq(allGargalos).slice(0, 10),
         resumo_por_chat: chatSummaries,
+        instrucao: "Use os links [[chat:ID|Nome (Tel)]] acima para criar a tabela de auditoria '📎 Chats Analisados' no relatório.",
       });
     } catch (e: any) {
       return `Erro ao buscar relatórios de qualidade: ${e.message}`;
@@ -633,197 +699,253 @@ export const gerarRelatorioQualidadeTool = new DynamicStructuredTool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONSULTA AO BANCO DE DADOS — query_database
-// Permite à Clara acessar qualquer tabela do Supabase com filtros precisos.
-// É a ferramenta central para "conversar com os dados" da clínica.
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const queryDatabaseTool = new DynamicStructuredTool({
-  name: "query_database",
-  description:
-    "Consulta tabelas do banco de dados Supabase com filtros de data, campo e valor. " +
-    "Use para acessar dados precisos de chats, mensagens, insights, relatórios e memórias. " +
-    "Tabelas disponíveis: chats, chat_messages, chat_insights, clara_reports, clara_memories, knowledge_base. " +
-    "Sempre retorna id e contact_name nos resultados de chats para permitir referências precisas.",
-  schema: z.object({
-    table: z
-      .enum(["chats", "chat_messages", "chat_insights", "clara_reports", "clara_memories", "knowledge_base"])
-      .describe("Nome da tabela a consultar."),
-    columns: z
-      .string()
-      .optional()
-      .default("*")
-      .describe("Colunas a selecionar separadas por vírgula. Para chats inclua sempre 'id, contact_name'. Ex: 'id, contact_name, stage, ai_sentiment, last_interaction_at'"),
-    date_from: z
-      .string()
-      .optional()
-      .describe("Data inicial no formato YYYY-MM-DD (ex: '2026-02-26' para ontem)."),
-    date_to: z
-      .string()
-      .optional()
-      .describe("Data final no formato YYYY-MM-DD (ex: '2026-02-27' para hoje)."),
-    date_field: z
-      .string()
-      .optional()
-      .default("created_at")
-      .describe("Campo de data para filtrar. Para chats use 'last_interaction_at'. Para mensagens use 'created_at'."),
-    eq_filters: z
-      .string()
-      .optional()
-      .describe('Filtros de igualdade exata como JSON string. Ex: \'{"stage":"qualified","is_archived":false}\' ou \'{"chat_id":42}\''),
-    ilike_filters: z
-      .string()
-      .optional()
-      .describe('Filtros de texto parcial (case-insensitive) como JSON string. Ex: \'{"contact_name":"João"}\' ou \'{"ai_summary":"urgência"}\''),
-    order_by: z
-      .string()
-      .optional()
-      .default("created_at")
-      .describe("Campo para ordenar os resultados."),
-    ascending: z
-      .boolean()
-      .optional()
-      .default(false)
-      .describe("Ordem crescente? false = mais recente primeiro (padrão)."),
-    limit: z
-      .number()
-      .max(200)
-      .optional()
-      .default(50)
-      .describe("Número máximo de registros a retornar (padrão: 50, máximo: 200)."),
-  }),
-  func: async ({ table, columns, date_from, date_to, date_field, eq_filters, ilike_filters, order_by, ascending, limit }) => {
-    try {
-      let query = (supabase.from(table) as any).select(columns ?? "*");
-
-      const dateCol = date_field ?? "created_at";
-      if (date_from) query = query.gte(dateCol, `${date_from}T00:00:00.000Z`);
-      if (date_to) query = query.lte(dateCol, `${date_to}T23:59:59.999Z`);
-
-      if (eq_filters) {
-        const parsedEq = typeof eq_filters === "string" ? JSON.parse(eq_filters) : eq_filters;
-        for (const [key, value] of Object.entries(parsedEq)) {
-          query = query.eq(key, value);
-        }
-      }
-
-      if (ilike_filters) {
-        const parsedIlike = typeof ilike_filters === "string" ? JSON.parse(ilike_filters) : ilike_filters;
-        for (const [key, value] of Object.entries(parsedIlike)) {
-          query = query.ilike(key, `%${value}%`);
-        }
-      }
-
-      query = query.order(order_by ?? "created_at", { ascending: ascending ?? false });
-      query = query.limit(Math.min(limit ?? 50, 200));
-
-      const { data, error } = await query;
-
-      if (error) return `Erro ao consultar tabela '${table}': ${error.message}`;
-      if (!data || data.length === 0) return `Nenhum registro encontrado na tabela '${table}' com os filtros especificados.`;
-
-      // Para chats: formata lista com referências legíveis
-      if (table === "chats") {
-        const header = `### Tabela 'chats' — ${data.length} registro(s) encontrado(s)\n\n`;
-        const rows = (data as any[]).map((row) =>
-          `- **Chat #${row.id}** — ${row.contact_name ?? "Sem nome"} | Stage: ${row.stage ?? "N/A"} | Sentimento: ${row.ai_sentiment ?? "N/A"} | Última interação: ${row.last_interaction_at ? new Date(row.last_interaction_at).toLocaleString("pt-BR") : "N/A"}`
-        );
-        return header + rows.join("\n");
-      }
-
-      // Para insights: formata com notas e referências
-      if (table === "chat_insights") {
-        const header = `### Tabela 'chat_insights' — ${data.length} registro(s)\n\n`;
-        const rows = (data as any[]).map((row) =>
-          `- **Chat #${row.chat_id}** | Nota: ${row.nota_atendimento ?? "N/A"}/10 | Sentimento: ${row.sentimento ?? "N/A"} | Gargalos: ${Array.isArray(row.gargalos) ? row.gargalos.join(", ") : "nenhum"}`
-        );
-        return header + rows.join("\n");
-      }
-
-      // Para outras tabelas: JSON compacto
-      return `### Tabela '${table}' — ${data.length} registro(s)\n\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
-    } catch (e: any) {
-      return `Erro ao acessar banco de dados: ${e.message}`;
-    }
-  },
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EXPORTS
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
-// NOVA FERRAMENTA DE ANÁLISE SQL — EXATA E DIRETA NO BANCO
+// FERRAMENTA SQL DIRETA — execute_sql
+// Padrão "SQL Agent": o modelo principal escreve o SQL; a ferramenta executa.
+// Elimina o LLM intermediário do generateSqlReport e o pg Pool instável.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const dbPool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  connectionTimeoutMillis: 8000,
+  idleTimeoutMillis: 30000,
+  max: 5,
 });
 
-export const generateSqlReportTool = new DynamicStructuredTool({
-  name: "generate_sql_report",
+export const executeSqlTool = new DynamicStructuredTool({
+  name: "execute_sql",
   description:
-    "Gera insights precisos e cálculos matemáticos reais (COUNT, AVG, SUM, GROUP BY) rodando consultas SQL relativas a chats e atendimentos.\\n" +
-    "Use esta ferramenta SEMPRE que precisar contar número de contatos, métricas financeiras, taxas de conversão ou médias.\\n" +
-    "A ferramenta recebe a pergunta do usuário e um LLM escreve uma query PostgreSQL otimizada e read-only.\\n" +
-    "As tabelas mapeadas são: 'chats', 'chat_messages', 'chat_insights', 'clara_memories'.",
+    "Executa uma query SQL SELECT diretamente no banco PostgreSQL da clínica. " +
+    "Use para QUALQUER consulta de dados: JOINs, aggregations, agendamentos, financeiro, pacientes, leads. " +
+    "Você escreve o SQL — a ferramenta apenas executa e retorna os resultados brutos. " +
+    "REGRAS OBRIGATÓRIAS: (1) Apenas SELECT/WITH. " +
+    "(2) Datas sempre com offset BRT: '2026-02-24T00:00:00-03:00'::timestamptz. " +
+    "(3) Agrupar por dia BRT: DATE(campo AT TIME ZONE 'America/Sao_Paulo'). " +
+    "(4) Para contar chats: filtre last_interaction_at na tabela chats — NUNCA JOIN com chat_messages para isso. " +
+    "(5) Inclua LIMIT (máx 500).",
   schema: z.object({
-    pergunta_em_linguagem_natural: z.string().describe("O que você precisa descobrir. Ex: 'Qual a média das notas de atendimento neste mês?' ou 'Quantos chats caíram em lost hoje?'"),
+    sql: z.string().describe(
+      "Query SQL SELECT completa e válida para PostgreSQL. " +
+      "Ex1 — volume por dia: SELECT DATE(last_interaction_at AT TIME ZONE 'America/Sao_Paulo') AS dia, COUNT(*) AS total FROM chats WHERE last_interaction_at >= '2026-02-24T00:00:00-03:00'::timestamptz AND last_interaction_at <= '2026-02-28T23:59:59.999-03:00'::timestamptz GROUP BY 1 ORDER BY 1; " +
+      "Ex2 — breakdown por stage: SELECT stage, COUNT(*) FROM chats WHERE last_interaction_at >= '2026-02-24T00:00:00-03:00'::timestamptz GROUP BY stage;"
+    ),
   }),
-  func: async ({ pergunta_em_linguagem_natural }) => {
+  func: async ({ sql }) => {
     try {
-      if (!process.env.DATABASE_URL) return "Erro: DATABASE_URL não está configurada no ambiente.";
+      if (!process.env.DATABASE_URL) {
+        return "Erro: DATABASE_URL não configurada. Use get_volume_metrics para métricas de volume.";
+      }
 
-      const sqlAgent = new ChatGoogleGenerativeAI({
-        model: "gemini-3-flash-preview",
-        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-        temperature: 0,
-      });
-
-      const dbSchema = `
-Tabelas disponíveis e suas colunas(PostgreSQL):
-        - chats: id(int), phone(text), contact_name(text), stage(text: new, qualified, lost, won), ai_sentiment(text), last_interaction_at(timestamptz), is_archived(bool)
-      - chat_messages: id(int), chat_id(int), sender(text: AI_AGENT, HUMAN_AGENT, CUSTOMER), message_text(text), created_at(timestamptz), message_type(text)
-      - chat_insights: id(int), chat_id(int), nota_atendimento(numeric), sentimento(text), created_at(timestamptz)
-
-REGRAS:
-        1. Responda APENAS com código SQL puro e válido para PostgreSQL.Sem crases, sem explicações.
-2. É ESTRITAMENTE read - only(SELECT).Proibido INSERT / UPDATE / DELETE / DROP.
-3. Se precisar de data atual, use CURRENT_DATE ou NOW().
-4. Se o usuário referir - se a "avaliação" ou "nota", junte 'chats' com 'chat_insights' via chat_id.`;
-
-      const instruction = `Crie uma query PostgreSQL para responder a esta pergunta: "${pergunta_em_linguagem_natural}".`;
-
-      const response = await sqlAgent.invoke([
-        new SystemMessage(dbSchema),
-        new HumanMessage(instruction)
-      ]);
-
-      let sqlCode = extractTextContent(response.content).trim();
-
-      sqlCode = sqlCode.replace(/^\\s*\\x60{3}(sql)?/i, "").replace(/\\x60{3}\\s*$/i, "").trim();
-
-      if (!sqlCode.toUpperCase().startsWith("SELECT") && !sqlCode.toUpperCase().startsWith("WITH")) {
-        return "Erro: A consulta SQL gerada não é de leitura (SELECT). Proteção de segurança ativada.";
+      const trimmed = sql.trim();
+      const upper = trimmed.replace(/\s+/g, " ").toUpperCase();
+      if (!upper.startsWith("SELECT") && !upper.startsWith("WITH")) {
+        return `Segurança: apenas SELECT/WITH são permitidos. SQL recebido: ${trimmed.substring(0, 200)}`;
       }
 
       const client = await dbPool.connect();
       try {
-        const result = await client.query(sqlCode);
-        if (result.rows.length === 0) return "A consulta não retornou dados (0 registros).";
-        return `Query executada com sucesso.\nResultados: \n` + JSON.stringify(result.rows, null, 2);
+        const result = await client.query(trimmed);
+        const rows = result.rows;
+
+        if (rows.length === 0) {
+          return `Consulta executada — 0 registros encontrados.\nSQL: ${trimmed}\nDica: verifique o intervalo de datas e os valores dos filtros.`;
+        }
+
+        const displayed = rows.slice(0, 500);
+        const truncNote = rows.length > 500 ? ` (mostrando 500 de ${rows.length})` : "";
+        return `✅ ${rows.length} registro(s)${truncNote}.\nSQL: ${trimmed}\n${JSON.stringify(displayed, null, 2)}`;
       } finally {
         client.release();
       }
-
     } catch (e: any) {
-      return `Erro ao analisar dados com SQL: ${e.message}`;
+      return `Erro SQL: ${e.message}\nSQL tentado: ${sql.substring(0, 400)}\nDica: verifique nomes de tabelas/colunas e syntax PostgreSQL.`;
     }
   },
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FERRAMENTA DETERMINÍSTICA DE VOLUME — get_volume_metrics
+// Usa o Supabase SDK (cliente admin, sem DATABASE_URL) + agregação em JavaScript.
+// Elimina dependência do pg Pool que pode ter problemas de conexão/SSL.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Converte qualquer timestamp ISO para data YYYY-MM-DD no fuso de Brasília.
+function toBRTDateStr(isoStr: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(isoStr));
+}
+
+// Pagina resultados do Supabase (limite padrão = 1000 por request).
+async function supabaseQueryAll<T>(
+  queryBuilder: (range: [number, number]) => Promise<{ data: T[] | null; error: any }>
+): Promise<T[]> {
+  const results: T[] = [];
+  const PAGE = 1000;
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await queryBuilder([offset, offset + PAGE - 1]);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    results.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return results;
+}
+
+export const getVolumeMetricsTool = new DynamicStructuredTool({
+  name: "get_volume_metrics",
+  description:
+    "Ferramenta PRIORITÁRIA e DETERMINÍSTICA para relatórios de volume comercial. " +
+    "Retorna contagens precisas de chats ativos e mensagens por dia, usando o Supabase SDK (zero risco de falha de conexão). " +
+    "Use SEMPRE que precisar: 'quantas conversas tivemos esta semana', 'volume dia a dia', " +
+    "'relatório de atividade do período', 'picos de demanda', 'total de interações', 'engajamento'. " +
+    "Retorna: volume diário de chats e mensagens, totais do período, breakdown por stage e sentimento.",
+  schema: z.object({
+    start_date: z.string().describe("Data inicial no formato YYYY-MM-DD (ex: '2026-02-24')."),
+    end_date: z.string().describe("Data final no formato YYYY-MM-DD (ex: '2026-02-28')."),
+  }),
+  func: async ({ start_date, end_date }) => {
+    try {
+      // Timestamps com offset BRT (-03:00) garantem filtro correto no fuso de Brasília
+      const startTs = `${start_date}T00:00:00-03:00`;
+      const endTs = `${end_date}T23:59:59.999-03:00`;
+
+      // Busca chats com atividade no período — paginado via Supabase SDK
+      const chatRows = await supabaseQueryAll<{
+        id: number;
+        last_interaction_at: string;
+        created_at: string | null;
+        stage: string | null;
+        ai_sentiment: string | null;
+        is_archived: boolean | null;
+      }>(([from, to]) =>
+        supabase
+          .from("chats")
+          .select("id, last_interaction_at, created_at, stage, ai_sentiment, is_archived")
+          .gte("last_interaction_at", startTs)
+          .lte("last_interaction_at", endTs)
+          .range(from, to) as any
+      );
+
+      // Diagnóstico quando nenhum chat encontrado no período
+      if (chatRows.length === 0) {
+        const { data: diagData } = await supabase
+          .from("chats")
+          .select("last_interaction_at")
+          .not("last_interaction_at", "is", null)
+          .order("last_interaction_at", { ascending: false })
+          .limit(1);
+        return JSON.stringify({
+          periodo: { start_date, end_date },
+          aviso: `Nenhum chat com atividade encontrado entre ${start_date} e ${end_date}.`,
+          diagnostico: {
+            ultima_interacao_registrada: (diagData as any)?.[0]?.last_interaction_at ?? "N/A",
+            sugestao: "Verifique se o período está correto e tente um range de datas que inclua a última interação registrada.",
+          },
+        });
+      }
+
+      // Busca mensagens no período — paginado
+      const msgRows = await supabaseQueryAll<{
+        created_at: string;
+        sender: string | null;
+        chat_id: number;
+      }>(([from, to]) =>
+        supabase
+          .from("chat_messages")
+          .select("created_at, sender, chat_id")
+          .gte("created_at", startTs)
+          .lte("created_at", endTs)
+          .range(from, to) as any
+      );
+
+      // Agrega chats por dia (fuso Brasília)
+      const chatsByDay: Record<string, Set<number>> = {};
+      for (const chat of chatRows) {
+        const day = toBRTDateStr(chat.last_interaction_at);
+        if (!chatsByDay[day]) chatsByDay[day] = new Set();
+        chatsByDay[day].add(chat.id);
+      }
+
+      // Agrega mensagens por dia e por tipo de remetente
+      const msgsByDay: Record<string, { total: number; pacientes: number; bot: number; secretaria: number }> = {};
+      for (const msg of msgRows) {
+        const day = toBRTDateStr(msg.created_at);
+        if (!msgsByDay[day]) msgsByDay[day] = { total: 0, pacientes: 0, bot: 0, secretaria: 0 };
+        msgsByDay[day].total++;
+        const s = String(msg.sender ?? "");
+        if (s === "contact") msgsByDay[day].pacientes++;
+        else if (s === "AI_AGENT") msgsByDay[day].bot++;
+        else if (s === "HUMAN_AGENT") msgsByDay[day].secretaria++;
+      }
+
+      // Gera série de datas do período (fuso UTC-neutro: meio-dia UTC para cada dia)
+      const allDays: string[] = [];
+      const cur = new Date(`${start_date}T12:00:00Z`);
+      const endD = new Date(`${end_date}T12:00:00Z`);
+      while (cur <= endD) {
+        allDays.push(cur.toISOString().slice(0, 10));
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
+
+      const volume_diario = allDays.map((day) => ({
+        dia: day,
+        chats_ativos: chatsByDay[day]?.size ?? 0,
+        total_mensagens: msgsByDay[day]?.total ?? 0,
+        msg_pacientes: msgsByDay[day]?.pacientes ?? 0,
+        msg_bot: msgsByDay[day]?.bot ?? 0,
+        msg_secretaria: msgsByDay[day]?.secretaria ?? 0,
+      }));
+
+      // Breakdown por stage e sentimento
+      const stageCount: Record<string, number> = {};
+      const sentimentCount: Record<string, number> = {};
+      for (const chat of chatRows) {
+        const stage = String(chat.stage ?? "unknown");
+        const sentiment = String(chat.ai_sentiment ?? "unknown");
+        stageCount[stage] = (stageCount[stage] ?? 0) + 1;
+        sentimentCount[sentiment] = (sentimentCount[sentiment] ?? 0) + 1;
+      }
+
+      const por_stage = Object.entries(stageCount)
+        .sort((a, b) => b[1] - a[1])
+        .map(([stage, total]) => ({ stage, total }));
+
+      const por_sentimento = Object.entries(sentimentCount)
+        .sort((a, b) => b[1] - a[1])
+        .map(([ai_sentiment, total]) => ({ ai_sentiment, total }));
+
+      // Conta novos chats criados DENTRO do período solicitado
+      const startDt = new Date(startTs);
+      const endDt = new Date(endTs);
+      const novos = chatRows.filter((c) => {
+        if (!c.created_at) return false;
+        const created = new Date(c.created_at);
+        return created >= startDt && created <= endDt;
+      }).length;
+
+      return JSON.stringify({
+        periodo: { start_date, end_date },
+        totais: {
+          chats_com_atividade_no_periodo: chatRows.length,
+          novos_chats_criados_no_periodo: novos,
+          chats_nao_arquivados: chatRows.filter((c) => !c.is_archived).length,
+          total_mensagens_no_periodo: msgRows.length,
+        },
+        volume_diario,
+        por_stage,
+        por_sentimento,
+      });
+    } catch (e: any) {
+      return `Erro ao buscar métricas de volume: ${e.message}`;
+    }
+  },
+});
+
+// Ferramentas do simple_agent (Clara principal).
+// ATENÇÃO: Analyst tools (getFilteredChatsListTool, getChatCascadeHistoryTool, getAggregatedInsightsTool)
+// e deepResearchChatsTool são adicionados UMA ÚNICA VEZ em graph.ts — não incluir aqui.
 export const claraTools = [
-  queryDatabaseTool,
+  getVolumeMetricsTool,           // Rápida e determinística — use primeiro para volume
+  executeSqlTool,                 // SQL direto para qualquer outra consulta
   readBrainFilesTool,
   updateBrainFileTool,
   manageLongTermMemoryTool,
@@ -833,16 +955,13 @@ export const claraTools = [
   saveReportTool,
   analisarChatEspecificoTool,
   gerarRelatorioQualidadeTool,
-  generateSqlReportTool,
 ];
 
 // Ferramentas expostas aos Researchers do subgrafo de pesquisa paralela.
-// Inclui todas as ferramentas de acesso a dados + análise, mas NÃO inclui
-// as ferramentas de configuração de brain (update_brain_file) para segurança.
-// Importado pelo researcher_graph.ts para evitar dependência circular.
+// ATENÇÃO: Analyst tools são adicionados UMA ÚNICA VEZ em researcher_graph.ts — não incluir aqui.
 export const allResearchTools = [
-  queryDatabaseTool,
-  generateSqlReportTool,
+  getVolumeMetricsTool,           // Rápida e determinística — use primeiro para volume
+  executeSqlTool,                 // SQL direto para qualquer outra consulta
   deepResearchChatsTool,
   analisarChatEspecificoTool,
   gerarRelatorioQualidadeTool,

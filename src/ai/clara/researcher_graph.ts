@@ -5,34 +5,30 @@ import {
   SystemMessage,
 } from "@langchain/core/messages";
 import { END, START, StateGraph } from "@langchain/langgraph";
-import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
+import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
 import { allResearchTools } from "./tools";
-import { getFilteredChatsListTool, getChatCascadeHistoryTool } from "@/ai/analyst/tools";
+import { getFilteredChatsListTool, getChatCascadeHistoryTool, getAggregatedInsightsTool } from "@/ai/analyst/tools";
 
-// Ferramentas completas disponíveis para cada researcher isolado.
-// Inclui ferramentas de dados da Clara + ferramentas do analyst.
+// allResearchTools NÃO inclui analyst tools — adicionados aqui uma única vez, sem duplicatas.
 const researcherTools = [
   ...allResearchTools,
   getFilteredChatsListTool,
   getChatCascadeHistoryTool,
+  getAggregatedInsightsTool,
 ];
-
-const researcherToolsMap = new Map<string, (typeof researcherTools)[number]>(
-  researcherTools.map((t) => [t.name, t])
-);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTADO DO RESEARCHER — completamente isolado do estado principal da Clara
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ResearcherState {
-  researcher_messages: BaseMessage[]; // conversa interna do researcher (append)
-  research_topic: string;             // tópico atribuído pelo supervisor (override)
-  raw_notes: string[];                // resultados brutos das tools (append)
-  compressed_research: string;        // resumo compacto gerado pelo compress_node (override)
-  iteration: number;                  // contador de iterações do loop ReAct (override)
+  researcher_messages: BaseMessage[];
+  research_topic: string;
+  raw_notes: string[];
+  compressed_research: string;
+  iteration: number;
 }
 
 const stateChannels = {
@@ -64,81 +60,79 @@ const stateChannels = {
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NODE 1: researcher_node — ReAct loop com todas as ferramentas de dados
-// ─────────────────────────────────────────────────────────────────────────────
-
 const MAX_RESEARCHER_ITERATIONS = 8;
 
-const RESEARCHER_SYSTEM = `Você é um Researcher Autônomo especializado em análise de dados de clínica médica.
+const RESEARCHER_SYSTEM = `Você é um Agente de Banco de Dados de altíssima precisão. Sua ÚNICA função é executar ferramentas (tool calls) para extrair dados do sistema.
 
-Sua missão é investigar exatamente o tópico atribuído pelo supervisor, coletando dados reais do banco de dados via ferramentas.
+REGRA DE FERRO: É PROIBIDO responder com texto. Aja IMEDIATAMENTE com uma ferramenta.
 
-REGRAS:
-1. Use APENAS as ferramentas disponíveis para buscar dados reais — NUNCA invente informações.
-2. Seja específico e focado no tópico — não saia do escopo atribuído.
-3. Colete dados suficientes e pare quando tiver o que precisa.
-4. Suas descobertas serão sumarizadas e enviadas ao supervisor para consolidação.
-5. Quando terminar a coleta, NÃO chame mais ferramentas — apenas escreva um resumo estruturado dos achados.
+GUIA COMPLETO DE FERRAMENTAS:
 
-PROTOCOLO OBRIGATÓRIO DE PESQUISA DE DESEMPENHO:
-Quando pesquisar métricas, desempenho ou qualidade de atendimento, siga ESTA ORDEM:
+1. get_volume_metrics(start_date, end_date)
+   → Volume de chats/mensagens por dia, totais, breakdown por stage/sentimento.
+   → Use para: "quantas conversas", "volume dia a dia", "picos de demanda".
 
-PASSO 1 — Chame \`gerar_relatorio_qualidade_chats\` com \`dias_retroativos: 60\`
-→ Esta é a fonte primária de verdade — dados pré-calculados pelo sistema (nota, gargalos, objeções).
-→ Se retornar dados, use-os. Não continue para o PASSO 2.
+2. gerar_relatorio_qualidade_chats(dias_retroativos)
+   → USE PRIMEIRO para: "objeções", "gargalos", "nota de atendimento", "qualidade"
+   → Lê tabela chat_insights — MUITO MAIS RÁPIDO que ler mensagens
+   → Exemplo: gerar_relatorio_qualidade_chats(dias_retroativos=7)
 
-PASSO 2 — (somente se PASSO 1 vazio) Chame \`get_filtered_chats_list\` com \`days_ago: 30\`, \`limit: 50\`
-→ Para obter IDs dos chats recentes.
+3. get_aggregated_insights(start_date, end_date)
+   → Insights agregados da tabela chat_insights: tópicos, decisões, objeções mais frequentes
+   → Use para análises de período específico com datas definidas
 
-PASSO 3 — (somente se PASSO 2 foi executado) Chame \`analisar_chat_especifico\` com os IDs do PASSO 2
-→ Isso gera e persiste os insights na tabela chat_insights.
-→ Após completar, repita o PASSO 1 para ler os novos dados.
+4. execute_sql(sql)
+   → Para queries personalizadas: financeiro, agendamentos, JOINs, aggregations
+   → Você escreve o SQL. Datas BRT: '2026-02-24T00:00:00-03:00'::timestamptz
+   → Ex: SELECT unnest(objecoes) AS objecao, COUNT(*) FROM chat_insights WHERE updated_at >= '...' GROUP BY 1 ORDER BY 2 DESC LIMIT 20
 
-ESTRUTURA DO BANCO (REFERÊNCIA):
-- chats: id, contact_name, stage (new/qualified/lost/won), ai_sentiment, last_interaction_at
-  → filtro de data: usar campo last_interaction_at (NÃO created_at)
-- chat_messages: id, chat_id, sender (AI_AGENT/HUMAN_AGENT/contact), message_text, created_at
-  → filtro de data: usar campo created_at
-- chat_insights: chat_id, nota_atendimento (0-10), sentimento, gargalos, objecao_principal, decisao, resumo_analise, updated_at
-  → filtro de data: usar campo updated_at (NÃO created_at)
+5. BUSCA EM MENSAGENS — SEQUÊNCIA OBRIGATÓRIA (2 passos no loop ReAct):
+   → Passo 1: get_filtered_chats_list(start_date='...', end_date='...', limit=30) → obtém IDs dos chats
+   → Passo 2: deep_research_chats(chat_ids=[IDs do Passo 1], objetivo_da_analise='...') → analisa o conteúdo
+   → Use SOMENTE quando precisar LER o texto das mensagens (padrões de linguagem, argumentos, tom)
 
-FERRAMENTAS DISPONÍVEIS:
-- gerar_relatorio_qualidade_chats: Agrega métricas de chat_insights (USAR PRIMEIRO)
-- query_database: Consulta qualquer tabela com filtros precisos
-- generate_sql_report: Executa SQL para métricas (COUNT, AVG, SUM, GROUP BY)
-- get_filtered_chats_list: Lista IDs de chats por stage, sentimento, data
-- get_chat_cascade_history: Transcrição completa de um chat
-- deep_research_chats: Análise semântica rápida de múltiplos chats (Map-Reduce)
-- analisar_chat_especifico: Análise estruturada com persistência em chat_insights
-- search_knowledge_base: Busca gabaritos de atendimento
-- manage_long_term_memory: Consulta memórias da Clara
-- save_report: Persiste relatório no banco`;
+6. get_chat_cascade_history(chat_id) → Histórico completo de UM chat específico (use com chat_id preciso)
+7. save_report(titulo, conteudo, tipo) → Salvar relatório (apenas se o brief pedir explicitamente)
+
+SCHEMA:
+• chats: id, contact_name, phone, stage, ai_sentiment, last_interaction_at, status
+• chat_messages: id, chat_id, sender (AI_AGENT|HUMAN_AGENT|contact), message_text, created_at
+• chat_insights: id, chat_id, nota_atendimento (0-10), sentimento, objecoes (text[]), gargalos (text[]), decisao, updated_at`;
+
+// Helper ultra-seguro para não quebrar o TypeScript do LangChain
+function isToolMessageSafe(m: any): boolean {
+  if (!m) return false;
+  if (typeof m._getType === "function" && m._getType() === "tool") return true;
+  if (typeof m.getType === "function" && m.getType() === "tool") return true;
+  if (m.constructor && m.constructor.name === "ToolMessage") return true;
+  if (m.type === "tool") return true;
+  return false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NODE 1: researcher_node
+// ─────────────────────────────────────────────────────────────────────────────
 
 async function researcherNode(state: ResearcherState): Promise<Partial<ResearcherState>> {
-  // Limite de segurança: se atingiu o máximo de iterações, para
   if (state.iteration >= MAX_RESEARCHER_ITERATIONS) {
     return { iteration: state.iteration };
   }
 
+  // Temperatura zero para forçar LLM a usar tools ao invés de tagarelar
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3-flash-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-    temperature: 0.1,
+    temperature: 0,
   }).bindTools(researcherTools);
 
   const today = new Date().toISOString().slice(0, 10);
 
-  // Na primeira iteração, instrui o researcher com o tópico
   const messages: BaseMessage[] =
     state.researcher_messages.length === 0
-      ? [new HumanMessage(`Investigue o seguinte tópico e colete dados reais: "${state.research_topic}"\n\nHoje é ${today}. Use as ferramentas disponíveis para coletar os dados necessários.`)]
+      ? [new HumanMessage(`${RESEARCHER_SYSTEM}\n\nHoje é ${today}.\nTópico OBRIGATÓRIO a investigar via ferramenta agora:\n"${state.research_topic}"\n\nATENÇÃO: Não responda com texto livre. Emita a chamada de função (tool_call) imediatamente para buscar os dados.`)]
       : state.researcher_messages;
 
-  const response = (await model.invoke([
-    new SystemMessage(RESEARCHER_SYSTEM),
-    ...messages,
-  ])) as AIMessage;
+  const response = (await model.invoke(messages)) as AIMessage;
 
   return {
     researcher_messages: [response],
@@ -147,15 +141,25 @@ async function researcherNode(state: ResearcherState): Promise<Partial<Researche
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NODE 2: researcher_tools_node — executa as tool calls do researcher
+// NODE 2: researcher_tools_node
 // ─────────────────────────────────────────────────────────────────────────────
-
 const researcherToolsNode = new ToolNode(researcherTools);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NODE 3: compress_research_node — sumariza raw_notes em compressed_research
+// NODE 3: reprimand_node (O Nó da Bronca para evitar recusa de tool_call)
 // ─────────────────────────────────────────────────────────────────────────────
+async function reprimandNode(state: ResearcherState): Promise<Partial<ResearcherState>> {
+  return {
+    researcher_messages: [
+      new HumanMessage("⛔ ALERTA DE SISTEMA: Você respondeu apenas com texto. É obrigatório acionar uma ferramenta (tool call) imediatamente. Use get_volume_metrics ou execute_sql agora — sem nenhum texto adicional.")
+    ],
+    iteration: state.iteration + 1,
+  };
+}
 
+// ─────────────────────────────────────────────────────────────────────────────
+// NODE 4: compress_research_node
+// ─────────────────────────────────────────────────────────────────────────────
 async function compressResearchNode(state: ResearcherState): Promise<Partial<ResearcherState>> {
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3-flash-preview",
@@ -163,34 +167,25 @@ async function compressResearchNode(state: ResearcherState): Promise<Partial<Res
     temperature: 0,
   });
 
-  // Extrai o último AIMessage (resultado final do researcher)
-  const lastAiMsg = [...state.researcher_messages]
-    .reverse()
-    .find((m) => m instanceof AIMessage);
+  // Filtra de forma ultra-segura para não quebrar no typeof m._getType
+  const toolMessages = state.researcher_messages
+    .filter(isToolMessageSafe)
+    .map((m: any) => `[RETORNO DO BANCO DE DADOS]:\n${m.content || ""}`)
+    .join("\n\n");
 
-  const lastContent =
-    typeof lastAiMsg?.content === "string"
-      ? lastAiMsg.content
-      : Array.isArray(lastAiMsg?.content)
-        ? (lastAiMsg.content as Array<any>).map((c) => c?.text ?? "").join("")
-        : "";
-
-  if (!lastContent.trim()) {
-    return { compressed_research: `[Researcher: "${state.research_topic}" — nenhum dado coletado]` };
+  if (!toolMessages.trim()) {
+    return { compressed_research: `[Researcher: "${state.research_topic}" — falha: Nenhum dado extraído do banco.]` };
   }
 
-  const prompt = `Você é um sintetizador de dados. Abaixo estão os achados de um researcher sobre o tópico: "${state.research_topic}".
+  const prompt = `Você é um sintetizador de dados rigoroso. O banco de dados retornou os seguintes dados CRUS (SQL) referentes ao tópico: "${state.research_topic}".
 
-Crie um resumo COMPACTO e ESTRUTURADO (máx. 400 palavras) preservando:
-- Todos os números e métricas encontrados
-- IDs de chats relevantes
-- Padrões identificados
-- Dados concretos (datas, contagens, percentuais)
+${toolMessages}
 
-NÃO invente dados. Apenas organize e comprima o que foi encontrado.
+Crie um resumo COMPACTO E ESTRUTURADO preservando OBRIGATORIAMENTE:
+- Todos os números REAIS do banco de dados (notas, totais, contagens). Se o banco diz 120, repasse 120.
+- TODOS os links de chats encontrados no formato [[chat:ID|Nome (Telefone)]].
 
-ACHADOS DO RESEARCHER:
-${lastContent}`;
+REGRA ANTI-ALUCINAÇÃO: Não invente nada. Apenas transcreva e organize os dados retornados acima.`;
 
   const response = await model.invoke([new HumanMessage(prompt)]);
   const compressed =
@@ -201,40 +196,50 @@ ${lastContent}`;
         : "";
 
   return {
-    compressed_research: `[Tópico: "${state.research_topic}"]\n${compressed}`,
+    compressed_research: `[DADOS COLETADOS PARA: "${state.research_topic}"]\n${compressed}`,
   };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONDITION: para quando atingiu o limite de iterações (sem mais tool calls)
+// CONDITION: O Roteador Blindado
 // ─────────────────────────────────────────────────────────────────────────────
-
 function researcherRouting(state: ResearcherState): string {
   if (state.iteration >= MAX_RESEARCHER_ITERATIONS) {
     return "compress_research";
   }
-  // toolsCondition retorna "tools" ou END ("__end__") — precisamos mapear para nossos nós
+
   const lastMsg = state.researcher_messages[state.researcher_messages.length - 1];
   const hasToolCalls =
     lastMsg instanceof AIMessage &&
     Array.isArray((lastMsg as any).tool_calls) &&
     (lastMsg as any).tool_calls.length > 0;
 
-  return hasToolCalls ? "researcher_tools" : "compress_research";
+  // Se a IA gerou o tool_call, prossegue para a ferramenta
+  if (hasToolCalls) return "researcher_tools";
+
+  // Se a IA não gerou tool_call, vamos verificar se ela já havia rodado alguma ferramenta com sucesso antes
+  const hasExecutedTool = state.researcher_messages.some(isToolMessageSafe);
+
+  // Se já rodou, deixamos ela ir compilar os dados
+  if (hasExecutedTool) return "compress_research";
+
+  // Se não rodou nenhuma ferramenta e não gerou tool_call agora (tagarelou), aplicamos o nó da bronca
+  return "reprimand";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPILAÇÃO DO SUBGRAFO
 // ─────────────────────────────────────────────────────────────────────────────
-
 const researcherWorkflow = new StateGraph<ResearcherState>({ channels: stateChannels })
   .addNode("researcher", researcherNode)
   .addNode("researcher_tools", researcherToolsNode)
+  .addNode("reprimand", reprimandNode)
   .addNode("compress_research", compressResearchNode);
 
 researcherWorkflow.addEdge(START as any, "researcher" as any);
 researcherWorkflow.addConditionalEdges("researcher" as any, researcherRouting as any);
 researcherWorkflow.addEdge("researcher_tools" as any, "researcher" as any);
+researcherWorkflow.addEdge("reprimand" as any, "researcher" as any);
 researcherWorkflow.addEdge("compress_research" as any, END as any);
 
 export const researcherGraph = researcherWorkflow.compile();

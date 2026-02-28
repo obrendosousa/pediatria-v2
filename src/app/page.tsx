@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import ChatWindow from '@/components/ChatWindow';
 import SecretaryCheckoutDrawer from '@/components/SecretaryCheckoutDrawer';
@@ -9,6 +10,16 @@ import { MessageCircleHeart, ShieldCheck, Zap, Activity } from 'lucide-react';
 
 export default function Home() {
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const searchParams = useSearchParams();
+  const openedChatRef = useRef<number | null>(null);
+
+  // Abre automaticamente o chat quando ?chatId=N estiver na URL (vindo do viewer de relatório)
+  useEffect(() => {
+    const chatId = Number(searchParams.get('chatId'));
+    if (!chatId || openedChatRef.current === chatId) return;
+    openedChatRef.current = chatId;
+    window.dispatchEvent(new CustomEvent('clara:open_chat', { detail: { chatId } }));
+  }, [searchParams]);
 
   return (
     // Fundo ajustado: Claro (#fffafa) | Escuro (#0b141a - tom profundo)

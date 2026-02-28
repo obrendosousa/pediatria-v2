@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { FileText, Calendar, Tag, Printer, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import ClaraMarkdownMessage from "@/components/chat/ClaraMarkdownMessage";
 
 interface Report {
   id: number;
@@ -26,43 +28,20 @@ const TIPO_COLORS: Record<string, string> = {
   geral: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
 };
 
-/** Converte Markdown básico em HTML seguro (sem dependências externas) */
-function markdownToHtml(md: string): string {
-  return md
-    // Títulos
-    .replace(/^#### (.+)$/gm, "<h4>$1</h4>")
-    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
-    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
-    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
-    // Linhas horizontais
-    .replace(/^---+$/gm, "<hr />")
-    // Negrito e itálico
-    .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/_(.+?)_/g, "<em>$1</em>")
-    // Código inline
-    .replace(/`(.+?)`/g, "<code>$1</code>")
-    // Listas não ordenadas
-    .replace(/^[-*] (.+)$/gm, "<li>$1</li>")
-    .replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
-    // Listas ordenadas
-    .replace(/^\d+\. (.+)$/gm, "<li>$1</li>")
-    // Blockquotes
-    .replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>")
-    // Parágrafos: linhas vazias viram <br>
-    .replace(/\n\n/g, "</p><p>")
-    // Envolver em parágrafo se não começa com tag
-    .replace(/^(?!<[h|u|o|b|l|h|p|c])(.+)$/gm, "<p>$1</p>")
-    // Limpar parágrafos dentro de listas/títulos
-    .replace(/<(h[1-4]|li|blockquote)><p>(.*?)<\/p><\/(h[1-4]|li|blockquote)>/g, "<$1>$2</$3>")
-    // Quebras de linha simples dentro de parágrafos
-    .replace(/([^>])\n([^<])/g, "$1<br />$2");
-}
 
 export default function ReportViewer({ report }: { report: Report }) {
   const [dateFormatted, setDateFormatted] = useState("");
-  const htmlContent = useMemo(() => markdownToHtml(report.conteudo_markdown), [report.conteudo_markdown]);
+  const router = useRouter();
+
+  // Ao clicar num link de chat no relatório, navega para a página principal com o chat aberto
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const chatId = (e as CustomEvent<{ chatId: number }>).detail?.chatId;
+      if (chatId) router.push(`/?chatId=${chatId}`);
+    };
+    window.addEventListener("clara:open_chat", handler);
+    return () => window.removeEventListener("clara:open_chat", handler);
+  }, [router]);
 
   useEffect(() => {
     setDateFormatted(
@@ -131,12 +110,10 @@ export default function ReportViewer({ report }: { report: Report }) {
           <hr className="mt-6 border-gray-200 dark:border-gray-700 print:border-gray-300" />
         </div>
 
-        {/* Conteúdo renderizado */}
-        <div
-          className="report-content text-gray-800 dark:text-gray-200 leading-relaxed"
-          // O conteúdo vem do banco interno (gerado pela Clara) — não é input de usuário externo
-          dangerouslySetInnerHTML={{ __html: htmlContent }}
-        />
+        {/* Conteúdo renderizado — usa ClaraMarkdownMessage para suporte a links [[chat:ID|Name]] */}
+        <div className="report-content text-gray-800 dark:text-gray-200 leading-relaxed">
+          <ClaraMarkdownMessage text={report.conteudo_markdown} />
+        </div>
 
         {/* Rodapé */}
         <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-700 print:mt-8">
