@@ -14,11 +14,30 @@ import { autonomousGraph } from "@/ai/autonomous/graph";
 
 // Carrega as variáveis de ambiente
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
-dotenv.config(); 
+dotenv.config();
+
+// Verifica se o Redis está configurado antes de iniciar
+const REDIS_URL = process.env.REDIS_URL;
+if (!REDIS_URL) {
+  console.warn("⚠️ [Worker] REDIS_URL não configurada. Worker não será iniciado.");
+  console.warn("⚠️ [Worker] Configure REDIS_URL para habilitar filas de automação.");
+  process.exit(0);
+}
 
 // Conecta ao Redis
-const redisConnection = new IORedis(process.env.REDIS_URL || "redis://localhost:6379", {
+const redisConnection = new IORedis(REDIS_URL, {
   maxRetriesPerRequest: null,
+  retryStrategy(times) {
+    if (times > 10) {
+      console.error("❌ [Worker] Redis: Desistindo após 10 tentativas de reconexão.");
+      return null;
+    }
+    return Math.min(times * 500, 5000);
+  },
+});
+
+redisConnection.on("error", (err) => {
+  console.error("🚨 [Worker] Erro de conexão com Redis:", err.message);
 });
 
 console.log("🚀 Iniciando Worker de Automações, Disparos e Agentes...");
@@ -32,7 +51,7 @@ console.log("⏰ Relógio interno ativado.");
 cron.schedule('* * * * *', async () => {
   try {
     const now = new Date().toISOString();
-    
+
     await automationQueue.add("dispatch", {
       contractVersion: "v1",
       runId: randomUUID(),
@@ -47,7 +66,7 @@ cron.schedule('* * * * *', async () => {
       triggerAt: now,
       dryRun: false,
     });
-    
+
   } catch (err) {
     console.error("🚨 Erro ao injetar rotina no Redis via Cron interno (1 min):", err);
   }
@@ -83,8 +102,8 @@ const worker = new Worker("automation-jobs", async (job) => {
       });
       console.log(`✅ Disparo concluído. Status:`, result.data);
       return result;
-    } 
-    
+    }
+
     else if (job.name === "scheduler") {
       const result = await runAutomationSchedulerGraph({
         contractVersion: "v1",
@@ -99,10 +118,10 @@ const worker = new Worker("automation-jobs", async (job) => {
     // A Lógica de Custo-Zero do Agente Autónomo
     else if (job.name === "autonomous-heartbeat") {
       const supabase = getSupabaseAdminClient();
-      
+
       // Filtro estrito: Apenas chats ATIVOS, sem rascunho pendente e intocados há mais de 2 horas
       const threshold = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-      
+
       const { data: dormantChats, error } = await supabase
         .from("chats")
         .select("id, contact_name, stage, ai_summary")
@@ -122,7 +141,7 @@ const worker = new Worker("automation-jobs", async (job) => {
       }
 
       console.log(`🤖 Acordando Agente Autónomo para processar ${dormantChats.length} chats dormentes...`);
-      
+
       // Invocamos o Grafo passando o lote de pacientes (Batch Processing)
       const result = await autonomousGraph.invoke({
         messages: [],
@@ -137,9 +156,9 @@ const worker = new Worker("automation-jobs", async (job) => {
     console.error(`❌ Erro crítico na tarefa ${job.name}:`, error);
     throw error;
   }
-}, { 
+}, {
   connection: redisConnection,
-  concurrency: 1 
+  concurrency: 1
 });
 
 worker.on("failed", (job, err) => {
