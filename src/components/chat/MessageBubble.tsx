@@ -31,6 +31,118 @@ interface MessageBubbleProps {
   isAIChat?: boolean;
 }
 
+function formatDocSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Thresholds para escolha do aspect ratio
+const RATIO_LANDSCAPE = 1.4;  // >= 1.4 → 16:9
+const RATIO_SQUARE    = 0.85; // >= 0.85 → 1:1; abaixo → 3:4
+
+type ImageDims = {
+  maxW: string;
+  aspect: string;
+};
+
+function getRatioDims(naturalW: number, naturalH: number): ImageDims {
+  const r = naturalW / naturalH;
+  if (r >= RATIO_LANDSCAPE) return { maxW: 'max-w-[300px] sm:max-w-[320px]', aspect: 'aspect-[16/9]' };
+  if (r >= RATIO_SQUARE)    return { maxW: 'max-w-[240px] sm:max-w-[260px]', aspect: 'aspect-[1/1]' };
+  return                           { maxW: 'max-w-[210px] sm:max-w-[230px]', aspect: 'aspect-[3/4]' };
+}
+
+// Componente de vídeo com aspect ratio adaptativo (3:4 · 1:1 · 16:9)
+function AdaptiveVideoMessage({
+  src,
+  caption,
+  hasCaption,
+  onClick,
+}: {
+  src: string;
+  caption?: string;
+  hasCaption: boolean;
+  onClick: () => void;
+}) {
+  const [dims, setDims] = useState<ImageDims>({ maxW: 'max-w-[240px] sm:max-w-[260px]', aspect: 'aspect-[16/9]' });
+
+  const handleMeta = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const v = e.currentTarget;
+    setDims(getRatioDims(v.videoWidth, v.videoHeight));
+  };
+
+  return (
+    <>
+      <div
+        className={`relative w-full ${dims.maxW} ${dims.aspect} cursor-pointer overflow-hidden bg-black transition-all duration-150 ${hasCaption ? 'rounded-t-[inherit]' : 'rounded-[inherit]'}`}
+        onClick={onClick}
+      >
+        <video
+          src={src}
+          preload="metadata"
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+          onLoadedMetadata={handleMeta}
+        />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+          <div className="h-11 w-11 rounded-full bg-black/55 text-white flex items-center justify-center">
+            <Play size={20} className="ml-0.5" />
+          </div>
+        </div>
+      </div>
+      {hasCaption && caption && (
+        <div className={`${dims.maxW} px-[9px] pt-1.5 pb-[22px]`}>
+          <FormattedMessage text={caption} />
+        </div>
+      )}
+    </>
+  );
+}
+
+// Componente de imagem com aspect ratio adaptativo (3:4 · 1:1 · 16:9)
+function AdaptiveImageMessage({
+  src,
+  caption,
+  hasCaption,
+  onClick,
+}: {
+  src: string;
+  caption?: string;
+  hasCaption: boolean;
+  onClick: () => void;
+}) {
+  const [dims, setDims] = useState<ImageDims>({ maxW: 'max-w-[210px] sm:max-w-[230px]', aspect: 'aspect-[3/4]' });
+
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    setDims(getRatioDims(img.naturalWidth, img.naturalHeight));
+  };
+
+  return (
+    <>
+      <div
+        className={`relative w-full ${dims.maxW} ${dims.aspect} cursor-pointer overflow-hidden bg-black/5 transition-all duration-150 ${hasCaption ? 'rounded-t-[inherit]' : 'rounded-[inherit]'}`}
+        onClick={onClick}
+      >
+        <img
+          src={src}
+          alt="Mídia"
+          loading="lazy"
+          onLoad={handleLoad}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      {hasCaption && caption && (
+        <div className={`${dims.maxW} px-[9px] pt-1.5 pb-[22px]`}>
+          <FormattedMessage text={caption} />
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function MessageBubble({
   message,
   isMe,
@@ -204,6 +316,39 @@ export default function MessageBubble({
   const isImageMessage = message.message_type === 'image' && !!message.media_url;
   const isVideoMessage = message.message_type === 'video' && !!message.media_url;
   const isRevoked = message.message_type === 'revoked';
+
+  // Legenda real da imagem (texto que não é placeholder de sistema)
+  const imageCaptionText = (() => {
+    if (!isImageMessage) return '';
+    const rawText = (message.message_text || '').trim();
+    const normalized = rawText.toLowerCase()
+      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').replace(/\s+/g, ' ').trim();
+    const placeholders = ['imagem recebida', 'midia', 'mídia', 'foto', '[midia]', '[mídia]', 'image', 'imagem'];
+    return (normalized.length > 0 && !placeholders.includes(normalized)) ? rawText : '';
+  })();
+
+  // Legenda real do vídeo
+  const videoCaptionText = (() => {
+    if (!isVideoMessage) return '';
+    const rawText = (message.message_text || '').trim();
+    const normalized = rawText.toLowerCase()
+      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').replace(/\s+/g, ' ').trim();
+    const placeholders = ['vídeo recebido', 'video recebido', 'vídeo', 'video', 'mídia', '[mídia]', 'media'];
+    return (normalized.length > 0 && !placeholders.includes(normalized)) ? rawText : '';
+  })();
+
+  // Legenda real do documento (ignora o próprio nome do arquivo)
+  const documentCaptionText = (() => {
+    if (message.message_type !== 'document') return '';
+    const toolData = (message.tool_data && typeof message.tool_data === 'object' ? message.tool_data : {}) as any;
+    const fileName = String(toolData.file_name || message.message_text || '');
+    const rawText = (message.message_text || '').trim();
+    if (!rawText || rawText === fileName) return '';
+    return rawText;
+  })();
+
+  // Imagem/vídeo COM legenda real muda o comportamento do balão
+  const isMediaWithCaption = (isImageMessage && !!imageCaptionText) || (isVideoMessage && !!videoCaptionText);
   const canEdit = isMe && message.message_type === 'text' && !isRevoked;
 
   const replyData =
@@ -295,16 +440,19 @@ export default function MessageBubble({
 
   const bgClass = isSticker
     ? 'bg-transparent shadow-none'
-    : isImageMessage
+    : (isImageMessage && !imageCaptionText)
       ? 'bg-transparent shadow-none'
-      : isVideoMessage
+      : (isVideoMessage && !videoCaptionText)
         ? 'bg-transparent shadow-none'
         : isMe
           ? 'bg-[#d9fdd3] dark:bg-[#005c4b]'
           : 'bg-white dark:bg-[#202c33]';
 
+  // Mídia (imagem, vídeo, documento) sempre fica com os 4 cantos arredondados
+  const isAnyMediaMsg = isImageMessage || isVideoMessage || message.message_type === 'document';
+
   let roundedClass = 'rounded-lg';
-  if (!isSticker && !isRevoked && !isVideoMessage && !isImageMessage) {
+  if (!isSticker && !isRevoked && !isAnyMediaMsg) {
     if (isMe) {
       if (sequencePosition === 'first') roundedClass = 'rounded-lg rounded-br-[2px]';
       if (sequencePosition === 'middle') roundedClass = 'rounded-lg rounded-br-[2px] rounded-tr-[2px]';
@@ -348,33 +496,13 @@ export default function MessageBubble({
     }
 
     if (message.message_type === 'image' && message.media_url) {
-      const rawText = (message.message_text || '').trim();
-      const normalizedText = rawText
-        .toLowerCase()
-        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      const placeholderTexts = ['imagem recebida', 'midia', 'mídia', 'foto', '[midia]', '[mídia]', 'image', 'imagem'];
-      const hasRealCaption = normalizedText.length > 0 && !placeholderTexts.includes(normalizedText);
       return (
-        <>
-          <div
-            className="relative w-full max-w-[240px] sm:max-w-[260px] aspect-[3/4] cursor-pointer overflow-hidden rounded-md bg-black/5"
-            onClick={() => onPreviewImage(message.media_url!)}
-          >
-            <img
-              src={message.media_url}
-              alt="Mídia"
-              loading="lazy"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          {hasRealCaption && (
-            <div className="pt-1">
-              {renderTextContent(message.message_text!)}
-            </div>
-          )}
-        </>
+        <AdaptiveImageMessage
+          src={message.media_url}
+          caption={imageCaptionText || undefined}
+          hasCaption={!!imageCaptionText}
+          onClick={() => onPreviewImage(message.media_url!)}
+        />
       );
     }
 
@@ -391,37 +519,13 @@ export default function MessageBubble({
     }
 
     if (message.message_type === 'video' && message.media_url) {
-      const rawText = (message.message_text || '').trim();
-      const normalizedText = rawText
-        .toLowerCase()
-        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      const placeholderTexts = ['vídeo recebido', 'video recebido', 'vídeo', 'video', 'mídia', '[mídia]', 'media'];
-      const hasRealCaption = normalizedText.length > 0 && !placeholderTexts.includes(normalizedText);
       return (
-        <>
-          <div
-            className="relative w-full max-w-[240px] sm:max-w-[260px] aspect-[3/4] cursor-pointer overflow-hidden rounded-md bg-black"
-            onClick={() => onPreviewVideo(message.media_url!)}
-          >
-            <video
-              src={message.media_url}
-              preload="metadata"
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/25">
-              <div className="h-11 w-11 rounded-full bg-black/55 text-white flex items-center justify-center">
-                <Play size={20} className="ml-0.5" />
-              </div>
-            </div>
-          </div>
-          {hasRealCaption && (
-            <div className="pt-1">{renderTextContent(message.message_text)}</div>
-          )}
-        </>
+        <AdaptiveVideoMessage
+          src={message.media_url}
+          caption={videoCaptionText || undefined}
+          hasCaption={!!videoCaptionText}
+          onClick={() => onPreviewVideo(message.media_url!)}
+        />
       );
     }
 
@@ -429,28 +533,66 @@ export default function MessageBubble({
       const toolData = (message.tool_data && typeof message.tool_data === 'object' ? message.tool_data : {}) as any;
       const fileName = String(toolData.file_name || message.message_text || 'Documento');
       const mime = String(toolData.mime_type || '');
+      const fileSize = toolData.file_size ? formatDocSize(toolData.file_size) : null;
       const isPdf = mime.includes('pdf') || fileName.toLowerCase().endsWith('.pdf');
+      const isSpreadsheet = mime.includes('spreadsheet') || mime.includes('excel') || /\.(xlsx?|csv)$/i.test(fileName);
+      const isWord = mime.includes('wordprocessing') || mime.includes('msword') || /\.(docx?)$/i.test(fileName);
+
+      // Cores por tipo de documento
+      const docStyle = isPdf
+        ? { bg: 'bg-rose-500', lightBg: 'bg-rose-50 dark:bg-rose-900/20', text: 'text-rose-500', label: 'PDF' }
+        : isSpreadsheet
+          ? { bg: 'bg-emerald-500', lightBg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-500', label: 'Planilha' }
+          : isWord
+            ? { bg: 'bg-blue-500', lightBg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-500', label: 'Word' }
+            : { bg: 'bg-gray-500', lightBg: 'bg-gray-50 dark:bg-gray-800', text: 'text-gray-500', label: 'Documento' };
+
       return (
-        <div className="pt-1">
+        <div className="pt-1 w-[240px] sm:w-[260px]">
           <a
             href={message.media_url}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-white/70 dark:bg-[#1e2028] hover:bg-white dark:hover:bg-[#24323a] transition-colors"
+            className="block rounded-lg overflow-hidden border border-black/10 dark:border-white/10 hover:opacity-90 transition-opacity"
           >
-            <div className="w-9 h-9 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 flex items-center justify-center">
-              <FileText size={18} />
+            {/* Área de thumbnail — ícone centralizado estilo WhatsApp */}
+            <div className={`w-full h-[110px] ${docStyle.bg} flex items-center justify-center relative`}>
+              {/* Ícone de folha dobrada */}
+              <div className="relative">
+                <div className="w-16 h-20 bg-white/20 rounded-md flex items-end justify-center pb-2 shadow-md">
+                  {/* Dobra da folha */}
+                  <div className="absolute top-0 right-0 w-5 h-5 bg-white/30 rounded-bl-md" />
+                  <FileText size={28} className="text-white" />
+                </div>
+              </div>
+              {/* Badge do tipo */}
+              <div className="absolute bottom-2 right-2 text-white/80 text-[10px] font-bold uppercase tracking-wider">
+                {docStyle.label}
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold truncate text-gray-700 dark:text-gray-100">
-                {fileName}
-              </p>
-              <p className="text-[11px] text-gray-500 dark:text-gray-300">
-                {isPdf ? 'PDF' : 'Documento'} - toque para abrir
-              </p>
+
+            {/* Rodapé com nome e tamanho */}
+            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/60 dark:bg-[#1e2028]">
+              <div className={`w-8 h-8 rounded-full ${docStyle.lightBg} flex items-center justify-center shrink-0`}>
+                <FileText size={15} className={docStyle.text} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-semibold truncate text-gray-800 dark:text-gray-100 leading-tight">
+                  {fileName}
+                </p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  {docStyle.label}{fileSize ? ` • ${fileSize}` : ''} • Toque para abrir
+                </p>
+              </div>
+              <Download size={14} className="text-gray-400 shrink-0" />
             </div>
-            <Download size={16} className="text-gray-400" />
           </a>
+          {/* Legenda do documento abaixo do card */}
+          {documentCaptionText && (
+            <div className="pt-1.5">
+              <FormattedMessage text={documentCaptionText} />
+            </div>
+          )}
         </div>
       );
     }
@@ -515,7 +657,7 @@ export default function MessageBubble({
 
       {/* BALÃO: min-w garante espaço para horário mesmo em mensagens de 1–2 caracteres */}
       <div
-        className={`relative max-w-[90%] sm:max-w-[85%] md:max-w-[65%] w-fit ${!isSticker && !isRevoked && !isVideoMessage && !isImageMessage ? 'min-w-[80px] shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]' : 'min-w-0'} ${finalBgClass} ${roundedClass} ${isSticker || isVideoMessage || isImageMessage ? 'p-0 overflow-hidden' : isRevoked ? 'px-3 py-2 pb-[20px]' : 'px-[9px] pb-[22px]'} flex flex-col overflow-visible ${isSelectionMode && isSelected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
+        className={`relative max-w-[90%] sm:max-w-[85%] md:max-w-[65%] w-fit ${(!isSticker && !isRevoked && !isAnyMediaMsg) ? 'min-w-[80px]' : 'min-w-0'} shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] ${finalBgClass} ${roundedClass} ${isSticker || (isAnyMediaMsg && !isMediaWithCaption && message.message_type !== 'document') ? 'p-0 overflow-hidden' : isMediaWithCaption ? 'p-0 overflow-hidden' : isRevoked ? 'px-3 py-2 pb-[20px]' : 'px-[9px] pb-[22px]'} flex flex-col overflow-visible ${isSelectionMode && isSelected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
       >
 
         {/* Conteúdo */}

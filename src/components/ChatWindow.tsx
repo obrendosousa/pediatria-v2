@@ -20,6 +20,7 @@ import ConfirmModal from './chat/modals/ConfirmModal';
 import ImagePreviewModal from './chat/modals/ImagePreviewModal';
 import CreateScheduleModal from './chat/modals/CreateScheduleModal';
 import ForwardMessageModal from './chat/modals/ForwardMessageModal';
+import FilePreviewModal from './chat/modals/FilePreviewModal';
 import AppointmentModal, { PreScheduleData } from './medical/AppointmentModal';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -177,9 +178,10 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
       else if (finalFile.type.startsWith('audio/')) evolutionMediaType = 'audio';
     }
 
+    const isVisualMediaOpt = evolutionMediaType === 'image' || evolutionMediaType === 'video';
     const optimisticMsg = {
       id: tempId,
-      message_text: caption || finalFile.name,
+      message_text: caption || (isVisualMediaOpt ? '' : finalFile.name),
       message_type: evolutionMediaType,
       media_url: evolutionMediaType === 'audio' || evolutionMediaType === 'image' || evolutionMediaType === 'video'
         ? URL.createObjectURL(finalFile)
@@ -230,10 +232,14 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         file_name: finalFile.name,
         file_size: finalFile.size,
       };
+      // Para imagens e vídeos, não usar o nome do arquivo como legenda (fica vazio sem caption)
+      const isVisualMedia = evolutionMediaType === 'image' || evolutionMediaType === 'video';
+      const messageTextValue = caption || (isVisualMedia ? '' : finalFile.name);
+
       const { data: dbMsg } = await supabase.from('chat_messages').insert({
         chat_id: realChatId,
         phone: chat.phone,
-        message_text: caption || finalFile.name,
+        message_text: messageTextValue,
         message_type: evolutionMediaType,
         media_url: publicUrl,
         sender: 'HUMAN_AGENT',
@@ -474,9 +480,21 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     handleSendFile(blob, '', 'audio', { duration });
   }, [handleSendFile]);
 
-  const handleSendMedia = useCallback((file: File) => {
-    handleSendFile(file, '');
+  // Preview antes de enviar (drag-and-drop, colar, ou clique no clipe)
+  const [filePreview, setFilePreview] = useState<File | null>(null);
+
+  const handleFileDropped = useCallback((file: File) => {
+    setFilePreview(file);
+  }, []);
+
+  const handleConfirmFileSend = useCallback((file: File, caption: string) => {
+    setFilePreview(null);
+    handleSendFile(file, caption);
   }, [handleSendFile]);
+
+  const handleSendMedia = useCallback((file: File) => {
+    setFilePreview(file);
+  }, []);
 
   const handleOpenMacroModal = useCallback((m?: any) => {
     setEditingItem(m || null);
@@ -662,6 +680,11 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         src={previewMedia?.src || null}
         mediaType={previewMedia?.type || 'image'}
       />
+      <FilePreviewModal
+        file={filePreview}
+        onSend={handleConfirmFileSend}
+        onClose={() => setFilePreview(null)}
+      />
       <AppointmentModal
         isOpen={isAppointmentModalOpen}
         onClose={handleCloseAppointmentModal}
@@ -698,6 +721,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           onSendMessage={handleSendMessage}
           onSendAudio={handleSendAudio}
           onSendMedia={handleSendMedia}
+          onFileDropped={handleFileDropped}
           onTyping={handleTyping}
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}

@@ -130,7 +130,10 @@ TABELAS PRINCIPAIS:
   - last_interaction_at = data da última mensagem (campo correto para filtrar atividade)
 
 • chat_messages: id, chat_id→chats.id, sender, message_text, bot_message, user_message, message_type, created_at, media_url
-  - sender: 'AI_AGENT'(bot) | 'HUMAN_AGENT'(secretária) | 'contact'(paciente)
+  - sender: 'AI_AGENT'(bot/Clara) | 'HUMAN_AGENT'(secretária humana, ex: Joana) | 'contact'(paciente/lead)
+  - IMPORTANTE: para analisar mensagens da secretária → WHERE sender = 'HUMAN_AGENT'
+  - IMPORTANTE: para analisar mensagens dos pacientes → WHERE sender = 'contact'
+  - IMPORTANTE: para analisar respostas do bot → WHERE sender = 'AI_AGENT'
 
 • chat_insights: id, chat_id→chats.id, nota_atendimento (float 0-10), sentimento, objecoes (text[]), gargalos (text[]), decisao, resumo_analise, topico, novo_conhecimento (bool), updated_at
 
@@ -181,6 +184,12 @@ COMO VERIFICAR UM CHAT ESPECÍFICO POR NOME (2 passos):
 → Passo 1: execute_sql("SELECT id, contact_name, phone FROM chats WHERE contact_name ILIKE '%[nome]%' LIMIT 5") — localiza o ID pelo nome
 → Passo 2: get_chat_cascade_history(chat_id=[ID encontrado]) — lê o histórico completo
 Use este fluxo quando o usuário mencionar o nome de um paciente, questionar uma análise anterior, ou pedir para "ver a conversa de [nome]".
+
+COMO ANALISAR O SCRIPT/PADRÃO DA SECRETÁRIA (Joana ou outra):
+A secretária é identificada por sender = 'HUMAN_AGENT' em chat_messages — NÃO é um contato/lead.
+→ Opção A (texto direto, rápido): execute_sql("SELECT cm.message_text, c.contact_name, cm.created_at FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'HUMAN_AGENT' AND cm.message_text IS NOT NULL ORDER BY cm.created_at DESC LIMIT 200")
+→ Opção B (análise semântica): get_filtered_chats_list (obtém IDs) → deep_research_chats(chat_ids=[...], objetivo_da_analise='Analise APENAS as mensagens rotuladas [SECRETÁRIA] e identifique o script e padrão de comunicação usado')
+Use Opção A para ver amostras do texto. Use Opção B para análise profunda de padrões.
 
 ⛔ REGRA CRÍTICA: NUNCA chame save_report automaticamente. Salve APENAS quando o usuário pedir explicitamente ("gere um relatório", "salve", "quero o PDF"). Para perguntas diretas, responda com texto simples.
 
@@ -323,17 +332,22 @@ REGRA FUNDAMENTAL:
   • "Mostre os leads com sentimento negativo" → simple ← usa get_filtered_chats_list
   • "Me mostra a conversa da Karol" → simple ← execute_sql (acha ID) + get_chat_cascade_history
   • "Verifica o chat da [nome]" → simple ← execute_sql (acha ID) + get_chat_cascade_history
-  • "Estava olhando o chat de [nome] e não encontrei o que você disse" → simple ← lê a conversa pra verificar
+  • "Estava olhando o chat de [nome] e não encontrei o que você disse" → simple ← relê o chat específico
   • "Não achei essa parte na conversa da [nome], você leu errado" → simple ← relê o chat específico
   • "Confirma se [nome] realmente disse isso" → simple ← lê o chat específico
   • "Abre o chat [ID numérico]" → simple ← get_chat_cascade_history direto
+  • "O que você já aprendeu sobre X?" → simple ← manage_long_term_memory + search_knowledge_base
+  • "O que você sabe sobre o script da Joana?" → simple ← manage_long_term_memory consultar
+  • "O que você já aprendeu sobre o padrão de atendimento?" → simple ← consulta memória e knowledge_base
 
 → EXEMPLOS "research" — SOMENTE para análise semântica de MÚLTIPLAS conversas:
   • "Leia as conversas e me diga o que os pacientes mais reclamam" → research (múltiplos chats)
   • "Analise o tom e linguagem das conversas desta semana" → research (múltiplos chats)
   • "Quais argumentos de vendas funcionaram melhor?" → research (múltiplos chats)
+  • "Analise o script que a secretária usa nas conversas" → research (lê mensagens HUMAN_AGENT)
+  • "Como a equipe responde leads com objeção de preço?" → research (lê transcrições)
 
-REGRA DE OURO: Verificar, corrigir ou confirmar o conteúdo de UM chat específico = SEMPRE "simple". "research" é APENAS para análise de padrões em múltiplas conversas.`;
+REGRA DE OURO: Verificar UM chat, confirmar uma análise, consultar memória = SEMPRE "simple". "research" é APENAS para descobrir padrões em MÚLTIPLAS conversas lendo o texto bruto.`;
 
   try {
     const classifierModel = new ChatGoogleGenerativeAI({
@@ -415,22 +429,31 @@ Hoje: ${today} | Ontem: ${yesterday}
 
 BANCO DE DADOS DISPONÍVEL:
 • chats: id, phone, contact_name, stage (new|em_triagem|agendando|fila_espera|qualified|lost|won|done), ai_sentiment (positive|negative|neutral), last_interaction_at (FILTRO DE DATA — base para "conversas ativas"), is_archived
-• chat_messages: id, chat_id, sender (AI_AGENT=bot|HUMAN_AGENT=secretária|contact=paciente), message_text, created_at (FILTRO DE DATA)
+• chat_messages: id, chat_id, sender, message_text, created_at
+  - sender: 'AI_AGENT'=bot | 'HUMAN_AGENT'=secretária/Joana | 'contact'=paciente
+  - Para script da secretária: WHERE sender = 'HUMAN_AGENT'
+  - Para mensagens de pacientes: WHERE sender = 'contact'
 • chat_insights: id, chat_id, nota_atendimento (0-10), sentimento, objecoes[], gargalos[], decisao, resumo_analise, updated_at
 • clara_reports: id, titulo, conteudo_markdown, tipo, created_at
 • clara_memories: id, memory_type, content, updated_at
 
 FERRAMENTAS DISPONÍVEIS (EM ORDEM DE PRIORIDADE):
-• get_volume_metrics(start_date, end_date) — ⭐ USAR PRIMEIRO para volume de conversas, mensagens, picos por dia. Determinístico, sem LLM.
-• execute_sql(sql) — Para qualquer outra métrica: agendamentos, financeiro, JOINs. O researcher escreve o SQL diretamente. Datas BRT: '2026-02-24T00:00:00-03:00'::timestamptz
-• get_filtered_chats_list — Lista chats com detalhes de contato por filtros
-• get_chat_cascade_history — Histórico de um chat específico
-• deep_research_chats — Análise semântica de conteúdo de múltiplos chats
-• analisar_chat_especifico — Análise estruturada com insights por chat
-• gerar_relatorio_qualidade_chats — Métricas de qualidade de chat_insights
-• save_report — Persiste relatório no banco
+• get_volume_metrics(start_date, end_date) — ⭐ USAR PRIMEIRO para volume de conversas, mensagens, picos por dia.
+• execute_sql(sql) — Para qualquer outra métrica. O researcher escreve o SQL. Datas BRT: '2026-02-24T00:00:00-03:00'::timestamptz
+• get_filtered_chats_list — Lista chats com detalhes de contato
+• get_chat_cascade_history — Histórico de um chat específico (use o chat_id)
+• deep_research_chats — Análise semântica profunda de múltiplos chats
+• gerar_relatorio_qualidade_chats — Métricas de chat_insights (objeções, notas, gargalos)
 
-Escreva um brief de pesquisa conciso (máx 250 palavras). Para relatórios de volume, especifique que o researcher deve chamar get_volume_metrics com datas YYYY-MM-DD. Para outras métricas, especifique o SQL que o researcher deve executar via execute_sql.`;
+REGRAS DE SENDER — MENTION NO BRIEF QUANDO RELEVANTE:
+• sender = 'HUMAN_AGENT' → secretária/atendente humano (ex: Joana)
+• sender = 'contact' → paciente/lead
+• sender = 'AI_AGENT' → bot/Clara
+
+Para script/padrão da secretária, inclua no brief a instrução:
+"Researcher: execute execute_sql com: SELECT cm.message_text, c.contact_name, cm.created_at FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'HUMAN_AGENT' AND cm.message_text IS NOT NULL ORDER BY cm.created_at DESC LIMIT 200"
+
+Escreva um brief conciso (máx 250 palavras) especificando qual ferramenta e parâmetros exatos o researcher deve usar.`;
 
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3-flash-preview",
@@ -533,13 +556,20 @@ BRIEF DE PESQUISA:
 ${state.research_brief}
 ${rawNotesContext}
 
+REGRA DE SENDER (CRÍTICA — use nos SQL das tasks):
+• sender = 'HUMAN_AGENT' → secretária/atendente humano (ex: Joana)
+• sender = 'contact' → paciente/lead
+• sender = 'AI_AGENT' → bot/Clara
+
 GUIA DE FERRAMENTAS PARA AS TASKS:
 • get_volume_metrics(start_date, end_date) → USE PRIMEIRO para volume de chats/mensagens por dia. Datas: YYYY-MM-DD.
-  Exemplo de task: "Chame get_volume_metrics com start_date='${sevenDaysAgo}' e end_date='${today}'"
-• execute_sql(sql) → Para agendamentos, financeiro, pacientes, qualquer JOIN. O researcher escreve o SQL.
-  Exemplo de task: "Execute: SELECT stage, COUNT(*) FROM chats WHERE last_interaction_at >= '${sevenDaysAgo}T00:00:00-03:00'::timestamptz GROUP BY stage"
+  Exemplo: "Chame get_volume_metrics com start_date='${sevenDaysAgo}' e end_date='${today}'"
+• execute_sql(sql) → Para agendamentos, financeiro, pacientes, qualquer JOIN ou análise customizada.
+  Exemplo volume por stage: "Execute: SELECT stage, COUNT(*) FROM chats WHERE last_interaction_at >= '${sevenDaysAgo}T00:00:00-03:00'::timestamptz GROUP BY stage"
+  Exemplo script secretária: "Execute: SELECT cm.message_text, c.contact_name, cm.created_at FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'HUMAN_AGENT' AND cm.message_text IS NOT NULL ORDER BY cm.created_at DESC LIMIT 200"
+  Exemplo mensagens pacientes: "Execute: SELECT cm.message_text, c.contact_name, cm.created_at FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'contact' ORDER BY cm.created_at DESC LIMIT 200"
 • get_filtered_chats_list → Listar chats com detalhes de contato (stage, sentimento, data)
-• deep_research_chats → Analisar conteúdo semântico de conversas (objeções, padrões)
+• deep_research_chats → Analisar conteúdo semântico de conversas (padrões de linguagem, script)
 
 REGRA: Nunca instrua generate_sql_report ou query_database — essas ferramentas foram removidas.
 

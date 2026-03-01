@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Paperclip, X, Smile, Trash2, Sparkles, Loader2 } from 'lucide-react';
+import { Send, Mic, Paperclip, X, Smile, Trash2, Sparkles, Loader2, Upload } from 'lucide-react';
 import AIDraftBanner from './AIDraftBanner';
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import { useToast } from '@/contexts/ToastContext';
@@ -10,6 +10,7 @@ interface ChatInputProps {
   onSendMessage: (text: string, type: string, file?: File, metadata?: any) => Promise<void> | void;
   onSendAudio: (blob: Blob, duration: number) => void;
   onSendMedia: (file: File) => void;
+  onFileDropped?: (file: File) => void;
   onTyping: (isTyping: boolean) => void;
   replyTo: any;
   onCancelReply: () => void;
@@ -31,12 +32,12 @@ export default function ChatInput({
   onSendMessage,
   onSendAudio,
   onSendMedia,
+  onFileDropped,
   onTyping,
   replyTo,
   onCancelReply,
   editingMessage = null,
   onCancelEdit = () => { },
-  isRecordingProp = false,
   aiDraftText,
   aiDraftReason,
   isLoadingAISuggestion = false,
@@ -48,6 +49,8 @@ export default function ChatInput({
   // --- ESTADOS ---
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
 
   // Estados de Gravação
   const [isRecording, setIsRecording] = useState(false);
@@ -59,8 +62,9 @@ export default function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // CORREÇÃO AQUI: Ref para manter o valor atualizado da duração dentro do callback do recorder
+  // CORREÇÃO: Ref para manter o valor atualizado da duração dentro do callback do recorder
   const durationRef = useRef(0);
 
   // Fecha o picker se clicar fora dele
@@ -74,7 +78,7 @@ export default function ChatInput({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // --- LÓGICA DE ÁUDIO (CORRIGIDA) ---
+  // --- LÓGICA DE ÁUDIO ---
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -87,10 +91,8 @@ export default function ChatInput({
 
       recorder.onstop = () => {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        // CORREÇÃO: Usa o durationRef.current para pegar o valor exato no momento da parada
         onSendAudio(audioBlob, durationRef.current);
 
-        // Limpeza
         setRecordingDuration(0);
         durationRef.current = 0;
         stream.getTracks().forEach(track => track.stop());
@@ -100,14 +102,13 @@ export default function ChatInput({
       setMediaRecorder(recorder);
       setIsRecording(true);
 
-      // Timer Reset
       setRecordingDuration(0);
       durationRef.current = 0;
 
       timerRef.current = setInterval(() => {
         setRecordingDuration(prev => {
           const newVal = prev + 1;
-          durationRef.current = newVal; // Atualiza a Ref
+          durationRef.current = newVal;
           return newVal;
         });
       }, 1000);
@@ -128,10 +129,7 @@ export default function ChatInput({
 
   const cancelRecording = () => {
     if (mediaRecorder && isRecording) {
-      // Para as tracks sem disparar o evento onstop da mesma forma (ou ignorando o envio)
-      // Aqui forçamos parar as tracks manualmente
       mediaRecorder.stream.getTracks().forEach(track => track.stop());
-
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
       setRecordingDuration(0);
@@ -179,9 +177,48 @@ export default function ChatInput({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      onSendMedia(file);
+      // Usa o callback de preview se disponível, senão envia direto
+      if (onFileDropped) {
+        onFileDropped(file);
+      } else {
+        onSendMedia(file);
+      }
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // --- COLAR (CTRL+V) — intercepta imagens do clipboard ---
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        // Impede a imagem de colar dentro da caixa de texto
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          if (onFileDropped) {
+            onFileDropped(file);
+          } else {
+            onSendMedia(file);
+          }
+        }
+        return;
+      }
+    }
+
+    // Para colar texto: intercepta HTML e cola apenas texto puro
+    const html = e.clipboardData.getData('text/html');
+    if (html) {
+      e.preventDefault();
+      const text = e.clipboardData.getData('text/plain');
+      if (text) {
+        document.execCommand('insertText', false, text);
+      }
+      return;
+    }
+    // Texto simples: deixa o comportamento padrão
   };
 
   const insertHtmlAtCursor = (html: string) => {
@@ -247,6 +284,49 @@ export default function ChatInput({
     });
   }, [editingMessage?.id]);
 
+  // --- DRAG AND DROP ---
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes('Files')) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounterRef.current = 0;
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      if (onFileDropped) {
+        onFileDropped(file);
+      } else {
+        onSendMedia(file);
+      }
+    }
+  };
+
   // --- RENDERIZAÇÃO ---
   if (isRecording) {
     return (
@@ -281,9 +361,24 @@ export default function ChatInput({
   }
 
   return (
-    <div className="flex flex-col bg-[#f0f2f5] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700 relative z-20">
+    <div
+      ref={containerRef}
+      className="flex flex-col bg-[#f0f2f5] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700 relative z-20"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Overlay de drag-and-drop estilo WhatsApp */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-sm pointer-events-none"
+          style={{ background: 'rgba(0, 168, 132, 0.12)', border: '2px dashed #00a884' }}>
+          <Upload size={28} className="text-[#00a884] mb-2" />
+          <span className="text-[#00a884] font-semibold text-sm">Solte para enviar</span>
+        </div>
+      )}
 
-      {/* Balão flutuante de sugestão da IA — posicionado acima do botão Sparkles */}
+      {/* Balão flutuante de sugestão da IA */}
       {aiDraftText && onApproveAIDraft && onDiscardAIDraft && (
         <AIDraftBanner
           draftText={aiDraftText}
@@ -322,7 +417,7 @@ export default function ChatInput({
           <button
             onClick={() => fileInputRef.current?.click()}
             className="p-2 text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 rounded-full transition-colors"
-            title="Anexar"
+            title="Anexar arquivo"
           >
             <Paperclip size={24} className="rotate-45" />
           </button>
@@ -331,7 +426,7 @@ export default function ChatInput({
             ref={fileInputRef}
             onChange={handleFileSelect}
             className="hidden"
-            accept="image/*,video/*,application/*"
+            accept="image/*,video/*,application/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar"
           />
         </div>
 
@@ -391,6 +486,7 @@ export default function ChatInput({
             contentEditable
             onInput={handleInput}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             role="textbox"
             data-placeholder={editingMessage ? 'Edite sua mensagem' : 'Digite uma mensagem'}
             className="custom-input w-full px-4 py-3 bg-transparent outline-none max-h-[120px] overflow-y-auto text-[15px] text-[#111b21] dark:text-[#e9edef] leading-5 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 whitespace-pre-wrap break-words"
@@ -399,7 +495,7 @@ export default function ChatInput({
         </div>
 
         <div className="pb-2 pl-1 flex items-center gap-1">
-          {/* Botão Copiloto — sugere uma resposta com um clique */}
+          {/* Botão Copiloto */}
           {onRequestAISuggestion && (
             <button
               onClick={onRequestAISuggestion}

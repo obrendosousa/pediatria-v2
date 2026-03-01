@@ -94,9 +94,21 @@ GUIA COMPLETO DE FERRAMENTAS:
 6. get_chat_cascade_history(chat_id) → Histórico completo de UM chat específico (use com chat_id preciso)
 7. save_report(titulo, conteudo, tipo) → Salvar relatório (apenas se o brief pedir explicitamente)
 
-SCHEMA:
-• chats: id, contact_name, phone, stage, ai_sentiment, last_interaction_at, status
-• chat_messages: id, chat_id, sender (AI_AGENT|HUMAN_AGENT|contact), message_text, created_at
+SCHEMA E MAPEAMENTO DE REMETENTES (CRÍTICO — leia antes de escrever qualquer SQL):
+• chats: id, contact_name, phone, stage (new|em_triagem|agendando|fila_espera|qualified|lost|won|done), ai_sentiment (positive|negative|neutral), last_interaction_at, status
+
+• chat_messages: id, chat_id, sender, message_text, created_at
+  SENDER VALUES (ESSENCIAL):
+  → 'HUMAN_AGENT' = secretária/atendente humano (ex: Joana) ← use para analisar SCRIPT de atendimento
+  → 'contact' = paciente/lead ← use para analisar dúvidas, objeções, linguagem dos pacientes
+  → 'AI_AGENT' = bot/Clara ← use para analisar respostas automáticas
+  ⚠️ "Joana" NÃO é um contact_name da tabela chats — ela é sender='HUMAN_AGENT' na tabela chat_messages
+
+  SQL PRONTOS:
+  • Script da secretária → execute_sql: SELECT cm.message_text, c.contact_name, cm.created_at FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'HUMAN_AGENT' AND cm.message_text IS NOT NULL ORDER BY cm.created_at DESC LIMIT 200
+  • Mensagens de pacientes → execute_sql: SELECT cm.message_text, c.contact_name FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'contact' AND cm.message_text IS NOT NULL ORDER BY cm.created_at DESC LIMIT 200
+  • Contagem por tipo → execute_sql: SELECT sender, COUNT(*) FROM chat_messages WHERE created_at >= '2026-02-01T00:00:00-03:00'::timestamptz GROUP BY sender
+
 • chat_insights: id, chat_id, nota_atendimento (0-10), sentimento, objecoes (text[]), gargalos (text[]), decisao, updated_at`;
 
 // Helper ultra-seguro para não quebrar o TypeScript do LangChain
