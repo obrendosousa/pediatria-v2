@@ -63,7 +63,10 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   useEffect(() => {
     setAiDraftText(chat?.ai_draft_reply ?? null);
     setAiDraftReason(chat?.ai_draft_reason ?? null);
-  }, [chat?.id, chat?.ai_draft_reply, chat?.ai_draft_reason]);
+    setAiDraftScheduleText(chat?.ai_draft_schedule_text ?? null);
+    setAiDraftScheduleDate(chat?.ai_draft_schedule_date ?? null);
+    setAiDraftScheduleReason(chat?.ai_draft_schedule_reason ?? null);
+  }, [chat?.id, chat?.ai_draft_reply, chat?.ai_draft_reason, chat?.ai_draft_schedule_text, chat?.ai_draft_schedule_date, chat?.ai_draft_schedule_reason]);
 
   // Subscrição Realtime: captura drafts gerados pelo Copiloto após o carregamento inicial
   useEffect(() => {
@@ -78,6 +81,9 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           const updated = payload.new as any;
           setAiDraftText(updated.ai_draft_reply ?? null);
           setAiDraftReason(updated.ai_draft_reason ?? null);
+          setAiDraftScheduleText(updated.ai_draft_schedule_text ?? null);
+          setAiDraftScheduleDate(updated.ai_draft_schedule_date ?? null);
+          setAiDraftScheduleReason(updated.ai_draft_schedule_reason ?? null);
         }
       )
       .subscribe();
@@ -139,6 +145,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const [isSequenceModalOpen, setIsSequenceModalOpen] = useState(false);
   const [isCreateScheduleOpen, setIsCreateScheduleOpen] = useState(false);
   const [schedulePrefill, setSchedulePrefill] = useState<{ item: any | null; type: 'macro' | 'funnel' } | null>(null);
+  const [prefilledScheduleAdHoc, setPrefilledScheduleAdHoc] = useState<{ text: string; date: string; time: string } | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmData, setConfirmData] = useState<any>(null);
   const [sequenceMode, setSequenceMode] = useState<'script' | 'funnel'>('funnel');
@@ -158,6 +165,11 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const [aiDraftText, setAiDraftText] = useState<string | null>(chat?.ai_draft_reply ?? null);
   const [aiDraftReason, setAiDraftReason] = useState<string | null>(chat?.ai_draft_reason ?? null);
   const [isLoadingAISuggestion, setIsLoadingAISuggestion] = useState(false);
+
+  // Estado reativo do draft de agendamento de follow-up sugerido pela Clara
+  const [aiDraftScheduleText, setAiDraftScheduleText] = useState<string | null>(chat?.ai_draft_schedule_text ?? null);
+  const [aiDraftScheduleDate, setAiDraftScheduleDate] = useState<string | null>(chat?.ai_draft_schedule_date ?? null);
+  const [aiDraftScheduleReason, setAiDraftScheduleReason] = useState<string | null>(chat?.ai_draft_schedule_reason ?? null);
 
   const handleSendFile = useCallback(async (file: File | Blob, caption: string, typeOverride?: string, metadata?: any) => {
     if (!chat) return;
@@ -556,6 +568,53 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     }
   }, [chat, aiDraftText, conversationSummary]);
 
+  // ── Handlers para sugestão de agendamento de follow-up ─────────────────────
+
+  const clearScheduleDraftFromDB = useCallback(async () => {
+    if (!chat) return;
+    setAiDraftScheduleText(null);
+    setAiDraftScheduleDate(null);
+    setAiDraftScheduleReason(null);
+    await supabase.from('chats').update({
+      ai_draft_schedule_text: null,
+      ai_draft_schedule_date: null,
+      ai_draft_schedule_reason: null,
+    }).eq('id', chat.id);
+  }, [chat]);
+
+  const handleApproveScheduleDraft = useCallback(async () => {
+    if (!chat || !aiDraftScheduleText || !aiDraftScheduleDate) return;
+    try {
+      const { error } = await supabase.from('scheduled_messages').insert({
+        chat_id: chat.id,
+        item_type: 'adhoc',
+        title: 'Follow-up sugerido pela Clara',
+        content: { type: 'text', content: aiDraftScheduleText },
+        scheduled_for: aiDraftScheduleDate,
+        status: 'pending',
+      });
+      if (error) { toast.error('Erro ao agendar follow-up.'); return; }
+      await clearScheduleDraftFromDB();
+      toast.success('Follow-up agendado com sucesso!');
+    } catch (e) {
+      toast.error('Erro inesperado ao agendar.');
+    }
+  }, [chat, aiDraftScheduleText, aiDraftScheduleDate, clearScheduleDraftFromDB, toast]);
+
+  const handleDiscardScheduleDraft = useCallback(async () => {
+    await clearScheduleDraftFromDB();
+  }, [clearScheduleDraftFromDB]);
+
+  const handleEditScheduleDraft = useCallback(() => {
+    if (!aiDraftScheduleText || !aiDraftScheduleDate) return;
+    const d = new Date(aiDraftScheduleDate);
+    const date = d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); // YYYY-MM-DD
+    const time = d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+    setSchedulePrefill(null);
+    setPrefilledScheduleAdHoc({ text: aiDraftScheduleText, date, time });
+    setIsCreateScheduleOpen(true);
+  }, [aiDraftScheduleText, aiDraftScheduleDate]);
+
   const handleApproveDraft = useCallback(async (text: string) => {
     // Limpa a UI imediatamente antes de enviar
     setAiDraftText(null);
@@ -658,10 +717,12 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         onClose={() => {
           setIsCreateScheduleOpen(false);
           setSchedulePrefill(null);
+          setPrefilledScheduleAdHoc(null);
         }}
         macros={macros}
         funnels={funnels}
         preselectedItem={schedulePrefill}
+        prefilledAdHoc={prefilledScheduleAdHoc}
         onConfirmAdHoc={handleScheduleAdHoc}
         onConfirmSaved={handleScheduleItem}
       />
@@ -733,6 +794,12 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           onRequestAISuggestion={handleRequestAISuggestion}
           onApproveAIDraft={handleApproveDraft}
           onDiscardAIDraft={handleClearDraft}
+          aiDraftScheduleText={aiDraftScheduleText}
+          aiDraftScheduleDate={aiDraftScheduleDate}
+          aiDraftScheduleReason={aiDraftScheduleReason}
+          onApproveScheduleDraft={handleApproveScheduleDraft}
+          onEditScheduleDraft={handleEditScheduleDraft}
+          onDiscardScheduleDraft={handleDiscardScheduleDraft}
         />
       </div>
 

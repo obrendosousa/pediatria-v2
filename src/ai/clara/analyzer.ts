@@ -9,6 +9,49 @@ const ai = new GoogleGenAI({
 });
 
 /**
+ * Garante que uma data ISO caia dentro do horário comercial BRT (seg-sex, 09h-18h).
+ * Se fora do horário, avança para o próximo slot válido.
+ */
+function snapToBusinessHours(isoStr: string): string {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return isoStr; // data inválida — retorna como está
+
+    // Trabalha em BRT (UTC-3)
+    const brtOffset = -3 * 60; // minutos
+    const localMs = d.getTime() + (brtOffset - (-d.getTimezoneOffset())) * 60_000;
+    const brt = new Date(localMs);
+
+    let year = brt.getUTCFullYear();
+    let month = brt.getUTCMonth();
+    let day = brt.getUTCDate();
+    let hour = brt.getUTCHours();
+    let minute = brt.getUTCMinutes();
+
+    // Se após 18h ou fim de semana (sábado=6, domingo=0), avança para próximo dia útil 9h
+    const weekday = brt.getUTCDay(); // 0=dom, 6=sab
+
+    const isWeekend = weekday === 0 || weekday === 6;
+    const isAfterHours = hour >= 18;
+    const isBeforeHours = hour < 9;
+
+    if (isWeekend || isAfterHours) {
+        // Avança para o próximo dia útil às 9h
+        const next = new Date(Date.UTC(year, month, day + 1, 12, 0)); // meio-dia UTC para evitar dst issues
+        while (next.getUTCDay() === 0 || next.getUTCDay() === 6) {
+            next.setUTCDate(next.getUTCDate() + 1);
+        }
+        year = next.getUTCFullYear(); month = next.getUTCMonth(); day = next.getUTCDate();
+        hour = 9; minute = 0;
+    } else if (isBeforeHours) {
+        hour = 9; minute = 0;
+    }
+
+    // Reconstrói em UTC a partir do BRT
+    const result = new Date(Date.UTC(year, month, day, hour - brtOffset / 60, minute));
+    return result.toISOString();
+}
+
+/**
  * Define the strict schema for the Analyzer's structured output.
  * We want exactly two things:
  * 1. Strategic learning (to save to memory, filtering out noise).
@@ -29,7 +72,7 @@ const analyzerSchema: Schema = {
                 type: {
                     type: Type.STRING,
                     enum: ["ignore", "suggest_reply", "suggest_schedule"],
-                    description: "'ignore': se for uma mensagem simples (ok, obrigado) ou que não exige resposta clínica. 'suggest_reply': perguntas, objeções de vendas ou momentos cruciais. 'suggest_schedule': paciente pede tempo para pensar ou a conversa esfriou, exige resgate futuro.",
+                    description: "'ignore': mensagem simples (ok, obrigado, emoji) sem necessidade de ação. 'suggest_reply': pergunta direta, objeção de preço/plano, dúvida clínica, momento crucial de decisão. 'suggest_schedule': paciente adiou ('vou pensar', 'depois vejo', 'vou falar com meu marido/esposa/responsável'), conversa esfriou sem retorno do paciente, proposta enviada sem resposta, agendamento confirmado mas sem contato há mais de 3 dias, nutrição de relacionamento pós-consulta.",
                 },
                 draft_text: {
                     type: Type.STRING,
@@ -74,15 +117,36 @@ export async function analyzeChatInteraction(chatId: number) {
             return `[${label}]: ${txt}`;
         }).join("\n");
 
-        const prompt = `Você é a Analista de Inteligência da Aliança (Clara).
-Sua missão é ler silenciosamente o histórico desta conversa no WhatsApp e decidir:
-1. Devemos APRENDER algo estratégico com isso? (Regras, objeções frequentes, falhas operacionais? Ignore os dados pessoais do paciente).
-2. O agente deve SUGERIR UMA RESPOSTA neste momento crítico ou apenas IGNORAR?
+        const hoje = new Intl.DateTimeFormat("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+            weekday: "long", day: "2-digit", month: "long", year: "numeric",
+        }).format(new Date());
+
+        const prompt = `Você é a Clara, analista de inteligência de uma clínica pediátrica.
+Sua missão: ler o histórico desta conversa no WhatsApp e decidir a melhor ação para a secretária Joana.
+
+DATA DE HOJE: ${hoje}
 
 HISTÓRICO DA CONVERSA:
 -------------------------------------------------
 ${history}
 -------------------------------------------------
+
+REGRAS DE DECISÃO:
+- 'ignore': mensagem simples (ok, obrigado, emoji, confirmação de leitura) sem ação necessária.
+- 'suggest_reply': pergunta direta do paciente, objeção de preço/convênio, dúvida clínica, momento de decisão.
+- 'suggest_schedule': use quando identificar QUALQUER UMA das situações abaixo:
+    • Paciente adiou: "vou pensar", "depois eu vejo", "vou falar com meu marido/esposa/responsável"
+    • Paciente recebeu informações (preço, horário) e parou de responder
+    • A última mensagem foi da CLÍNICA e o paciente não respondeu (conversa esfriada)
+    • Agendamento realizado — nutrição pós-consulta ou lembrete de retorno
+    • Paciente demonstrou interesse mas não avançou
+
+PARA suggest_schedule:
+- 'draft_text': escreva uma mensagem de follow-up empática, natural e personalizada baseada no contexto real da conversa. Tom humano, não robótico. Sugira próximos passos concretos.
+- 'schedule_date': data/hora em ISO 8601 para envio. Considere: 1-3 dias após o adiamento, ou 1 semana para nutrição. O horário DEVE ser durante horário comercial (seg-sex, 09h-18h, horário de Brasília).
+
+PARA strategic_insight: apenas padrões generalizáveis (objeções recorrentes, falhas do processo). NUNCA dados pessoais.
 
 Siga rigorosamente o schema de JSON de saída.`;
 
@@ -126,12 +190,13 @@ Siga rigorosamente o schema de JSON de saída.`;
                 .eq("id", chatId);
         }
         else if (action.type === "suggest_schedule" && action.draft_text && action.schedule_date) {
-            console.log(`[Analyzer] Suggesting schedule for chat ${chatId}`);
+            const safeDate = snapToBusinessHours(action.schedule_date);
+            console.log(`[Analyzer] Suggesting schedule for chat ${chatId} at ${safeDate}`);
             await (supabase as any)
                 .from("chats")
                 .update({
                     ai_draft_schedule_text: action.draft_text,
-                    ai_draft_schedule_date: action.schedule_date,
+                    ai_draft_schedule_date: safeDate,
                     ai_draft_schedule_reason: action.reason
                 })
                 .eq("id", chatId);

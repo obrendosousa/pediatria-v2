@@ -67,8 +67,19 @@ function normalizeSenderLabel(sender: string | null): string {
     const s = String(sender ?? "").toUpperCase();
     if (s === "AI_AGENT") return "BOT";
     if (s === "HUMAN_AGENT" || s === "ME") return "CLÍNICA";
-    if (s === "CONTACT") return "BOT";
+    if (s === "CONTACT") return "PACIENTE";
     return "PACIENTE";
+}
+
+function toBRT(isoStr: string): string {
+    return new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(new Date(isoStr));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -101,7 +112,8 @@ async function fetchDataNode(state: ChatAnalysisState): Promise<Partial<ChatAnal
                 return null;
             }
             const label = normalizeSenderLabel(row.sender);
-            return `[${label}]: ${content}`;
+            const ts = row.created_at ? `[${toBRT(row.created_at)}] ` : "";
+            return `${ts}[${label}]: ${content}`;
         })
         .filter((line: string | null): line is string => line !== null)
         .join("\n");
@@ -157,7 +169,24 @@ async function analyzeConversationNode(state: ChatAnalysisState): Promise<Partia
 
     const structuredModel = model.withStructuredOutput(schema);
 
-    const systemMessage = new SystemMessage(`Você é um analista de qualidade de atendimento rigoroso. Seu objetivo é analisar a transcrição de uma conversa de WhatsApp entre a CLÍNICA (recepção/bot) e um PACIENTE. Identifique exatamente a nota do atendimento, objeções, gargalos, decisão do cliente e crie um resumo do que ocorreu. Identifique também novos aprendizados importantes que devem ir para a memória de longo prazo.`);
+    const hoje = new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    }).format(new Date());
+
+    const systemMessage = new SystemMessage(
+        `Você é um analista de qualidade de atendimento rigoroso. Seu objetivo é analisar a transcrição de uma conversa de WhatsApp entre a CLÍNICA (recepção/bot) e um PACIENTE.
+
+CONTEXTO DE DATA: Hoje é ${hoje}. Cada mensagem na transcrição está marcada com [DD/MM/YYYY HH:MM] indicando exatamente quando foi enviada (horário de Brasília). Use essas marcações para entender a linha do tempo real da conversa — NÃO assuma que toda a conversa aconteceu hoje. O resumo deve mencionar as datas relevantes quando a conversa se estendeu por mais de um dia.
+
+INSTRUÇÕES:
+- Identifique a nota do atendimento, objeções, gargalos, decisão do cliente e crie um resumo cronologicamente preciso.
+- No campo "decisao", mencione quando aconteceu o desfecho (ex: "Agendou consulta em 28/02/2026").
+- No campo "resumo_analise", deixe claro o período em que a conversa ocorreu.
+- Identifique novos aprendizados importantes que devem ir para a memória de longo prazo.`
+    );
 
     const humanMessage = new HumanMessage(`Analise a seguinte conversa do chat_id ${state.chat_id}:\n\n${state.formatted_transcript}`);
 

@@ -101,9 +101,11 @@ export async function generateAndUploadVoice(text: string): Promise<string | nul
         if (backend === "elevenlabs") {
             audioBuffer = await generateWithElevenLabs(text);
             if (!audioBuffer) {
-                console.warn("[Voice] ⚠️ ElevenLabs falhou. Iniciando fallback para o Kokoro...");
-                audioBuffer = await generateWithKokoro(text);
+                console.warn("[Voice] ⚠️ ElevenLabs falhou. Iniciando fallback para o OpenAI TTS...");
+                audioBuffer = await generateWithOpenAI(text);
             }
+        } else if (backend === "openai") {
+            audioBuffer = await generateWithOpenAI(text);
         } else {
             audioBuffer = await generateWithKokoro(text);
         }
@@ -190,6 +192,37 @@ async function generateWithElevenLabs(text: string): Promise<Buffer | null> {
     if (!res.ok) {
         const err = await res.text();
         console.error(`[Voice] ElevenLabs erro ${res.status}: ${err}`);
+        return null;
+    }
+
+    return Buffer.from(await res.arrayBuffer());
+}
+
+// ─── BACKEND: OpenAI TTS (cloud, sem Python, funciona em qualquer SO) ─────────
+// Rápido (~1-2s), suporta PT-BR naturalmente, usa a OPENAI_API_KEY já configurada
+async function generateWithOpenAI(text: string): Promise<Buffer | null> {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+        console.error("[Voice] OPENAI_API_KEY não configurada");
+        return null;
+    }
+
+    const voice = process.env.OPENAI_TTS_VOICE || "nova"; // nova = voz feminina natural
+    const model = process.env.OPENAI_TTS_MODEL || "tts-1";
+
+    const res = await fetch("https://api.openai.com/v1/audio/speech", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ model, input: text, voice, response_format: "mp3" }),
+        signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!res.ok) {
+        const err = await res.text();
+        console.error(`[Voice] OpenAI TTS erro ${res.status}: ${err}`);
         return null;
     }
 

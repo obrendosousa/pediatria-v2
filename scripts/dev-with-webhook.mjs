@@ -21,6 +21,10 @@ function logWebhookReady(baseUrl) {
 }
 
 function pipeOutput(prefix, child) {
+  child.on("error", (err) => {
+    log(`[${prefix}] erro ao iniciar processo: ${err.message}`);
+  });
+
   child.stdout.on("data", (chunk) => {
     const text = chunk.toString();
     process.stdout.write(text);
@@ -54,38 +58,53 @@ function pipeOutput(prefix, child) {
   });
 }
 
+const isWindows = process.platform === "win32";
+const pathSeparator = isWindows ? ";" : ":";
+
 function commandExists(command) {
-  const paths = (process.env.PATH || "").split(":");
-  return paths.some((entry) => existsSync(`${entry}/${command}`));
+  const paths = (process.env.PATH || "").split(pathSeparator);
+  const suffixes = isWindows ? [".exe", ".cmd", ".bat", ""] : [""];
+  return paths.some((entry) =>
+    suffixes.some((suffix) => existsSync(`${entry}/${command}${suffix}`))
+  );
 }
 
 const nextDev = spawn("npx", ["next", "dev"], {
   stdio: ["inherit", "pipe", "pipe"],
   env: process.env,
+  shell: true,
 });
 pipeOutput("next", nextDev);
 
-const workerDev = spawn("npm", ["run", "worker:dev"], {
+const workerDev = spawn("npx", ["tsx", "-r", "dotenv/config", "worker/src/main.ts"], {
   stdio: ["inherit", "pipe", "pipe"],
   env: {
     ...process.env,
+    DOTENV_CONFIG_PATH: ".env.local",
     WORKER_DRY_RUN: process.env.WORKER_DRY_RUN || "true",
   },
+  shell: true,
 });
 pipeOutput("worker", workerDev);
 
 // Kokoro TTS via Python nativo (CPU)
+// Caminhos diferentes entre Windows e Unix
+const venvPython = isWindows ? ".venv/Scripts/python.exe" : ".venv/bin/python";
+const venvPip    = isWindows ? ".venv/Scripts/pip.exe"    : ".venv/bin/pip";
+const venvActivate = isWindows ? "source .venv/Scripts/activate" : "source .venv/bin/activate";
+const pythonCmd  = isWindows ? "python" : "python3";
+
 const ttsCommand = `
   cd src/ai/voice
   if [ ! -d ".venv" ]; then
     echo "[TTS] Criando ambiente virtual Python..."
-    python3 -m venv .venv
+    ${pythonCmd} -m venv .venv
   fi
-  source .venv/bin/activate
+  ${venvActivate}
   echo "[TTS] Instalando dependencias (se necessario)..."
-  pip install -r requirements.txt -q
+  ${venvPip} install -r requirements.txt -q
   echo "[TTS] Iniciando Kokoro TTS nativo - voz da Clara (Porta 8880)..."
-  python server.py
+  ${venvPython} server.py
 `;
 
 const ttsDev = spawn("bash", ["-c", ttsCommand], {
@@ -109,7 +128,7 @@ if (commandExists("cloudflared")) {
 } else {
   log("\ncloudflared nao encontrado no PATH.");
   log("Instale para ter URL publica automatica no npm run dev:");
-  log("  brew install cloudflared");
+  log(isWindows ? "  winget install Cloudflare.cloudflared" : "  brew install cloudflared");
   log("Enquanto isso, rode manualmente outro tunel (ex.: ngrok).\n");
 }
 

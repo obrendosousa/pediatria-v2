@@ -25,18 +25,20 @@ interface CreateScheduleModalProps {
   macros: Macro[];
   funnels: Funnel[];
   preselectedItem?: { item: any | null; type: 'macro' | 'funnel' } | null;
+  prefilledAdHoc?: { text: string; date: string; time: string } | null;
   onConfirmAdHoc: (type: 'text'|'audio'|'image'|'video'|'document', content: string | File | Blob, date: string, time: string) => Promise<void>;
   onConfirmSaved: (item: any, type: 'macro' | 'funnel', date: string, time: string) => Promise<void>;
 }
 
-export default function CreateScheduleModal({ 
-  isOpen, 
-  onClose, 
-  macros, 
-  funnels, 
+export default function CreateScheduleModal({
+  isOpen,
+  onClose,
+  macros,
+  funnels,
   preselectedItem,
-  onConfirmAdHoc, 
-  onConfirmSaved 
+  prefilledAdHoc,
+  onConfirmAdHoc,
+  onConfirmSaved
 }: CreateScheduleModalProps) {
     const { toast } = useToast();
     const [mode, setMode] = useState<'custom' | 'saved'>('custom'); // 'custom' = Criar Agora, 'saved' = Biblioteca
@@ -74,6 +76,15 @@ export default function CreateScheduleModal({
         setSelectedItem(null);
       }
     }, [isOpen, preselectedItem]);
+
+    useEffect(() => {
+      if (!isOpen || !prefilledAdHoc) return;
+      setMode('custom');
+      setCustomType('text');
+      setText(prefilledAdHoc.text);
+      setDate(prefilledAdHoc.date);
+      setTime(prefilledAdHoc.time);
+    }, [isOpen, prefilledAdHoc]);
 
     if (!isOpen) return null;
 

@@ -944,6 +944,157 @@ export const getVolumeMetricsTool = new DynamicStructuredTool({
   },
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FERRAMENTA: criar_agendamento
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const criarAgendamentoTool = new DynamicStructuredTool({
+  name: "criar_agendamento",
+  description:
+    "Cria um agendamento de consulta ou retorno no sistema, vinculado ao chat do paciente. " +
+    "Use quando o usuário pedir para agendar, marcar ou registrar uma consulta. " +
+    "Antes de chamar, confirme com o usuário: nome do paciente, telefone, data e hora desejados e o tipo (consulta ou retorno). " +
+    "A tool busca o paciente pelo telefone e o cria automaticamente se não existir.",
+  schema: z.object({
+    chat_id: z.number().describe("ID numérico do chat vinculado ao paciente (obrigatório)."),
+    patient_name: z.string().describe("Nome completo do paciente (criança)."),
+    patient_phone: z.string().describe("Telefone do paciente ou responsável, somente dígitos (ex: 5599999999999)."),
+    data_hora: z.string().describe("Data e hora do agendamento no formato 'YYYY-MM-DD HH:MM', horário de Brasília (ex: '2026-03-15 09:30')."),
+    tipo: z.enum(["consulta", "retorno"]).describe("Tipo do agendamento: 'consulta' para primeira vez ou consulta normal, 'retorno' para revisão."),
+    motivo: z.string().optional().describe("Motivo ou queixa principal da consulta (ex: 'febre há 3 dias', 'revisão de crescimento')."),
+    patient_sex: z.enum(["M", "F"]).optional().describe("Sexo biológico do paciente: 'M' ou 'F'. Identifique pelo nome ou pela conversa."),
+    parent_name: z.string().optional().describe("Nome do pai/mãe/responsável, se identificado na conversa."),
+    doctor_name: z.string().optional().describe("Nome do médico responsável. Se não informado, usa o médico padrão da clínica."),
+  }),
+  func: async ({
+    chat_id,
+    patient_name,
+    patient_phone,
+    data_hora,
+    tipo,
+    motivo,
+    patient_sex,
+    parent_name,
+    doctor_name,
+  }) => {
+    try {
+      // 1. Converte data_hora BRT → UTC para start_time
+      const [datePart, timePart] = data_hora.trim().split(" ");
+      if (!datePart || !timePart) {
+        return `Erro: formato de data_hora inválido. Use 'YYYY-MM-DD HH:MM' (ex: '2026-03-15 09:30').`;
+      }
+      const startTimeBRT = new Date(`${datePart}T${timePart}:00-03:00`);
+      if (isNaN(startTimeBRT.getTime())) {
+        return `Erro: data/hora inválida: '${data_hora}'.`;
+      }
+      const startTimeISO = startTimeBRT.toISOString();
+
+      // 2. Busca paciente pelo telefone — reutiliza se já existir
+      const phoneDigits = patient_phone.replace(/\D/g, "");
+      let patientId: number | null = null;
+
+      const { data: existingPatient } = await supabase
+        .from("patients")
+        .select("id")
+        .or(`phone.eq.${phoneDigits},phone.eq.+${phoneDigits}`)
+        .maybeSingle();
+
+      if (existingPatient?.id) {
+        patientId = existingPatient.id;
+      } else {
+        // Cria paciente mínimo se não existir
+        const { data: newPatient, error: patientError } = await supabase
+          .from("patients")
+          .insert({
+            name: patient_name,
+            phone: phoneDigits,
+            ...(patient_sex ? { biological_sex: patient_sex } : {}),
+            active: true,
+          })
+          .select("id")
+          .single();
+
+        if (patientError) {
+          console.error("[criar_agendamento] Erro ao criar paciente:", patientError);
+          // Continua sem patient_id — o agendamento ainda pode ser salvo
+        } else {
+          patientId = newPatient?.id ?? null;
+        }
+      }
+
+      // 3. Busca nome do médico padrão no agent_config se não fornecido
+      let resolvedDoctorName = doctor_name?.trim() || "";
+      if (!resolvedDoctorName) {
+        const { data: configData } = await supabase
+          .from("agent_config")
+          .select("content")
+          .eq("agent_id", "clara")
+          .eq("config_key", "company")
+          .maybeSingle();
+        // Extrai o nome da médica do texto da company (ex: "Dra. Fernanda")
+        const match = configData?.content?.match(/Dra?\.\s[\w\s]+/i);
+        resolvedDoctorName = match?.[0]?.trim() || "Médico(a)";
+      }
+
+      // 4. Insere o agendamento na tabela appointments
+      const { data: appointment, error: apptError } = await supabase
+        .from("appointments")
+        .insert({
+          chat_id,
+          patient_id: patientId,
+          patient_name,
+          patient_phone: phoneDigits,
+          start_time: startTimeISO,
+          status: "scheduled",
+          appointment_type: tipo,
+          doctor_name: resolvedDoctorName,
+          ...(motivo ? { notes: motivo } : {}),
+          ...(patient_sex ? { patient_sex } : {}),
+          ...(parent_name ? { parent_name } : {}),
+        })
+        .select("id")
+        .single();
+
+      if (apptError) {
+        console.error("[criar_agendamento] Erro ao inserir appointment:", apptError);
+        return `Erro ao criar agendamento: ${apptError.message}`;
+      }
+
+      // 5. Atualiza o stage do chat para 'agendando'
+      await supabase
+        .from("chats")
+        .update({ stage: "agendando" })
+        .eq("id", chat_id);
+
+      // 6. Formata confirmação em BRT
+      const dataFormatada = new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(startTimeBRT);
+
+      return [
+        `✅ Agendamento criado com sucesso!`,
+        `  ID: #${appointment.id}`,
+        `  Paciente: ${patient_name}${parent_name ? ` (resp: ${parent_name})` : ""}`,
+        `  Telefone: ${phoneDigits}`,
+        `  Data/Hora: ${dataFormatada}`,
+        `  Tipo: ${tipo === "consulta" ? "Consulta" : "Retorno"}`,
+        `  Médico(a): ${resolvedDoctorName}`,
+        ...(motivo ? [`  Motivo: ${motivo}`] : []),
+        `  Status do chat atualizado para 'agendando'.`,
+      ].join("\n");
+    } catch (e: any) {
+      console.error("[criar_agendamento] Erro inesperado:", e);
+      return `Erro inesperado ao criar agendamento: ${e.message}`;
+    }
+  },
+});
+
 // Ferramentas do simple_agent (Clara principal).
 // ATENÇÃO: Analyst tools (getFilteredChatsListTool, getChatCascadeHistoryTool, getAggregatedInsightsTool)
 // e deepResearchChatsTool são adicionados UMA ÚNICA VEZ em graph.ts — não incluir aqui.
@@ -959,6 +1110,7 @@ export const claraTools = [
   saveReportTool,
   analisarChatEspecificoTool,
   gerarRelatorioQualidadeTool,
+  criarAgendamentoTool,           // Cria agendamentos de consulta/retorno no sistema
 ];
 
 // Ferramentas expostas aos Researchers do subgrafo de pesquisa paralela.

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Trash2, X } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { Message, Chat } from '@/types';
@@ -520,9 +521,12 @@ export default function MessageList({
         )}
         {renderedMessages}
 
-        {/* Indicador animado de status da Clara */}
-        {isAIChat && claraStatus && (
-          <ClaraStatusIndicator status={claraStatus} />
+        {/* Indicador animado de status da Clara — renderizado via portal para ficar acima de qualquer modal */}
+        {isAIChat && claraStatus && typeof window !== 'undefined' && createPortal(
+          <div className="fixed bottom-20 left-4 z-[10000] pointer-events-none">
+            <ClaraStatusIndicator status={claraStatus} />
+          </div>,
+          document.body
         )}
 
         <div ref={bottomRef} className="h-4" />

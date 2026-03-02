@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Paperclip, X, Smile, Trash2, Sparkles, Loader2, Upload } from 'lucide-react';
 import AIDraftBanner from './AIDraftBanner';
+import AIDraftScheduleBanner from './AIDraftScheduleBanner';
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -24,8 +25,13 @@ interface ChatInputProps {
   onRequestAISuggestion?: () => void;
   onApproveAIDraft?: (text: string) => Promise<void>;
   onDiscardAIDraft?: () => Promise<void>;
-  // Copiloto Clara — reservado para uso futuro
-  _claraReserved?: never;
+  // Follow-up sugerido pela Clara
+  aiDraftScheduleText?: string | null;
+  aiDraftScheduleDate?: string | null;
+  aiDraftScheduleReason?: string | null;
+  onApproveScheduleDraft?: () => Promise<void>;
+  onEditScheduleDraft?: () => void;
+  onDiscardScheduleDraft?: () => Promise<void>;
 }
 
 export default function ChatInput({
@@ -44,6 +50,12 @@ export default function ChatInput({
   onRequestAISuggestion,
   onApproveAIDraft,
   onDiscardAIDraft,
+  aiDraftScheduleText,
+  aiDraftScheduleDate,
+  aiDraftScheduleReason,
+  onApproveScheduleDraft,
+  onEditScheduleDraft,
+  onDiscardScheduleDraft,
 }: ChatInputProps) {
   const { toast } = useToast();
   // --- ESTADOS ---
@@ -385,6 +397,18 @@ export default function ChatInput({
           draftReason={aiDraftReason || ''}
           onApprove={onApproveAIDraft}
           onDiscard={onDiscardAIDraft}
+        />
+      )}
+
+      {/* Balão flutuante de follow-up agendado sugerido pela Clara */}
+      {aiDraftScheduleText && onApproveScheduleDraft && onDiscardScheduleDraft && (
+        <AIDraftScheduleBanner
+          scheduleText={aiDraftScheduleText}
+          scheduleDate={aiDraftScheduleDate || ''}
+          scheduleReason={aiDraftScheduleReason || ''}
+          onApprove={onApproveScheduleDraft}
+          onEdit={onEditScheduleDraft || (() => {})}
+          onDiscard={onDiscardScheduleDraft}
         />
       )}
       <div className="min-h-[62px] px-2 py-2 flex items-end gap-2">
