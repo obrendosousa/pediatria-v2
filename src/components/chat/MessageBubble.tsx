@@ -732,7 +732,7 @@ export default function MessageBubble({
           )}
         </div>
 
-        {/* Botão de Menu - oculto para mensagens apagadas */}
+        {/* Botão de Reagir - aparece no hover */}
         {!isRevoked && !isSelectionMode && (
           <button
             ref={reactionButtonRef}
@@ -746,6 +746,18 @@ export default function MessageBubble({
             aria-label="Reagir"
           >
             <Smile size={14} className="text-[#54656f] dark:text-[#aebac1]" />
+          </button>
+        )}
+
+        {/* Botão de Encaminhar - aparece no hover */}
+        {!isRevoked && !isSelectionMode && onForward && (
+          <button
+            onClick={() => onForward(message)}
+            className={`absolute top-8 ${isMe ? '-left-8' : '-right-8'} p-1.5 rounded-full bg-white/95 dark:bg-[#202c33] border border-gray-200 dark:border-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-150 z-20 shadow-sm`}
+            title="Encaminhar"
+            aria-label="Encaminhar"
+          >
+            <Forward size={14} className="text-[#54656f] dark:text-[#aebac1]" />
           </button>
         )}
 
