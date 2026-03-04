@@ -412,7 +412,7 @@ function VaccineRow({
 }
 
 // ─── Geração de PDF ───────────────────────────────────────────────────────────
-export function printPrescription(draft: DraftPrescription, patientData: any) {
+export function generatePrescriptionHTML(draft: DraftPrescription, patientData: any): string {
   const patientName = patientData?.name || patientData?.contact_name || '—';
   const patientCpf = patientData?.cpf || patientData?.document || '';
   const dateStr = format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: ptBR });
@@ -446,7 +446,7 @@ export function printPrescription(draft: DraftPrescription, patientData: any) {
       ${item.dose ? `<span class="exam-qty">${item.dose}</span>` : ''}
     </div>`).join('');
 
-  const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
@@ -514,7 +514,10 @@ export function printPrescription(draft: DraftPrescription, patientData: any) {
   </div>
 </body>
 </html>`;
+}
 
+export function printPrescription(draft: DraftPrescription, patientData: any) {
+  const html = generatePrescriptionHTML(draft, patientData);
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;';
   document.body.appendChild(iframe);

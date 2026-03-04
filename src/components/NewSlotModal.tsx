@@ -10,15 +10,26 @@ import { useToast } from '@/contexts/ToastContext';
 import PatientSearchSelect, { type PatientSearchOption } from '@/components/PatientSearchSelect';
 import type { Appointment } from '@/types/medical';
 
+interface InitialPatientData {
+  patientId?: number;
+  patientName?: string;
+  parentName?: string;
+  phone?: string;
+  patientSex?: 'M' | 'F';
+  doctorId?: number;
+  appointmentType?: string;
+}
+
 interface NewSlotModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   initialDate?: string;
   initialTime?: string;
+  initialPatient?: InitialPatientData | null;
 }
 
-export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, initialTime }: NewSlotModalProps) {
+export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, initialTime, initialPatient }: NewSlotModalProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [slotType, setSlotType] = useState<'booked' | 'blocked'>('booked');
@@ -114,21 +125,25 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
 
   useEffect(() => {
     if (isOpen) {
-      fetchDoctors();
+      fetchDoctors().then(() => {
+        if (initialPatient?.doctorId) {
+          setSelectedDoctorId(initialPatient.doctorId);
+        }
+      });
       const today = new Date().toISOString().split('T')[0];
       const defaultTime = '09:00';
       const initialDateValue = initialDate || today;
-      
+
       setFormData(prev => ({
         ...prev,
         date: initialDateValue,
         dateDisplay: formatDateToDisplay(initialDateValue),
         time: initialTime || defaultTime,
-        patient_name: '',
-        parent_name: '',
-        patient_phone: '',
-        patient_sex: '',
-        appointment_type: '',
+        patient_name: initialPatient?.patientName || '',
+        parent_name: initialPatient?.parentName || '',
+        patient_phone: initialPatient?.phone || '',
+        patient_sex: initialPatient?.patientSex || '',
+        appointment_type: (initialPatient?.appointmentType as 'consulta' | 'retorno' | '') || '',
         notes: '',
         totalAmount: '',
         paidAmount: ''
@@ -136,7 +151,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
       setSelectedPatient(null);
       setSlotType('booked');
     }
-  }, [isOpen, initialDate, initialTime]);
+  }, [isOpen, initialDate, initialTime, initialPatient]);
 
   async function fetchDoctors() {
     try {
@@ -232,7 +247,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
           insertData.patient_sex = formData.patient_sex;
         }
 
-        let patientId: number | null = selectedPatient ? selectedPatient.id : null;
+        let patientId: number | null = selectedPatient ? selectedPatient.id : (initialPatient?.patientId || null);
         if (!patientId) {
           // Tentar vincular a paciente existente por telefone
           if (formData.patient_phone.trim()) {

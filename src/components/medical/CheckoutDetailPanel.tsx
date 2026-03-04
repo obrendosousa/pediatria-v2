@@ -20,11 +20,12 @@ import { useCheckoutPanel } from '@/hooks/useCheckoutPanel';
 import { useToast } from '@/contexts/ToastContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import PrintDocumentsModal from './PrintDocumentsModal';
 
 interface CheckoutDetailPanelProps {
   appointmentId: number | null;
   onSuccess?: () => void;
-  onScheduleReturn?: (suggestedDate: string) => void;
+  onScheduleReturn?: (data: { suggestedDate: string; patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string }) => void;
 }
 
 export default function CheckoutDetailPanel({
@@ -34,6 +35,7 @@ export default function CheckoutDetailPanel({
 }: CheckoutDetailPanelProps) {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const {
     loading,
     appointment,
@@ -107,7 +109,7 @@ export default function CheckoutDetailPanel({
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={handlePrintDocuments}
+              onClick={() => setShowPrintModal(true)}
               disabled={!appointment.patient_id}
               className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-[#2a2d36] text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors font-bold text-xs shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -201,7 +203,16 @@ export default function CheckoutDetailPanel({
             {onScheduleReturn && (
               <button
                 type="button"
-                onClick={() => onScheduleReturn(returnDate)}
+                onClick={() => onScheduleReturn({
+                  suggestedDate: returnDate,
+                  patientId: appointment.patient_id || undefined,
+                  patientName: appointment.patient_name || undefined,
+                  parentName: appointment.parent_name || undefined,
+                  phone: appointment.patient_phone || undefined,
+                  patientSex: appointment.patient_sex || undefined,
+                  doctorId: appointment.doctor_id || undefined,
+                  appointmentType: 'retorno',
+                })}
                 className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-bold transition-colors"
               >
                 <Calendar size={16} />
@@ -325,6 +336,14 @@ export default function CheckoutDetailPanel({
           </button>
         </section>
       </div>
+
+      {/* Modal de impressão de documentos */}
+      <PrintDocumentsModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        patientId={appointment.patient_id || 0}
+        patientName={appointment.patient_name || 'Paciente'}
+      />
     </div>
   );
 }

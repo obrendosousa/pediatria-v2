@@ -87,6 +87,7 @@ export default function CRMPage() {
   const [selectedCheckoutAppointmentId, setSelectedCheckoutAppointmentId] = useState<number | null>(null);
   /** Data sugerida ao abrir "Agendar agora" a partir do painel de checkout */
   const [newSlotInitialDate, setNewSlotInitialDate] = useState<string | null>(null);
+  const [newSlotInitialPatient, setNewSlotInitialPatient] = useState<{ patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string } | null>(null);
 
   // Modal de confirmação
   const [confirmModal, setConfirmModal] = useState<{
@@ -112,8 +113,24 @@ export default function CRMPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => {
         fetchData();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, (payload: any) => {
         fetchData();
+        // Notify when appointment moves to waiting_payment (doctor finished consultation)
+        if (payload.eventType === 'UPDATE' && payload.new?.status === 'waiting_payment' && payload.old?.status !== 'waiting_payment') {
+          const name = payload.new.patient_name || 'Paciente';
+          toast.checkout(name, 0);
+        }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'medical_checkouts' }, (payload: any) => {
+        fetchData();
+        // Show checkout notification with patient info
+        const patientId = payload.new?.patient_id;
+        if (patientId) {
+          supabase.from('patients').select('name').eq('id', patientId).single().then(({ data }) => {
+            const name = data?.name || 'Paciente';
+            toast.checkout(name, 0);
+          });
+        }
       })
       .subscribe();
 
@@ -538,7 +555,7 @@ export default function CRMPage() {
                   selectedCheckoutAppointmentId={receptionFlowTab === 'checkout' ? selectedCheckoutAppointmentId : null}
                   onSelectCheckoutAppointment={receptionFlowTab === 'checkout' ? (apt) => setSelectedCheckoutAppointmentId(apt.id) : undefined}
                   onCheckoutSuccess={receptionFlowTab === 'checkout' ? () => { fetchData(); setSelectedCheckoutAppointmentId(null); } : undefined}
-                  onScheduleReturn={receptionFlowTab === 'checkout' ? (suggestedDate) => { setNewSlotInitialDate(suggestedDate); setIsNewSlotModalOpen(true); } : undefined}
+                  onScheduleReturn={receptionFlowTab === 'checkout' ? (data) => { setNewSlotInitialDate(data.suggestedDate); setNewSlotInitialPatient({ patientId: data.patientId, patientName: data.patientName, parentName: data.parentName, phone: data.phone, patientSex: data.patientSex, doctorId: data.doctorId, appointmentType: data.appointmentType }); setIsNewSlotModalOpen(true); } : undefined}
                   onEditAppointment={(apt) => setSelectedAppointmentForEdit(apt)}
                   onCallAppointment={(apt) => {
                     setCallingAppointment(apt);
@@ -837,10 +854,11 @@ export default function CRMPage() {
 
       <NewSlotModal
         isOpen={isNewSlotModalOpen}
-        onClose={() => { setIsNewSlotModalOpen(false); setNewSlotInitialDate(null); }}
+        onClose={() => { setIsNewSlotModalOpen(false); setNewSlotInitialDate(null); setNewSlotInitialPatient(null); }}
         onSuccess={fetchData}
         initialDate={newSlotInitialDate || selectedDate}
         initialTime={new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })}
+        initialPatient={newSlotInitialPatient}
       />
 
       <ReceptionAppointmentModal

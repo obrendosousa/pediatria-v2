@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save } from 'lucide-react';
-import { useMedicalRecord, FoodHistoryData } from '@/hooks/useMedicalRecord';
+import { useConsultation } from '@/contexts/ConsultationContext';
+import { FoodHistoryData } from '@/hooks/useMedicalRecord';
 import { RichTextEditor } from '../RichTextEditor';
 import { AttendanceScreenProps } from '@/types/attendance';
 import { useToast } from '@/contexts/ToastContext';
@@ -74,7 +75,7 @@ function RadioSimNao({
 
 export function FoodHistory({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
   const { toast } = useToast();
-  const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
+  const { record, isLoading, saveRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<FoodHistoryFormData>({
     defaultValues: {
       leite_materno_exclusivo: '',
@@ -127,37 +128,43 @@ export function FoodHistory({ patientId, patientData, onRefresh, appointmentId }
     }
   }, [record, setValue]);
 
-  const onSubmit = async (data: FoodHistoryFormData) => {
+  const saveFormData = useCallback(async () => {
+    const data = watch();
+    const foodHistory: FoodHistoryData = {
+      leite_materno_exclusivo: data.leite_materno_exclusivo || null,
+      formula_infantil: data.formula_infantil || null,
+      idade_introducao_alimentar: data.idade_introducao_alimentar || null,
+      dificuldade_introducao: data.dificuldade_introducao || null,
+      mingau_industrializado: data.mingau_industrializado || null,
+      refeicoes_diarias: data.refeicoes_diarias || null,
+      alimento_nao_aceita: data.alimento_nao_aceita || null,
+      textura_quantidade: data.textura_quantidade || null,
+      local_comida: data.local_comida || null,
+      aceitou_introducao: data.aceitou_introducao || null,
+      aceita_suco: data.aceita_suco || null,
+      aceita_sopa: data.aceita_sopa || null,
+      aceita_agua: data.aceita_agua || null,
+      aceita_frutas: data.aceita_frutas || null,
+      aceita_legumes: data.aceita_legumes || null,
+      aceita_proteinas: data.aceita_proteinas || null,
+      aceita_carboidratos: data.aceita_carboidratos || null,
+      aceita_ovo_peixe: data.aceita_ovo_peixe || null,
+    };
+    await saveRecord({ food_history: foodHistory });
+  }, [watch, saveRecord]);
+
+  useEffect(() => {
+    registerSaveHandler('food-history', saveFormData);
+    return () => unregisterSaveHandler('food-history');
+  }, [registerSaveHandler, unregisterSaveHandler, saveFormData]);
+
+  const onSubmit = async () => {
     try {
-      const foodHistory: FoodHistoryData = {
-        leite_materno_exclusivo: data.leite_materno_exclusivo || null,
-        formula_infantil: data.formula_infantil || null,
-        idade_introducao_alimentar: data.idade_introducao_alimentar || null,
-        dificuldade_introducao: data.dificuldade_introducao || null,
-        mingau_industrializado: data.mingau_industrializado || null,
-        refeicoes_diarias: data.refeicoes_diarias || null,
-        alimento_nao_aceita: data.alimento_nao_aceita || null,
-        textura_quantidade: data.textura_quantidade || null,
-        local_comida: data.local_comida || null,
-        aceitou_introducao: data.aceitou_introducao || null,
-        aceita_suco: data.aceita_suco || null,
-        aceita_sopa: data.aceita_sopa || null,
-        aceita_agua: data.aceita_agua || null,
-        aceita_frutas: data.aceita_frutas || null,
-        aceita_legumes: data.aceita_legumes || null,
-        aceita_proteinas: data.aceita_proteinas || null,
-        aceita_carboidratos: data.aceita_carboidratos || null,
-        aceita_ovo_peixe: data.aceita_ovo_peixe || null,
-      };
-
-      await saveRecord({ food_history: foodHistory });
-
+      await saveFormData();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-
-      if (onRefresh) onRefresh();
     } catch (error) {
-      console.error('Erro ao salvar histórico alimentar:', error);
+      console.error('Erro ao salvar:', error);
       toast.toast.error('Erro ao salvar o formulário. Tente novamente.');
     }
   };

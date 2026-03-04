@@ -21,6 +21,7 @@ interface PatientStickyHeaderProps {
   onStartConsultation: () => void;
   onFinishConsultation: () => void;
   isConsultationActive: boolean;
+  startedAt?: string | null;
   onBack?: () => void;
   onOpenChat?: (phone: string) => void;
   primaryPhone?: string;
@@ -38,27 +39,35 @@ export function PatientStickyHeader({
   onOpenChat,
   primaryPhone,
   onEditPatient,
-  onOpenPhonesManager
+  onOpenPhonesManager,
+  startedAt
 }: PatientStickyHeaderProps) {
-  
-  // Lógica do Timer
-  const [timer, setTimer] = useState(0);
+
+  // Timer baseado em timestamp real (funciona mesmo com aba em background)
+  const [, setTimerTick] = useState(0);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isConsultationActive) {
+    if (isConsultationActive && startedAt) {
       interval = setInterval(() => {
-        setTimer((prev) => prev + 1);
+        setTimerTick((prev) => prev + 1);
       }, 1000);
-    } else {
-      setTimer(0);
     }
     return () => clearInterval(interval);
-  }, [isConsultationActive]);
+  }, [isConsultationActive, startedAt]);
+
+  const timer = (() => {
+    if (!isConsultationActive || !startedAt) return 0;
+    return Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
+  })();
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 

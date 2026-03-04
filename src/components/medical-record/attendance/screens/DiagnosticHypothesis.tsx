@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save } from 'lucide-react';
-import { useMedicalRecord, DiagnosticHypothesisData } from '@/hooks/useMedicalRecord';
+import { useConsultation } from '@/contexts/ConsultationContext';
+import { DiagnosticHypothesisData } from '@/hooks/useMedicalRecord';
 import { RichTextEditor } from '../RichTextEditor';
 import { ModelTemplateModal } from '../ModelTemplateModal';
 import { AttendanceScreenProps } from '@/types/attendance';
@@ -19,7 +20,7 @@ interface DiagnosticHypothesisFormData {
 
 export function DiagnosticHypothesis({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
   const { toast } = useToast();
-  const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
+  const { record, isLoading, saveRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<DiagnosticHypothesisFormData>({
     defaultValues: {
       observations: '',
@@ -59,20 +60,24 @@ export function DiagnosticHypothesis({ patientId, patientData, onRefresh, appoin
     }
   };
 
-  const onSubmit = async (data: DiagnosticHypothesisFormData) => {
+  const saveFormData = useCallback(async () => {
+    const data = watch();
+    const diagnosticHypothesis: DiagnosticHypothesisData = {
+      observations: data.observations || null,
+    };
+    await saveRecord({ diagnostic_hypothesis_data: diagnosticHypothesis });
+  }, [watch, saveRecord]);
+
+  useEffect(() => {
+    registerSaveHandler('diagnostic-hypothesis', saveFormData);
+    return () => unregisterSaveHandler('diagnostic-hypothesis');
+  }, [registerSaveHandler, unregisterSaveHandler, saveFormData]);
+
+  const onSubmit = async () => {
     try {
-      const diagnosticHypothesis: DiagnosticHypothesisData = {
-        observations: data.observations || null,
-      };
-
-      await saveRecord({
-        diagnostic_hypothesis_data: diagnosticHypothesis,
-      });
-
+      await saveFormData();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      
-      if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast.toast.error('Erro ao salvar o formulário. Tente novamente.');

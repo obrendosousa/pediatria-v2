@@ -18,7 +18,17 @@
       "Bash(grep -l \"CREATE TABLE.*patients\\\\|CREATE TABLE.*appointments\" \"c:/Users/brend/Pictures/pediatria-v2/database\"/*.sql)",
       "Bash(grep -h \"CREATE TABLE\" \"c:/Users/brend/Pictures/pediatria-v2/database\"/*.sql)",
       "Bash(grep -h \"patients\\\\|appointments\" \"c:/Users/brend/Pictures/pediatria-v2/database\"/*.sql)",
-      "Bash(grep -r \"media_url\\\\|message_type\\\\|tool_data\\\\|status\" /c/Users/brend/Pictures/pediatria-v2/database/*.sql)"
+      "Bash(grep -r \"media_url\\\\|message_type\\\\|tool_data\\\\|status\" /c/Users/brend/Pictures/pediatria-v2/database/*.sql)",
+      "Bash(npx next build)",
+      "Bash(find /c/Users/brend/Pictures/pediatria-v2/database -name \"*.sql\" -type f -exec grep -l \"CREATE TABLE\" {} ;)",
+      "Bash(grep -r \"macros\" /c/Users/brend/Pictures/pediatria-v2/database/*.sql)",
+      "Bash(grep -A 20 \"CREATE TABLE.*macros\\\\|macros.*CREATE\" /c/Users/brend/Pictures/pediatria-v2/database/*.sql)",
+      "Bash(ls -la /c/Users/brend/Pictures/pediatria-v2/database/*.sql)",
+      "Bash(find /c/Users/brend/Pictures/pediatria-v2/database -name \"*.sql\" -exec grep -l \"medical_checkout\" {} ;)",
+      "Bash(xargs grep -l \"medical\\\\|checkout\")",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__list_tables",
+      "Bash(npm install jspdf)"
     ]
   }
 }

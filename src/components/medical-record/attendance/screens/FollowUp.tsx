@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save } from 'lucide-react';
-import { useMedicalRecord, FollowUpData } from '@/hooks/useMedicalRecord';
+import { useConsultation } from '@/contexts/ConsultationContext';
+import { FollowUpData } from '@/hooks/useMedicalRecord';
 import { RichTextEditor } from '../RichTextEditor';
 import { ModelTemplateModal } from '../ModelTemplateModal';
 import { AttendanceScreenProps } from '@/types/attendance';
@@ -19,7 +20,7 @@ interface FollowUpFormData {
 
 export function FollowUp({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
   const { toast } = useToast();
-  const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
+  const { record, isLoading, saveRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } =
     useForm<FollowUpFormData>({
       defaultValues: {
@@ -62,19 +63,30 @@ export function FollowUp({ patientId, patientData, onRefresh, appointmentId }: A
     else if (modelModalType === 'follow_up_condutas') setValue('condutas', content);
   };
 
-  const onSubmit = async (data: FollowUpFormData) => {
-    try {
-      const followUp: FollowUpData = {
-        retorno: data.retorno || null,
-        fez_exames: data.fez_exames || null,
-        condutas: data.condutas || null,
-      };
+  const saveFormData = useCallback(async () => {
+    const data = watch();
+    const followUp: FollowUpData = {
+      retorno: data.retorno || null,
+      fez_exames: data.fez_exames || null,
+      condutas: data.condutas || null,
+    };
 
-      await saveRecord({ follow_up_data: followUp });
+    await saveRecord({ follow_up_data: followUp });
+  }, [watch, saveRecord]);
+
+  useEffect(() => {
+    registerSaveHandler('follow-up', saveFormData);
+    return () => {
+      unregisterSaveHandler('follow-up');
+    };
+  }, [registerSaveHandler, unregisterSaveHandler, saveFormData]);
+
+  const onSubmit = async () => {
+    try {
+      await saveFormData();
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Erro ao salvar retorno:', error);
       toast.toast.error('Erro ao salvar o formulário. Tente novamente.');

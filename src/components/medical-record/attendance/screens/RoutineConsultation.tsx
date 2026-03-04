@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save } from 'lucide-react';
-import { useMedicalRecord, RoutineConsultationData } from '@/hooks/useMedicalRecord';
+import { useConsultation } from '@/contexts/ConsultationContext';
+import { RoutineConsultationData } from '@/hooks/useMedicalRecord';
 import { RichTextEditor } from '../RichTextEditor';
 import { ModelTemplateModal } from '../ModelTemplateModal';
 import { AttendanceScreenProps } from '@/types/attendance';
@@ -40,7 +41,7 @@ interface RoutineConsultationFormData {
 
 export function RoutineConsultation({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
   const { toast } = useToast();
-  const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
+  const { record, isLoading, saveRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<RoutineConsultationFormData>({
     defaultValues: {
       caregivers_name: '',
@@ -130,43 +131,50 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
     }
   };
 
-  const onSubmit = async (data: RoutineConsultationFormData) => {
+  const buildRoutineData = useCallback((): RoutineConsultationData => {
+    const data = watch();
+    return {
+      caregivers_name: data.caregivers_name || null,
+      companion_location: data.companion_location || null,
+      support_network: data.support_network || null,
+      school_info: data.school_info || null,
+      siblings_info: data.siblings_info || null,
+      allergies_interactions: data.allergies_interactions || null,
+      consultation_reason: data.consultation_reason || null,
+      breathing_info: data.breathing_info || null,
+      medications: data.medications || null,
+      breastfeeding_formula: data.breastfeeding_formula || null,
+      vaccines_up_to_date: data.vaccines_up_to_date || null,
+      delayed_vaccine: data.delayed_vaccine || null,
+      uses_pacifier: data.uses_pacifier || null,
+      nose_wash: data.nose_wash || null,
+      skin_products: data.skin_products || null,
+      dental_info: data.dental_info || null,
+      gastrointestinal: data.gastrointestinal || null,
+      genitourinary: data.genitourinary || null,
+      nervous_system: data.nervous_system || null,
+      screen_exposure: data.screen_exposure || null,
+      sleep_info: data.sleep_info || null,
+      monthly_milestones: data.monthly_milestones || null,
+      exam_results: data.exam_results || null,
+      print_development_guide: data.print_development_guide || null,
+    };
+  }, [watch]);
+
+  const saveFormData = useCallback(async () => {
+    await saveRecord({ routine_consultation: buildRoutineData() });
+  }, [saveRecord, buildRoutineData]);
+
+  useEffect(() => {
+    registerSaveHandler('routine', saveFormData);
+    return () => unregisterSaveHandler('routine');
+  }, [registerSaveHandler, unregisterSaveHandler, saveFormData]);
+
+  const onSubmit = async () => {
     try {
-      const routineConsultation: RoutineConsultationData = {
-        caregivers_name: data.caregivers_name || null,
-        companion_location: data.companion_location || null,
-        support_network: data.support_network || null,
-        school_info: data.school_info || null,
-        siblings_info: data.siblings_info || null,
-        allergies_interactions: data.allergies_interactions || null,
-        consultation_reason: data.consultation_reason || null,
-        breathing_info: data.breathing_info || null,
-        medications: data.medications || null,
-        breastfeeding_formula: data.breastfeeding_formula || null,
-        vaccines_up_to_date: data.vaccines_up_to_date || null,
-        delayed_vaccine: data.delayed_vaccine || null,
-        uses_pacifier: data.uses_pacifier || null,
-        nose_wash: data.nose_wash || null,
-        skin_products: data.skin_products || null,
-        dental_info: data.dental_info || null,
-        gastrointestinal: data.gastrointestinal || null,
-        genitourinary: data.genitourinary || null,
-        nervous_system: data.nervous_system || null,
-        screen_exposure: data.screen_exposure || null,
-        sleep_info: data.sleep_info || null,
-        monthly_milestones: data.monthly_milestones || null,
-        exam_results: data.exam_results || null,
-        print_development_guide: data.print_development_guide || null,
-      };
-
-      await saveRecord({
-        routine_consultation: routineConsultation,
-      });
-
+      await saveFormData();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      
-      if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast.toast.error('Erro ao salvar o formulário. Tente novamente.');

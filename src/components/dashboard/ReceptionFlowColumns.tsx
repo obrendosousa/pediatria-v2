@@ -22,7 +22,7 @@ interface ReceptionFlowColumnsProps {
   selectedCheckoutAppointmentId?: number | null;
   onSelectCheckoutAppointment?: (appointment: Appointment) => void;
   onCheckoutSuccess?: () => void;
-  onScheduleReturn?: (suggestedDate: string) => void;
+  onScheduleReturn?: (data: { suggestedDate: string; patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string }) => void;
 }
 
 export default function ReceptionFlowColumns({

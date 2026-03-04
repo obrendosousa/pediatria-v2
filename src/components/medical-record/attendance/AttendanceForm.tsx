@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save, CheckCircle } from 'lucide-react';
-import { useMedicalRecord } from '@/hooks/useMedicalRecord';
+import { useConsultation } from '@/contexts/ConsultationContext';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { RichTextEditor } from './RichTextEditor';
@@ -42,7 +42,7 @@ export function AttendanceForm({
 }: AttendanceFormProps) {
   const { toast } = useToast();
   const [confirmFinishOpen, setConfirmFinishOpen] = useState(false);
-  const { record, isLoading, saveRecord, finishRecord } = useMedicalRecord(patientId, appointmentId);
+  const { record, isLoading, saveRecord, finishRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<FormData>({
     defaultValues: {
       chief_complaint: '',
@@ -62,7 +62,8 @@ export function AttendanceForm({
   const [modelModalType, setModelModalType] = useState<string>('');
   const [currentModelContent, setCurrentModelContent] = useState<string>('');
   const [diagnoses, setDiagnoses] = useState<Array<{ code: string; description: string }>>([]);
-  const [heightDigitsState, setHeightDigitsState] = useState(''); // Estado com apenas dígitos
+  const [heightDigitsState, setHeightDigitsState] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const weight = watch('weight');
   const height = watch('height');
@@ -178,26 +179,39 @@ export function AttendanceForm({
     setValue('diagnosis', allDiagnoses);
   };
 
+  // Função reutilizável para salvar dados do formulário
+  const saveFormData = useCallback(async () => {
+    const data = watch();
+    const vitals = {
+      weight: data.weight ?? undefined,
+      height: data.height ?? undefined,
+      imc: data.imc ?? undefined,
+      pe: data.pe ?? undefined,
+    };
+
+    await saveRecord({
+      chief_complaint: data.chief_complaint,
+      hda: data.hda,
+      antecedents: data.antecedents,
+      physical_exam: data.physical_exam,
+      diagnosis: data.diagnosis,
+      conducts: data.conducts,
+      vitals,
+    });
+  }, [watch, saveRecord]);
+
+  // Registrar save handler para o contexto (usado ao Finalizar atendimento)
+  useEffect(() => {
+    registerSaveHandler('overview', saveFormData);
+    return () => unregisterSaveHandler('overview');
+  }, [registerSaveHandler, unregisterSaveHandler, saveFormData]);
+
   const onSubmit = async (data: FormData) => {
     try {
-      const vitals = {
-        weight: data.weight ?? undefined,
-        height: data.height ?? undefined,
-        imc: data.imc ?? undefined,
-        pe: data.pe ?? undefined,
-      };
-
-      await saveRecord({
-        chief_complaint: data.chief_complaint,
-        hda: data.hda,
-        antecedents: data.antecedents,
-        physical_exam: data.physical_exam,
-        diagnosis: data.diagnosis,
-        conducts: data.conducts,
-        vitals,
-      });
-
-      if (onSave) onSave();
+      await saveFormData();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+      // Não chama onRefresh para evitar piscar a tela
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast.toast.error('Erro ao salvar o atendimento. Tente novamente.');
@@ -211,25 +225,9 @@ export function AttendanceForm({
   const handleFinishConfirm = async () => {
     setConfirmFinishOpen(false);
     try {
-      const formData = watch();
-      const vitals = {
-        weight: formData.weight || null,
-        height: formData.height || null,
-        imc: formData.imc || null,
-        pe: formData.pe || null,
-      };
+      await saveFormData();
 
-      const savedRecord = await saveRecord({
-        chief_complaint: formData.chief_complaint,
-        hda: formData.hda,
-        antecedents: formData.antecedents,
-        physical_exam: formData.physical_exam,
-        conducts: formData.conducts,
-        diagnosis: formData.diagnosis,
-        vitals: vitals,
-      } as any);
-
-      if (savedRecord?.id) {
+      if (record?.id) {
         await finishRecord();
         if (onFinish) onFinish();
         toast.toast.success('Atendimento finalizado com sucesso!');
@@ -426,24 +424,20 @@ export function AttendanceForm({
       </div>
 
         {/* Barra de Ações */}
-        <div className="flex justify-end gap-3 pt-3 border-t border-slate-200 dark:border-gray-700">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            Salvar
-          </button>
-          <button
-            type="button"
-            onClick={handleFinishClick}
-            disabled={isSubmitting}
-            className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <CheckCircle className="w-4 h-4" />
-            Finalizar Atendimento
-          </button>
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-gray-700 -mx-4 px-4">
+          <div className="flex justify-end items-center gap-3">
+            {saveSuccess && (
+              <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>
+            )}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              Salvar
+            </button>
+          </div>
         </div>
       </form>
 

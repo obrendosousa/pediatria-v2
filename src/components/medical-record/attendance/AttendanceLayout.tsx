@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AttendanceTabKey, AttendanceScreenProps } from '@/types/attendance';
 import { AttendanceSidebar } from './AttendanceSidebar';
 import { AttendanceOverview } from './screens/AttendanceOverview';
@@ -59,8 +59,15 @@ export function AttendanceLayout({
   medicalRecordId,
 }: AttendanceLayoutProps) {
   const [activeTab, setActiveTab] = useState<AttendanceTabKey>('overview');
+  // Lazy mount: tela só monta na primeira visita, mas permanece montada depois
+  const [visitedTabs, setVisitedTabs] = useState<Set<AttendanceTabKey>>(new Set(['overview']));
 
-  const ActiveScreen = screenComponents[activeTab];
+  useEffect(() => {
+    setVisitedTabs((prev) => {
+      if (prev.has(activeTab)) return prev;
+      return new Set([...prev, activeTab]);
+    });
+  }, [activeTab]);
 
   return (
     <div className="flex flex-1 h-full bg-slate-50/50 dark:bg-[#0b141a]">
@@ -73,15 +80,27 @@ export function AttendanceLayout({
         onFinishConsultation={onFinishConsultation}
       />
 
-      {/* Área de Conteúdo */}
+      {/* Área de Conteúdo - todas as telas visitadas ficam montadas */}
       <div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar">
-        <ActiveScreen
-          patientId={patientId}
-          patientData={patientData}
-          onRefresh={onRefresh}
-          appointmentId={appointmentId ?? undefined}
-          medicalRecordId={medicalRecordId ?? undefined}
-        />
+        {(Object.keys(screenComponents) as AttendanceTabKey[]).map((tabKey) => {
+          if (!visitedTabs.has(tabKey)) return null;
+          const ScreenComponent = screenComponents[tabKey];
+          return (
+            <div
+              key={tabKey}
+              style={{ display: activeTab === tabKey ? 'block' : 'none' }}
+              className="h-full"
+            >
+              <ScreenComponent
+                patientId={patientId}
+                patientData={patientData}
+                onRefresh={onRefresh}
+                appointmentId={appointmentId ?? undefined}
+                medicalRecordId={medicalRecordId ?? undefined}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

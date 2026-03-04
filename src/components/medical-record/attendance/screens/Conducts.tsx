@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save } from 'lucide-react';
-import { useMedicalRecord } from '@/hooks/useMedicalRecord';
+import { useConsultation } from '@/contexts/ConsultationContext';
 import { RichTextEditor } from '../RichTextEditor';
 import { ModelTemplateModal } from '../ModelTemplateModal';
 import { AttendanceScreenProps } from '@/types/attendance';
@@ -19,7 +19,7 @@ interface ConductsFormData {
 
 export function Conducts({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
   const { toast } = useToast();
-  const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
+  const { record, isLoading, saveRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<ConductsFormData>({
     defaultValues: {
       conducts: '',
@@ -58,16 +58,21 @@ export function Conducts({ patientId, patientData, onRefresh, appointmentId }: A
     }
   };
 
-  const onSubmit = async (data: ConductsFormData) => {
-    try {
-      await saveRecord({
-        conducts: data.conducts || null,
-      });
+  const saveFormData = useCallback(async () => {
+    const data = watch();
+    await saveRecord({ conducts: data.conducts || null });
+  }, [watch, saveRecord]);
 
+  useEffect(() => {
+    registerSaveHandler('conducts', saveFormData);
+    return () => unregisterSaveHandler('conducts');
+  }, [registerSaveHandler, unregisterSaveHandler, saveFormData]);
+
+  const onSubmit = async () => {
+    try {
+      await saveFormData();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      
-      if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast.toast.error('Erro ao salvar o formulário. Tente novamente.');

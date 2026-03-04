@@ -61,14 +61,13 @@ function DocTypeIcon({ type }: { type: string }) {
   return <FileText className="w-4 h-4 text-blue-500" />;
 }
 
-// ─── Componente principal ────────────────────────────────────────────────────
-export function printDocument(
+// ─── Geração de HTML para documentos/atestados ──────────────────────────────
+export function generateDocumentHTML(
   docType: string,
   docDate: string,
   content: string,
-  printIframeRef: React.RefObject<HTMLIFrameElement | null>,
   patientData: any
-) {
+): string {
   const doctorName = patientData?.doctor_name || 'Dr(a).';
   const doctorPhone = patientData?.doctor_phone || '';
   const patientName = patientData?.full_name || patientData?.name || 'Paciente';
@@ -76,7 +75,7 @@ export function printDocument(
   const dateFormatted = formatDateBR(docDate);
   const contentHtml = content || '';
 
-  const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
@@ -130,7 +129,16 @@ export function printDocument(
 </div>
 </body>
 </html>`;
+}
 
+export function printDocument(
+  docType: string,
+  docDate: string,
+  content: string,
+  printIframeRef: React.RefObject<HTMLIFrameElement | null>,
+  patientData: any
+) {
+  const html = generateDocumentHTML(docType, docDate, content, patientData);
   const iframe = printIframeRef.current;
   if (!iframe) return;
   const docHtml = iframe.contentDocument || iframe.contentWindow?.document;

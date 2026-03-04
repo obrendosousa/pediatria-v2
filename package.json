@@ -38,6 +38,7 @@
     "emoji-picker-react": "^4.16.1",
     "html2canvas": "^1.4.1",
     "ioredis": "^5.9.3",
+    "jspdf": "^4.2.0",
     "kokoro-js": "^1.2.1",
     "lucide-react": "^0.562.0",
     "next": "16.0.10",

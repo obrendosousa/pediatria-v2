@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { Product } from '@/types';
-import { 
-  X, CheckCircle2, Calendar, ShoppingBag, 
-  Search, Plus, Minus, DollarSign, FileText,
-  Clock, Loader2
+import {
+  X, CheckCircle2, Calendar, ShoppingBag,
+  Search, Plus, Minus, FileText,
+  Loader2, Package
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -21,7 +21,7 @@ interface FinishConsultationModalProps {
   patientId: number;
   appointmentId?: number | null;
   patientName: string;
-  onSaveAllData: () => Promise<boolean>; // Função para salvar todos os dados antes de finalizar
+  onSaveAllData: () => Promise<boolean>;
 }
 
 interface SelectedProduct {
@@ -43,27 +43,27 @@ export default function FinishConsultationModal({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [savingData, setSavingData] = useState(false);
-  
-  // Estados do formulário
+
+  // Form states
   const [notes, setNotes] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [returnObs, setReturnObs] = useState('');
-  const [consultationValue, setConsultationValue] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
-  const [productSearch, setProductSearch] = useState('');
+
+  // Product picker states
   const [products, setProducts] = useState<Product[]>([]);
-  const [showProductSearch, setShowProductSearch] = useState(false);
+  const [recentProducts, setRecentProducts] = useState<Product[]>([]);
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductPicker, setShowProductPicker] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      // Resetar estados ao abrir
       setNotes('');
       setReturnDate('');
       setReturnObs('');
-      setConsultationValue('');
       setSelectedProducts([]);
       setProductSearch('');
-      setShowProductSearch(false);
+      setShowProductPicker(false);
       fetchProducts();
     }
   }, [isOpen]);
@@ -74,11 +74,15 @@ export default function FinishConsultationModal({
       .select('*')
       .eq('active', true)
       .order('name');
-    
-    if (data) setProducts(data as Product[]);
+
+    if (data) {
+      setProducts(data as Product[]);
+      // Show first 8 products as quick picks
+      setRecentProducts((data as Product[]).slice(0, 8));
+    }
   }
 
-  // Atalhos de data de retorno
+  // Return date shortcuts
   const setReturnInDays = (days: number) => {
     const date = new Date();
     date.setDate(date.getDate() + days);
@@ -88,11 +92,11 @@ export default function FinishConsultationModal({
     setReturnDate(`${yyyy}-${mm}-${dd}`);
   };
 
-  // Gerenciamento de produtos
+  // Product management
   const addProduct = (product: Product) => {
     const existing = selectedProducts.find(p => p.id === product.id);
     if (existing) {
-      setSelectedProducts(selectedProducts.map(p => 
+      setSelectedProducts(selectedProducts.map(p =>
         p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
       ));
     } else {
@@ -104,7 +108,6 @@ export default function FinishConsultationModal({
       }]);
     }
     setProductSearch('');
-    setShowProductSearch(false);
   };
 
   const removeProduct = (id: number) => {
@@ -121,45 +124,39 @@ export default function FinishConsultationModal({
     }));
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(productSearch.toLowerCase())
-  ).slice(0, 10);
-
-  // Função para converter valor formatado para número
-  const parseCurrency = (value: string): number => {
-    if (!value) return 0;
-    // Remove pontos (separadores de milhar) e substitui vírgula por ponto
-    const cleaned = value.replace(/\./g, '').replace(',', '.');
-    return parseFloat(cleaned) || 0;
-  };
-
-  // Função para formatar valor em reais
-  const formatCurrency = (value: string | number): string => {
-    if (!value) return '';
-    const numValue = typeof value === 'string' ? parseCurrency(value) : value;
-    if (isNaN(numValue) || numValue === 0) return '';
-    return numValue.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  };
+  const filteredProducts = productSearch.length >= 1
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(productSearch.toLowerCase())
+      ).slice(0, 10)
+    : [];
 
   const productsTotal = selectedProducts.reduce((acc, p) => acc + (p.price * p.quantity), 0);
-  const consultationValueNum = parseCurrency(consultationValue);
-  const totalAmount = productsTotal + consultationValueNum;
 
-  // Buscar chat_id do paciente
+  // Get patient's chat_id
   const getChatId = async () => {
     const { data: patient } = await supabase
       .from('patients')
       .select('chat_id')
       .eq('id', patientId)
       .single();
-    
+
     return patient?.chat_id || null;
   };
 
-  // Função principal de finalização
+  // Helper to extract error message from any error type
+  const extractErrorMsg = (err: unknown): string => {
+    if (!err) return 'Erro desconhecido';
+    if (typeof err === 'string') return err;
+    if (err instanceof Error) return err.message;
+    if (typeof err === 'object') {
+      const e = err as Record<string, any>;
+      return e.message || e.error_description || e.msg || e.details || e.hint ||
+        (JSON.stringify(err) !== '{}' ? JSON.stringify(err) : 'Erro desconhecido');
+    }
+    return String(err);
+  };
+
+  // Main finish handler
   const handleFinish = async () => {
     if (savingData || loading) return;
 
@@ -167,87 +164,55 @@ export default function FinishConsultationModal({
       setLoading(true);
       setSavingData(true);
 
-      // 1. Salvar todos os dados do prontuário primeiro
+      // 1. Save all medical record data first
       const saved = await onSaveAllData();
       if (!saved) {
-        toast.error('Erro ao salvar dados do prontuário. Tente novamente.');
+        toast.error('Erro ao salvar dados do prontuario. Tente novamente.');
         return;
       }
 
       setSavingData(false);
 
-      // 2. Buscar chat_id
-      const chatId = await getChatId();
+      // 2. Get chat_id (non-critical)
+      let chatId: string | null = null;
+      try {
+        chatId = await getChatId();
+      } catch { /* ignore */ }
 
-      // 3. Verificar se precisa criar checkout
+      // 3. Check what we need to create
       const hasProducts = selectedProducts.length > 0;
-      const hasConsultationValue = consultationValueNum > 0;
       const hasReturn = !!returnDate;
       const hasNotes = !!notes;
 
       let checkoutId: number | null = null;
 
-      // 4. Criar medical_checkout se houver produtos ou valor de consulta
-      if (hasProducts || hasConsultationValue || hasReturn || hasNotes) {
-        // Observações: unificar notes + returnObs em um único texto (evita dependência da coluna return_obs)
+      // 4. Create medical_checkout
+      if (hasProducts || hasReturn || hasNotes) {
         const secretaryNotesText = [notes, returnObs ? `Retorno: ${returnObs}` : ''].filter(Boolean).join(' • ') || null;
 
-        // Payload mínimo compatível com a tabela (apenas colunas que existem no schema base)
-        const minimalCheckoutData: Record<string, unknown> = {
-          return_date: returnDate || null,
+        const checkoutData: Record<string, unknown> = {
           secretary_notes: secretaryNotesText,
-          status: 'pending'
+          status: 'pending',
+          patient_id: patientId,
         };
-        if (chatId != null) minimalCheckoutData.chat_id = chatId;
+        if (appointmentId) checkoutData.appointment_id = appointmentId;
+        if (chatId != null) checkoutData.chat_id = chatId;
+        if (returnDate) checkoutData.return_date = returnDate;
 
-        let { data: checkout, error: checkoutError } = await supabase
+        const { data: checkout, error: checkoutError } = await supabase
           .from('medical_checkouts')
-          .insert(minimalCheckoutData)
+          .insert(checkoutData)
           .select()
           .single();
 
-        // Se falhar (coluna inexistente, constraint, etc.), tentar só com campos essenciais
         if (checkoutError) {
-          const fallbackData: Record<string, unknown> = {
-            secretary_notes: secretaryNotesText,
-            status: 'pending'
-          };
-          if (chatId != null) fallbackData.chat_id = chatId;
-          if (returnDate) fallbackData.return_date = returnDate;
-
-          const retry = await supabase
-            .from('medical_checkouts')
-            .insert(fallbackData)
-            .select()
-            .single();
-
-          if (retry.error) throw retry.error;
-          checkout = retry.data;
-          checkoutError = null;
+          console.error('[Finalizar] Erro ao criar checkout:', checkoutError);
+          throw new Error('Erro ao criar checkout: ' + extractErrorMsg(checkoutError));
         }
 
-        if (checkoutError) throw checkoutError;
         checkoutId = checkout?.id ?? null;
 
-        // Atualizar com campos opcionais se a tabela tiver (consultation_value, patient_id, appointment_id)
-        if (checkoutId && (hasConsultationValue || patientId || appointmentId)) {
-          const updatePayload: Record<string, unknown> = {};
-          if (hasConsultationValue) updatePayload.consultation_value = consultationValueNum;
-          if (patientId) updatePayload.patient_id = patientId;
-          if (appointmentId) updatePayload.appointment_id = appointmentId;
-          if (Object.keys(updatePayload).length > 0) {
-            const { error: updateErr } = await supabase
-              .from('medical_checkouts')
-              .update(updatePayload)
-              .eq('id', checkoutId);
-            if (updateErr) {
-              // Colunas podem não existir; não falhar a finalização por isso
-              console.warn('Não foi possível atualizar campos opcionais do checkout:', updateErr.message);
-            }
-          }
-        }
-
-        // 5. Inserir produtos no checkout (checkout_items pode usar checkout_id ou medical_checkout_id)
+        // 5. Insert checkout items (products)
         if (hasProducts && checkoutId) {
           const itemsPayload = selectedProducts.map(p => ({
             checkout_id: checkoutId,
@@ -256,23 +221,17 @@ export default function FinishConsultationModal({
             type: 'product' as const
           }));
 
-          let itemsError = (await supabase.from('checkout_items').insert(itemsPayload)).error;
-          if (itemsError && itemsError.message?.toLowerCase().includes('column')) {
-            const altPayload = selectedProducts.map(p => ({
-              medical_checkout_id: checkoutId,
-              product_id: p.id,
-              quantity: p.quantity,
-              type: 'product' as const
-            }));
-            itemsError = (await supabase.from('checkout_items').insert(altPayload)).error;
+          const { error: itemsError } = await supabase.from('checkout_items').insert(itemsPayload);
+          if (itemsError) {
+            console.error('[Finalizar] Erro ao inserir itens:', itemsError);
+            throw new Error('Erro ao adicionar produtos: ' + extractErrorMsg(itemsError));
           }
-          if (itemsError) throw itemsError;
         }
       }
 
-      // 6. Criar appointment de retorno se houver data
-      if (hasReturn && returnDate) {
-        if (appointmentId) {
+      // 6. Create return appointment if needed
+      if (hasReturn && returnDate && appointmentId) {
+        try {
           const { data: currentAppointment } = await supabase
             .from('appointments')
             .select('doctor_id, doctor_name, patient_name, patient_phone')
@@ -295,32 +254,29 @@ export default function FinishConsultationModal({
                 notes: returnObs || `Retorno agendado na consulta de ${format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}`
               });
 
-            if (returnAptError) throw returnAptError;
+            if (returnAptError) {
+              console.error('[Finalizar] Erro ao criar retorno:', returnAptError);
+            }
           }
+        } catch (e) {
+          console.error('[Finalizar] Erro ao agendar retorno:', e);
         }
       }
 
-      // 7. Atualizar appointment atual para 'waiting_payment' (Enviar para Recepção)
+      // 7. Update appointment status to 'waiting_payment'
       if (appointmentId) {
-        console.log('[DEBUG] Enviando para checkout da recepção:', { 
-          appointmentId, 
-          patientId,
-          hasCheckout: !!checkoutId
-        });
-        
-        // MUDANÇA CRUCIAL: Status vai para waiting_payment, não finished
-        const { error } = await supabase
+        const { error: aptError } = await supabase
           .from('appointments')
           .update({ status: 'waiting_payment', finished_at: new Date().toISOString() })
           .eq('id', appointmentId);
-        
-        if (error) {
-          console.error('[DEBUG] Erro ao atualizar appointment:', error);
-          throw error;
+
+        if (aptError) {
+          console.error('[Finalizar] Erro ao atualizar agendamento:', aptError);
+          throw new Error('Erro ao atualizar agendamento: ' + extractErrorMsg(aptError));
         }
       }
 
-      // 8. Atualizar medical_records para 'signed'
+      // 8. Update medical_records to 'signed'
       const { data: currentRecord } = await supabase
         .from('medical_records')
         .select('id')
@@ -328,43 +284,39 @@ export default function FinishConsultationModal({
         .eq('status', 'draft')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (currentRecord?.id) {
         const { error: recordError } = await supabase
           .from('medical_records')
-          .update({ 
+          .update({
             status: 'signed',
             finished_at: new Date().toISOString()
           })
           .eq('id', currentRecord.id);
 
-        if (recordError) throw recordError;
+        if (recordError) {
+          console.error('[Finalizar] Erro ao assinar prontuario:', recordError);
+          throw new Error('Erro ao assinar prontuario: ' + extractErrorMsg(recordError));
+        }
       }
 
-      // 9. Atualizar chat se necessário
+      // 9. Update chat (non-critical)
       if (chatId) {
-        const { error: chatError } = await supabase
+        await supabase
           .from('chats')
-          .update({ 
-            last_interaction_at: new Date().toISOString()
-          })
-          .eq('id', chatId);
-
-        if (chatError) throw chatError;
+          .update({ last_interaction_at: new Date().toISOString() })
+          .eq('id', chatId)
+          .then(() => {});
       }
 
       onSuccess();
       onClose();
-      
+
     } catch (error: any) {
-      const message =
-        (error && typeof error === 'object' && (error.message || error.error_description || error.msg)) ||
-        (typeof error === 'string' ? error : null) ||
-        (error && JSON.stringify(error) !== '{}' ? JSON.stringify(error) : null) ||
-        'Tente novamente.';
-      console.error('Erro ao finalizar consulta:', error);
-      toast.error('Erro ao finalizar consulta: ' + message);
+      console.error('[Finalizar] Erro completo:', error);
+      const message = error instanceof Error ? error.message : extractErrorMsg(error);
+      toast.error(message);
     } finally {
       setLoading(false);
       setSavingData(false);
@@ -376,7 +328,7 @@ export default function FinishConsultationModal({
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-in fade-in">
       <div className="bg-white dark:bg-[#1e2028] w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in-up">
-        
+
         {/* Header */}
         <div className="bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 px-8 py-6 border-b border-slate-200 dark:border-gray-700 flex justify-between items-center">
           <div>
@@ -396,57 +348,44 @@ export default function FinishConsultationModal({
           </button>
         </div>
 
-        {/* Conteúdo */}
+        {/* Content */}
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-6">
-          
-          {/* Anotações */}
+
+          {/* Notes */}
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Anotações Finais para Recepção
+              Anotacoes Finais para Recepcao
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-4 py-3 bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
               rows={3}
-              placeholder="Observações para a secretária (ex: cobrar vacina X, agendar retorno com urgência...)"
+              placeholder="Observacoes para a secretaria (ex: cobrar vacina X, agendar retorno com urgencia...)"
             />
           </div>
 
-          {/* Agendamento de Retorno */}
+          {/* Return scheduling */}
           <div className="bg-slate-50 dark:bg-[#2a2d36] p-5 rounded-xl border border-slate-200 dark:border-gray-700">
             <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Agendar Retorno
             </label>
-            
-            {/* Atalhos de Data */}
+
             <div className="flex gap-2 mb-4">
-              <button
-                type="button"
-                onClick={() => setReturnInDays(30)}
-                className="px-4 py-2 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-600 dark:hover:text-rose-400 transition-all"
-              >
-                30 dias
-              </button>
-              <button
-                type="button"
-                onClick={() => setReturnInDays(60)}
-                className="px-4 py-2 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-600 dark:hover:text-rose-400 transition-all"
-              >
-                60 dias
-              </button>
-              <button
-                type="button"
-                onClick={() => setReturnInDays(90)}
-                className="px-4 py-2 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-600 dark:hover:text-rose-400 transition-all"
-              >
-                90 dias
-              </button>
+              {[30, 60, 90].map(days => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => setReturnInDays(days)}
+                  className="px-4 py-2 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-600 dark:hover:text-rose-400 transition-all"
+                >
+                  {days} dias
+                </button>
+              ))}
             </div>
 
-            {/* Campo de Data */}
             <div className="mb-3">
               <input
                 type="date"
@@ -457,66 +396,16 @@ export default function FinishConsultationModal({
               />
             </div>
 
-            {/* Observações do Retorno */}
             <textarea
               value={returnObs}
               onChange={(e) => setReturnObs(e.target.value)}
               className="w-full px-4 py-2.5 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
               rows={2}
-              placeholder="Observações sobre o retorno..."
+              placeholder="Observacoes sobre o retorno..."
             />
           </div>
 
-          {/* Valor da Consulta (Extra) */}
-          <div>
-            <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              Valor Adicional da Consulta (Opcional)
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-500 dark:text-gray-400 pointer-events-none">
-                R$
-              </span>
-              <input
-                type="text"
-                value={consultationValue}
-                onChange={(e) => {
-                  let value = e.target.value;
-                  value = value.replace(/[^\d,.]/g, '');
-                  const parts = value.split(/[,.]/);
-                  if (parts.length > 2) {
-                    value = parts[0] + ',' + parts.slice(1).join('');
-                  }
-                  if (value.includes(',') || value.includes('.')) {
-                    const separator = value.includes(',') ? ',' : '.';
-                    const parts = value.split(separator);
-                    if (parts[1] && parts[1].length > 2) {
-                      value = parts[0] + separator + parts[1].substring(0, 2);
-                    }
-                  }
-                  setConsultationValue(value);
-                }}
-                onBlur={(e) => {
-                  const numValue = parseCurrency(e.target.value);
-                  if (numValue > 0) {
-                    setConsultationValue(formatCurrency(numValue));
-                  } else {
-                    setConsultationValue('');
-                  }
-                }}
-                onFocus={(e) => {
-                  const numValue = parseCurrency(e.target.value);
-                  if (numValue > 0) {
-                    setConsultationValue(numValue.toString().replace('.', ','));
-                  }
-                }}
-                className="w-full pl-12 pr-4 py-3 bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl text-lg font-bold text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                placeholder="0,00"
-              />
-            </div>
-          </div>
-
-          {/* Produtos da Lojinha */}
+          {/* Products / Vaccines */}
           <div className="bg-slate-50 dark:bg-[#2a2d36] p-5 rounded-xl border border-slate-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
               <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 flex items-center gap-2">
@@ -525,7 +414,7 @@ export default function FinishConsultationModal({
               </label>
               <button
                 type="button"
-                onClick={() => setShowProductSearch(!showProductSearch)}
+                onClick={() => setShowProductPicker(!showProductPicker)}
                 className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
@@ -533,39 +422,86 @@ export default function FinishConsultationModal({
               </button>
             </div>
 
-            {/* Busca de Produtos */}
-            {showProductSearch && (
-              <div className="mb-4 relative">
-                <Search className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                  placeholder="Buscar produto ou vacina..."
-                  autoFocus
-                />
-                {productSearch && filteredProducts.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            {/* Product Picker Sub-popup */}
+            {showProductPicker && (
+              <div className="mb-4 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden">
+                {/* Search */}
+                <div className="p-3 border-b border-slate-200 dark:border-gray-700">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                      placeholder="Buscar produto ou vacina..."
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Search results */}
+                {productSearch.length >= 1 && filteredProducts.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto border-b border-slate-200 dark:border-gray-700">
                     {filteredProducts.map(product => (
                       <button
                         key={product.id}
                         type="button"
                         onClick={() => addProduct(product)}
-                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-white/5 border-b border-slate-100 dark:border-gray-800 last:border-0 transition-colors"
+                        className="w-full text-left px-4 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-900/10 border-b border-slate-100 dark:border-gray-800 last:border-0 transition-colors flex items-center justify-between"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{product.name}</span>
-                          <span className="text-xs font-bold text-rose-600 dark:text-rose-400">R$ {product.price_sale.toFixed(2)}</span>
-                        </div>
+                        <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{product.name}</span>
+                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400">R$ {product.price_sale.toFixed(2)}</span>
                       </button>
                     ))}
                   </div>
                 )}
+
+                {productSearch.length >= 1 && filteredProducts.length === 0 && (
+                  <div className="px-4 py-3 text-sm text-slate-500 dark:text-gray-400 text-center border-b border-slate-200 dark:border-gray-700">
+                    Nenhum produto encontrado
+                  </div>
+                )}
+
+                {/* Recent products */}
+                {productSearch.length < 1 && recentProducts.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 bg-slate-50 dark:bg-[#2a2d36] border-b border-slate-200 dark:border-gray-700">
+                      <span className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase flex items-center gap-1.5">
+                        <Package className="w-3 h-3" />
+                        Produtos Recentes
+                      </span>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {recentProducts.map(product => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          onClick={() => addProduct(product)}
+                          className="w-full text-left px-4 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-900/10 border-b border-slate-100 dark:border-gray-800 last:border-0 transition-colors flex items-center justify-between"
+                        >
+                          <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{product.name}</span>
+                          <span className="text-xs font-bold text-rose-600 dark:text-rose-400">R$ {product.price_sale.toFixed(2)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Close */}
+                <div className="p-2 bg-slate-50 dark:bg-[#2a2d36]">
+                  <button
+                    type="button"
+                    onClick={() => { setShowProductPicker(false); setProductSearch(''); }}
+                    className="w-full py-1.5 text-xs font-medium text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200 transition-colors"
+                  >
+                    Fechar
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Lista de Produtos Selecionados */}
+            {/* Selected Products List */}
             {selectedProducts.length > 0 && (
               <div className="space-y-2">
                 {selectedProducts.map(product => (
@@ -616,21 +552,9 @@ export default function FinishConsultationModal({
               </div>
             )}
           </div>
-
-          {/* Resumo Total */}
-          {(selectedProducts.length > 0 || consultationValueNum > 0) && (
-            <div className="bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 p-5 rounded-xl border-2 border-rose-200 dark:border-rose-900/30">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-bold text-slate-700 dark:text-gray-300">Total Adicional:</span>
-                <span className="text-3xl font-black text-rose-600 dark:text-rose-400">
-                  R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Footer com Botões */}
+        {/* Footer */}
         <div className="px-8 py-6 bg-slate-50 dark:bg-[#2a2d36] border-t border-slate-200 dark:border-gray-700 flex justify-end gap-3">
           <button
             onClick={onClose}
@@ -652,7 +576,7 @@ export default function FinishConsultationModal({
             ) : loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Enviando para Recepção...
+                Enviando para Recepcao...
               </>
             ) : (
               <>

@@ -42,12 +42,18 @@ function ExamRow({
   onRemove: (i: number) => void;
   canRemove: boolean;
 }) {
-  const [query, setQuery] = useState(exam.name || exam.code || '');
+  const [query, setQuery] = useState(exam.name ? (exam.code ? `${exam.code} — ${exam.name}` : exam.name) : exam.code || '');
   const [results, setResults] = useState<TussResult[]>([]);
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  // Sincronizar query quando exam muda externamente (ex: carregar modelo)
+  useEffect(() => {
+    const label = exam.name ? (exam.code ? `${exam.code} — ${exam.name}` : exam.name) : exam.code || '';
+    setQuery(label);
+  }, [exam.name, exam.code]);
 
   // Fecha dropdown ao clicar fora
   useEffect(() => {
@@ -327,8 +333,8 @@ function RequestCard({
   );
 }
 
-// ─── Geração de PDF via janela de impressão ───────────────────────────────────
-export function printRequest(draft: any, patientData: any) {
+// ─── Geração de HTML para solicitação de exames ──────────────────────────────
+export function generateRequestHTML(draft: any, patientData: any): string {
   const examsRows = draft.exams
     .filter((e: any) => e.name || e.code)
     .map(
@@ -740,29 +746,20 @@ export function printRequest(draft: any, patientData: any) {
 </html>`;
   }
 
-  // Create an invisible iframe to print
+  return html;
+}
+
+export function printRequest(draft: any, patientData: any) {
+  const html = generateRequestHTML(draft, patientData);
   const iframe = document.createElement('iframe');
-  iframe.style.position = 'absolute';
-  iframe.style.width = '0px';
-  iframe.style.height = '0px';
-  iframe.style.border = 'none';
+  iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;';
   document.body.appendChild(iframe);
-
   const doc = iframe.contentWindow?.document;
-  if (doc) {
-    doc.open();
-    doc.write(html);
-    doc.close();
-  }
-
-  // Wait for content to render, then print and remove
+  if (doc) { doc.open(); doc.write(html); doc.close(); }
   setTimeout(() => {
     iframe.contentWindow?.focus();
     iframe.contentWindow?.print();
-    // Remove the iframe after the print dialog is closed or after a delay
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-    }, 1000);
+    setTimeout(() => document.body.removeChild(iframe), 1000);
   }, 400);
 }
 

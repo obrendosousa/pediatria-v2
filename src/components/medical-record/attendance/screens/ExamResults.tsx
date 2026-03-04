@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save } from 'lucide-react';
-import { useMedicalRecord, ExamResultsData } from '@/hooks/useMedicalRecord';
+import { useConsultation } from '@/contexts/ConsultationContext';
+import { ExamResultsData } from '@/hooks/useMedicalRecord';
 import { RichTextEditor } from '../RichTextEditor';
 import { ModelTemplateModal } from '../ModelTemplateModal';
 import { AttendanceScreenProps } from '@/types/attendance';
@@ -35,7 +36,7 @@ interface ExamResultsFormData {
 
 export function ExamResults({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
   const { toast } = useToast();
-  const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
+  const { record, isLoading, saveRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<ExamResultsFormData>({
     defaultValues: {
       ultrasound: '',
@@ -107,36 +108,40 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
     }
   };
 
-  const onSubmit = async (data: ExamResultsFormData) => {
+  const saveFormData = useCallback(async () => {
+    const data = watch();
+    const examResults: ExamResultsData = {
+      ultrasound: data.ultrasound || null,
+      xray: data.xray || null,
+      laboratory_observations: data.laboratory_observations || null,
+      leukocytes: data.leukocytes || null,
+      eosinophils: data.eosinophils || null,
+      platelets: data.platelets || null,
+      urea_creatinine: data.urea_creatinine || null,
+      tgo_tgp: data.tgo_tgp || null,
+      vitamins: data.vitamins || null,
+      ferritin_pcr: data.ferritin_pcr || null,
+      tsh_t4: data.tsh_t4 || null,
+      eas_uroculture_epf: data.eas_uroculture_epf || null,
+      blood_typing: data.blood_typing || null,
+      electrolytes: data.electrolytes || null,
+      glucose_insulin: data.glucose_insulin || null,
+      lipidogram: data.lipidogram || null,
+      karyotype: data.karyotype || null,
+    };
+    await saveRecord({ exam_results_data: examResults });
+  }, [watch, saveRecord]);
+
+  useEffect(() => {
+    registerSaveHandler('exam-results', saveFormData);
+    return () => unregisterSaveHandler('exam-results');
+  }, [registerSaveHandler, unregisterSaveHandler, saveFormData]);
+
+  const onSubmit = async () => {
     try {
-      const examResults: ExamResultsData = {
-        ultrasound: data.ultrasound || null,
-        xray: data.xray || null,
-        laboratory_observations: data.laboratory_observations || null,
-        leukocytes: data.leukocytes || null,
-        eosinophils: data.eosinophils || null,
-        platelets: data.platelets || null,
-        urea_creatinine: data.urea_creatinine || null,
-        tgo_tgp: data.tgo_tgp || null,
-        vitamins: data.vitamins || null,
-        ferritin_pcr: data.ferritin_pcr || null,
-        tsh_t4: data.tsh_t4 || null,
-        eas_uroculture_epf: data.eas_uroculture_epf || null,
-        blood_typing: data.blood_typing || null,
-        electrolytes: data.electrolytes || null,
-        glucose_insulin: data.glucose_insulin || null,
-        lipidogram: data.lipidogram || null,
-        karyotype: data.karyotype || null,
-      };
-
-      await saveRecord({
-        exam_results_data: examResults,
-      });
-
+      await saveFormData();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      
-      if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast.toast.error('Erro ao salvar o formulário. Tente novamente.');

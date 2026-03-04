@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save } from 'lucide-react';
-import { useMedicalRecord, FirstConsultationAnamnesisData } from '@/hooks/useMedicalRecord';
+import { useConsultation } from '@/contexts/ConsultationContext';
+import { FirstConsultationAnamnesisData } from '@/hooks/useMedicalRecord';
 import { RichTextEditor } from '../RichTextEditor';
 import { ModelTemplateModal } from '../ModelTemplateModal';
 import { AttendanceScreenProps } from '@/types/attendance';
@@ -164,7 +165,7 @@ function CheckboxGroup({
 
 export function FirstConsultationAnamnesis({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
   const { toast } = useToast();
-  const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
+  const { record, isLoading, saveRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } =
     useForm<FirstConsultationFormData>({
       defaultValues: {
@@ -286,79 +287,89 @@ export function FirstConsultationAnamnesis({ patientId, patientData, onRefresh, 
     else if (modelModalType === 'first_consultation_amamentacao') setValue('amamentacao', content);
   };
 
-  const onSubmit = async (data: FirstConsultationFormData) => {
+  const saveFormData = useCallback(async () => {
+    const data = watch();
+    const anamnesis: FirstConsultationAnamnesisData = {
+      acompanhantes: data.acompanhantes || null,
+      mora_onde: data.mora_onde || null,
+      profissoes_pais: data.profissoes_pais || null,
+      escola_serie_turno: data.escola_serie_turno || null,
+      como_conheceu: data.como_conheceu || null,
+      indicacao_de_quem: data.indicacao_de_quem || null,
+      naturalidade: data.naturalidade || null,
+      rede_apoio_baba: data.rede_apoio_baba || null,
+      antecedentes: data.antecedentes || null,
+      alergias: data.alergias || null,
+      historico_molestia_atual: data.historico_molestia_atual || null,
+      internacoes: data.internacoes || null,
+      antecedentes_dos_pais: data.antecedentes_dos_pais || null,
+      tem_irmaos: data.tem_irmaos?.length ? data.tem_irmaos : null,
+      nome_irmaos: data.nome_irmaos || null,
+      medicamentos_em_uso: data.medicamentos_em_uso?.length ? data.medicamentos_em_uso : null,
+      motivo_consulta: data.motivo_consulta || null,
+      rede_apoio_opcoes: data.rede_apoio_opcoes?.length ? data.rede_apoio_opcoes : null,
+      baby_blues: data.baby_blues || null,
+      entregar_escala_edimburgo: data.entregar_escala_edimburgo || null,
+      mae_sentindo_fraca: data.mae_sentindo_fraca || null,
+      suplementacao_mae: data.suplementacao_mae || null,
+      historico_alimentar_ame_formula: data.historico_alimentar_ame_formula || null,
+      dar_agua: data.dar_agua || null,
+      dar_cha: data.dar_cha || null,
+      formula_detalhes: data.formula_detalhes || null,
+      amamentacao: data.amamentacao || null,
+      adaptacao_nenem: data.adaptacao_nenem || null,
+      solucos: data.solucos || null,
+      colicas: data.colicas || null,
+      gorfo: data.gorfo || null,
+      posicao_arrotar: data.posicao_arrotar || null,
+      posicao_bb_dormir: data.posicao_bb_dormir || null,
+      tem_dado_colo: data.tem_dado_colo || null,
+      faz_banho_sol: data.faz_banho_sol || null,
+      medicacao_em_uso_bebe: data.medicacao_em_uso_bebe || null,
+      vacinas_em_dia: data.vacinas_em_dia || null,
+      usa_chupeta: data.usa_chupeta || null,
+      limpa_boca_apos_mamadas: data.limpa_boca_apos_mamadas || null,
+      olho_secrecao: data.olho_secrecao || null,
+      limpa_ouvido: data.limpa_ouvido || null,
+      limpeza_coto_umbilical: data.limpeza_coto_umbilical?.length ? data.limpeza_coto_umbilical : null,
+      coto_umbilical_dias: data.coto_umbilical_dias?.length ? data.coto_umbilical_dias : null,
+      banho_rn_frequencia: data.banho_rn_frequencia || null,
+      usa_perfume: data.usa_perfume || null,
+      usa_talco: data.usa_talco || null,
+      corte_unha: data.corte_unha?.length ? data.corte_unha : null,
+      evacuacoes_cor_disquesia: data.evacuacoes_cor_disquesia || null,
+      troca_fraldas_material: data.troca_fraldas_material?.length ? data.troca_fraldas_material : null,
+      qual_marca_fralda: data.qual_marca_fralda || null,
+      usa_travesseiro: data.usa_travesseiro || null,
+      sonecas_dorme_aonde: data.sonecas_dorme_aonde || null,
+      sono_noite: data.sono_noite || null,
+      dnpm_observa_rosto: data.dnpm_observa_rosto || null,
+      pedir_usg_quadril: data.pedir_usg_quadril || null,
+      fontanela: data.fontanela || null,
+      crosta_lactea: data.crosta_lactea || null,
+      que_sabao: data.que_sabao || null,
+      mostrar_visao_bebe: data.mostrar_visao_bebe || null,
+      ler_para_bebe: data.ler_para_bebe || null,
+      vacinas_2_meses: data.vacinas_2_meses || null,
+      entregar_farmacinha: data.entregar_farmacinha || null,
+      sempre_marcar_retorno: data.sempre_marcar_retorno || null,
+    };
+
+    await saveRecord({ first_consultation_anamnesis: anamnesis });
+  }, [watch, saveRecord]);
+
+  useEffect(() => {
+    registerSaveHandler('first-consultation', saveFormData);
+    return () => {
+      unregisterSaveHandler('first-consultation');
+    };
+  }, [registerSaveHandler, unregisterSaveHandler, saveFormData]);
+
+  const onSubmit = async () => {
     try {
-      const anamnesis: FirstConsultationAnamnesisData = {
-        acompanhantes: data.acompanhantes || null,
-        mora_onde: data.mora_onde || null,
-        profissoes_pais: data.profissoes_pais || null,
-        escola_serie_turno: data.escola_serie_turno || null,
-        como_conheceu: data.como_conheceu || null,
-        indicacao_de_quem: data.indicacao_de_quem || null,
-        naturalidade: data.naturalidade || null,
-        rede_apoio_baba: data.rede_apoio_baba || null,
-        antecedentes: data.antecedentes || null,
-        alergias: data.alergias || null,
-        historico_molestia_atual: data.historico_molestia_atual || null,
-        internacoes: data.internacoes || null,
-        antecedentes_dos_pais: data.antecedentes_dos_pais || null,
-        tem_irmaos: data.tem_irmaos?.length ? data.tem_irmaos : null,
-        nome_irmaos: data.nome_irmaos || null,
-        medicamentos_em_uso: data.medicamentos_em_uso?.length ? data.medicamentos_em_uso : null,
-        motivo_consulta: data.motivo_consulta || null,
-        rede_apoio_opcoes: data.rede_apoio_opcoes?.length ? data.rede_apoio_opcoes : null,
-        baby_blues: data.baby_blues || null,
-        entregar_escala_edimburgo: data.entregar_escala_edimburgo || null,
-        mae_sentindo_fraca: data.mae_sentindo_fraca || null,
-        suplementacao_mae: data.suplementacao_mae || null,
-        historico_alimentar_ame_formula: data.historico_alimentar_ame_formula || null,
-        dar_agua: data.dar_agua || null,
-        dar_cha: data.dar_cha || null,
-        formula_detalhes: data.formula_detalhes || null,
-        amamentacao: data.amamentacao || null,
-        adaptacao_nenem: data.adaptacao_nenem || null,
-        solucos: data.solucos || null,
-        colicas: data.colicas || null,
-        gorfo: data.gorfo || null,
-        posicao_arrotar: data.posicao_arrotar || null,
-        posicao_bb_dormir: data.posicao_bb_dormir || null,
-        tem_dado_colo: data.tem_dado_colo || null,
-        faz_banho_sol: data.faz_banho_sol || null,
-        medicacao_em_uso_bebe: data.medicacao_em_uso_bebe || null,
-        vacinas_em_dia: data.vacinas_em_dia || null,
-        usa_chupeta: data.usa_chupeta || null,
-        limpa_boca_apos_mamadas: data.limpa_boca_apos_mamadas || null,
-        olho_secrecao: data.olho_secrecao || null,
-        limpa_ouvido: data.limpa_ouvido || null,
-        limpeza_coto_umbilical: data.limpeza_coto_umbilical?.length ? data.limpeza_coto_umbilical : null,
-        coto_umbilical_dias: data.coto_umbilical_dias?.length ? data.coto_umbilical_dias : null,
-        banho_rn_frequencia: data.banho_rn_frequencia || null,
-        usa_perfume: data.usa_perfume || null,
-        usa_talco: data.usa_talco || null,
-        corte_unha: data.corte_unha?.length ? data.corte_unha : null,
-        evacuacoes_cor_disquesia: data.evacuacoes_cor_disquesia || null,
-        troca_fraldas_material: data.troca_fraldas_material?.length ? data.troca_fraldas_material : null,
-        qual_marca_fralda: data.qual_marca_fralda || null,
-        usa_travesseiro: data.usa_travesseiro || null,
-        sonecas_dorme_aonde: data.sonecas_dorme_aonde || null,
-        sono_noite: data.sono_noite || null,
-        dnpm_observa_rosto: data.dnpm_observa_rosto || null,
-        pedir_usg_quadril: data.pedir_usg_quadril || null,
-        fontanela: data.fontanela || null,
-        crosta_lactea: data.crosta_lactea || null,
-        que_sabao: data.que_sabao || null,
-        mostrar_visao_bebe: data.mostrar_visao_bebe || null,
-        ler_para_bebe: data.ler_para_bebe || null,
-        vacinas_2_meses: data.vacinas_2_meses || null,
-        entregar_farmacinha: data.entregar_farmacinha || null,
-        sempre_marcar_retorno: data.sempre_marcar_retorno || null,
-      };
-
-      await saveRecord({ first_consultation_anamnesis: anamnesis });
-
+      await saveFormData();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Erro ao salvar anamnese da 1ª consulta:', error);
       toast.toast.error('Erro ao salvar o formulário. Tente novamente.');

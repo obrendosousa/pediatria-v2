@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Save } from 'lucide-react';
-import { useMedicalRecord, AdolescentConsultationData } from '@/hooks/useMedicalRecord';
+import { useConsultation } from '@/contexts/ConsultationContext';
+import { AdolescentConsultationData } from '@/hooks/useMedicalRecord';
 import { RichTextEditor } from '../RichTextEditor';
 import { ModelTemplateModal } from '../ModelTemplateModal';
 import { AttendanceScreenProps } from '@/types/attendance';
@@ -29,7 +30,7 @@ interface AdolescentConsultationFormData {
 
 export function AdolescentConsultation({ patientId, patientData, onRefresh, appointmentId }: AttendanceScreenProps) {
   const { toast } = useToast();
-  const { record, isLoading, saveRecord } = useMedicalRecord(patientId, appointmentId);
+  const { record, isLoading, saveRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
   const { register, handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<AdolescentConsultationFormData>({
     defaultValues: {
       companions: '',
@@ -89,30 +90,37 @@ export function AdolescentConsultation({ patientId, patientData, onRefresh, appo
     }
   };
 
-  const onSubmit = async (data: AdolescentConsultationFormData) => {
+  const saveFormData = useCallback(async () => {
+    const data = watch();
+    const adolescentConsultation: AdolescentConsultationData = {
+      companions: data.companions || null,
+      lives_where: data.lives_where || null,
+      birthplace: data.birthplace || null,
+      school_turn_consultation_reason: data.school_turn_consultation_reason || null,
+      parents_antecedents: data.parents_antecedents || null,
+      personal_antecedents: data.personal_antecedents || null,
+      allergies: data.allergies || null,
+      hospitalizations: data.hospitalizations || null,
+      vision_headache_problems: data.vision_headache_problems || null,
+      consultation_reason: data.consultation_reason || null,
+      feels_anxious: data.feels_anxious || null,
+    };
+
+    await saveRecord({
+      adolescent_consultation: adolescentConsultation,
+    });
+  }, [watch, saveRecord]);
+
+  useEffect(() => {
+    registerSaveHandler('adolescent', saveFormData);
+    return () => unregisterSaveHandler('adolescent');
+  }, [registerSaveHandler, unregisterSaveHandler, saveFormData]);
+
+  const onSubmit = async () => {
     try {
-      const adolescentConsultation: AdolescentConsultationData = {
-        companions: data.companions || null,
-        lives_where: data.lives_where || null,
-        birthplace: data.birthplace || null,
-        school_turn_consultation_reason: data.school_turn_consultation_reason || null,
-        parents_antecedents: data.parents_antecedents || null,
-        personal_antecedents: data.personal_antecedents || null,
-        allergies: data.allergies || null,
-        hospitalizations: data.hospitalizations || null,
-        vision_headache_problems: data.vision_headache_problems || null,
-        consultation_reason: data.consultation_reason || null,
-        feels_anxious: data.feels_anxious || null,
-      };
-
-      await saveRecord({
-        adolescent_consultation: adolescentConsultation,
-      });
-
+      await saveFormData();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      
-      if (onRefresh) onRefresh();
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast.toast.error('Erro ao salvar o formulário. Tente novamente.');

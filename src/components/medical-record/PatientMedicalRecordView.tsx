@@ -14,7 +14,7 @@ import { PatientPhonesManager } from './PatientPhonesManager';
 import QuickChatModal from '../chat/QuickChatModal';
 import { getPatientPhones } from '@/utils/patientRelations';
 import { Stethoscope, Activity, FileText, LayoutDashboard, Phone, X } from 'lucide-react';
-import { useMedicalRecord } from '@/hooks/useMedicalRecord';
+import { ConsultationProvider, useConsultation } from '@/contexts/ConsultationContext';
 import FinishConsultationModal from './FinishConsultationModal';
 import { NewPatientModal } from './NewPatientModal';
 
@@ -27,13 +27,27 @@ interface PatientMedicalRecordViewProps {
 }
 
 export function PatientMedicalRecordView({ patientId, appointmentId, currentDoctorId, onRefresh, onBack }: PatientMedicalRecordViewProps) {
+  return (
+    <ConsultationProvider patientId={patientId} appointmentId={appointmentId} currentDoctorId={currentDoctorId}>
+      <PatientMedicalRecordViewInner
+        patientId={patientId}
+        appointmentId={appointmentId}
+        currentDoctorId={currentDoctorId}
+        onRefresh={onRefresh}
+        onBack={onBack}
+      />
+    </ConsultationProvider>
+  );
+}
+
+function PatientMedicalRecordViewInner({ patientId, appointmentId, currentDoctorId, onRefresh, onBack }: PatientMedicalRecordViewProps) {
   const [patientData, setPatientData] = useState<any | null>(null);
   const [summaryData, setSummaryData] = useState<ClinicalSummary | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
   const [isConsultationActive, setIsConsultationActive] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeView, setActiveView] = useState<'summary' | 'attendance'>('summary');
-  const [consultationTimer, setConsultationTimer] = useState(0);
+  const [, setTimerTick] = useState(0); // only for re-render
   const [primaryPhone, setPrimaryPhone] = useState<string | null>(null);
   const [selectedChatPhone, setSelectedChatPhone] = useState<string | null>(null);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -85,24 +99,28 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
     if (onRefresh) onRefresh();
   };
 
-  // Timer da consulta
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isConsultationActive) {
-      interval = setInterval(() => {
-        setConsultationTimer((prev) => prev + 1);
-      }, 1000);
-    } else {
-      setConsultationTimer(0);
-    }
-    return () => clearInterval(interval);
-  }, [isConsultationActive]);
-
-  const { record, saveAllData, startConsultationTimer } = useMedicalRecord(patientId, appointmentId, currentDoctorId);
+  const { record, saveAllData, startConsultationTimer, saveAllScreens } = useConsultation();
 
   useEffect(() => {
     setIsConsultationActive(Boolean(record?.started_at && !record?.finished_at));
   }, [record?.started_at, record?.finished_at]);
+
+  // Timer da consulta - baseado em timestamp real (funciona mesmo com aba em background)
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isConsultationActive) {
+      interval = setInterval(() => {
+        setTimerTick((prev) => prev + 1); // força re-render
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isConsultationActive]);
+
+  // Calcula duração real a partir do started_at
+  const consultationTimer = (() => {
+    if (!isConsultationActive || !record?.started_at) return 0;
+    return Math.max(0, Math.floor((Date.now() - new Date(record.started_at).getTime()) / 1000));
+  })();
 
   const handleStartConsultation = async () => {
     try {
@@ -120,7 +138,6 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
 
   const handleFinishSuccess = () => {
     setIsConsultationActive(false);
-    setConsultationTimer(0);
     setShowFinishModal(false);
     setActiveView('summary');
     setRefreshTrigger(prev => prev + 1);
@@ -129,8 +146,8 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
 
   const handleSaveAllData = async (): Promise<boolean> => {
     try {
-      // Esta função será chamada pelo modal para garantir que todos os dados estão salvos
-      // Como cada tela salva seus dados individualmente, apenas garantimos que o registro existe
+      // Salvar dados de todas as telas abertas antes de finalizar
+      await saveAllScreens();
       return await saveAllData();
     } catch (error) {
       console.error('Erro ao salvar todos os dados:', error);
@@ -170,6 +187,7 @@ export function PatientMedicalRecordView({ patientId, appointmentId, currentDoct
         primaryPhone={primaryPhone || undefined}
         onEditPatient={() => setIsEditModalOpen(true)}
         onOpenPhonesManager={() => setIsPhonesModalOpen(true)}
+        startedAt={record?.started_at}
       />
 
       {/* Sistema de Abas */}
