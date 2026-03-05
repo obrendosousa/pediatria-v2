@@ -102,7 +102,8 @@
       "Read(//private/tmp/ts-quality-hooks/**)",
       "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"healthcare medical clinic dashboard SaaS professional teal\" --design-system -p \"Painel Clínica - Atendimento\")",
       "Read(//tmp/ts-quality-hooks/.claude/hooks/**)",
-      "Read(//private/tmp/ts-quality-hooks/.claude/hooks/**)"
+      "Read(//private/tmp/ts-quality-hooks/.claude/hooks/**)",
+      "Bash(curl -s -X GET \"https://evolution-evolution-api.rozhd7.easypanel.host/webhook/find/atendimento-alianca\" -H \"apikey: E029AE5DFF08-47D4-BF7C-9800BEBCADE9\")"
     ],
     "additionalDirectories": [
       "/Users/brendosousa/Downloads/painel-clinica-main",

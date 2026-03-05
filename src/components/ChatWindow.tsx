@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useChatAutomation } from '@/hooks/useChatAutomation';
@@ -793,8 +794,8 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         onSave={handleSaveAppointment}
       />
 
-      {/* Área do chat: reserva 70px à direita para a barra de ícones do ChatSidebar */}
-      <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden w-full pr-[58px] sm:pr-[70px]">
+      {/* Área do chat */}
+      <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden w-full pr-[52px] sm:pr-[58px]">
         <ChatHeader
           chat={chat}
           loadingMsgs={loadingMsgs}

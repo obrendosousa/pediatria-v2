@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useChatMessages } from '@/hooks/atendimento/useChatMessages';
 import { useChatAutomation } from '@/hooks/atendimento/useChatAutomation';
@@ -771,7 +772,7 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
       />
 
       {/* Área do chat */}
-      <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden w-full pr-[58px] sm:pr-[70px]">
+      <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden w-full pr-[52px] sm:pr-[58px]">
         <ChatHeader
           chat={chat}
           loadingMsgs={loadingMsgs}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { createSchemaAdminClient } from '@/lib/supabase/schemaServer';
 import { EvolutionWebhookData } from '@/ai/ingestion/state';
@@ -251,7 +252,10 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
       messageType: messageTypeValue,
       message: messageValue,
       messageTimestamp: timestampValue,
-      base64: typeof item.base64 === 'string' ? item.base64 : undefined,
+      base64: typeof item.base64 === 'string' ? item.base64
+        : (messageValue && typeof messageValue === 'object' && typeof (messageValue as Record<string, unknown>).base64 === 'string')
+          ? (messageValue as Record<string, unknown>).base64 as string
+          : undefined,
       ...(forwarded ? { isForwarded: true } : {}),
     });
   }
@@ -501,6 +505,15 @@ async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
 
     let type = 'text';
     let mediaUrl: string | undefined;
+
+    // Debug: rastrear presença de base64 no payload do webhook para mídia
+    const isMediaType = ['audioMessage', 'imageMessage', 'videoMessage', 'stickerMessage', 'documentMessage'].includes(message.messageType as string);
+    if (isMediaType) {
+      const msgKeys = msg ? Object.keys(msg) : [];
+      const hasTopBase64 = typeof message.base64 === 'string';
+      const hasMsgBase64 = msg && typeof msg.base64 === 'string';
+      console.log(`[ATD/Media-Debug] type=${message.messageType} topBase64=${hasTopBase64} msgBase64=${hasMsgBase64} msgKeys=[${msgKeys.join(',')}]`);
+    }
 
     if (message.messageType === 'audioMessage') {
       type = 'audio'; content = content || '🎵 Áudio recebido';

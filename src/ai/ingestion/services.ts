@@ -398,7 +398,9 @@ export async function saveMessageToDb(payload: {
 export async function fetchProfilePictureFromEvolution(phone: string, instanceEnvKey = 'EVOLUTION_INSTANCE'): Promise<string | null> {
   const baseUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, "");
   const instance = process.env[instanceEnvKey] || process.env.EVOLUTION_INSTANCE;
-  const apiKey = process.env.EVOLUTION_API_KEY;
+  // Deriva a API key da instância (ex: EVOLUTION_ATENDIMENTO_INSTANCE → EVOLUTION_ATENDIMENTO_API_KEY)
+  const apiKeyEnvKey = instanceEnvKey.replace(/_INSTANCE$/, '_API_KEY');
+  const apiKey = process.env[apiKeyEnvKey] || process.env.EVOLUTION_API_KEY;
 
   if (!baseUrl || !instance || !apiKey) {
     return null;
@@ -529,41 +531,61 @@ async function fetchMediaFromEvolutionApi(
 ): Promise<{ base64: string; mimeType?: string; fileName?: string } | null> {
   const baseUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, "");
   const instance = process.env[instanceEnvKey] || process.env.EVOLUTION_INSTANCE;
-  const apiKey = process.env.EVOLUTION_API_KEY;
+  // Deriva a API key da instância (ex: EVOLUTION_ATENDIMENTO_INSTANCE → EVOLUTION_ATENDIMENTO_API_KEY)
+  const apiKeyEnvKey = instanceEnvKey.replace(/_INSTANCE$/, '_API_KEY');
+  const instanceApiKey = process.env[apiKeyEnvKey];
+  const globalApiKey = process.env.EVOLUTION_API_KEY;
 
-  if (!baseUrl || !instance || !apiKey) {
+  if (!baseUrl || !instance || (!instanceApiKey && !globalApiKey)) {
     console.warn("[handleMediaUpload] Evolution API não configurada (EVOLUTION_API_URL, EVOLUTION_INSTANCE, EVOLUTION_API_KEY)");
     return null;
   }
 
   const endpoint = `${baseUrl}/chat/getBase64FromMediaMessage/${instance}`;
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: apiKey },
-    body: JSON.stringify({
-      message: { key: { id: messageId, remoteJid } },
-      convertToMp4: false,
-    }),
+  const requestBody = JSON.stringify({
+    message: { key: { id: messageId, remoteJid } },
+    convertToMp4: false,
   });
 
-  if (!res.ok) {
-    console.warn("[handleMediaUpload] Evolution API getBase64 falhou:", res.status, await res.text());
-    return null;
+  // Tenta com a key da instância primeiro, depois com a global como fallback
+  const keysToTry = [instanceApiKey, globalApiKey].filter((k): k is string => !!k);
+  // Remove duplicatas (quando instanceApiKey === globalApiKey)
+  const uniqueKeys = [...new Set(keysToTry)];
+
+  for (const apiKey of uniqueKeys) {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: apiKey },
+      body: requestBody,
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      console.warn(`[handleMediaUpload] Evolution API getBase64 auth falhou (${res.status}), tentando próxima key...`);
+      continue;
+    }
+
+    if (!res.ok) {
+      console.warn("[handleMediaUpload] Evolution API getBase64 falhou:", res.status, await res.text());
+      return null;
+    }
+
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const inner = (data.data as Record<string, unknown>) ?? data;
+    const b64 = (inner.base64 ?? data.base64) as string | undefined;
+    if (!b64 || typeof b64 !== "string") return null;
+
+    const clean = String(b64).replace(/^data:[^;]+;base64,/, "");
+    const mimetype = (inner.mimetype ?? data.mimetype) as string | undefined;
+    const mime = mimetype || "audio/ogg";
+    const ext = mime.split("/")[1] || "ogg";
+    const fileName = (inner.fileName ?? data.fileName) as string | undefined;
+    const fName = fileName || `audio_${messageId}.${ext}`;
+
+    return { base64: clean, mimeType: mime, fileName: fName };
   }
 
-  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  const inner = (data.data as Record<string, unknown>) ?? data;
-  const b64 = (inner.base64 ?? data.base64) as string | undefined;
-  if (!b64 || typeof b64 !== "string") return null;
-
-  const clean = String(b64).replace(/^data:[^;]+;base64,/, "");
-  const mimetype = (inner.mimetype ?? data.mimetype) as string | undefined;
-  const mime = mimetype || "audio/ogg";
-  const ext = mime.split("/")[1] || "ogg";
-  const fileName = (inner.fileName ?? data.fileName) as string | undefined;
-  const fName = fileName || `audio_${messageId}.${ext}`;
-
-  return { base64: clean, mimeType: mime, fileName: fName };
+  console.warn("[handleMediaUpload] Todas as API keys falharam para getBase64FromMediaMessage");
+  return null;
 }
 
 /**

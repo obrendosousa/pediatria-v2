@@ -6,7 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import ChatWindow from '@/components/ChatWindow';
 import SecretaryCheckoutDrawer from '@/components/SecretaryCheckoutDrawer';
 import { Chat } from '@/types';
-import { MessageCircleHeart, ShieldCheck, Zap, Activity } from 'lucide-react';
+import { Stethoscope, ShieldCheck, Zap, Activity } from 'lucide-react';
 
 export default function Home() {
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
@@ -46,8 +46,8 @@ export default function Home() {
             <div className="relative z-10 flex flex-col items-center max-w-sm animate-fade-in-up">
               
               {/* Ícone com gradiente */}
-              <div className="w-20 h-20 bg-gradient-to-br from-pink-400 to-rose-400 rounded-2xl shadow-xl shadow-pink-200 dark:shadow-none flex items-center justify-center mb-6 rotate-3">
-                <MessageCircleHeart className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 bg-gradient-to-br from-pink-400 to-rose-400 rounded-2xl shadow-xl shadow-pink-200/50 dark:shadow-pink-900/30 flex items-center justify-center mb-6 rotate-3">
+                <Stethoscope className="w-10 h-10 text-white" strokeWidth={1.8} />
               </div>
 
               <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 mb-2 transition-colors">
@@ -60,30 +60,30 @@ export default function Home() {
               {/* Status Compactos */}
               <div className="grid grid-cols-2 gap-3 w-full mb-8">
                 {/* Card IA */}
-                <div className="bg-white dark:bg-[#202c33] p-3 rounded-xl border border-slate-100 dark:border-gray-700 shadow-sm flex items-center gap-3 hover:border-purple-200 dark:hover:border-purple-500/30 transition-all">
-                    <div className="p-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-500 dark:text-purple-300">
+                <div className="bg-white dark:bg-[#262832] p-3.5 rounded-xl border border-slate-100 dark:border-gray-700 shadow-sm flex items-center gap-3 hover:border-purple-200 dark:hover:border-purple-500/30 transition-all cursor-default">
+                    <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-500 dark:text-purple-300">
                         <Activity className="w-4 h-4"/>
                     </div>
                     <div className="text-left">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase">IA</p>
-                        <p className="text-xs font-bold text-slate-700 dark:text-gray-200">Ativa</p>
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Copiloto IA</p>
+                        <p className="text-xs font-bold text-purple-700 dark:text-purple-300">Ativa</p>
                     </div>
                 </div>
 
                 {/* Card Conexão */}
-                <div className="bg-white dark:bg-[#202c33] p-3 rounded-xl border border-slate-100 dark:border-gray-700 shadow-sm flex items-center gap-3 hover:border-pink-200 dark:hover:border-pink-500/30 transition-all">
-                    <div className="p-1.5 bg-pink-50 dark:bg-pink-900/20 rounded-lg text-pink-500 dark:text-pink-300">
+                <div className="bg-white dark:bg-[#262832] p-3.5 rounded-xl border border-slate-100 dark:border-gray-700 shadow-sm flex items-center gap-3 hover:border-pink-200 dark:hover:border-pink-500/30 transition-all cursor-default">
+                    <div className="p-2 bg-pink-50 dark:bg-pink-900/20 rounded-lg text-pink-500 dark:text-pink-300">
                         <Zap className="w-4 h-4"/>
                     </div>
                     <div className="text-left">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase">Conexão</p>
-                        <p className="text-xs font-bold text-slate-700 dark:text-gray-200">Estável</p>
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">WhatsApp</p>
+                        <p className="text-xs font-bold text-pink-700 dark:text-pink-300">Conectado</p>
                     </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400 dark:text-gray-500 bg-white/80 dark:bg-[#202c33]/80 px-4 py-2 rounded-full border border-slate-100 dark:border-gray-700 transition-colors">
-                <ShieldCheck className="w-3 h-3" /> Ambiente Seguro
+              <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400 dark:text-gray-500 bg-white/80 dark:bg-[#202c33]/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-100 dark:border-gray-700 transition-colors">
+                <ShieldCheck className="w-3.5 h-3.5" /> Criptografia ponta a ponta
               </div>
 
             </div>

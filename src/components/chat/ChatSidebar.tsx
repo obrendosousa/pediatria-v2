@@ -216,11 +216,11 @@ export default function ChatSidebar({
                             <div className="space-y-3">
                                 {executions.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                                        <div className="w-16 h-16 bg-gradient-to-br from-cyan-100 to-sky-200 dark:from-cyan-900/40 dark:to-sky-900/20 rounded-2xl flex items-center justify-center mb-3 border border-cyan-200/60 dark:border-cyan-700/40">
-                                            <Orbit size={30} className="text-cyan-600 dark:text-cyan-300" />
+                                        <div className="w-14 h-14 bg-cyan-50 dark:bg-cyan-900/20 rounded-2xl flex items-center justify-center mb-3">
+                                            <Orbit size={26} className="text-cyan-500 dark:text-cyan-400" />
                                         </div>
-                                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">Nenhuma execução ativa</p>
-                                        <p className="text-xs text-gray-400">Quando houver envios, eles aparecem aqui em tempo real.</p>
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Nenhuma execução ativa</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-center max-w-[220px]">Envios de funis e macros aparecem aqui em tempo real.</p>
                                     </div>
                                 ) : (
                                     executions.map((exec) => (
@@ -287,40 +287,37 @@ export default function ChatSidebar({
                                 return sameType && (!searchTerm || m.title.toLowerCase().includes(searchTerm.toLowerCase()));
                             })
                             .map(macro => (
-                                <div key={macro.id} className="bg-white dark:bg-[#2a2d36] rounded-xl border border-gray-200 dark:border-gray-700 p-3 hover:shadow-md hover:border-[var(--chat-accent)]/30 dark:hover:border-[var(--chat-accent)]/50 transition-all group">
-                                    {/** loading apenas no botão clicado */}
+                                <div key={macro.id} className="bg-white dark:bg-[#2a2d36] rounded-xl border border-gray-200 dark:border-gray-700 p-3 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-all group cursor-pointer" onClick={() => toggleExpand(macro.id)}>
                                     {(() => {
                                       const isMacroSending = isProcessingMacro && processingActionId === `macro:${macro.id}`;
                                       return (
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                            <button
-                                                onClick={() => toggleExpand(macro.id)}
-                                                className={`p-2 rounded-lg shrink-0 ${activeTab === 'text' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300' : activeTab === 'audio' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300'}`}
-                                                title="Ver detalhes"
+                                        <div className="flex items-center gap-2.5 overflow-hidden">
+                                            <div
+                                                className={`p-1.5 rounded-lg shrink-0 ${activeTab === 'text' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-300' : activeTab === 'audio' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-500 dark:text-purple-300' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 dark:text-emerald-300'}`}
                                             >
                                                 {activeTab === 'text'
-                                                  ? <FileText size={16}/>
+                                                  ? <FileText size={15}/>
                                                   : activeTab === 'audio'
-                                                  ? <Mic size={16}/>
-                                                  : <ImageIcon size={16}/>}
-                                            </button>
+                                                  ? <Mic size={15}/>
+                                                  : <ImageIcon size={15}/>}
+                                            </div>
                                             <div className="flex flex-col truncate">
-                                                <span className="font-bold text-sm text-gray-700 dark:text-gray-100 truncate">{macro.title}</span>
-                                                <span className="text-[10px] text-gray-400 flex items-center gap-1"><Clock size={10}/> {macro.simulation_delay || 3}s delay</span>
+                                                <span className="font-semibold text-[13px] text-gray-700 dark:text-gray-100 truncate">{macro.title}</span>
+                                                <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1"><Clock size={9}/> {macro.simulation_delay || 3}s</span>
                                             </div>
                                         </div>
                                         <div className="flex gap-1">
                                             <button
-                                                onClick={() => onMacroSend(macro)}
+                                                onClick={(e) => { e.stopPropagation(); onMacroSend(macro); }}
                                                 disabled={isProcessingMacro && !isMacroSending}
-                                                className="px-2.5 py-1.5 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-sm dark:shadow-none transition-all active:scale-95"
+                                                className="px-2.5 py-1.5 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white text-[10px] font-semibold rounded-lg flex items-center gap-1 shadow-sm dark:shadow-none transition-colors cursor-pointer active:scale-95"
                                                 title="Enviar agora"
                                             >
                                                 {isMacroSending ? <Loader2 size={12} className="animate-spin"/> : <Send size={12}/>} Enviar
                                             </button>
-                                            <button onClick={(e) => {e.stopPropagation(); onOpenMacroModal(macro)}} className="p-1.5 text-gray-400 hover:text-[var(--chat-accent)] hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg"><Edit2 size={14}/></button>
-                                            <button onClick={(e) => {e.stopPropagation(); onDelete(macro.id, 'macros')}} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"><Trash2 size={14}/></button>
+                                            <button onClick={(e) => {e.stopPropagation(); onOpenMacroModal(macro)}} className="p-1.5 text-gray-400 hover:text-[var(--chat-accent)] hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg cursor-pointer transition-colors" aria-label="Editar"><Edit2 size={13}/></button>
+                                            <button onClick={(e) => {e.stopPropagation(); onDelete(macro.id, 'macros')}} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg cursor-pointer transition-colors" aria-label="Excluir"><Trash2 size={13}/></button>
                                         </div>
                                     </div>
                                       );
@@ -364,12 +361,12 @@ export default function ChatSidebar({
                         {activeTab === 'script' && (
                           <div className="space-y-3">
                             {filteredScripts.length === 0 ? (
-                              <div className="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60">
-                                <div className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-3">
-                                  <Scroll size={28} />
+                              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                                <div className="w-14 h-14 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center mb-3">
+                                  <Scroll size={24} className="text-orange-400 dark:text-orange-300" />
                                 </div>
-                                <p className="text-sm font-medium">Nenhum script encontrado.</p>
-                                <p className="text-xs">Crie um script para usar como playbook manual.</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Nenhum script encontrado</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-center max-w-[220px]">Crie um script para usar como playbook de atendimento.</p>
                               </div>
                             ) : (
                               <>
@@ -495,22 +492,22 @@ export default function ChatSidebar({
                         {activeTab === 'funnels' && (
                             funnels.filter(f => (f as any).type === 'funnel' || !(f as any).type)
                             .map(funnel => (
-                                <div key={funnel.id} className="bg-white dark:bg-[#2a2d36] rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-500 transition-all group">
-                                    <div className="flex justify-between items-center mb-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 rounded-lg"><Workflow size={18}/></div>
+                                <div key={funnel.id} className="bg-white dark:bg-[#2a2d36] rounded-xl border border-gray-200 dark:border-gray-700 p-3 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-all group">
+                                    <div className="flex justify-between items-center mb-2.5">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 dark:text-indigo-300 rounded-lg"><Workflow size={16}/></div>
                                             <div>
-                                                <h3 className="font-bold text-sm text-gray-800 dark:text-gray-100">{funnel.title}</h3>
-                                                <p className="text-[10px] text-gray-400">{(funnel.steps as any[]).length} passos automáticos</p>
+                                                <h3 className="font-semibold text-[13px] text-gray-800 dark:text-gray-100">{funnel.title}</h3>
+                                                <p className="text-[10px] text-gray-400 dark:text-gray-500">{(funnel.steps as any[]).length} passos automáticos</p>
                                             </div>
                                         </div>
-                                        <button onClick={() => onDelete(funnel.id, 'funnels')} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14}/></button>
+                                        <button onClick={() => onDelete(funnel.id, 'funnels')} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer" aria-label="Excluir"><Trash2 size={13}/></button>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => onOpenSequenceModal(funnel, 'funnel')} className="flex-1 bg-white dark:bg-[#202c33] text-gray-600 dark:text-gray-300 text-xs font-bold py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center justify-center gap-2 transition-colors">
-                                            <Edit2 size={12}/> Editar
+                                        <button onClick={() => onOpenSequenceModal(funnel, 'funnel')} className="flex-1 bg-white dark:bg-[#202c33] text-gray-600 dark:text-gray-300 text-[11px] font-semibold py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                                            <Edit2 size={11}/> Editar
                                         </button>
-                                        <button onClick={() => onRunFunnel(funnel)} disabled={isProcessingMacro} className="flex-1 bg-indigo-600 text-white text-xs font-bold py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-md shadow-indigo-200 dark:shadow-none transition-all active:scale-95">
+                                        <button onClick={() => onRunFunnel(funnel)} disabled={isProcessingMacro} className="flex-1 bg-indigo-600 text-white text-[11px] font-semibold py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-200/50 dark:shadow-none transition-colors cursor-pointer active:scale-95">
                                             {isProcessingMacro && processingActionId === `funnel:${funnel.id}` ? <Loader2 size={12} className="animate-spin"/> : <Play size={12}/>} Iniciar
                                         </button>
                                     </div>
@@ -521,25 +518,33 @@ export default function ChatSidebar({
                         {/* 5. AGENDA */}
                         {activeTab === 'schedule' && (
                             <>
-                                <div className="pb-3 sticky top-0 z-10 bg-gray-50/0">
-                                    <button onClick={() => onOpenScheduleModal(null, 'macro')} className="w-full bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white py-3 rounded-xl text-sm font-bold shadow-lg dark:shadow-none flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                                        <Plus size={18}/> Novo Agendamento
+                                <div className="pb-3 sticky top-0 z-10">
+                                    <button onClick={() => onOpenScheduleModal(null, 'macro')} className="w-full bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white py-2.5 rounded-xl text-[13px] font-semibold shadow-sm dark:shadow-none flex items-center justify-center gap-2 transition-colors cursor-pointer active:scale-[0.98]">
+                                        <Plus size={16}/> Novo Agendamento
                                     </button>
                                 </div>
-                                <div className="space-y-3 pb-10">
-                                    {scheduledMessages.map(sched => (
-                                        <div key={sched.id} className="bg-white dark:bg-[#2a2d36] p-3 rounded-xl border border-[var(--chat-accent)]/10 dark:border-[var(--chat-accent)]/20 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
-                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--chat-accent)]"/>
-                                            <div className="flex justify-between items-start mb-1 pl-2">
-                                                <span className="font-bold text-gray-700 dark:text-gray-100 text-xs truncate max-w-[180px]">{sched.title || 'Agendamento'}</span>
-                                                <button onClick={() => onCancelSchedule(sched.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
+                                <div className="space-y-2.5 pb-10">
+                                    {scheduledMessages.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                                            <div className="w-14 h-14 bg-cyan-50 dark:bg-cyan-900/20 rounded-2xl flex items-center justify-center mb-3">
+                                                <CalendarClock size={24} className="text-cyan-400 dark:text-cyan-300" />
                                             </div>
-                                            <div className="pl-2 flex items-center gap-2 text-[10px] text-gray-500 mb-2">
-                                                <CalendarClock size={12}/>
-                                                <span className="font-medium bg-gray-100 dark:bg-white/5 px-1.5 rounded">{new Date(sched.scheduled_for).toLocaleDateString('pt-BR')} às {new Date(sched.scheduled_for).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Nenhum agendamento</p>
+                                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-center max-w-[220px]">Agende mensagens para envio automático.</p>
+                                        </div>
+                                    ) : scheduledMessages.map(sched => (
+                                        <div key={sched.id} className="bg-white dark:bg-[#2a2d36] p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-all relative overflow-hidden group">
+                                            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--chat-accent)]"/>
+                                            <div className="flex justify-between items-start mb-1.5 pl-2">
+                                                <span className="font-semibold text-gray-700 dark:text-gray-100 text-[12px] truncate max-w-[200px]">{sched.title || 'Agendamento'}</span>
+                                                <button onClick={() => onCancelSchedule(sched.id)} className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer opacity-0 group-hover:opacity-100" aria-label="Cancelar"><Trash2 size={13}/></button>
+                                            </div>
+                                            <div className="pl-2 flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400 mb-2">
+                                                <CalendarClock size={11}/>
+                                                <span className="font-medium bg-gray-50 dark:bg-white/5 px-1.5 py-0.5 rounded text-[10px]">{new Date(sched.scheduled_for).toLocaleDateString('pt-BR')} às {new Date(sched.scheduled_for).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
                                             </div>
                                             <div className="pl-2">
-                                                <span className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${(sched as any).item_type === 'adhoc' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 border-purple-100 dark:border-purple-800' : 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-300 border-cyan-100 dark:border-cyan-800'}`}>
+                                                <span className={`text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border ${(sched as any).item_type === 'adhoc' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 border-purple-100 dark:border-purple-800' : 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-300 border-cyan-100 dark:border-cyan-800'}`}>
                                                     {(sched as any).item_type === 'adhoc' ? 'Personalizado' : (sched as any).item_type === 'macro' ? 'Mensagem Salva' : 'Funil'}
                                                 </span>
                                             </div>
@@ -553,17 +558,17 @@ export default function ChatSidebar({
 
                     {/* Footer do Painel (Botão Criar para templates) */}
                     {['text', 'audio', 'image', 'script', 'funnels'].includes(activeTab ?? '') && (
-                        <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-[#202c33] shrink-0 transition-colors">
-                            <button 
+                        <div className="p-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-[#202c33] shrink-0 transition-colors">
+                            <button
                                 onClick={() => {
                                     if(activeTab === 'script' || activeTab === 'funnels') {
                                         onOpenSequenceModal(null, activeTab === 'funnels' ? 'funnel' : 'script');
                                     }
                                     else onOpenMacroModal();
-                                }} 
-                                className="w-full bg-gray-900 dark:bg-white text-white dark:text-black py-3 rounded-xl text-sm font-bold hover:bg-black dark:hover:bg-gray-200 flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98]"
+                                }}
+                                className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-2.5 rounded-xl text-[13px] font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer active:scale-[0.98]"
                             >
-                                <Plus size={16}/> Criar Novo
+                                <Plus size={15}/> Criar Novo
                             </button>
                         </div>
                     )}

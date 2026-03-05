@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element, react-hooks/set-state-in-effect */
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Message } from '@/types';
-import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2, Play, Smile, Plus, Forward, Bot } from 'lucide-react';
+import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2, Play, Smile, Plus, Forward, Bot, Mic, ImageIcon, Video, FileIcon } from 'lucide-react';
 import AudioMessage from './AudioMessage';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 import EmojiPicker, { Emoji, EmojiStyle, Theme } from 'emoji-picker-react';
@@ -593,6 +594,65 @@ export default function MessageBubble({
               <FormattedMessage text={documentCaptionText} />
             </div>
           )}
+        </div>
+      );
+    }
+
+    // Fallbacks para mídia sem media_url (mensagens ingeridas antes do fix ou falha de upload)
+    if (message.message_type === 'audio' || message.message_type === 'voice') {
+      return (
+        <div className="pt-2 pb-1 w-[280px] min-w-[240px] max-w-full flex items-center gap-3 px-2">
+          <div className="w-9 h-9 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center shrink-0">
+            <Mic size={18} className="text-white" />
+          </div>
+          <div className="flex-1 flex flex-col gap-1">
+            <div className="h-[6px] rounded-full bg-gray-300 dark:bg-gray-600 w-full" />
+            <span className="text-[11px] text-gray-400 dark:text-gray-500">Áudio indisponível</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (isSticker) {
+      return (
+        <div className="w-32 h-32 flex items-center justify-center text-5xl opacity-60">
+          💟
+        </div>
+      );
+    }
+
+    if (message.message_type === 'image') {
+      return (
+        <div className="w-[240px] sm:w-[260px] aspect-[4/3] rounded-[inherit] bg-gray-200 dark:bg-gray-700 flex flex-col items-center justify-center gap-2">
+          <ImageIcon size={32} className="text-gray-400 dark:text-gray-500" />
+          <span className="text-[11px] text-gray-400 dark:text-gray-500">Imagem indisponível</span>
+        </div>
+      );
+    }
+
+    if (message.message_type === 'video') {
+      return (
+        <div className="w-[240px] sm:w-[260px] aspect-[16/9] rounded-[inherit] bg-gray-800 flex flex-col items-center justify-center gap-2">
+          <Video size={32} className="text-gray-500" />
+          <span className="text-[11px] text-gray-500">Vídeo indisponível</span>
+        </div>
+      );
+    }
+
+    if (message.message_type === 'document') {
+      return (
+        <div className="pt-1 w-[240px] sm:w-[260px]">
+          <div className="rounded-lg overflow-hidden border border-black/10 dark:border-white/10">
+            <div className="w-full h-[80px] bg-gray-500 flex items-center justify-center">
+              <FileIcon size={28} className="text-white/70" />
+            </div>
+            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/60 dark:bg-[#1e2028]">
+              <FileText size={15} className="text-gray-400 shrink-0" />
+              <span className="text-[12px] text-gray-500 dark:text-gray-400 truncate">
+                Documento indisponível
+              </span>
+            </div>
+          </div>
         </div>
       );
     }

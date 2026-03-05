@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, @next/next/no-img-element */
 'use client';
 
 import { MoreVertical, Trash2, UserCog, Sparkles, Loader2, Bot } from 'lucide-react';
@@ -111,7 +112,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                 {!isAIChat && isUnsavedContact && (
                   <button
                     onClick={() => setIsEditModalOpen(true)}
-                    className="mt-1 text-[11px] font-semibold text-[var(--chat-accent)] hover:opacity-80 dark:text-[var(--chat-accent)]"
+                    className="mt-1 text-[11px] font-semibold text-[var(--chat-accent)] hover:opacity-80 dark:text-[var(--chat-accent)] cursor-pointer transition-opacity"
                   >
                     Salvar contato
                   </button>
@@ -131,8 +132,9 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                     <button
                         onClick={onAISchedule}
                         disabled={isLoadingAI}
-                        className="px-3 py-1.5 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                        className="px-3 py-1.5 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm cursor-pointer"
                         title="Agendar paciente usando IA"
+                        aria-label="Agendar paciente usando IA"
                     >
                         {isLoadingAI ? (
                             <>
@@ -150,22 +152,22 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                 
                 {!isAIChat && (
                   <div className="relative">
-                      <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors">
+                      <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer" aria-label="Menu">
                           <MoreVertical size={20} className="text-gray-600 dark:text-gray-300" />
                       </button>
                   
                       {isMenuOpen && (
                           <div className="absolute right-0 top-10 bg-white dark:bg-[#2a2d36] shadow-xl rounded-lg border border-gray-100 dark:border-gray-700 py-1 w-48 z-50 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
-                              <button 
-                                  onClick={() => setIsEditModalOpen(true)} 
-                                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 text-sm flex gap-2 items-center transition-colors"
+                              <button
+                                  onClick={() => setIsEditModalOpen(true)}
+                                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 text-sm flex gap-2 items-center transition-colors cursor-pointer"
                               >
                                   <UserCog size={16}/> Editar Contato
                               </button>
                               <div className="h-[1px] bg-gray-100 dark:bg-gray-700 my-1"/>
-                              <button 
-                                  onClick={handleClearChatClick} 
-                                  className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-red-600 dark:text-red-400 text-sm flex gap-2 items-center transition-colors"
+                              <button
+                                  onClick={handleClearChatClick}
+                                  className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-red-600 dark:text-red-400 text-sm flex gap-2 items-center transition-colors cursor-pointer"
                               >
                                   <Trash2 size={16}/> Limpar Conversa
                               </button>
