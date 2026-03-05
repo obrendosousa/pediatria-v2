@@ -115,8 +115,8 @@ export default function Navigation() {
           {currentModule.sublabel}
         </span>
 
-        {/* Switcher de módulo (só aparece no atendimento para voltar à pediatria) */}
-        {hasMultipleModules && isAtendimento && !isCollapsed && (
+        {/* Switcher de módulo (aparece se tem acesso a múltiplos módulos) */}
+        {hasMultipleModules && !isCollapsed && (
           <Link
             href={isAtendimento ? '/' : '/atendimento'}
             className={`mt-2 flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-all w-full justify-center`}
