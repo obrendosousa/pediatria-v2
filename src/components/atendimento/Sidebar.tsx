@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Search, Plus, MoreVertical, Archive,
   Trash2, Filter, User, X,
-  Settings, ArrowLeft, Tag, Loader2, Pause, Play, Sparkles
+  Settings, ArrowLeft, Tag, Loader2, Pause, Play
 } from 'lucide-react';
 
 import { Chat } from '@/types';
@@ -238,7 +238,7 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
 
   return (
     <>
-      <div className="w-[320px] min-w-[260px] md:w-[380px] lg:w-[400px] shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1e2028] h-full relative z-10 transition-colors duration-300">
+      <div className="w-[320px] min-w-[260px] md:w-[380px] lg:w-[400px] shrink-0 flex flex-col border-r border-[#CCFBF1] dark:border-gray-800 bg-white dark:bg-[#1e2028] h-full relative z-10 transition-colors duration-300">
 
         {/* --- MODAIS --- */}
         <TagsManager
@@ -291,18 +291,18 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
 
         {/* 1. MODO ARQUIVADOS */}
         {isViewingArchived ? (
-          <div className="flex flex-col animate-in fade-in duration-200 bg-[#f0f2f5] dark:bg-[#2a2d36]">
+          <div className="flex flex-col animate-in fade-in duration-200 bg-[#F0FDFA] dark:bg-[#2a2d36]">
             <div className="h-[60px] flex items-center px-4 gap-4 border-b border-gray-200/50 dark:border-gray-700">
               <button
                 onClick={() => setIsViewingArchived(false)}
-                className="hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors -ml-2 text-[#54656f] dark:text-gray-300"
+                className="hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors -ml-2 text-[#5E8683] dark:text-gray-300"
               >
                 <ArrowLeft size={20} />
               </button>
-              <h2 className="text-[19px] font-medium text-[#111b21] dark:text-gray-100">Arquivadas</h2>
+              <h2 className="text-[19px] font-medium text-[#134E4A] dark:text-gray-100">Arquivadas</h2>
             </div>
             <div className="py-4 px-8 text-center bg-gray-50/50 dark:bg-transparent border-b border-gray-100 dark:border-gray-800">
-              <p className="text-[13px] text-[#54656f] dark:text-gray-400 leading-relaxed">
+              <p className="text-[13px] text-[#5E8683] dark:text-gray-400 leading-relaxed">
                 Todas as suas conversas arquivadas estão aqui.
               </p>
             </div>
@@ -333,12 +333,13 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
           /* 4. MODO PADRÃO */
         ) : (
           <>
-            <div className="h-[60px] bg-[#f0f2f5] dark:bg-[#2a2d36] flex items-center justify-between px-4 shrink-0 border-b border-gray-200 dark:border-gray-700">
+            <div className="h-[60px] bg-[#F0FDFA] dark:bg-[#2a2d36] flex items-center justify-between px-4 shrink-0 border-b border-gray-200/60 dark:border-gray-700">
               <div
-                className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ring-2 ring-transparent hover:ring-teal-200 dark:hover:ring-teal-700"
                 style={!myProfilePic || myProfilePicError ? { backgroundColor: getAvatarColorHex(0) } : {}}
               >
                 {myProfilePic && !myProfilePicError ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={myProfilePic}
                     alt="Sua foto de perfil"
@@ -354,45 +355,48 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
                   />
                 )}
               </div>
-              <div className="flex gap-2 text-[#54656f] dark:text-gray-300">
+              <div className="flex gap-1 text-[#5E8683] dark:text-gray-300">
                 <button
                   onClick={() => setIsNewChatModalOpen(true)}
-                  className="hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors"
+                  className="hover:bg-teal-100/60 dark:hover:bg-white/10 rounded-lg p-2 transition-colors cursor-pointer"
                   title="Nova Conversa"
+                  aria-label="Nova Conversa"
                 >
-                  <Plus size={22} />
+                  <Plus size={20} />
                 </button>
 
                 <button
                   onClick={() => isPaused ? handleDeactivatePause() : setIsPauseModalOpen(true)}
-                  className={`relative hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors ${isPaused ? 'text-red-500 dark:text-red-400' : ''
+                  className={`relative hover:bg-teal-100/60 dark:hover:bg-white/10 rounded-lg p-2 transition-colors cursor-pointer ${isPaused ? 'text-red-500 dark:text-red-400' : ''
                     }`}
                   title={isPaused ? 'Desativar Pausa' : 'Pausar Atendimento'}
+                  aria-label={isPaused ? 'Desativar Pausa' : 'Pausar Atendimento'}
                 >
-                  {isPaused ? <Play size={20} /> : <Pause size={20} />}
+                  {isPaused ? <Play size={18} /> : <Pause size={18} />}
                   {isPaused && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-[#1e2028] animate-pulse" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#F0FDFA] dark:border-[#2a2d36] animate-pulse" />
                   )}
                 </button>
 
                 <div className="relative" ref={headerMenuRef}>
                   <button
                     onClick={() => setIsHeaderMenuOpen(!isHeaderMenuOpen)}
-                    className={`hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors ${isHeaderMenuOpen ? 'bg-gray-200 dark:bg-white/10' : ''}`}
+                    className={`hover:bg-teal-100/60 dark:hover:bg-white/10 rounded-lg p-2 transition-colors cursor-pointer ${isHeaderMenuOpen ? 'bg-teal-100/60 dark:bg-white/10' : ''}`}
+                    aria-label="Menu"
                   >
-                    <MoreVertical size={20} />
+                    <MoreVertical size={18} />
                   </button>
 
                   {isHeaderMenuOpen && (
-                    <div className="absolute right-0 top-12 w-56 bg-white dark:bg-[#2a2d36] rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] py-2 z-[60] border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200 origin-top-right transition-all">
+                    <div className="absolute right-0 top-12 w-56 bg-white dark:bg-[#2a2d36] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.12)] py-1.5 z-[60] border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200 origin-top-right transition-all">
                       <button
                         onClick={() => { setIsTagsManagerOpen(true); setIsHeaderMenuOpen(false); }}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-3 text-[14.5px] text-[#3b4a54] dark:text-gray-200"
+                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-3 text-[14px] text-[#134E4A] dark:text-gray-200 cursor-pointer transition-colors"
                       >
-                        <Tag size={18} className="text-[#54656f] dark:text-gray-400" /> Gerenciar Etiquetas
+                        <Tag size={16} className="text-[#5E8683] dark:text-gray-400" /> Gerenciar Etiquetas
                       </button>
-                      <button className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-3 text-[14.5px] text-[#3b4a54] dark:text-gray-200">
-                        <Settings size={18} className="text-[#54656f] dark:text-gray-400" /> Configurações
+                      <button className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-3 text-[14px] text-[#134E4A] dark:text-gray-200 cursor-pointer transition-colors">
+                        <Settings size={16} className="text-[#5E8683] dark:text-gray-400" /> Configurações
                       </button>
                     </div>
                   )}
@@ -400,19 +404,24 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
               </div>
             </div>
 
-            <div className="p-2 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1e2028] relative transition-colors duration-300">
-              <div className="bg-[#f0f2f5] dark:bg-[#2a2d36] rounded-lg flex items-center px-4 py-1.5 h-[35px] transition-colors duration-300">
-                <Search size={18} className="text-[#54656f] dark:text-gray-400 mr-4 shrink-0" />
+            <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1e2028] relative transition-colors duration-300">
+              <div className="bg-[#F0FDFA] dark:bg-[#2a2d36] rounded-lg flex items-center px-3.5 py-1.5 h-[36px] transition-colors duration-300 focus-within:ring-2 focus-within:ring-teal-300/50 dark:focus-within:ring-teal-700/50">
+                <Search size={16} className="text-[#5E8683] dark:text-gray-400 mr-3 shrink-0" />
                 <input
                   type="text"
-                  placeholder="Pesquisar ou começar uma nova conversa"
-                  className="bg-transparent outline-none text-[14px] w-full placeholder-[#54656f] dark:placeholder-gray-500 text-[#3b4a54] dark:text-gray-200"
+                  placeholder="Pesquisar conversas..."
+                  className="bg-transparent outline-none text-[13.5px] w-full placeholder-[#5E8683]/70 dark:placeholder-gray-500 text-[#134E4A] dark:text-gray-200"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="text-[#5E8683] dark:text-gray-400 hover:text-[#134E4A] dark:hover:text-gray-200 p-0.5 cursor-pointer transition-colors">
+                    <X size={14} />
+                  </button>
+                )}
               </div>
-              <button className="absolute right-5 top-1/2 -translate-y-1/2 text-[#54656f] dark:text-gray-400">
-                <Filter size={18} />
+              <button className="absolute right-5 top-1/2 -translate-y-1/2 text-[#5E8683] dark:text-gray-400 hover:text-[#134E4A] dark:hover:text-gray-200 cursor-pointer transition-colors" aria-label="Filtrar">
+                <Filter size={16} />
               </button>
             </div>
           </>
@@ -423,17 +432,15 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
 
           {/* BOTÕES DE NAVEGAÇÃO SUPERIORES */}
           {!isViewingArchived && !isSelectionMode && !searchTerm && (
-            <>
-              <div
-                onClick={() => setIsViewingArchived(true)}
-                className="flex items-center px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 text-[#111b21] dark:text-gray-200 border-b border-gray-50 dark:border-gray-800 transition-all duration-200 ease-in-out"
-              >
-                <div className="w-8 flex justify-center">
-                  <Archive size={18} className="text-[#00a884] dark:text-primary" />
-                </div>
-                <span className="font-medium text-[15px] ml-2">Arquivadas</span>
+            <div
+              onClick={() => setIsViewingArchived(true)}
+              className="flex items-center px-4 py-2.5 cursor-pointer hover:bg-teal-50/50 dark:hover:bg-white/5 text-[#134E4A] dark:text-gray-200 border-b border-gray-100 dark:border-gray-800 transition-colors duration-200"
+            >
+              <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center">
+                <Archive size={16} className="text-[#0891B2] dark:text-teal-400" />
               </div>
-            </>
+              <span className="font-medium text-[13.5px] ml-3">Arquivadas</span>
+            </div>
           )}
 
           {/* ESTADO: CARREGANDO */}
@@ -465,14 +472,22 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
               ))
             ) : (
               /* ESTADO: VAZIO */
-              <div className="p-10 text-center text-gray-400 text-sm flex flex-col items-center gap-2">
-                {isViewingArchived ? (
-                  <>Nenhuma conversa arquivada.</>
-                ) : searchTerm ? (
-                  <>{`Nenhuma conversa encontrada para "${searchTerm}".`}</>
-                ) : (
-                  <>Nenhuma conversa.</>
-                )}
+              <div className="p-10 text-center flex flex-col items-center gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-white/5 flex items-center justify-center">
+                  {searchTerm ? (
+                    <Search size={24} className="text-gray-300 dark:text-gray-600" />
+                  ) : (
+                    <Archive size={24} className="text-gray-300 dark:text-gray-600" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {isViewingArchived ? 'Nenhuma conversa arquivada' : searchTerm ? 'Nenhum resultado' : 'Nenhuma conversa'}
+                  </p>
+                  {searchTerm && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Tente outro termo de busca</p>
+                  )}
+                </div>
               </div>
             )
           )}

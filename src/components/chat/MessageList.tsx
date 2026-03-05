@@ -427,7 +427,7 @@ export default function MessageList({
                 opacity: 0
               }}
             >
-              <span className="bg-[#f0f2f5] dark:bg-[#202c33] text-[#54656f] dark:text-[#8696a0] text-xs py-1.5 px-3 rounded-lg shadow-sm font-medium uppercase tracking-wide border border-gray-100 dark:border-gray-700/50">
+              <span className="bg-[var(--chat-surface)] dark:bg-[#202c33] text-[var(--chat-text-muted)] dark:text-[#8696a0] text-xs py-1.5 px-3 rounded-lg shadow-sm font-medium uppercase tracking-wide border border-gray-100 dark:border-gray-700/50">
                 {currentDate === todayDateString ? 'Hoje' : currentDate}
               </span>
             </div>
@@ -482,7 +482,7 @@ export default function MessageList({
     <div className="relative flex-1 min-w-0 min-h-0 flex flex-col">
       <div
         ref={containerRef}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:px-[5%] space-y-0 bg-[#efeae2] dark:bg-[#0b141a] scrollbar-thin scrollbar-thumb-black/10 dark:scrollbar-thumb-white/10"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:px-[5%] space-y-0 bg-[var(--chat-bg)] dark:bg-[#0b141a] scrollbar-thin scrollbar-thumb-black/10 dark:scrollbar-thumb-white/10"
         style={{
           backgroundImage: pediatricWallpaper,
           backgroundRepeat: 'repeat',
@@ -534,7 +534,7 @@ export default function MessageList({
 
       <button
         onClick={scrollToBottom}
-        className={`absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[#00a884]/50 hover:bg-[#00a884]/70 text-white shadow-lg flex items-center justify-center z-50 transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${
+        className={`absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[var(--chat-accent)]/50 hover:bg-[var(--chat-accent)]/70 text-white shadow-lg flex items-center justify-center z-50 transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${
           showScrollToBottom
             ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 scale-75 translate-y-4 pointer-events-none'

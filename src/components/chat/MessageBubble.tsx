@@ -412,7 +412,7 @@ export default function MessageBubble({
                 const planText = text.replace(/📋 \*Plano gerado\.\*|Clique em 'Executar' na aba abaixo para iniciar\./gi, '').trim();
                 window.dispatchEvent(new CustomEvent('clara:execute_plan', { detail: planText }));
               }}
-              className="flex-1 bg-[#25D366] hover:bg-[#1DA851] text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 bg-[var(--chat-accent-secondary)] hover:opacity-90 text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors flex items-center justify-center gap-1.5"
             >
               <Play size={14} />
               Executar
@@ -445,7 +445,7 @@ export default function MessageBubble({
       : (isVideoMessage && !videoCaptionText)
         ? 'bg-transparent shadow-none'
         : isMe
-          ? 'bg-[#d9fdd3] dark:bg-[#005c4b]'
+          ? 'bg-[var(--chat-bubble-sent)] dark:bg-[var(--chat-bubble-sent-dark)]'
           : 'bg-white dark:bg-[#202c33]';
 
   // Mídia (imagem, vídeo, documento) sempre fica com os 4 cantos arredondados
@@ -668,8 +668,8 @@ export default function MessageBubble({
             </p>
           )}
           {hasReplyPreview && (
-            <div className="mb-1.5 rounded-md bg-black/5 dark:bg-white/5 px-2 py-1 border-l-[3px] border-green-500">
-              <p className="text-[11px] font-semibold text-green-700 dark:text-green-400 truncate">
+            <div className="mb-1.5 rounded-md bg-black/5 dark:bg-white/5 px-2 py-1 border-l-[3px] border-[var(--chat-accent)]">
+              <p className="text-[11px] font-semibold text-[var(--chat-accent)] truncate">
                 {replyData?.sender === 'HUMAN_AGENT' || replyData?.sender === 'me' || replyData?.sender === 'AI_AGENT'
                   ? 'Você'
                   : (replyData?.sender === 'CUSTOMER' || replyData?.sender === 'contact') ? (replyData?.sender_name || 'Contato') : replyData?.sender || 'Contato'}
@@ -696,7 +696,7 @@ export default function MessageBubble({
                 <span
                   key={reaction.emoji}
                   className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-[2px] text-[11px] ${reaction.mine
-                    ? 'border-[#00a884]/40 bg-[#00a884]/10 text-[#007a63] dark:text-[#8fe3d5]'
+                    ? 'border-[var(--chat-accent)]/40 bg-[var(--chat-accent)]/10 text-[var(--chat-accent)] dark:text-[var(--chat-accent)]'
                     : 'border-black/10 bg-black/5 text-[#3b4a54] dark:text-[#c7d1d8]'
                     }`}
                 >
@@ -784,7 +784,7 @@ export default function MessageBubble({
         {showReactionPopup && createPortal(
           <div
             data-reaction-popup
-            className="fixed z-[10000] bg-white dark:bg-[#233138] border border-gray-100 dark:border-gray-700 shadow-[0_4px_12px_rgba(0,0,0,0.15)] rounded-full p-1.5"
+            className="fixed z-[10000] bg-white dark:bg-[#2a2d36] border border-gray-100 dark:border-gray-700 shadow-[0_4px_12px_rgba(0,0,0,0.15)] rounded-full p-1.5"
             style={{
               top: reactionPosition.top,
               left: reactionPosition.left,
@@ -832,7 +832,7 @@ export default function MessageBubble({
         {showMenu && createPortal(
           <div
             data-message-menu
-            className={`fixed bg-white dark:bg-[#233138] py-2 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)] z-[9999] min-w-[160px] border border-gray-100 dark:border-gray-700 ${menuPosition.openUp ? 'origin-bottom-right' : 'origin-top-right'}`}
+            className={`fixed bg-white dark:bg-[#2a2d36] py-2 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)] z-[9999] min-w-[160px] border border-gray-100 dark:border-gray-700 ${menuPosition.openUp ? 'origin-bottom-right' : 'origin-top-right'}`}
             style={{
               top: menuPosition.top,
               left: menuPosition.left,

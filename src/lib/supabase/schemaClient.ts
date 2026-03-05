@@ -1,4 +1,5 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -9,19 +10,19 @@ const clientCache = new Map<string, SupabaseClient<any, any, any>>();
 
 /**
  * Cliente Supabase para Client Components com schema configurável.
- * Usa createClient (não createBrowserClient) para permitir instâncias separadas por schema.
- * Usado pelos módulos que operam em schemas não-public (ex: atendimento).
+ * Usa createBrowserClient com isSingleton: false para criar instâncias separadas por schema,
+ * mas que compartilham o mesmo cookie storage de auth (document.cookie).
+ * Isso garante que a sessão do usuário (login) funcione em qualquer schema.
  */
 export function createSchemaClient(schema: string = 'public') {
   const cached = clientCache.get(schema);
   if (cached) return cached;
 
-  const client = createClient(supabaseUrl, supabaseAnonKey, {
+  // isSingleton: false evita retornar o singleton do schema 'public'
+  // O auth storage é cookie-based (document.cookie), igual ao createBrowserClient padrão
+  const client = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    isSingleton: false,
     db: { schema },
-    auth: {
-      persistSession: true,
-      storageKey: `sb-${schema}-auth-token`,
-    },
   });
 
   clientCache.set(schema, client);

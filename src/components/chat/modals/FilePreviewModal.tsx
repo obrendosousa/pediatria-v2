@@ -134,7 +134,7 @@ export default function FilePreviewModal({ file, onSend, onClose }: FilePreviewM
             </div>
             <button
               onClick={handleSend}
-              className="w-12 h-12 rounded-full bg-[#00a884] hover:bg-[#008f6f] flex items-center justify-center transition-all shadow-lg active:scale-95 shrink-0"
+              className="w-12 h-12 rounded-full bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] flex items-center justify-center transition-all shadow-lg active:scale-95 shrink-0"
               title="Enviar"
             >
               <Send size={20} className="text-white ml-0.5" />
@@ -175,7 +175,7 @@ export default function FilePreviewModal({ file, onSend, onClose }: FilePreviewM
             </div>
             <button
               onClick={handleSend}
-              className="w-12 h-12 rounded-full bg-[#00a884] hover:bg-[#008f6f] flex items-center justify-center transition-all shadow-lg active:scale-95 shrink-0"
+              className="w-12 h-12 rounded-full bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] flex items-center justify-center transition-all shadow-lg active:scale-95 shrink-0"
               title="Enviar"
             >
               <Send size={20} className="text-white ml-0.5" />

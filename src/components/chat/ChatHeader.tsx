@@ -71,7 +71,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
             onUpdate={handleUpdate}
         />
 
-        <div className="bg-[#f0f2f5] dark:bg-[#202c33] px-4 py-2.5 border-l border-gray-300 dark:border-gray-700 flex items-center justify-between z-10 shadow-sm transition-colors duration-300">
+        <div className="bg-[var(--chat-surface)] dark:bg-[#202c33] px-4 py-2.5 border-l border-gray-300 dark:border-gray-700 flex items-center justify-between z-10 shadow-sm transition-colors duration-300">
             <div className="flex items-center gap-3">
                 {isAIChat ? (
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm border border-indigo-400/30">
@@ -111,7 +111,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                 {!isAIChat && isUnsavedContact && (
                   <button
                     onClick={() => setIsEditModalOpen(true)}
-                    className="mt-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    className="mt-1 text-[11px] font-semibold text-[var(--chat-accent)] hover:opacity-80 dark:text-[var(--chat-accent)]"
                   >
                     Salvar contato
                   </button>
@@ -131,7 +131,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                     <button
                         onClick={onAISchedule}
                         disabled={isLoadingAI}
-                        className="px-3 py-1.5 bg-pink-500 hover:bg-pink-600 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                        className="px-3 py-1.5 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                         title="Agendar paciente usando IA"
                     >
                         {isLoadingAI ? (

@@ -27,7 +27,7 @@ export default function AtendimentoLayout({ children }: { children: React.ReactN
     return (
       <div className="flex h-full w-full items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-teal-400 border-t-transparent" />
           <p className="text-sm text-slate-500 dark:text-gray-400">Carregando módulo...</p>
         </div>
       </div>
@@ -39,7 +39,9 @@ export default function AtendimentoLayout({ children }: { children: React.ReactN
 
   return (
     <ModuleProvider config={ATENDIMENTO_CONFIG}>
-      {children}
+      <div className="module-atendimento contents">
+        {children}
+      </div>
     </ModuleProvider>
   );
 }

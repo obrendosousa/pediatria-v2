@@ -1,22 +1,22 @@
 import './globals.css';
-import { Inter, Nunito } from 'next/font/google';
+import { Figtree, Noto_Sans } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import AuthLayoutGuard from '@/components/AuthLayoutGuard';
 import type { Metadata } from 'next';
 
-// Fonte Padrão (Leitura - mantém a seriedade nos textos longos)
-const inter = Inter({ 
+// Fonte Principal (Heading - limpa, médica, acessível)
+const figtree = Figtree({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-figtree',
   display: 'swap',
 });
 
-// Fonte "Fofa" (Títulos e Destaques - Arredondada)
-const nunito = Nunito({
+// Fonte Corpo (Leitura - profissional, healthcare)
+const notoSans = Noto_Sans({
   subsets: ['latin'],
-  variable: '--font-nunito',
-  weight: ['400', '600', '700', '800'],
+  variable: '--font-noto-sans',
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
 });
 
@@ -41,7 +41,7 @@ export default function RootLayout({
       </head>
       
       <body 
-        className={`${inter.variable} ${nunito.variable} font-sans antialiased bg-[rgb(var(--background))] text-[rgb(var(--foreground))] overflow-hidden selection:bg-pink-200 selection:text-pink-900`} 
+        className={`${figtree.variable} ${notoSans.variable} font-sans antialiased bg-[rgb(var(--background))] text-[rgb(var(--foreground))] overflow-hidden selection:bg-pink-200 selection:text-pink-900`} 
         suppressHydrationWarning={true}
       >
         <AuthProvider>

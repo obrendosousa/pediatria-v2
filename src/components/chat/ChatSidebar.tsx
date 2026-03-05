@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, @next/next/no-img-element */
 import {
   FileText,
   Mic,
@@ -117,29 +118,29 @@ export default function ChatSidebar({
       const isActive = activeTab === id;
       return (
           <div className="relative group">
-              <button 
-                  onClick={() => handleTabClick(id)} 
+              <button
+                  onClick={() => handleTabClick(id)}
                   aria-label={label}
-                  className={`relative w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-300
-                    ${isActive 
-                        ? `${colorClass} text-white shadow-lg scale-105` 
+                  className={`relative w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer transition-all duration-200
+                    ${isActive
+                        ? `${colorClass} text-white shadow-md`
                         : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-600 dark:hover:text-gray-300'
                     }`}
               >
-                  <Icon size={20} className={`transition-transform duration-500 ${spin ? 'animate-spin' : ''}`}/>
-                  
+                  <Icon size={18} className={spin ? 'animate-spin' : ''}/>
+
                   {/* Badge de Contagem */}
                   {count > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] text-white ring-2 ring-white dark:ring-[#1e2028]">
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#1e2028]">
                           {count}
                       </span>
                   )}
               </button>
-              
+
               {/* Tooltip Lateral */}
-              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2 py-1 bg-gray-800 dark:bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-gray-900 dark:bg-gray-700 text-white text-[11px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                   {label}
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 -ml-1 border-4 border-transparent border-r-gray-800 dark:border-r-gray-700"/>
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-l-gray-900 dark:border-l-gray-700"/>
               </div>
           </div>
       );
@@ -155,22 +156,32 @@ export default function ChatSidebar({
                 <div className="flex flex-col h-full w-full"> 
                     
                     {/* Header do Painel */}
-                    <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#202c33] flex justify-between items-center shrink-0 transition-colors">
-                        <div>
-                          <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 text-sm uppercase tracking-wide">
-                              {activeTab === 'text' && <><FileText size={18} className="text-blue-500"/> Mensagens Rápidas</>}
-                              {activeTab === 'audio' && <><Mic size={18} className="text-purple-500"/> Biblioteca de Áudio</>}
-                              {activeTab === 'image' && <><ImageIcon size={18} className="text-emerald-500"/> Mídia e Arquivos</>}
-                              {activeTab === 'script' && <><Scroll size={18} className="text-orange-500"/> Scripts de Venda</>}
-                              {activeTab === 'funnels' && <><Workflow size={18} className="text-indigo-500"/> Funis Automáticos</>}
-                              {activeTab === 'schedule' && <><CalendarClock size={18} className="text-pink-500"/> Agenda de Envios</>}
-                              {activeTab === 'executions' && <><Orbit size={18} className="text-cyan-500"/> Centro de Execução</>}
-                              {activeTab === 'copiloto' && <><BotMessageSquare size={18} className="text-violet-500"/> Copiloto IA</>}
-                          </h3>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Atalhos: Alt+1..5, Ctrl/Cmd+K</p>
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#202c33] flex justify-between items-center shrink-0 transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          {activeTab === 'text' && <div className="p-1.5 rounded-lg bg-[var(--chat-accent)]/10"><FileText size={16} className="text-[var(--chat-accent)]"/></div>}
+                          {activeTab === 'audio' && <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/20"><Mic size={16} className="text-purple-500"/></div>}
+                          {activeTab === 'image' && <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20"><ImageIcon size={16} className="text-emerald-500"/></div>}
+                          {activeTab === 'script' && <div className="p-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/20"><Scroll size={16} className="text-orange-500"/></div>}
+                          {activeTab === 'funnels' && <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20"><Workflow size={16} className="text-indigo-500"/></div>}
+                          {activeTab === 'schedule' && <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-900/20"><CalendarClock size={16} className="text-cyan-500"/></div>}
+                          {activeTab === 'executions' && <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-900/20"><Orbit size={16} className="text-cyan-500"/></div>}
+                          {activeTab === 'copiloto' && <div className="p-1.5 rounded-lg bg-violet-50 dark:bg-violet-900/20"><BotMessageSquare size={16} className="text-violet-500"/></div>}
+                          <div>
+                            <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-[13px]">
+                                {activeTab === 'text' && 'Mensagens Rápidas'}
+                                {activeTab === 'audio' && 'Biblioteca de Áudio'}
+                                {activeTab === 'image' && 'Mídia e Arquivos'}
+                                {activeTab === 'script' && 'Scripts de Venda'}
+                                {activeTab === 'funnels' && 'Funis Automáticos'}
+                                {activeTab === 'schedule' && 'Agenda de Envios'}
+                                {activeTab === 'executions' && 'Centro de Execução'}
+                                {activeTab === 'copiloto' && 'Copiloto IA'}
+                            </h3>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500">Ctrl/Cmd+K para abrir</p>
+                          </div>
                         </div>
-                        <button onClick={() => setActiveTab(null)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                            <ChevronsRight size={18}/>
+                        <button onClick={() => setActiveTab(null)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer">
+                            <ChevronsRight size={16}/>
                         </button>
                     </div>
 
@@ -178,12 +189,12 @@ export default function ChatSidebar({
                     {activeTab !== 'schedule' && activeTab !== 'executions' && activeTab !== 'copiloto' && (
                         <div className="px-4 py-3 bg-white dark:bg-[#202c33] border-b border-gray-100 dark:border-gray-700 transition-colors">
                             <div className="relative group">
-                                <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
+                                <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4 group-focus-within:text-[var(--chat-accent)] transition-colors" />
                                 <input 
                                     value={searchTerm} 
                                     onChange={e => setSearchTerm(e.target.value)} 
                                     placeholder="Pesquisar..." 
-                                    className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-[#2a2d36] border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-[#2a2d36] transition-all" 
+                                    className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-[#2a2d36] border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 focus:outline-none focus:border-[var(--chat-accent)] focus:bg-white dark:focus:bg-[#2a2d36] transition-all" 
                                 />
                             </div>
                         </div>
@@ -276,7 +287,7 @@ export default function ChatSidebar({
                                 return sameType && (!searchTerm || m.title.toLowerCase().includes(searchTerm.toLowerCase()));
                             })
                             .map(macro => (
-                                <div key={macro.id} className="bg-white dark:bg-[#2a2d36] rounded-xl border border-gray-200 dark:border-gray-700 p-3 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500 transition-all group">
+                                <div key={macro.id} className="bg-white dark:bg-[#2a2d36] rounded-xl border border-gray-200 dark:border-gray-700 p-3 hover:shadow-md hover:border-[var(--chat-accent)]/30 dark:hover:border-[var(--chat-accent)]/50 transition-all group">
                                     {/** loading apenas no botão clicado */}
                                     {(() => {
                                       const isMacroSending = isProcessingMacro && processingActionId === `macro:${macro.id}`;
@@ -303,12 +314,12 @@ export default function ChatSidebar({
                                             <button
                                                 onClick={() => onMacroSend(macro)}
                                                 disabled={isProcessingMacro && !isMacroSending}
-                                                className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-sm shadow-blue-200 dark:shadow-none transition-all active:scale-95"
+                                                className="px-2.5 py-1.5 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-sm dark:shadow-none transition-all active:scale-95"
                                                 title="Enviar agora"
                                             >
                                                 {isMacroSending ? <Loader2 size={12} className="animate-spin"/> : <Send size={12}/>} Enviar
                                             </button>
-                                            <button onClick={(e) => {e.stopPropagation(); onOpenMacroModal(macro)}} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"><Edit2 size={14}/></button>
+                                            <button onClick={(e) => {e.stopPropagation(); onOpenMacroModal(macro)}} className="p-1.5 text-gray-400 hover:text-[var(--chat-accent)] hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg"><Edit2 size={14}/></button>
                                             <button onClick={(e) => {e.stopPropagation(); onDelete(macro.id, 'macros')}} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"><Trash2 size={14}/></button>
                                         </div>
                                     </div>
@@ -511,14 +522,14 @@ export default function ChatSidebar({
                         {activeTab === 'schedule' && (
                             <>
                                 <div className="pb-3 sticky top-0 z-10 bg-gray-50/0">
-                                    <button onClick={() => onOpenScheduleModal(null, 'macro')} className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-pink-200 dark:shadow-none flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                                    <button onClick={() => onOpenScheduleModal(null, 'macro')} className="w-full bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white py-3 rounded-xl text-sm font-bold shadow-lg dark:shadow-none flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
                                         <Plus size={18}/> Novo Agendamento
                                     </button>
                                 </div>
                                 <div className="space-y-3 pb-10">
                                     {scheduledMessages.map(sched => (
-                                        <div key={sched.id} className="bg-white dark:bg-[#2a2d36] p-3 rounded-xl border border-pink-100 dark:border-pink-900/30 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
-                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-pink-400"/>
+                                        <div key={sched.id} className="bg-white dark:bg-[#2a2d36] p-3 rounded-xl border border-[var(--chat-accent)]/10 dark:border-[var(--chat-accent)]/20 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--chat-accent)]"/>
                                             <div className="flex justify-between items-start mb-1 pl-2">
                                                 <span className="font-bold text-gray-700 dark:text-gray-100 text-xs truncate max-w-[180px]">{sched.title || 'Agendamento'}</span>
                                                 <button onClick={() => onCancelSchedule(sched.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={14}/></button>
@@ -528,7 +539,7 @@ export default function ChatSidebar({
                                                 <span className="font-medium bg-gray-100 dark:bg-white/5 px-1.5 rounded">{new Date(sched.scheduled_for).toLocaleDateString('pt-BR')} às {new Date(sched.scheduled_for).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
                                             </div>
                                             <div className="pl-2">
-                                                <span className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${(sched as any).item_type === 'adhoc' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 border-purple-100 dark:border-purple-800' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 border-blue-100 dark:border-blue-800'}`}>
+                                                <span className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${(sched as any).item_type === 'adhoc' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 border-purple-100 dark:border-purple-800' : 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-300 border-cyan-100 dark:border-cyan-800'}`}>
                                                     {(sched as any).item_type === 'adhoc' ? 'Personalizado' : (sched as any).item_type === 'macro' ? 'Mensagem Salva' : 'Funil'}
                                                 </span>
                                             </div>
@@ -561,18 +572,19 @@ export default function ChatSidebar({
         </div>
 
         {/* --- ÍCONES LATERAIS (NAVBAR) --- */}
-        <div className="w-[58px] sm:w-[70px] flex flex-col items-center py-4 sm:py-6 gap-4 bg-white dark:bg-[#1e2028] z-40 border-l border-gray-100 dark:border-gray-800 transition-colors">
-            
-            {/* Toggle de Abertura (Opcional, pois clicar nos ícones já abre) */}
-            <button 
-                onClick={() => setActiveTab(activeTab ? null : 'text')} 
-                className="p-2 text-gray-300 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-300 transition-colors mb-2"
+        <div className="w-[52px] sm:w-[58px] flex flex-col items-center py-3 sm:py-4 gap-1.5 bg-white dark:bg-[#1e2028] z-40 border-l border-gray-100 dark:border-gray-800 transition-colors">
+
+            {/* Toggle */}
+            <button
+                onClick={() => setActiveTab(activeTab ? null : 'text')}
+                className="p-1.5 text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 transition-colors cursor-pointer mb-1"
                 title={activeTab ? "Fechar Menu" : "Abrir Menu"}
+                aria-label={activeTab ? "Fechar Menu" : "Abrir Menu"}
             >
-                {activeTab ? <ChevronsRight size={20}/> : <Menu size={20}/>}
+                {activeTab ? <ChevronsRight size={18}/> : <Menu size={18}/>}
             </button>
 
-            {/* Grupo: Execução (Destaque) */}
+            {/* Execução (destaque) */}
             {renderSidebarIcon({
                 id: "executions",
                 icon: Orbit,
@@ -582,32 +594,26 @@ export default function ChatSidebar({
                 count: executions.length,
             })}
 
-            <div className="w-8 h-[1px] bg-gray-100 dark:bg-gray-700"/>
+            <div className="w-6 h-px bg-gray-100 dark:bg-gray-700 my-1"/>
 
-            {/* Grupo: Recursos */}
-            {renderSidebarIcon({ id:"text", icon:FileText, label:"Mensagens", colorClass:"bg-blue-600" })}
+            {/* Grupo: Conteúdo */}
+            <span className="text-[8px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600 mb-0.5">Envio</span>
+            {renderSidebarIcon({ id:"text", icon:FileText, label:"Mensagens", colorClass:"bg-[var(--chat-accent)]" })}
             {renderSidebarIcon({ id:"audio", icon:Mic, label:"Áudios", colorClass:"bg-purple-600" })}
             {renderSidebarIcon({ id:"image", icon:ImageIcon, label:"Mídia", colorClass:"bg-emerald-600" })}
-            
-            <div className="w-8 h-[1px] bg-gray-100 dark:bg-gray-700"/>
-            
+
+            <div className="w-6 h-px bg-gray-100 dark:bg-gray-700 my-1"/>
+
             {/* Grupo: Automação */}
+            <span className="text-[8px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600 mb-0.5">Auto</span>
             {renderSidebarIcon({ id:"script", icon:Scroll, label:"Scripts", colorClass:"bg-orange-500" })}
             {renderSidebarIcon({ id:"funnels", icon:Workflow, label:"Funis", colorClass:"bg-indigo-600" })}
-            {renderSidebarIcon({ id:"schedule", icon:CalendarClock, label:"Agenda", colorClass:"bg-pink-600" })}
+            {renderSidebarIcon({ id:"schedule", icon:CalendarClock, label:"Agenda", colorClass:"bg-cyan-600" })}
 
             <div className="flex-1" />
 
-            {/* Grupo: IA */}
+            {/* IA (fixo no fundo) */}
             {renderSidebarIcon({ id: "copiloto", icon: BotMessageSquare, label: "Copiloto IA", colorClass: "bg-violet-600" })}
-
-            <button
-                onClick={() => setActiveTab(null)}
-                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition-all text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                title="Fechar painel"
-            >
-                <ChevronsRight size={18} />
-            </button>
         </div>
       </div>
   );

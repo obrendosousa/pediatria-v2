@@ -4,67 +4,87 @@
 
 @layer base {
   :root {
-    /* --- TEMA CLARO: "DIA NO PARQUE" --- */
-    /* Fundo Creme/Off-white quente (menos clínico que o branco puro) */
-    --background: 253 251 247; 
-    --foreground: 71 85 105;   /* Texto Cinza Chumbo Suave */
+    /* --- TEMA CLARO: "DIA NO PARQUE" (Pediatria) --- */
+    --background: 253 251 247;
+    --foreground: 71 85 105;
 
-    /* Superfícies (Cards, Sidebar) */
     --card: 255 255 255;
     --card-foreground: 71 85 105;
-    --border: 241 245 249;     /* Bordas sutis */
+    --border: 241 245 249;
 
-    /* Cores de Acento */
-    --primary: 255 138 165;    /* Rosa Chiclete Suave */
+    --primary: 255 138 165;      /* Rosa Chiclete */
     --primary-foreground: 255 255 255;
-    
-    --secondary: 167 243 208;  /* Verde Menta (Detalhes) */
+
+    --secondary: 167 243 208;    /* Verde Menta */
     --secondary-foreground: 22 101 52;
 
-    --accent: 254 249 195;     /* Amarelo Pastel (Destaques) */
+    --accent: 254 249 195;       /* Amarelo Pastel */
     --accent-foreground: 161 98 7;
 
     --muted: 248 250 252;
     --muted-foreground: 148 163 184;
 
-    /* Status */
-    --success: 134 239 172;    /* Verde Pastel */
-    --warning: 253 224 71;     /* Amarelo Pastel */
-    --destructive: 252 165 165;/* Vermelho Pastel */
+    --success: 134 239 172;
+    --warning: 253 224 71;
+    --destructive: 252 165 165;
+
+    /* --- Chat Module Vars (padrão = Pediatria/WhatsApp) --- */
+    --chat-surface: #f0f2f5;
+    --chat-surface-hover: #f5f6f6;
+    --chat-bg: #efeae2;
+    --chat-accent: #00a884;
+    --chat-accent-hover: #008f6f;
+    --chat-accent-secondary: #25d366;
+    --chat-bubble-sent: #d9fdd3;
+    --chat-bubble-sent-dark: #005c4b;
+    --chat-text-primary: #111b21;
+    --chat-text-muted: #667781;
+    --chat-text-secondary: #54656f;
+    --chat-wallpaper-stroke: #7f96a1;
+    --chat-wallpaper-opacity: 0.13;
   }
 
   /* --- TEMA ESCURO: "NOITE SUAVE" --- */
-  /* Para ativar, adicione a classe 'dark' na tag <html> ou <body> */
   .dark {
-    /* Fundo: Um cinza-azulado profundo e aveludado (não preto) */
-    --background: 30 32 40;     /* #1e2028 */
-    --foreground: 220 220 230;  /* Off-white lavanda suave */
+    --background: 30 32 40;
+    --foreground: 220 220 230;
 
-    /* Superfícies: Ligeiramente mais claras que o fundo para criar profundidade */
-    --card: 38 40 50;           /* #262832 */
+    --card: 38 40 50;
     --card-foreground: 226 232 240;
-    --border: 45 48 60;         /* Bordas suaves, quase invisíveis */
+    --border: 45 48 60;
 
-    /* Cores de Acento (Pastel Sophisticated) */
-    /* Primary: Rosa Quartz Suave */
-    --primary: 240 160 180;     
+    --primary: 240 160 180;      /* Rosa Quartz */
     --primary-foreground: 40 20 30;
 
-    /* Secondary: Menta Gelada */
-    --secondary: 160 210 200;   
+    --secondary: 160 210 200;    /* Menta Gelada */
     --secondary-foreground: 20 50 45;
 
-    /* Accent: Lavanda/Roxo Pastel para hovers e detalhes */
-    --accent: 60 62 75;         
+    --accent: 60 62 75;
     --accent-foreground: 230 230 240;
 
     --muted: 35 37 45;
     --muted-foreground: 140 145 160;
-    
-    /* Status em tons pastel para não agredir a vista no escuro */
-    --success: 130 200 150;     /* Verde Salvia */
-    --warning: 230 200 120;     /* Amarelo Creme */
-    --destructive: 230 120 120; /* Vermelho Coral Suave */
+
+    --success: 130 200 150;
+    --warning: 230 200 120;
+    --destructive: 230 120 120;
+  }
+
+  /* --- Módulo Atendimento: Overrides teal --- */
+  .module-atendimento {
+    --chat-surface: #F0FDFA;
+    --chat-surface-hover: #E0F2FE;
+    --chat-bg: #F0FDFA;
+    --chat-accent: #0891B2;
+    --chat-accent-hover: #0e7490;
+    --chat-accent-secondary: #22C55E;
+    --chat-bubble-sent: #CCFBF1;
+    --chat-bubble-sent-dark: #134E4A;
+    --chat-text-primary: #134E4A;
+    --chat-text-muted: #5E8683;
+    --chat-text-secondary: #5E8683;
+    --chat-wallpaper-stroke: #5E8683;
+    --chat-wallpaper-opacity: 0.08;
   }
   
   body {

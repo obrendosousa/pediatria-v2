@@ -9,11 +9,15 @@ export interface EvolutionConfig {
 export function getEvolutionConfig(instanceEnvKey: string = 'EVOLUTION_INSTANCE'): EvolutionConfig {
   const baseUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, '');
   const instance = process.env[instanceEnvKey];
-  const apiKey = process.env.EVOLUTION_API_KEY;
+
+  // Procura API key específica da instância, ex: EVOLUTION_ATENDIMENTO_API_KEY
+  // Fallback para EVOLUTION_API_KEY (chave global)
+  const instanceApiKeyEnv = instanceEnvKey.replace(/_INSTANCE$/, '_API_KEY');
+  const apiKey = process.env[instanceApiKeyEnv] || process.env.EVOLUTION_API_KEY;
 
   if (!baseUrl || !instance || !apiKey) {
     throw new Error(
-      `Evolution API não configurada (EVOLUTION_API_URL, ${instanceEnvKey}, EVOLUTION_API_KEY)`
+      `Evolution API não configurada (EVOLUTION_API_URL, ${instanceEnvKey}, ${instanceApiKeyEnv} ou EVOLUTION_API_KEY)`
     );
   }
 

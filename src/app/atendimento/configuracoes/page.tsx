@@ -10,7 +10,7 @@ export default function AtendimentoSettingsPage() {
           <Settings className="w-8 h-8 text-white" />
         </div>
         <h2 className="text-xl font-bold text-slate-700 dark:text-gray-100">Configurações — Clínica Geral</h2>
-        <span className="text-xs text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full font-medium">Em construção</span>
+        <span className="text-xs text-teal-500 bg-teal-50 dark:bg-teal-900/20 px-3 py-1 rounded-full font-medium">Em construção</span>
       </div>
     </div>
   );

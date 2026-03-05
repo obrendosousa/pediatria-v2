@@ -342,7 +342,7 @@ export default function ChatInput({
   // --- RENDERIZAÇÃO ---
   if (isRecording) {
     return (
-      <div className="h-[62px] px-4 flex items-center gap-4 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700">
+      <div className="h-[62px] px-4 flex items-center gap-4 bg-[var(--chat-surface)] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2 text-red-500 animate-pulse">
           <div className="w-3 h-3 rounded-full bg-red-500" />
           <span className="font-medium tabular-nums text-lg">{formatTime(recordingDuration)}</span>
@@ -362,7 +362,7 @@ export default function ChatInput({
           </button>
           <button
             onClick={stopRecording}
-            className="p-3 bg-[#00a884] hover:bg-[#008f6f] rounded-full text-white transition-colors shadow-sm animate-in zoom-in duration-200"
+            className="p-3 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] rounded-full text-white transition-colors shadow-sm animate-in zoom-in duration-200"
             title="Enviar Áudio"
           >
             <Send size={20} />
@@ -375,7 +375,7 @@ export default function ChatInput({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col bg-[#f0f2f5] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700 relative z-20"
+      className="flex flex-col bg-[var(--chat-surface)] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700 relative z-20"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -384,9 +384,9 @@ export default function ChatInput({
       {/* Overlay de drag-and-drop estilo WhatsApp */}
       {isDragging && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-sm pointer-events-none"
-          style={{ background: 'rgba(0, 168, 132, 0.12)', border: '2px dashed #00a884' }}>
-          <Upload size={28} className="text-[#00a884] mb-2" />
-          <span className="text-[#00a884] font-semibold text-sm">Solte para enviar</span>
+          style={{ background: 'color-mix(in srgb, var(--chat-accent) 12%, transparent)', border: '2px dashed var(--chat-accent)' }}>
+          <Upload size={28} className="text-[var(--chat-accent)] mb-2" />
+          <span className="text-[var(--chat-accent)] font-semibold text-sm">Solte para enviar</span>
         </div>
       )}
 
@@ -432,7 +432,7 @@ export default function ChatInput({
         <div className="flex items-center gap-1 pb-2">
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className={`p-2 rounded-full transition-colors ${showEmojiPicker ? 'text-green-600 bg-green-50' : 'text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}`}
+            className={`p-2 rounded-full transition-colors ${showEmojiPicker ? 'text-[var(--chat-accent)] bg-[color-mix(in_srgb,var(--chat-accent)_10%,white)]' : 'text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}`}
             title="Emojis"
           >
             <Smile size={24} />
@@ -454,9 +454,9 @@ export default function ChatInput({
           />
         </div>
 
-        <div className="flex-1 bg-white dark:bg-[#2a3942] rounded-lg border border-transparent focus-within:border-green-500/50 transition-colors min-h-[42px] relative flex flex-col justify-center my-1">
+        <div className="flex-1 bg-white dark:bg-[#2a3942] rounded-lg border border-transparent focus-within:border-[var(--chat-accent)]/50 transition-colors min-h-[42px] relative flex flex-col justify-center my-1">
           {(replyTo || editingMessage) && (
-            <div className="absolute bottom-full left-0 right-0 bg-[#f0f2f5] dark:bg-[#1f2c34] p-2 rounded-t-lg border-l-4 border-green-500 flex justify-between items-start mb-1 mx-1 shadow-sm opacity-95 animate-in slide-in-from-bottom-2">
+            <div className="absolute bottom-full left-0 right-0 bg-[var(--chat-surface)] dark:bg-[#1f2c34] p-2 rounded-t-lg border-l-4 border-[var(--chat-accent)] flex justify-between items-start mb-1 mx-1 shadow-sm opacity-95 animate-in slide-in-from-bottom-2">
               <div className="flex-1 min-w-0">
                 {editingMessage ? (
                   <>
@@ -469,7 +469,7 @@ export default function ChatInput({
                   </>
                 ) : (
                   <>
-                    <span className="text-xs font-bold text-green-600 dark:text-green-400 block mb-0.5">
+                    <span className="text-xs font-bold text-[var(--chat-accent)] block mb-0.5">
                       {replyTo.sender === 'me' || replyTo.sender === 'HUMAN_AGENT' || replyTo.sender === 'AI_AGENT'
                         ? 'Você'
                         : (replyTo.sender === 'CUSTOMER' || replyTo.sender === 'contact') ? (replyTo.sender_name || 'Contato') : replyTo.sender || 'Contato'}
@@ -499,7 +499,7 @@ export default function ChatInput({
           <style jsx>{`
             .custom-input:empty:before {
                 content: attr(data-placeholder);
-                color: #8696a0;
+                color: var(--chat-text-muted);
                 pointer-events: none;
                 display: block;
             }
@@ -513,7 +513,7 @@ export default function ChatInput({
             onPaste={handlePaste}
             role="textbox"
             data-placeholder={editingMessage ? 'Edite sua mensagem' : 'Digite uma mensagem'}
-            className="custom-input w-full px-4 py-3 bg-transparent outline-none max-h-[120px] overflow-y-auto text-[15px] text-[#111b21] dark:text-[#e9edef] leading-5 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 whitespace-pre-wrap break-words"
+            className="custom-input w-full px-4 py-3 bg-transparent outline-none max-h-[120px] overflow-y-auto text-[15px] text-[var(--chat-text-primary)] dark:text-[#e9edef] leading-5 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 whitespace-pre-wrap break-words"
             style={{ minHeight: '44px' }}
           />
         </div>
@@ -540,7 +540,7 @@ export default function ChatInput({
           {message.trim() ? (
             <button
               onClick={handleSend}
-              className="p-3 bg-[#00a884] hover:bg-[#008f6f] text-white rounded-full transition-all shadow-sm active:scale-95 animate-in zoom-in duration-200"
+              className="p-3 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white rounded-full transition-all shadow-sm active:scale-95 animate-in zoom-in duration-200"
             >
               <Send size={20} />
             </button>

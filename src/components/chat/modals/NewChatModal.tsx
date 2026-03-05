@@ -130,7 +130,7 @@ export default function NewChatModal({ isOpen, onClose, onStartChat }: NewChatMo
           <button
             type="submit"
             disabled={loading || phone.length < 10}
-            className="w-full bg-[#00a884] hover:bg-[#008f6f] text-white font-bold py-3.5 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+            className="w-full bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white font-bold py-3.5 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : 'Iniciar Conversa'}
           </button>

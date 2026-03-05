@@ -272,7 +272,7 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                     </div>
 
                     {/* CENTRO: CANVAS DO ROTEIRO */}
-                    <div className="flex-1 flex flex-col bg-[#f0f2f5] relative">
+                    <div className="flex-1 flex flex-col bg-[var(--chat-surface)] relative">
                         {/* INPUT TÍTULO */}
                         <div className="p-4 bg-white shadow-sm z-10">
                             <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Nome do Roteiro</label>
