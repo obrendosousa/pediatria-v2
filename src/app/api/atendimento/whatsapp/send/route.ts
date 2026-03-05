@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 import { createSchemaAdminClient } from '@/lib/supabase/schemaServer';
 import { fetchAndUpdateProfilePicture } from '@/ai/ingestion/services';
@@ -149,12 +150,14 @@ export async function POST(req: Request) {
       };
     }
 
+    console.log(`[ATD/Send] Enviando: endpoint=${endpoint} type=${type} mediaUrl=${mediaUrl ? mediaUrl.slice(0, 80) : 'N/A'}`);
     const { ok, status, data: responseData } = await evoRequest(endpoint, { body: apiBody });
 
     if (!ok) {
-      console.error('[ATD/Send] Erro Evolution:', responseData);
+      console.error('[ATD/Send] Erro Evolution:', status, JSON.stringify(responseData).slice(0, 500));
       return NextResponse.json({ error: 'Falha ao enviar mensagem', details: responseData }, { status: status || 502 });
     }
+    console.log(`[ATD/Send] Sucesso: type=${type} response=${JSON.stringify(responseData).slice(0, 200)}`);
 
     const responseObj = (typeof responseData === 'object' && responseData !== null
       ? responseData

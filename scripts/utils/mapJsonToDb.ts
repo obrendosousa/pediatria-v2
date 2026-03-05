@@ -111,16 +111,39 @@ export function mapJsonRowToDb(
     row.sd_neg3 = 2 * row.sd0 - row.sd3;
   }
 
-  // Percentis
+  // Percentis (se vierem diretamente do JSON)
   if (jsonRow.P3 !== undefined && jsonRow.P3 !== null) row.p3 = jsonRow.P3;
   if (jsonRow.P15 !== undefined && jsonRow.P15 !== null) row.p15 = jsonRow.P15;
   if (jsonRow.P50 !== undefined && jsonRow.P50 !== null) row.p50 = jsonRow.P50;
   if (jsonRow.P85 !== undefined && jsonRow.P85 !== null) row.p85 = jsonRow.P85;
   if (jsonRow.P97 !== undefined && jsonRow.P97 !== null) row.p97 = jsonRow.P97;
 
-  // Se não temos percentis mas temos SDs, podemos usar SD0 como P50
-  if (!row.p50 && row.sd0) {
-    row.p50 = row.sd0;
+  // Se temos parâmetros LMS, calcular percentis faltantes via fórmula Box-Cox (OMS)
+  // X = M × (1 + L × S × z)^(1/L)   ou   X = M × exp(S × z) quando L ≈ 0
+  const L = Number(row.l);
+  const M = Number(row.m);
+  const S = Number(row.s);
+  if (!isNaN(L) && !isNaN(M) && !isNaN(S) && M > 0) {
+    const calcLMS = (z: number) => {
+      let val: number;
+      if (Math.abs(L) < 0.001) {
+        val = M * Math.exp(S * z);
+      } else {
+        val = M * Math.pow(1 + L * S * z, 1 / L);
+      }
+      return Math.round(val * 10) / 10;
+    };
+
+    if (!row.p3)  row.p3  = calcLMS(-1.88079);
+    if (!row.p15) row.p15 = calcLMS(-1.03643);
+    if (!row.p50) row.p50 = calcLMS(0);
+    if (!row.p85) row.p85 = calcLMS(1.03643);
+    if (!row.p97) row.p97 = calcLMS(1.88079);
+  } else {
+    // Fallback: Se não temos LMS, usar SD0 como P50
+    if (!row.p50 && row.sd0) {
+      row.p50 = row.sd0;
+    }
   }
 
   return row;

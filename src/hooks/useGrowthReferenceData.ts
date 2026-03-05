@@ -4,6 +4,37 @@ const supabase = createClient();
 import { GrowthStandardRow, ReferenceLine, DisplayMode } from '@/types/anthropometry';
 import { ChartRegistryConfig } from '@/config/growthChartsRegistry';
 
+/**
+ * Calcula um valor de percentil a partir dos parâmetros LMS (Box-Cox).
+ * Fórmula OMS: X = M × (1 + L × S × z)^(1/L)
+ * Quando L = 0: X = M × exp(S × z)
+ *
+ * @param L - Lambda (Box-Cox power)
+ * @param M - Mediana
+ * @param S - Coeficiente de variação generalizado
+ * @param z - Z-score correspondente ao percentil desejado
+ * @returns Valor calculado arredondado para 1 casa decimal
+ */
+function lmsToValue(L: number, M: number, S: number, z: number): number {
+  let value: number;
+  if (Math.abs(L) < 0.001) {
+    // Caso especial: L ≈ 0, usar forma exponencial
+    value = M * Math.exp(S * z);
+  } else {
+    value = M * Math.pow(1 + L * S * z, 1 / L);
+  }
+  return Math.round(value * 10) / 10; // 1 casa decimal
+}
+
+// Z-scores exatos para cada percentil (distribuição normal padrão)
+const PERCENTILE_Z: Record<string, number> = {
+  p3:  -1.88079,
+  p15: -1.03643,
+  p50:  0,
+  p85:  1.03643,
+  p97:  1.88079,
+};
+
 export function useGrowthReferenceData() {
   const [rawData, setRawData] = useState<GrowthStandardRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,9 +88,35 @@ export function useGrowthReferenceData() {
           x: isXAxisLength ? (row.x_value ?? 0) : (row.age_months ?? 0),
           y: Number(row[key] ?? 0),
         }))
-        .filter(p => p.x > 0 && !isNaN(p.y));
+        .filter(p => p.x >= 0 && !isNaN(p.y) && p.y > 0);
 
-    // Paleta iClinic: vermelho (extremos), laranja (alerta), azul (média)
+    // Calcula pontos de percentil usando LMS quando os campos p3/p15/p85/p97 são null
+    const mapPercentileFromLMS = (percentileKey: string) =>
+      rawData
+        .map(row => {
+          const x = isXAxisLength ? (row.x_value ?? 0) : (row.age_months ?? 0);
+
+          // Se o percentil já existe no banco, usar diretamente
+          const directValue = Number((row as any)[percentileKey] ?? 0);
+          if (directValue > 0) {
+            return { x, y: directValue };
+          }
+
+          // Senão, calcular a partir dos parâmetros LMS
+          const L = Number(row.l ?? null);
+          const M = Number(row.m ?? null);
+          const S = Number(row.s ?? null);
+          const z = PERCENTILE_Z[percentileKey];
+
+          if (isNaN(L) || isNaN(M) || isNaN(S) || M <= 0 || z === undefined) {
+            return { x, y: 0 };
+          }
+
+          return { x, y: lmsToValue(L, M, S, z) };
+        })
+        .filter(p => p.x >= 0 && !isNaN(p.y) && p.y > 0);
+
+    // Paleta: vermelho (extremos), amarelo (alerta), azul (mediana)
     if (displayMode === 'Z_SCORE') {
       return [
         { label: 'Z-3', color: '#dc2626', data: mapToPoints('sd_neg3') },
@@ -72,11 +129,11 @@ export function useGrowthReferenceData() {
       ];
     } else {
       return [
-        { label: 'P3',  color: '#dc2626', data: mapToPoints('p3') },
-        { label: 'P15', color: '#f59e0b', data: mapToPoints('p15') },
-        { label: 'P50', color: '#3b82f6', data: mapToPoints('p50') },
-        { label: 'P85', color: '#f59e0b', data: mapToPoints('p85') },
-        { label: 'P97', color: '#dc2626', data: mapToPoints('p97') },
+        { label: 'P3',  color: '#dc2626', data: mapPercentileFromLMS('p3') },
+        { label: 'P15', color: '#f59e0b', data: mapPercentileFromLMS('p15') },
+        { label: 'P50', color: '#3b82f6', data: mapPercentileFromLMS('p50') },
+        { label: 'P85', color: '#f59e0b', data: mapPercentileFromLMS('p85') },
+        { label: 'P97', color: '#dc2626', data: mapPercentileFromLMS('p97') },
       ];
     }
   }, [rawData]);

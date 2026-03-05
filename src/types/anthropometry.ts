@@ -26,7 +26,12 @@ export interface GrowthStandardRow {
   age_range: string; // ex: '0_5', '2_20'
   age_months: number | null;
   x_value: number | null; // Para gráficos peso x estatura
-  
+
+  // Parâmetros LMS (Box-Cox) para cálculo preciso de z-scores e percentis
+  l: number | null; // Lambda (Box-Cox power)
+  m: number | null; // Mediana
+  s: number | null; // Coeficiente de variação generalizado
+
   // Colunas de Z-Score (Do CSV)
   sd_neg3: number;
   sd_neg2: number;

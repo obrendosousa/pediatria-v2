@@ -295,7 +295,7 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
         tool_data: enrichedMetadata
       }).select().single();
 
-      await fetch('/api/atendimento/whatsapp/send', {
+      const sendRes = await fetch('/api/atendimento/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -309,6 +309,10 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
           module: 'atendimento',
         }),
       });
+      if (!sendRes.ok) {
+        const errBody = await sendRes.json().catch(() => ({}));
+        console.error('[ATD/ChatWindow] Erro ao enviar mídia:', sendRes.status, errBody);
+      }
 
       if (isNewChat) {
         const { data: updatedMsgs } = await supabase.from('chat_messages').select('*').eq('chat_id', realChatId).order('created_at', { ascending: true });
