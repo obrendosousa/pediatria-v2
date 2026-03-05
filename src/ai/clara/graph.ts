@@ -104,101 +104,28 @@ function buildSystemPrompt(
 
   return `${CLARA_SYSTEM_PROMPT}
 
-════════════════════════════════════════════
-CONTEXTO DA EMPRESA (DINÂMICO — ATUALIZADO VIA SUPABASE)
-════════════════════════════════════════════
+EMPRESA (dinâmico):
 ${company}
 
-════════════════════════════════════════════
-REGRAS PERSONALIZADAS APRENDIDAS (DINÂMICO)
-════════════════════════════════════════════
-${custom_rules || "Nenhuma regra personalizada adicionada ainda."}
+REGRAS APRENDIDAS (dinâmico):
+${custom_rules || "Nenhuma regra extra ainda."}
 
-════════════════════════════════════════════
-DIRETRIZES DE PERSONALIDADE DA VOZ (DINÂMICO)
-════════════════════════════════════════════
-${voice_rules || "Nenhuma diretriz de voz definida."}
+VOZ — PERSONALIDADE (dinâmico):
+${voice_rules || ""}
 
-════════════════════════════════════════════
-BANCO DE DADOS — SCHEMA E FERRAMENTAS
-════════════════════════════════════════════
-TABELAS PRINCIPAIS:
-• chats: id, phone, contact_name, stage, ai_sentiment, last_interaction_at, created_at, is_archived, is_pinned, unread_count, status, ai_summary, patient_id
-  - stage: 'new'|'em_triagem'|'agendando'|'fila_espera'|'qualified'|'lost'|'won'|'done'
-  - ai_sentiment: 'positive'|'negative'|'neutral'
-  - status: 'ACTIVE'|'AWAITING_HUMAN'|'ENDED'
-  - last_interaction_at = data da última mensagem (campo correto para filtrar atividade)
+FERRAMENTAS (ordem de prioridade):
+1. get_volume_metrics(start_date, end_date) — para "quantas conversas?", volume, picos de demanda
+2. execute_sql(sql) — qualquer consulta SQL. Só SELECT/WITH. Datas BRT: '2026-01-01T00:00:00-03:00'::timestamptz. Agrupar: DATE(campo AT TIME ZONE 'America/Sao_Paulo'). LIMIT 500.
+3. gerar_relatorio_qualidade_chats(dias) — objeções, gargalos, nota média (usa chat_insights)
+4. get_filtered_chats_list(filters) — listar chats com filtros
+5. get_chat_cascade_history(chat_id) — histórico completo de UM chat
+6. deep_research_chats(chat_ids, objetivo) — análise semântica em lote
+7. save_report(titulo, conteudo, tipo) — SOMENTE quando o usuário pedir explicitamente
 
-• chat_messages: id, chat_id→chats.id, sender, message_text, bot_message, user_message, message_type, created_at, media_url
-  - sender: 'AI_AGENT'(bot/Clara) | 'HUMAN_AGENT'(secretária humana, ex: Joana) | 'contact'(paciente/lead)
-  - IMPORTANTE: para analisar mensagens da secretária → WHERE sender = 'HUMAN_AGENT'
-  - IMPORTANTE: para analisar mensagens dos pacientes → WHERE sender = 'contact'
-  - IMPORTANTE: para analisar respostas do bot → WHERE sender = 'AI_AGENT'
+Para buscar chat por nome: execute_sql("SELECT id, contact_name FROM chats WHERE contact_name ILIKE '%nome%' LIMIT 5") → get_chat_cascade_history(chat_id)
+Secretária = sender 'HUMAN_AGENT' em chat_messages (não é contato/lead)
 
-• chat_insights: id, chat_id→chats.id, nota_atendimento (float 0-10), sentimento, objecoes (text[]), gargalos (text[]), decisao, resumo_analise, topico, novo_conhecimento (bool), updated_at
-
-• clara_reports: id (SERIAL), titulo, conteudo_markdown, tipo, created_at
-  - tipo: 'analise_chats'|'financeiro'|'agendamento'|'geral'
-
-• clara_memories: id, memory_type, content, updated_at
-• knowledge_base: id, pergunta, resposta_ideal, categoria, tags
-• agent_config: agent_id, config_key, content, updated_at
-• appointments: id, patient_id→patients.id, chat_id→chats.id, status, scheduled_at
-  - status: 'scheduled'|'finished'|'no_show'|'cancelled'
-
-RELACIONAMENTOS:
-  chat_messages.chat_id → chats.id
-  chat_insights.chat_id → chats.id
-  appointments.chat_id → chats.id | appointments.patient_id → patients.id
-
-FERRAMENTAS DE DADOS (use nesta ordem de prioridade):
-
-1. get_volume_metrics(start_date, end_date) ← PRIMEIRA OPÇÃO para:
-   "Quantas conversas?", "Volume dia a dia", "Picos de demanda", "Atividade desta semana"
-   Usa Supabase SDK — zero risco de falha.
-
-2. execute_sql(sql) ← Para QUALQUER outra consulta. Você escreve o SQL:
-   REGRAS OBRIGATÓRIAS:
-   • Apenas SELECT/WITH. Proibido INSERT/UPDATE/DELETE/DROP.
-   • Datas com offset BRT: '2026-02-24T00:00:00-03:00'::timestamptz
-   • Agrupar por dia: DATE(campo AT TIME ZONE 'America/Sao_Paulo')
-   • Para contar chats: use chats.last_interaction_at — NUNCA JOIN com chat_messages
-   • Adicione LIMIT (máx 500)
-
-3. gerar_relatorio_qualidade_chats(dias_retroativos) ← USE PARA:
-   • "Quais foram as objeções?" / "Principais gargalos?" / "Nota média de atendimento?"
-   • Acessa tabela chat_insights — rápido, sem precisar ler mensagens
-
-4. get_filtered_chats_list(filters) ← Listar chats com dados de contato e IDs
-
-5. BUSCA EM MENSAGENS (2 passos obrigatórios):
-   → Passo 1: get_filtered_chats_list(start_date, end_date, limit=30) — obtém IDs
-   → Passo 2: deep_research_chats(chat_ids=[IDs do Passo 1], objetivo_da_analise='...') — analisa conteúdo
-   Use quando precisar LER o texto das mensagens (tom, padrões, argumentos)
-
-6. get_chat_cascade_history(chat_id) ← Histórico completo de UM chat específico
-7. get_aggregated_insights(start_date, end_date) ← Insights agregados de chat_insights
-8. save_report(titulo, conteudo, tipo) ← Salvar relatório no banco
-
-COMO VERIFICAR UM CHAT ESPECÍFICO POR NOME (2 passos):
-→ Passo 1: execute_sql("SELECT id, contact_name, phone FROM chats WHERE contact_name ILIKE '%[nome]%' LIMIT 5") — localiza o ID pelo nome
-→ Passo 2: get_chat_cascade_history(chat_id=[ID encontrado]) — lê o histórico completo
-Use este fluxo quando o usuário mencionar o nome de um paciente, questionar uma análise anterior, ou pedir para "ver a conversa de [nome]".
-
-COMO ANALISAR O SCRIPT/PADRÃO DA SECRETÁRIA (Joana ou outra):
-A secretária é identificada por sender = 'HUMAN_AGENT' em chat_messages — NÃO é um contato/lead.
-→ Opção A (texto direto, rápido): execute_sql("SELECT cm.message_text, c.contact_name, cm.created_at FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'HUMAN_AGENT' AND cm.message_text IS NOT NULL ORDER BY cm.created_at DESC LIMIT 200")
-→ Opção B (análise semântica): get_filtered_chats_list (obtém IDs) → deep_research_chats(chat_ids=[...], objetivo_da_analise='Analise APENAS as mensagens rotuladas [SECRETÁRIA] e identifique o script e padrão de comunicação usado')
-Use Opção A para ver amostras do texto. Use Opção B para análise profunda de padrões.
-
-⛔ REGRA CRÍTICA: NUNCA chame save_report automaticamente. Salve APENAS quando o usuário pedir explicitamente ("gere um relatório", "salve", "quero o PDF"). Para perguntas diretas, responda com texto simples.
-
-════════════════════════════════════════════
-SESSÃO ATUAL
-════════════════════════════════════════════
-DATA E HORA: ${now}
-CHAT ID: ${chatId}
-PERFIL DO USUÁRIO: ${currentUserRole}${authorityRule}`;
+SESSÃO: ${now} | Chat: ${chatId} | Usuário: ${currentUserRole}${authorityRule}`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -267,6 +194,13 @@ const SIMPLE_KEYWORDS = [
   "obrigado", "obrigada", "valeu", "ok", "certo", "entendi", "beleza", "ótimo", "otimo",
 ];
 
+// Verbos de ação no início = pedido direto → fast-path simple (sem chamar LLM classifier)
+const ACTION_VERBS = [
+  "faz", "faca", "cria", "escreve", "manda", "envia", "gera", "prepara",
+  "agenda", "monta", "marca", "registra", "salva", "atualiza", "mostra",
+  "lista", "busca", "verifica", "confere", "abre", "me da", "me fala",
+];
+
 const ClassifySchema = z.object({
   classification: z
     .enum(["simple", "research"])
@@ -304,7 +238,11 @@ claraWorkflow.addNode("classify_node", async (state: ClaraState) => {
   const isGreeting = SIMPLE_KEYWORDS.some(
     (kw) => lower === kw || lower.startsWith(kw + " ") || lower.endsWith(" " + kw)
   );
-  if (isGreeting || wordCount <= 4) {
+  // Pedidos de ação diretos: "faz uma mensagem...", "agenda...", "mostra..." → simple
+  const isActionRequest = ACTION_VERBS.some(
+    (v) => lower.startsWith(v + " ") || lower.startsWith(v + ",")
+  );
+  if (isGreeting || isActionRequest || wordCount <= 4) {
     return { ...researchStateReset, is_deep_research: false };
   }
 
@@ -339,6 +277,12 @@ REGRA FUNDAMENTAL:
   • "O que você já aprendeu sobre X?" → simple ← manage_long_term_memory + search_knowledge_base
   • "O que você sabe sobre o script da Joana?" → simple ← manage_long_term_memory consultar
   • "O que você já aprendeu sobre o padrão de atendimento?" → simple ← consulta memória e knowledge_base
+  • "Faz uma mensagem de confirmação de consulta" → simple ← ação direta, gera o texto
+  • "Cria um texto para enviar pros pacientes" → simple ← ação direta
+  • "Monta um resumo do dia" → simple ← busca dados e formata
+  • "Prepara uma mensagem de boas-vindas" → simple ← ação direta
+  • "Agenda uma consulta para Maria" → simple ← usar criar_agendamento
+  • "Me fala quem tem consulta hoje" → simple ← execute_sql em appointments
 
 → EXEMPLOS "research" — SOMENTE para análise semântica de MÚLTIPLAS conversas:
   • "Leia as conversas e me diga o que os pacientes mais reclamam" → research (múltiplos chats)
@@ -380,7 +324,7 @@ claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3-flash-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-    temperature: 0.3,
+    temperature: 0.5,
   });
 
   const modelWithTools = model.bindTools(simpleAgentTools);

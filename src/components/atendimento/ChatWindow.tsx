@@ -1,31 +1,31 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useChatMessages } from '@/hooks/useChatMessages';
-import { useChatAutomation } from '@/hooks/useChatAutomation';
-import { createClient } from '@/lib/supabase/client';
-const supabase = createClient();
+import { useChatMessages } from '@/hooks/atendimento/useChatMessages';
+import { useChatAutomation } from '@/hooks/atendimento/useChatAutomation';
+import { createSchemaClient } from '@/lib/supabase/schemaClient';
+const supabase = createSchemaClient('atendimento');
 import { Chat } from '@/types';
 import type { Message } from '@/types';
 import { User } from 'lucide-react';
 import { generatePdfPreview } from '@/lib/pdfPreview';
 
-// Componentes de Interface
-import ChatHeader from './chat/ChatHeader';
-import ChatInput from './chat/ChatInput';
-import MessageList from './chat/MessageList';
-import ChatSidebar from './chat/ChatSidebar';
+// Componentes de Interface (compartilhados)
+import ChatHeader from '@/components/chat/ChatHeader';
+import ChatInput from '@/components/chat/ChatInput';
+import MessageList from '@/components/chat/MessageList';
+import ChatSidebar from '@/components/chat/ChatSidebar';
 
-// Modais de suporte
-import MacroModal from './chat/modals/MacroModal';
-import SequenceEditorModal from './chat/modals/SequenceEditorModal';
-import ConfirmModal from './chat/modals/ConfirmModal';
-import ImagePreviewModal from './chat/modals/ImagePreviewModal';
-import CreateScheduleModal from './chat/modals/CreateScheduleModal';
-import ForwardMessageModal from './chat/modals/ForwardMessageModal';
-import FilePreviewModal from './chat/modals/FilePreviewModal';
-import AppointmentModal, { PreScheduleData } from './medical/AppointmentModal';
+// Modais de suporte (compartilhados)
+import MacroModal from '@/components/chat/modals/MacroModal';
+import SequenceEditorModal from '@/components/chat/modals/SequenceEditorModal';
+import ConfirmModal from '@/components/chat/modals/ConfirmModal';
+import ImagePreviewModal from '@/components/chat/modals/ImagePreviewModal';
+import CreateScheduleModal from '@/components/chat/modals/CreateScheduleModal';
+import ForwardMessageModal from '@/components/chat/modals/ForwardMessageModal';
+import FilePreviewModal from '@/components/chat/modals/FilePreviewModal';
+import AppointmentModal, { PreScheduleData } from '@/components/medical/AppointmentModal';
 import { useToast } from '@/contexts/ToastContext';
 
-export default function ChatWindow({ chat }: { chat: Chat | null }) {
+export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
   const { toast } = useToast();
   const [pendingMessages, setPendingMessages] = useState<any[]>([]);
 
@@ -60,7 +60,6 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     setPreviewMedia(null);
   }, [chat?.id]);
 
-  // Sincroniza o estado local com o prop ao trocar de conversa
   useEffect(() => {
     setAiDraftText(chat?.ai_draft_reply ?? null);
     setAiDraftReason(chat?.ai_draft_reason ?? null);
@@ -69,15 +68,15 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     setAiDraftScheduleReason(chat?.ai_draft_schedule_reason ?? null);
   }, [chat?.id, chat?.ai_draft_reply, chat?.ai_draft_reason, chat?.ai_draft_schedule_text, chat?.ai_draft_schedule_date, chat?.ai_draft_schedule_reason]);
 
-  // Subscrição Realtime: captura drafts gerados pelo Copiloto após o carregamento inicial
+  // Subscrição Realtime: captura drafts gerados pelo Copiloto
   useEffect(() => {
     if (!chat?.id) return;
 
     const channel = supabase
-      .channel(`copilot-draft-${chat.id}`)
+      .channel(`atd-copilot-draft-${chat.id}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'chats', filter: `id=eq.${chat.id}` },
+        { event: 'UPDATE', schema: 'atendimento', table: 'chats', filter: `id=eq.${chat.id}` },
         (payload) => {
           const updated = payload.new as any;
           setAiDraftText(updated.ai_draft_reply ?? null);
@@ -92,7 +91,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     return () => { supabase.removeChannel(channel); };
   }, [chat?.id]);
 
-  // Prefetch da lista de chats para o modal de encaminhar (abre instantâneo)
+  // Prefetch da lista de chats para o modal de encaminhar
   useEffect(() => {
     if (!chat?.id || String(chat.id).startsWith('new_')) {
       setForwardChatsCache(null);
@@ -162,12 +161,12 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const [forwardMessage, setForwardMessage] = useState<Message | null>(null);
   const [forwardChatsCache, setForwardChatsCache] = useState<Chat[] | null>(null);
 
-  // Estado reativo do draft da IA (atualizado em tempo real via Supabase Realtime)
+  // Estado reativo do draft da IA
   const [aiDraftText, setAiDraftText] = useState<string | null>(chat?.ai_draft_reply ?? null);
   const [aiDraftReason, setAiDraftReason] = useState<string | null>(chat?.ai_draft_reason ?? null);
   const [isLoadingAISuggestion, setIsLoadingAISuggestion] = useState(false);
 
-  // Estado reativo do draft de agendamento de follow-up sugerido pela Clara
+  // Estado reativo do draft de agendamento de follow-up
   const [aiDraftScheduleText, setAiDraftScheduleText] = useState<string | null>(chat?.ai_draft_schedule_text ?? null);
   const [aiDraftScheduleDate, setAiDraftScheduleDate] = useState<string | null>(chat?.ai_draft_schedule_date ?? null);
   const [aiDraftScheduleReason, setAiDraftScheduleReason] = useState<string | null>(chat?.ai_draft_schedule_reason ?? null);
@@ -246,7 +245,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         file_size: finalFile.size,
       };
 
-      // PDF: gera preview da 1ª página e envia como imagem antes do documento
+      // PDF: gera preview da 1ª página
       const isPdfFile = finalFile.type === 'application/pdf' || finalFile.name.toLowerCase().endsWith('.pdf');
       if (isPdfFile && evolutionMediaType === 'document') {
         const previewBlob = await generatePdfPreview(finalFile);
@@ -255,7 +254,6 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           const { error: previewUploadError } = await supabase.storage.from('midia').upload(`uploads/${previewName}`, previewBlob, { contentType: 'image/jpeg', upsert: true });
           if (!previewUploadError) {
             const { data: { publicUrl: previewUrl } } = supabase.storage.from('midia').getPublicUrl(`uploads/${previewName}`);
-            // Salva no banco como imagem
             const { data: previewDbMsg } = await supabase.from('chat_messages').insert({
               chat_id: realChatId,
               phone: chat.phone,
@@ -265,8 +263,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
               sender: 'HUMAN_AGENT',
               status: 'sent',
             }).select().single();
-            // Envia a imagem preview via WhatsApp
-            await fetch('/api/whatsapp/send', {
+            await fetch('/api/atendimento/whatsapp/send', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -276,13 +273,13 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
                 type: 'image',
                 mediaUrl: previewUrl,
                 dbMessageId: previewDbMsg?.id,
+                module: 'atendimento',
               }),
             });
           }
         }
       }
 
-      // Para imagens e vídeos, não usar o nome do arquivo como legenda (fica vazio sem caption)
       const isVisualMedia = evolutionMediaType === 'image' || evolutionMediaType === 'video';
       const messageTextValue = caption || (isVisualMedia ? '' : finalFile.name);
 
@@ -297,7 +294,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         tool_data: enrichedMetadata
       }).select().single();
 
-      await fetch('/api/whatsapp/send', {
+      await fetch('/api/atendimento/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -307,7 +304,8 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           type: evolutionMediaType,
           mediaUrl: publicUrl,
           dbMessageId: dbMsg?.id,
-          options: enrichedMetadata
+          options: enrichedMetadata,
+          module: 'atendimento',
         }),
       });
 
@@ -505,11 +503,12 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           phone: targetChat.phone,
           message: type === 'text' ? text : (text || (type === 'audio' ? 'Áudio' : 'Mídia')),
           type: type === 'ptt' ? 'audio' : type,
+          module: 'atendimento',
         };
         if (mediaUrl && (type === 'image' || type === 'video' || type === 'audio' || type === 'document')) {
           body.mediaUrl = mediaUrl;
         }
-        const res = await fetch('/api/whatsapp/send', {
+        const res = await fetch('/api/atendimento/whatsapp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
@@ -530,7 +529,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     handleSendFile(blob, '', 'audio', { duration });
   }, [handleSendFile]);
 
-  // Preview antes de enviar (drag-and-drop, colar, ou clique no clipe)
+  // Preview antes de enviar
   const [filePreview, setFilePreview] = useState<File | null>(null);
 
   const handleFileDropped = useCallback((file: File) => {
@@ -575,7 +574,6 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         body: JSON.stringify({ chat_id: chat.id }),
       });
       if (!res.ok) throw new Error('Falha ao acionar o copiloto');
-      // O draft chegará via Supabase Realtime — não precisa ler o body
     } catch (e) {
       toast.error('Não foi possível gerar a sugestão.');
     } finally {
@@ -586,7 +584,6 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const handleClearDraft = useCallback(async () => {
     if (!chat) return;
     const capturedDraft = aiDraftText;
-    // Limpa a UI imediatamente (sem aguardar a rede)
     setAiDraftText(null);
     setAiDraftReason(null);
     try {
@@ -626,7 +623,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
       const { error } = await supabase.from('scheduled_messages').insert({
         chat_id: chat.id,
         item_type: 'adhoc',
-        title: 'Follow-up sugerido pela Clara',
+        title: 'Follow-up sugerido pela IA',
         content: { type: 'text', content: aiDraftScheduleText },
         scheduled_for: aiDraftScheduleDate,
         status: 'pending',
@@ -646,7 +643,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const handleEditScheduleDraft = useCallback(() => {
     if (!aiDraftScheduleText || !aiDraftScheduleDate) return;
     const d = new Date(aiDraftScheduleDate);
-    const date = d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); // YYYY-MM-DD
+    const date = d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
     const time = d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
     setSchedulePrefill(null);
     setPrefilledScheduleAdHoc({ text: aiDraftScheduleText, date, time });
@@ -654,7 +651,6 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   }, [aiDraftScheduleText, aiDraftScheduleDate]);
 
   const handleApproveDraft = useCallback(async (text: string) => {
-    // Limpa a UI imediatamente antes de enviar
     setAiDraftText(null);
     setAiDraftReason(null);
     await handleSendMessage(text);
@@ -688,30 +684,11 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         return;
       }
 
-      if (e.altKey && key === '1') {
-        e.preventDefault();
-        setActiveTab('text');
-        return;
-      }
-      if (e.altKey && key === '2') {
-        e.preventDefault();
-        setActiveTab('script');
-        return;
-      }
-      if (e.altKey && key === '3') {
-        e.preventDefault();
-        setActiveTab('funnels');
-        return;
-      }
-      if (e.altKey && key === '4') {
-        e.preventDefault();
-        setActiveTab('schedule');
-        return;
-      }
-      if (e.altKey && key === '5') {
-        e.preventDefault();
-        setActiveTab('executions');
-      }
+      if (e.altKey && key === '1') { e.preventDefault(); setActiveTab('text'); return; }
+      if (e.altKey && key === '2') { e.preventDefault(); setActiveTab('script'); return; }
+      if (e.altKey && key === '3') { e.preventDefault(); setActiveTab('funnels'); return; }
+      if (e.altKey && key === '4') { e.preventDefault(); setActiveTab('schedule'); return; }
+      if (e.altKey && key === '5') { e.preventDefault(); setActiveTab('executions'); }
     };
 
     window.addEventListener('keydown', onShortcut);
@@ -732,7 +709,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
 
   if (!chat) {
     return (
-      <div className="flex-1 bg-[#f0f2f5] dark:bg-[#111b21] flex items-center justify-center text-gray-400 dark:text-gray-600 border-b-[6px] border-[#25d366]">
+      <div className="flex-1 bg-[#f0f2f5] dark:bg-[#111b21] flex items-center justify-center text-gray-400 dark:text-gray-600 border-b-[6px] border-blue-500">
         <User size={64} />
       </div>
     );
@@ -793,7 +770,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         onSave={handleSaveAppointment}
       />
 
-      {/* Área do chat: reserva 70px à direita para a barra de ícones do ChatSidebar */}
+      {/* Área do chat */}
       <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden w-full pr-[58px] sm:pr-[70px]">
         <ChatHeader
           chat={chat}
@@ -841,7 +818,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         />
       </div>
 
-      {/* Backdrop: clicar fora do sidebar fecha o painel */}
+      {/* Backdrop */}
       {activeTab && (
         <button
           type="button"
@@ -851,7 +828,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         />
       )}
 
-      {/* Sidebar como popup sobrepondo o chat (não participa do flex) */}
+      {/* Sidebar como popup */}
       <div className="absolute right-0 top-0 bottom-0 z-40 flex flex-row-reverse pointer-events-none">
         <div className="pointer-events-auto h-full">
           <ChatSidebar

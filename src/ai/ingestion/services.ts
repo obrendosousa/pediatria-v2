@@ -395,9 +395,9 @@ export async function saveMessageToDb(payload: {
  * Busca a URL da foto de perfil do contato na Evolution API (endpoint oficial fetchProfilePictureUrl).
  * Retorna a URL ou null se falhar (contato sem foto, API indisponível, etc).
  */
-export async function fetchProfilePictureFromEvolution(phone: string): Promise<string | null> {
+export async function fetchProfilePictureFromEvolution(phone: string, instanceEnvKey = 'EVOLUTION_INSTANCE'): Promise<string | null> {
   const baseUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, "");
-  const instance = process.env.EVOLUTION_INSTANCE;
+  const instance = process.env[instanceEnvKey] || process.env.EVOLUTION_INSTANCE;
   const apiKey = process.env.EVOLUTION_API_KEY;
 
   if (!baseUrl || !instance || !apiKey) {
@@ -524,10 +524,11 @@ function extractMediaFromMessage(ctx: MediaUploadContext): {
  */
 async function fetchMediaFromEvolutionApi(
   messageId: string,
-  remoteJid: string
+  remoteJid: string,
+  instanceEnvKey = 'EVOLUTION_INSTANCE'
 ): Promise<{ base64: string; mimeType?: string; fileName?: string } | null> {
   const baseUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, "");
-  const instance = process.env.EVOLUTION_INSTANCE;
+  const instance = process.env[instanceEnvKey] || process.env.EVOLUTION_INSTANCE;
   const apiKey = process.env.EVOLUTION_API_KEY;
 
   if (!baseUrl || !instance || !apiKey) {
@@ -603,7 +604,8 @@ async function uploadToSupabase(
 export async function handleMediaUpload(
   messageData: Record<string, unknown>,
   key: { id: string; remoteJid?: string },
-  bodyBase64?: string | null
+  bodyBase64?: string | null,
+  instanceEnvKey = 'EVOLUTION_INSTANCE'
 ): Promise<string | null> {
   const ctx: MediaUploadContext = { message: messageData, key, bodyBase64 };
 
@@ -620,7 +622,7 @@ export async function handleMediaUpload(
       console.warn("[handleMediaUpload] remoteJid ausente para buscar mídia na API");
       return null;
     }
-    const apiData = await fetchMediaFromEvolutionApi(key.id, remoteJid);
+    const apiData = await fetchMediaFromEvolutionApi(key.id, remoteJid, instanceEnvKey);
     if (!apiData) return null;
     base64 = apiData.base64;
     mimeType = apiData.mimeType ?? "audio/ogg";

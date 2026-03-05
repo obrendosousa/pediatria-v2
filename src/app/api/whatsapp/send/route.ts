@@ -18,7 +18,7 @@ const supabase = createClient(
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { chatId, message, phone, type = 'text', mediaUrl, dbMessageId, replyTo, messageSource } = body;
+    const { chatId, message, phone, type = 'text', mediaUrl, dbMessageId, replyTo, messageSource, options } = body;
 
     // 1. Validação Básica
     if (!phone || !chatId) {
@@ -348,7 +348,9 @@ export async function POST(req: Request) {
         media: mediaUrl,
         mediatype: type,
         caption: message || '',
-        delay: 1000
+        delay: 1000,
+        ...(type === 'document' && options?.file_name ? { fileName: options.file_name } : {}),
+        ...(type === 'document' && options?.mime_type ? { mimetype: options.mime_type } : {}),
       };
     } else {
       await setPresence('composing');

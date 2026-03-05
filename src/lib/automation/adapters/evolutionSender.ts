@@ -5,6 +5,8 @@ export interface EvolutionSendInput {
   type: "text" | "audio" | "image" | "video" | "document";
   content: string;
   caption?: string;
+  fileName?: string;
+  mimetype?: string;
 }
 
 export interface EvolutionSendResult {
@@ -29,6 +31,10 @@ export async function sendWithEvolution(input: EvolutionSendInput): Promise<Evol
     body.media = input.content;
     body.mediatype = input.type === "video" ? "video" : input.type;
     body.caption = input.caption || "";
+    if (input.type === "document") {
+      if (input.fileName) body.fileName = input.fileName;
+      if (input.mimetype) body.mimetype = input.mimetype;
+    }
   }
 
   const { ok, status, data } = await evolutionRequest(endpoint, { method: "POST", body });

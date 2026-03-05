@@ -2,37 +2,46 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   MessageSquare, CalendarDays, Settings, LogOut, LucideIcon,
   LayoutDashboard, Trello, Stethoscope, CheckSquare, Bot,
   Store, PieChart, Heart, Sparkles, Users, Moon, Sun,
-  ChevronLeft, ChevronRight, Zap, FileText
+  ChevronLeft, ChevronRight, Zap, FileText, ArrowLeftRight, Building2
 } from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadChatsCount } from '@/hooks/useUnreadChatsCount';
+import { getModuleFromPathname, type ModuleConfig } from '@/config/modules';
 
 export default function Navigation() {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar } = useSidebar();
-  const { signOut, profile } = useAuth();
-  const { unreadCount, totalChats } = useUnreadChatsCount();
-  const isActive = (path: string) => path === '/' ? pathname === '/' : pathname.startsWith(path);
+  const { signOut, profile, modules } = useAuth();
+  const { unreadCount } = useUnreadChatsCount();
+
+  // Detectar módulo ativo pelo pathname
+  const currentModule: ModuleConfig = useMemo(
+    () => getModuleFromPathname(pathname ?? '/'),
+    [pathname]
+  );
+  const isAtendimento = currentModule.id === 'atendimento';
+  const mt = currentModule.theme; // atalho para o tema
+
+  const isActive = (path: string) => path === '/' ? pathname === '/' : pathname?.startsWith(path) ?? false;
+
+  // Verifica se o usuário tem acesso a mais de um módulo
+  const hasMultipleModules = modules.length > 1;
+  const hasAtendimentoAccess = modules.some(m => m.module === 'atendimento');
 
   // --- LÓGICA DO TEMA (CORRIGIDA) ---
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    // 1. Verifica se há preferência salva
     const savedTheme = localStorage.getItem('theme');
-
-    // 2. Decide qual tema usar
-    // Se tiver salvo 'dark' OU (não tiver salvo nada E o sistema for dark)
     const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const initialTheme = savedTheme === 'dark' || (!savedTheme && systemIsDark) ? 'dark' : 'light';
 
-    // 3. Aplica o estado e a classe
     setTheme(initialTheme);
     if (initialTheme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -45,20 +54,18 @@ export default function Navigation() {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
 
-    // Força a atualização da classe no HTML
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
 
-    // Salva a preferência
     localStorage.setItem('theme', newTheme);
   };
 
   return (
     <div
-      className="flex shrink-0 flex-col bg-white dark:bg-[#1e2028] border-r border-pink-100 dark:border-gray-800 shadow-[4px_0_24px_rgba(249,168,212,0.1)] dark:shadow-none relative z-10 h-screen overflow-hidden sidebar-transition"
+      className={`flex shrink-0 flex-col bg-white dark:bg-[#1e2028] border-r ${mt.border} ${isAtendimento ? 'shadow-[4px_0_24px_rgba(96,165,250,0.1)]' : 'shadow-[4px_0_24px_rgba(249,168,212,0.1)]'} dark:shadow-none relative z-10 h-screen overflow-hidden sidebar-transition`}
       style={{
         width: isCollapsed ? '80px' : '256px',
         minWidth: isCollapsed ? '80px' : '256px',
@@ -68,26 +75,26 @@ export default function Navigation() {
 
       {/* --- FUNDO DISCRETO --- */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-30 dark:opacity-10">
-        <div className="absolute top-[-10%] left-[-20%] w-48 h-48 bg-pink-100 dark:bg-pink-500 rounded-full blur-[60px]"></div>
+        <div className={`absolute top-[-10%] left-[-20%] w-48 h-48 ${mt.bgBlur} rounded-full blur-[60px]`}></div>
       </div>
 
       {/* --- LOGO COMPACTA --- */}
-      <div className="relative z-10 flex flex-col items-center pt-14 pb-4 px-4 border-b border-pink-50 dark:border-gray-800 overflow-hidden">
+      <div className={`relative z-10 flex flex-col items-center pt-14 pb-4 px-4 border-b ${isAtendimento ? 'border-blue-50 dark:border-gray-800' : 'border-pink-50 dark:border-gray-800'} overflow-hidden`}>
 
-        {/* Botão Toggle Minimizar - Dentro do Menu */}
+        {/* Botão Toggle Minimizar */}
         <button
           onClick={toggleSidebar}
-          className={`absolute ${isCollapsed ? 'top-3 right-2' : 'top-3 right-3'} z-50 w-7 h-7 rounded-full bg-white dark:bg-[#1e2028] border-2 border-pink-200 dark:border-gray-700 shadow-lg flex items-center justify-center hover:bg-pink-50 dark:hover:bg-gray-800 transition-all duration-300 hover:scale-110 active:scale-95 group`}
+          className={`absolute ${isCollapsed ? 'top-3 right-2' : 'top-3 right-3'} z-50 w-7 h-7 rounded-full bg-white dark:bg-[#1e2028] border-2 ${mt.borderAccent} shadow-lg flex items-center justify-center ${mt.hoverBg} transition-all duration-300 hover:scale-110 active:scale-95 group`}
           aria-label={isCollapsed ? 'Expandir menu' : 'Minimizar menu'}
         >
           {isCollapsed ? (
-            <ChevronRight className="w-4 h-4 text-pink-600 dark:text-pink-400 transition-all duration-300 group-hover:translate-x-0.5" />
+            <ChevronRight className={`w-4 h-4 ${mt.textBold} transition-all duration-300 group-hover:translate-x-0.5`} />
           ) : (
-            <ChevronLeft className="w-4 h-4 text-pink-600 dark:text-pink-400 transition-all duration-300 group-hover:-translate-x-0.5" />
+            <ChevronLeft className={`w-4 h-4 ${mt.textBold} transition-all duration-300 group-hover:-translate-x-0.5`} />
           )}
         </button>
         <div className="flex items-center gap-3 w-full mb-2 transition-all duration-300">
-          <div className="relative w-10 h-10 flex items-center justify-center bg-white dark:bg-[#2a2d36] rounded-xl shadow-sm border border-pink-100 dark:border-gray-700 p-1 transition-colors shrink-0">
+          <div className={`relative w-10 h-10 flex items-center justify-center bg-white dark:bg-[#2a2d36] rounded-xl shadow-sm border ${isAtendimento ? 'border-blue-100 dark:border-gray-700' : 'border-pink-100 dark:border-gray-700'} p-1 transition-colors shrink-0`}>
             <img
               src="https://i.imgur.com/W5fMxRM.png"
               alt="Logo"
@@ -102,53 +109,82 @@ export default function Navigation() {
           </div>
         </div>
         <span
-          className={`text-[10px] font-bold text-pink-400 dark:text-pink-300 bg-pink-50 dark:bg-pink-900/20 px-2 py-0.5 rounded-md uppercase tracking-wider w-full text-center sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mt-0' : 'opacity-100 h-auto mt-2'}`}
+          className={`text-[10px] font-bold ${mt.text} ${mt.bgSubtle} px-2 py-0.5 rounded-md uppercase tracking-wider w-full text-center sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mt-0' : 'opacity-100 h-auto mt-2'}`}
           style={{ transitionDelay: isCollapsed ? '0ms' : '250ms' }}
         >
-          Pediatria Integrada
+          {currentModule.sublabel}
         </span>
+
+        {/* Switcher de módulo (só aparece no atendimento para voltar à pediatria) */}
+        {hasMultipleModules && isAtendimento && !isCollapsed && (
+          <Link
+            href={isAtendimento ? '/' : '/atendimento'}
+            className={`mt-2 flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-all w-full justify-center`}
+          >
+            <ArrowLeftRight className="w-3 h-3" />
+            {isAtendimento ? 'Ir para Pediatria' : 'Ir para Clínica Geral'}
+          </Link>
+        )}
       </div>
 
       {/* --- NAVEGAÇÃO COMPACTA --- */}
       <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-6 py-4">
 
-        <MenuGroup title="Operacional">
-          <NavItem icon={LayoutDashboard} label="Dashboard" path="/dashboard" active={isActive('/dashboard')} color="blue" />
-          <NavItem
-            icon={MessageSquare}
-            label="Atendimento"
-            path="/"
-            active={isActive('/')}
-            color="pink"
-            badge={unreadCount > 0 ? unreadCount : undefined}
-          />
-          <NavItem icon={Trello} label="Recepção & CRM" path="/crm" active={isActive('/crm')} color="purple" />
-          <NavItem icon={CheckSquare} label="Tarefas" path="/tasks" active={isActive('/tasks')} color="orange" />
-        </MenuGroup>
+        {isAtendimento ? (
+          <>
+            {/* Menu do módulo Atendimento (Clínica Geral) — apenas chat */}
+            <NavItem
+              icon={MessageSquare}
+              label="Atendimento"
+              path="/atendimento"
+              active={pathname === '/atendimento'}
+              color="blue"
+              moduleTheme={mt}
+            />
+          </>
+        ) : (
+          <>
+            {/* Menu do módulo Pediatria (original) */}
+            <MenuGroup title="Operacional" moduleTheme={mt}>
+              <NavItem icon={LayoutDashboard} label="Dashboard" path="/dashboard" active={isActive('/dashboard')} color="blue" moduleTheme={mt} />
+              <NavItem
+                icon={MessageSquare}
+                label="Atendimento"
+                path="/"
+                active={isActive('/')}
+                color="pink"
+                badge={unreadCount > 0 ? unreadCount : undefined}
+                moduleTheme={mt}
+              />
+              <NavItem icon={Trello} label="Recepção & CRM" path="/crm" active={isActive('/crm')} color="purple" moduleTheme={mt} />
+              <NavItem icon={CheckSquare} label="Tarefas" path="/tasks" active={isActive('/tasks')} color="orange" moduleTheme={mt} />
+            </MenuGroup>
 
-        <MenuGroup title="Clínico">
-          <NavItem icon={Stethoscope} label="Painel Médico" path="/doctor" active={isActive('/doctor')} color="teal" />
-          <NavItem icon={CalendarDays} label="Agenda" path="/agenda" active={isActive('/agenda')} color="blue" />
-        </MenuGroup>
+            <MenuGroup title="Clínico" moduleTheme={mt}>
+              <NavItem icon={Stethoscope} label="Painel Médico" path="/doctor" active={isActive('/doctor')} color="teal" moduleTheme={mt} />
+              <NavItem icon={CalendarDays} label="Agenda" path="/agenda" active={isActive('/agenda')} color="blue" moduleTheme={mt} />
+            </MenuGroup>
 
-        <MenuGroup title="Gestão">
-          <NavItem icon={Users} label="Clientes & Prontuário" path="/clients" active={isActive('/clients')} color="blue" />
-          <NavItem icon={Store} label="Loja & Estoque" path="/loja" active={isActive('/loja')} color="rose" />
-          <NavItem icon={PieChart} label="Financeiro" path="/financeiro" active={isActive('/financeiro')} color="green" />
-        </MenuGroup>
+            <MenuGroup title="Gestão" moduleTheme={mt}>
+              <NavItem icon={Users} label="Clientes & Prontuário" path="/clients" active={isActive('/clients')} color="blue" moduleTheme={mt} />
+              <NavItem icon={Store} label="Loja & Estoque" path="/loja" active={isActive('/loja')} color="rose" moduleTheme={mt} />
+              <NavItem icon={PieChart} label="Financeiro" path="/financeiro" active={isActive('/financeiro')} color="green" moduleTheme={mt} />
+            </MenuGroup>
 
-        <MenuGroup title="Sistema">
-          <NavItem icon={Zap} label="Automações" path="/automatizacoes" active={isActive('/automatizacoes')} color="indigo" />
-          <NavItem icon={FileText} label="Relatórios IA" path="/relatorios" active={isActive('/relatorios')} color="indigo" />
-          {profile?.role === 'admin' && (
-            <NavItem icon={Settings} label="Configurações" path="/configuracoes" active={isActive('/configuracoes')} color="slate" />
-          )}
-        </MenuGroup>
+            <MenuGroup title="Sistema" moduleTheme={mt}>
+              <NavItem icon={Zap} label="Automações" path="/automatizacoes" active={isActive('/automatizacoes')} color="indigo" moduleTheme={mt} />
+              <NavItem icon={FileText} label="Relatórios IA" path="/relatorios" active={isActive('/relatorios')} color="indigo" moduleTheme={mt} />
+              {profile?.role === 'admin' && (
+                <NavItem icon={Settings} label="Configurações" path="/configuracoes" active={isActive('/configuracoes')} color="slate" moduleTheme={mt} />
+              )}
+            </MenuGroup>
+          </>
+        )}
 
       </nav>
 
       {/* --- FOOTER COM TOGGLE DE TEMA --- */}
-      <div className="p-3 border-t border-pink-50 dark:border-gray-800 bg-white dark:bg-[#1e2028] transition-colors space-y-2">
+      <div className={`p-3 border-t ${isAtendimento ? 'border-blue-50 dark:border-gray-800' : 'border-pink-50 dark:border-gray-800'} bg-white dark:bg-[#1e2028] transition-colors space-y-2`}>
 
         {/* Botão de Tema */}
         <button
@@ -176,7 +212,6 @@ export default function Navigation() {
             <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-200 ${theme === 'dark' ? 'translate-x-4' : 'translate-x-0'}`} />
           </div>
 
-          {/* Tooltip quando minimizado */}
           {isCollapsed && (
             <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
               {theme === 'light' ? 'Modo Claro' : 'Modo Escuro'}
@@ -201,7 +236,6 @@ export default function Navigation() {
               Sair
             </span>
           </div>
-          {/* Tooltip quando minimizado */}
           {isCollapsed && (
             <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
               Sair
@@ -214,7 +248,7 @@ export default function Navigation() {
   );
 }
 
-function MenuGroup({ title, children }: { title: string, children: React.ReactNode }) {
+function MenuGroup({ title, children, moduleTheme }: { title: string, children: React.ReactNode, moduleTheme: import('@/config/modules').ModuleTheme }) {
   const { isCollapsed } = useSidebar();
 
   return (
@@ -223,7 +257,7 @@ function MenuGroup({ title, children }: { title: string, children: React.ReactNo
         className={`px-3 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mb-0' : 'opacity-100 h-auto mb-1'}`}
         style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
       >
-        <Sparkles className="w-3 h-3 text-pink-300 dark:text-pink-700 shrink-0" />
+        <Sparkles className={`w-3 h-3 ${moduleTheme.sparkleColor} shrink-0`} />
         <span className="overflow-hidden">{title}</span>
       </p>
       <div className="space-y-0.5">
@@ -239,13 +273,14 @@ interface NavItemProps {
   path: string;
   active: boolean;
   color: string;
-  badge?: number; // Contador de notificações
+  badge?: number;
+  moduleTheme: import('@/config/modules').ModuleTheme;
 }
 
-function NavItem({ icon: Icon, label, path, active, color, badge }: NavItemProps) {
+function NavItem({ icon: Icon, label, path, active, color, badge, moduleTheme }: NavItemProps) {
   const { isCollapsed } = useSidebar();
 
-  const colorMap: any = {
+  const colorMap: Record<string, string> = {
     pink: 'text-pink-500 dark:text-pink-300',
     purple: 'text-purple-500 dark:text-purple-300',
     orange: 'text-orange-500 dark:text-orange-300',
@@ -262,8 +297,8 @@ function NavItem({ icon: Icon, label, path, active, color, badge }: NavItemProps
       <div className={`
         relative flex items-center px-3 py-2 rounded-xl transition-all duration-200 text-sm font-medium overflow-hidden
         ${active
-          ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-md shadow-pink-200 dark:shadow-none'
-          : 'text-slate-600 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-gray-100'}
+          ? `${moduleTheme.activeGradient} text-white ${moduleTheme.shadowActive}`
+          : `text-slate-600 dark:text-gray-400 ${moduleTheme.hoverBg} hover:text-slate-900 dark:hover:text-gray-100`}
       `}>
         <Icon
           className={`w-5 h-5 transition-colors shrink-0 ${active ? 'text-white' : colorMap[color]}`}
@@ -275,7 +310,6 @@ function NavItem({ icon: Icon, label, path, active, color, badge }: NavItemProps
           {label}
         </span>
 
-        {/* Badge de notificação (só aparece quando há mensagens não lidas) */}
         {badge !== undefined && badge > 0 && (
           <div
             className={`absolute ${isCollapsed ? 'right-1 top-1' : 'right-2 top-1.5'} transition-all duration-500 ease-in-out z-10`}
@@ -286,7 +320,6 @@ function NavItem({ icon: Icon, label, path, active, color, badge }: NavItemProps
           </div>
         )}
 
-        {/* Coração (só aparece quando está ativo E não há badge) */}
         {active && (!badge || badge === 0) && (
           <div
             className={`absolute right-3 transition-all duration-500 ease-in-out ${isCollapsed ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}
@@ -296,7 +329,6 @@ function NavItem({ icon: Icon, label, path, active, color, badge }: NavItemProps
           </div>
         )}
 
-        {/* Tooltip quando minimizado */}
         {isCollapsed && (
           <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
             {label}

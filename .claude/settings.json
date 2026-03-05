@@ -52,7 +52,24 @@
       "Bash(/usr/local/bin/docker --version)",
       "Bash(/Applications/Docker.app/Contents/Resources/bin/docker --version)",
       "Bash(npx tsx --env-file=.env.local scripts/list-models.mts)",
-      "Bash(git fetch origin)"
+      "Bash(git fetch origin)",
+      "Bash(ls -la /Users/brendosousa/Downloads/painel-clinica-main/src/app/\\\\\\(auth\\\\\\)/)",
+      "Bash(grep -h \"CREATE TABLE IF NOT EXISTS\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(sed 's/.*`\\\\\\([^ ]*\\\\\\)`.*/\\\\1/')",
+      "Bash(grep -r \"CREATE POLICY\\\\|ALTER TABLE.*ENABLE ROW LEVEL SECURITY\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(grep -r \"schema\\\\|Schema\\\\|SCHEMA\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(npm install pdfjs-dist)",
+      "Bash(head -100 /Users/brendosousa/Downloads/painel-clinica-main/src/app/api/chats/[id]/route.ts)",
+      "Bash(npx tsc --noEmit --pretty)",
+      "Bash(ls /Users/brendosousa/Downloads/painel-clinica-main/.env*)",
+      "Bash(ls /Users/brendosousa/Downloads/painel-clinica-main/.env.example*)",
+      "Bash(ls /Users/brendosousa/Downloads/painel-clinica-main/.env.local*)",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__apply_migration",
+      "Bash(npx next lint --quiet)",
+      "Bash(npx tsc --noEmit)",
+      "mcp__supabase__search_docs",
+      "mcp__supabase__list_migrations"
     ]
   }
 }

@@ -1,0 +1,555 @@
+import { NextResponse } from 'next/server';
+import { createSchemaAdminClient } from '@/lib/supabase/schemaServer';
+import { EvolutionWebhookData } from '@/ai/ingestion/state';
+import { handleMediaUpload, normalizeJidToPhone, isLidJid, fetchProfilePictureFromEvolution } from '@/ai/ingestion/services';
+
+const SCHEMA = 'atendimento';
+
+// Anti-restauração: ignora backlog/histórico após reconnect
+const INGESTION_START_TS_MS = Date.now();
+const INCOMING_CLOCK_SKEW_MS = 30_000;
+
+function getSupabase() {
+  return createSchemaAdminClient(SCHEMA);
+}
+
+function mapEvolutionStatus(raw: unknown): 'sent' | 'delivered' | 'read' | null {
+  const v = String(raw ?? '').toUpperCase();
+  const n = Number(raw);
+  if (n === 3 || v === 'DELIVERED' || v === 'DELIVERED_ACK' || v === 'DELIVERY_ACK') return 'delivered';
+  if (n === 4 || v === 'READ' || v === 'READ_ACK' || v === 'PLAYED') return 'read';
+  if (n === 2 || n === 1 || v === 'SENT' || v === 'ACK' || v === 'SERVER' || v === 'SERVER_ACK') return 'sent';
+  return null;
+}
+
+type UpdateItem = { key: Record<string, unknown>; status: unknown; editedText?: string | null };
+
+function extractTextFromAnyMessage(messageLike: unknown): string | null {
+  if (!messageLike || typeof messageLike !== 'object') return null;
+  const m = messageLike as Record<string, any>;
+  const editedMessage = m.editedMessage?.message ?? m.editedMessage;
+  const candidates = [
+    m.conversation, m.text, m.extendedTextMessage?.text,
+    m.imageMessage?.caption, m.videoMessage?.caption,
+    editedMessage?.conversation, editedMessage?.text, editedMessage?.extendedTextMessage?.text,
+    m.message?.conversation, m.message?.extendedTextMessage?.text,
+  ];
+  const text = candidates.find((v) => typeof v === 'string' && v.trim().length > 0);
+  return typeof text === 'string' ? text.trim() : null;
+}
+
+function extractUpdateItems(body: Record<string, unknown>): UpdateItem[] {
+  const items: UpdateItem[] = [];
+  const data = body.data as Record<string, unknown> | undefined;
+
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const d = data as Record<string, unknown>;
+    const keyObj = d.key as Record<string, unknown> | undefined;
+    const id = d.keyId ?? keyObj?.id ?? body.keyId;
+    const status = d.status ?? body.status;
+    const fromMe = d.fromMe ?? keyObj?.fromMe ?? body.fromMe;
+    const editedText = extractTextFromAnyMessage(d.message ?? d.update ?? body.message);
+
+    if (id && (status !== undefined || editedText)) {
+      items.push({ key: { id, fromMe, remoteJid: d.remoteJid ?? keyObj?.remoteJid }, status, editedText });
+      return items;
+    }
+  }
+
+  const updatesArr = (data?.updates ?? body.updates ?? (Array.isArray(data) ? data : undefined)) as unknown[] | undefined;
+  if (Array.isArray(updatesArr)) {
+    for (const item of updatesArr) {
+      const obj = item as Record<string, unknown>;
+      const key = (obj.key ?? obj) as Record<string, unknown>;
+      const update = obj.update as Record<string, unknown> | undefined;
+      const id = key?.id ?? key?.keyId ?? obj.keyId;
+      const status2 = update?.status ?? obj.status;
+      const editedText = extractTextFromAnyMessage(update?.message ?? obj.message ?? update?.editedMessage ?? obj.editedMessage);
+      if (id && (status2 !== undefined || editedText)) {
+        items.push({ key: { id, fromMe: key?.fromMe ?? obj.fromMe, remoteJid: key?.remoteJid ?? obj.remoteJid }, status: status2, editedText });
+      }
+    }
+    if (items.length > 0) return items;
+  }
+
+  if (data && typeof data === 'object') {
+    const d = data as Record<string, unknown>;
+    const key = (d.key ?? body.key) as Record<string, unknown> | undefined;
+    const update = d.update as Record<string, unknown> | undefined;
+    const id = key?.id ?? key?.keyId ?? d.keyId;
+    const status3 = update?.status ?? d.status ?? body.status;
+    const editedText = extractTextFromAnyMessage(update?.message ?? d.message ?? body.message);
+    if (id && (status3 !== undefined || editedText)) {
+      items.push({ key: { id, fromMe: key?.fromMe ?? d.fromMe, remoteJid: key?.remoteJid ?? d.remoteJid }, status: status3, editedText });
+    }
+  }
+
+  return items;
+}
+
+async function handleMessagesUpdate(body: Record<string, unknown>) {
+  const supabase = getSupabase();
+  const items = extractUpdateItems(body);
+
+  for (const { key, status: statusRaw, editedText } of items) {
+    const mapped = mapEvolutionStatus(statusRaw);
+    const hasEditedText = typeof editedText === 'string' && editedText.trim().length > 0;
+    if (!mapped && !hasEditedText) continue;
+
+    const wppId = String(key.id ?? '').trim();
+    if (!wppId) continue;
+
+    const { data: existing, error } = await supabase
+      .from('chat_messages').select('chat_id, tool_data').eq('wpp_id', wppId).limit(1).maybeSingle();
+    if (error || !existing) continue;
+
+    const updatePayload: Record<string, unknown> = {};
+    if (mapped) updatePayload.status = mapped;
+    if (hasEditedText) {
+      const prev = existing.tool_data && typeof existing.tool_data === 'object' ? (existing.tool_data as Record<string, unknown>) : {};
+      updatePayload.message_text = editedText!.trim();
+      updatePayload.is_edited = true;
+      updatePayload.edited_at = new Date().toISOString();
+      updatePayload.tool_data = { ...prev, is_edited: true, edited_at: new Date().toISOString() };
+    }
+
+    if (Object.keys(updatePayload).length === 0) continue;
+    await supabase.from('chat_messages').update(updatePayload).eq('wpp_id', wppId);
+    if (existing.chat_id && mapped) {
+      await supabase.from('chats').update({ last_message_status: mapped }).eq('id', existing.chat_id);
+    }
+  }
+}
+
+async function replaceWithRevokedTombstone(targetWppId: string) {
+  const supabase = getSupabase();
+  const normalized = String(targetWppId || '').trim();
+  if (!normalized) return false;
+
+  const { data: original } = await supabase
+    .from('chat_messages').select('id, message_type').eq('wpp_id', normalized).maybeSingle();
+  if (!original || original.message_type === 'revoked') return Boolean(original);
+
+  await supabase.from('chat_messages')
+    .update({ message_text: '', message_type: 'revoked', media_url: null })
+    .eq('id', original.id);
+  return true;
+}
+
+function extractDeleteIds(body: Record<string, unknown>): string[] {
+  const ids = new Set<string>();
+  const data = body.data as Record<string, unknown> | unknown[] | undefined;
+  const pushId = (v: unknown) => { const s = String(v ?? '').trim(); if (s) ids.add(s); };
+  const pushFromObj = (obj: Record<string, unknown>) => {
+    pushId(obj.id); pushId(obj.keyId);
+    const key = obj.key as Record<string, unknown> | undefined;
+    if (key) pushId(key.id);
+  };
+
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    pushFromObj(data as Record<string, unknown>);
+    const keys = (data as Record<string, unknown>).keys as unknown[] | undefined;
+    if (Array.isArray(keys)) keys.forEach((k) => { if (k && typeof k === 'object') pushFromObj(k as Record<string, unknown>); else pushId(k); });
+  }
+  if (Array.isArray(data)) data.forEach((item) => { if (item && typeof item === 'object') pushFromObj(item as Record<string, unknown>); else pushId(item); });
+  pushId(body.id); pushId(body.keyId);
+  return [...ids];
+}
+
+async function handleMessagesDelete(body: Record<string, unknown>) {
+  for (const id of extractDeleteIds(body)) await replaceWithRevokedTombstone(id);
+}
+
+async function alreadyProcessedByWppId(wppId: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data } = await supabase.from('chat_messages').select('id').eq('wpp_id', wppId).limit(1).maybeSingle();
+  return Boolean(data?.id);
+}
+
+async function handleRevokeMessage(message: EvolutionWebhookData) {
+  const msgContent = message.message as Record<string, any>;
+  const protocolMsg = msgContent?.protocolMessage;
+  if (!protocolMsg) return false;
+
+  const protocolType = protocolMsg.type;
+  const isRevoke = protocolType === 0 || String(protocolType ?? '').toUpperCase() === 'REVOKE';
+  if (isRevoke && protocolMsg.key?.id) {
+    await replaceWithRevokedTombstone(String(protocolMsg.key.id).trim());
+  }
+  return true;
+}
+
+function detectMessageType(message: unknown): string {
+  const msg = (message ?? {}) as Record<string, unknown>;
+  if (msg.protocolMessage) return 'protocolMessage';
+  if (msg.reactionMessage) return 'reactionMessage';
+  if (msg.audioMessage) return 'audioMessage';
+  if (msg.imageMessage) return 'imageMessage';
+  if (msg.videoMessage) return 'videoMessage';
+  if (msg.stickerMessage) return 'stickerMessage';
+  if (msg.documentMessage) return 'documentMessage';
+  if (msg.extendedTextMessage || msg.conversation) return 'conversation';
+  return 'unknown';
+}
+
+function isMessageForwarded(message: unknown): boolean {
+  if (!message || typeof message !== 'object') return false;
+  const msg = message as Record<string, unknown>;
+  const contextInfo =
+    msg.contextInfo ??
+    (msg.extendedTextMessage as Record<string, unknown> | undefined)?.contextInfo ??
+    (msg.imageMessage as Record<string, unknown> | undefined)?.contextInfo ??
+    (msg.videoMessage as Record<string, unknown> | undefined)?.contextInfo ??
+    (msg.audioMessage as Record<string, unknown> | undefined)?.contextInfo ??
+    (msg.documentMessage as Record<string, unknown> | undefined)?.contextInfo;
+  if (!contextInfo || typeof contextInfo !== 'object') return false;
+  const ctx = contextInfo as Record<string, unknown>;
+  return ctx.forwarded === true || ctx.forwarded === 'true';
+}
+
+function toRemoteJid(value: unknown): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  if (raw.includes('@')) return raw;
+  const digits = raw.replace(/\D/g, '');
+  return digits ? `${digits}@s.whatsapp.net` : '';
+}
+
+function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
+  const payload = (body ?? {}) as Record<string, unknown>;
+  const data = payload.data as unknown;
+  const sources: unknown[] = [];
+
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const dataObj = data as Record<string, unknown>;
+    if (dataObj.key) sources.push(dataObj);
+    if (Array.isArray(dataObj.messages)) sources.push(...(dataObj.messages as unknown[]));
+  }
+  if (Array.isArray(data)) sources.push(...data);
+  if (Array.isArray(payload.messages)) sources.push(...(payload.messages as unknown[]));
+
+  const normalized: EvolutionWebhookData[] = [];
+
+  for (const source of sources) {
+    if (!source || typeof source !== 'object') continue;
+    const item = source as Record<string, unknown>;
+    const keyRaw = (item.key as Record<string, unknown> | undefined) ??
+      ({ remoteJid: item.keyRemoteJid ?? item.remoteJid, fromMe: item.keyFromMe ?? item.fromMe, id: item.keyId ?? item.id ?? '' } as Record<string, unknown>);
+
+    const remoteJid = toRemoteJid(keyRaw.remoteJid ?? item.remoteJid ?? item.jid ?? item.from ?? item.sender ?? item.number ?? item.phone);
+    if (!remoteJid || remoteJid === 'status@broadcast') continue;
+
+    const messageValue = (item.message ?? item.content ?? {}) as unknown;
+    const detectedType = detectMessageType(messageValue);
+    const messageTypeValue = (item.messageType ?? item.contentType ?? detectedType) as string;
+    const timestampValue = (item.messageTimestamp ?? item.timestamp ?? Date.now()) as number | string;
+    const forwarded = isMessageForwarded(messageValue);
+
+    normalized.push({
+      key: { remoteJid, fromMe: Boolean(keyRaw.fromMe), id: String(keyRaw.id ?? '') },
+      pushName: typeof item.pushName === 'string' ? item.pushName : undefined,
+      messageType: messageTypeValue,
+      message: messageValue,
+      messageTimestamp: timestampValue,
+      base64: typeof item.base64 === 'string' ? item.base64 : undefined,
+      ...(forwarded ? { isForwarded: true } : {}),
+    });
+  }
+
+  return normalized;
+}
+
+function extractPhoneFromRemoteJid(remoteJid?: string | null): string | null {
+  const raw = String(remoteJid ?? '').trim();
+  if (!raw) return null;
+  const beforeAt = raw.includes('@') ? raw.split('@')[0] : raw;
+  return beforeAt.replace(/\D/g, '') || null;
+}
+
+async function upsertReactionMessage(message: EvolutionWebhookData) {
+  const supabase = getSupabase();
+  const msg = (message.message ?? {}) as Record<string, any>;
+  const reaction = msg.reactionMessage as Record<string, any> | undefined;
+  if (!reaction?.key?.id) return;
+
+  const targetWppId = String(reaction.key.id || '').trim();
+  if (!targetWppId) return;
+  const emoji = typeof reaction.text === 'string' ? reaction.text.trim() : '';
+  const remoteJid = String(reaction.key.remoteJid || message.key?.remoteJid || '').trim() || null;
+  const fromMe = Boolean(message.key?.fromMe ?? reaction.key.fromMe);
+  const senderPhone = fromMe ? '__me__' : extractPhoneFromRemoteJid(remoteJid);
+  const senderName = typeof message.pushName === 'string' ? message.pushName : null;
+
+  const { data: targetMessage } = await supabase
+    .from('chat_messages').select('id, chat_id').eq('wpp_id', targetWppId).maybeSingle();
+  if (!targetMessage?.chat_id) return;
+
+  if (!emoji) {
+    const q = supabase.from('message_reactions').delete().eq('target_wpp_id', targetWppId).eq('from_me', fromMe);
+    if (senderPhone) q.eq('sender_phone', senderPhone); else q.is('sender_phone', null);
+    await q;
+    return;
+  }
+
+  await supabase.from('message_reactions').upsert({
+    chat_id: targetMessage.chat_id, message_id: targetMessage.id,
+    target_wpp_id: targetWppId, emoji, sender_phone: senderPhone, sender_name: senderName,
+    from_me: fromMe, created_at: new Date().toISOString(),
+  }, { onConflict: 'target_wpp_id,sender_phone,from_me' });
+}
+
+function isMessageOlderThan24Hours(timestamp: number | string | undefined): boolean {
+  if (!timestamp) return false;
+  let ts = Number(timestamp);
+  if (isNaN(ts)) return false;
+  if (ts < 1000000000000) ts *= 1000;
+  return (Date.now() - ts) > 24 * 60 * 60 * 1000;
+}
+
+function toTimestampMs(input: number | string | undefined): number | null {
+  if (!input) return null;
+  let ts = Number(input);
+  if (!Number.isFinite(ts) || ts <= 0) return null;
+  if (ts < 1000000000000) ts *= 1000;
+  return ts;
+}
+
+function isMessageBeforeIngestionStart(timestamp: number | string | undefined): boolean {
+  const ts = toTimestampMs(timestamp);
+  if (ts == null) return false;
+  return ts < (INGESTION_START_TS_MS - INCOMING_CLOCK_SKEW_MS);
+}
+
+async function processWebhookBody(body: Record<string, unknown>, requestUrl = '') {
+  try {
+    const event = (body.event ?? body.type ?? '') as string;
+    const eventUpper = String(event).toUpperCase().replace(/\./g, '_');
+
+    const path = requestUrl || '';
+    const isUpdateByPath = /messages-update|messages\.update/i.test(path);
+    const isUpdateByEvent = eventUpper === 'MESSAGES_UPDATE' || event === 'messages.update';
+    const isDeleteByPath = /messages-delete|messages\.delete/i.test(path);
+    const isDeleteByEvent = eventUpper === 'MESSAGES_DELETE' || event === 'messages.delete';
+    const isHistorySetEvent = eventUpper === 'MESSAGES_SET' || event === 'messages.set';
+    const data = body.data as Record<string, unknown> | undefined;
+    const hasUpdateStructure = data && (data.update ?? (Array.isArray(data) && (data as unknown[])[0] && ((data as unknown[])[0] as Record<string, unknown>)?.update));
+
+    if (isUpdateByPath || isUpdateByEvent || (hasUpdateStructure && !data?.message && !(data as Record<string, unknown>)?.messages)) {
+      await handleMessagesUpdate(body);
+      return NextResponse.json({ status: 'processed', event: 'messages_update' });
+    }
+    if (isDeleteByPath || isDeleteByEvent) {
+      await handleMessagesDelete(body);
+      return NextResponse.json({ status: 'processed', event: 'messages_delete' });
+    }
+    if (isHistorySetEvent) {
+      return NextResponse.json({ status: 'ignored', reason: 'history_restore_disabled' });
+    }
+
+    const rawMessages = normalizeMessagesFromWebhook(body);
+    const messages = rawMessages.filter(
+      (msg) => !isMessageOlderThan24Hours(msg.messageTimestamp) && !isMessageBeforeIngestionStart(msg.messageTimestamp)
+    );
+
+    if (rawMessages.length > 0 && messages.length === 0) {
+      return NextResponse.json({ status: 'ignored', reason: 'messages_outside_live_window' });
+    }
+    if (messages.length === 0) {
+      return NextResponse.json({ status: 'ignored', reason: 'no_messages_normalized' });
+    }
+
+    // Ingestão inline no schema atendimento (sem usar grafo da pediatria)
+    for (const message of messages) {
+      const wppId = String(message.key?.id || '').trim();
+      if (wppId && (await alreadyProcessedByWppId(wppId))) continue;
+
+      const isProtocol = message.messageType === 'protocolMessage' || (message.message as any)?.protocolMessage;
+      if (isProtocol) { await handleRevokeMessage(message); continue; }
+
+      const isReaction = message.messageType === 'reactionMessage' || Boolean((message.message as Record<string, unknown> | undefined)?.reactionMessage);
+      if (isReaction) { await upsertReactionMessage(message); continue; }
+
+      await ingestMessageToAtendimento(message);
+    }
+
+    return NextResponse.json({ status: 'processed', messages: messages.length });
+  } catch (error) {
+    console.error('[ATD/Webhook] Erro:', error);
+    return NextResponse.json({ status: 'error' }, { status: 500 });
+  }
+}
+
+// ── INGESTÃO INLINE (schema atendimento) ──────────────────────────────────
+
+function toIsoFromTimestamp(input: number | string | undefined): string {
+  const raw = Number(input);
+  if (!Number.isFinite(raw) || raw <= 0) return new Date().toISOString();
+  const ms = raw < 1_000_000_000_000 ? raw * 1000 : raw;
+  return new Date(ms).toISOString();
+}
+
+function normalizePhone(value?: string | null) {
+  return (value ?? '').replace(/\D/g, '');
+}
+
+async function ensureChatExistsInAtendimento(phone: string, pushName: string, fromMe: boolean) {
+  const supabase = getSupabase();
+
+  const { data: existing } = await supabase
+    .from('chats').select('*').eq('phone', phone).single();
+
+  if (existing) {
+    const currentName = (existing.contact_name ?? '').trim();
+    const canAutoFill = !currentName || normalizePhone(currentName) === normalizePhone(phone);
+    if (!fromMe && pushName && canAutoFill && currentName !== pushName) {
+      await supabase.from('chats').update({ contact_name: pushName }).eq('id', existing.id);
+      return { ...existing, contact_name: pushName };
+    }
+    return existing;
+  }
+
+  const { data: newChat, error } = await supabase.from('chats').insert({
+    phone,
+    contact_name: phone,
+    status: 'ACTIVE',
+    created_at: new Date().toISOString(),
+  }).select().single();
+
+  if (error) throw new Error(`Erro ao criar chat (atendimento): ${error.message}`);
+  return newChat;
+}
+
+async function saveMessageInAtendimento(payload: {
+  chat_id: number; phone: string; content: string;
+  sender: 'HUMAN_AGENT' | 'CUSTOMER'; type: string;
+  media_url?: string; wpp_id: string;
+  message_timestamp_iso?: string; forwarded?: boolean;
+}) {
+  const supabase = getSupabase();
+  if (payload.type === 'reaction') return;
+
+  const status = payload.sender === 'HUMAN_AGENT' ? 'sent' : undefined;
+  const createdAt = payload.message_timestamp_iso || new Date().toISOString();
+  const isIncoming = payload.sender === 'CUSTOMER';
+
+  const insertPayload: Record<string, unknown> = {
+    chat_id: payload.chat_id, phone: payload.phone,
+    message_text: payload.content, sender: payload.sender,
+    message_type: payload.type, media_url: payload.media_url,
+    wpp_id: payload.wpp_id, created_at: createdAt,
+  };
+  if (status) insertPayload.status = status;
+  if (payload.forwarded) insertPayload.tool_data = { forwarded: true };
+
+  const { error } = await supabase.from('chat_messages').insert(insertPayload);
+  if (error) {
+    if (String(error.message || '').toLowerCase().includes('duplicate key')) return;
+    console.error('[ATD/Ingest] Erro ao salvar mensagem:', error);
+    return;
+  }
+
+  const previewText = payload.type === 'audio' ? 'Áudio'
+    : payload.type === 'image' ? 'Foto'
+    : payload.type === 'video' ? 'Vídeo'
+    : payload.type === 'sticker' ? 'Figurinha'
+    : payload.type === 'document' ? 'Documento'
+    : (payload.content || '').trim();
+
+  const { data: chatRow } = await supabase
+    .from('chats').select('unread_count, last_interaction_at').eq('id', payload.chat_id).maybeSingle();
+
+  const currentUnread = Number(chatRow?.unread_count || 0);
+  const chatUpdate: Record<string, unknown> = {
+    last_message: previewText,
+    last_message_type: payload.type || 'text',
+    last_message_sender: isIncoming ? 'contact' : 'me',
+    last_interaction_at: createdAt,
+  };
+  if (isIncoming) {
+    chatUpdate.unread_count = currentUnread + 1;
+    chatUpdate.last_message_status = null;
+  } else if (status) {
+    chatUpdate.last_message_status = status;
+  }
+
+  await supabase.from('chats').update(chatUpdate).eq('id', payload.chat_id);
+}
+
+async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
+  try {
+    const jid = String(message.key?.remoteJid ?? '').trim();
+    let phone = '';
+
+    if (isLidJid(jid)) {
+      // LID não suportado no atendimento por enquanto — ignora
+      console.warn('[ATD/Ingest] LID JID ignorado:', jid);
+      return;
+    }
+    phone = normalizeJidToPhone(jid);
+    if (!phone || !/^\d{8,15}$/.test(phone)) return;
+
+    const isMe = message.key?.fromMe === true;
+    const pushName = message.pushName || phone;
+    const msg = message.message as Record<string, any>;
+
+    // Extrair conteúdo de texto
+    let content = '';
+    if (msg?.conversation) content = msg.conversation;
+    else if (msg?.extendedTextMessage?.text) content = msg.extendedTextMessage.text;
+    else if (msg?.imageMessage?.caption) content = msg.imageMessage.caption;
+    else if (msg?.videoMessage?.caption) content = msg.videoMessage.caption;
+
+    let type = 'text';
+    let mediaUrl: string | undefined;
+
+    if (message.messageType === 'audioMessage') {
+      type = 'audio'; content = content || '🎵 Áudio recebido';
+      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, 'EVOLUTION_ATENDIMENTO_INSTANCE')) ?? undefined;
+    } else if (message.messageType === 'imageMessage') {
+      type = 'image'; content = content || '';
+      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, 'EVOLUTION_ATENDIMENTO_INSTANCE')) ?? undefined;
+    } else if (message.messageType === 'videoMessage') {
+      type = 'video'; content = content || '';
+      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, 'EVOLUTION_ATENDIMENTO_INSTANCE')) ?? undefined;
+    } else if (message.messageType === 'stickerMessage') {
+      type = 'sticker'; content = content || '💟 Figurinha';
+      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, 'EVOLUTION_ATENDIMENTO_INSTANCE')) ?? undefined;
+    } else if (message.messageType === 'documentMessage') {
+      type = 'document'; content = content || '📄 Documento recebido';
+      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, 'EVOLUTION_ATENDIMENTO_INSTANCE')) ?? undefined;
+    }
+
+    // Upsert chat no schema atendimento
+    const chat = await ensureChatExistsInAtendimento(phone, pushName, isMe);
+
+    // Buscar foto de perfil em background (usa instância atendimento)
+    if (!isMe && !chat.profile_pic && phone) {
+      fetchProfilePictureFromEvolution(phone, 'EVOLUTION_ATENDIMENTO_INSTANCE').then(async (url) => {
+        if (!url) return;
+        const supabase = getSupabase();
+        await supabase.from('chats').update({ profile_pic: url }).eq('id', chat.id);
+      }).catch(() => {});
+    }
+
+    // Salvar mensagem
+    await saveMessageInAtendimento({
+      chat_id: chat.id, phone, content,
+      sender: isMe ? 'HUMAN_AGENT' : 'CUSTOMER',
+      type, media_url: mediaUrl,
+      wpp_id: message.key?.id || `atd_${Date.now()}`,
+      message_timestamp_iso: toIsoFromTimestamp(message.messageTimestamp),
+      forwarded: message.isForwarded === true,
+    });
+
+    console.log(`[ATD/Ingest] Mensagem salva: chat=${chat.id} phone=${phone} type=${type}`);
+  } catch (error) {
+    console.error('[ATD/Ingest] Erro:', error);
+  }
+}
+
+export async function POST(req: Request) {
+  const body = (await req.json()) as Record<string, unknown>;
+  const event = body.event ?? body.type ?? 'unknown';
+  console.log(`[ATD/Webhook] Recebido evento: ${event}`, JSON.stringify(body).slice(0, 500));
+  return processWebhookBody(body, req.url);
+}

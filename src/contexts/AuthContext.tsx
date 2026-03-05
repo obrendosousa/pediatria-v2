@@ -20,9 +20,16 @@ export type Profile = {
   updated_at: string;
 };
 
+// Módulos que o usuário tem acesso (RBAC multi-módulo)
+export type UserModule = {
+  module: 'pediatria' | 'atendimento' | 'financeiro' | 'comercial' | 'ceo';
+  role: 'admin' | 'manager' | 'operator' | 'viewer';
+};
+
 type AuthContextType = {
   user: User | null;
   profile: Profile | null;
+  modules: UserModule[];
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -33,6 +40,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [modules, setModules] = useState<UserModule[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -49,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-      
+
       if (error) {
         console.error('Erro ao buscar perfil:', error);
         return null;
@@ -61,6 +69,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supabase]);
 
+  const fetchModules = useCallback(async (userId: string): Promise<UserModule[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('user_modules')
+        .select('module, role')
+        .eq('profile_id', userId);
+
+      if (error) {
+        console.error('Erro ao buscar módulos:', error);
+        return [];
+      }
+      return (data ?? []) as UserModule[];
+    } catch (error) {
+      console.error('Exceção ao buscar módulos:', error);
+      return [];
+    }
+  }, [supabase]);
+
   const applySessionState = useCallback(async (nextUser: User | null) => {
     const requestId = ++requestIdRef.current;
 
@@ -68,20 +94,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       currentUserIdRef.current = null;
       setUser(null);
       setProfile(null);
+      setModules([]);
       return;
     }
 
-    const nextProfile = await fetchProfile(nextUser.id);
+    const [nextProfile, nextModules] = await Promise.all([
+      fetchProfile(nextUser.id),
+      fetchModules(nextUser.id),
+    ]);
     if (requestIdRef.current !== requestId) return;
     currentUserIdRef.current = nextUser.id;
     setUser(nextUser);
     setProfile(nextProfile);
-  }, [fetchProfile]);
+    setModules(nextModules);
+  }, [fetchProfile, fetchModules]);
 
   const signOut = useCallback(async () => {
     currentUserIdRef.current = null;
     setUser(null);
     setProfile(null);
+    setModules([]);
     await supabase.auth.signOut();
     router.replace('/login');
     router.refresh();
@@ -151,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, signOut, refreshProfile }}
+      value={{ user, profile, modules, loading, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

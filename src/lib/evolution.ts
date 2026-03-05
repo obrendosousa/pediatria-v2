@@ -6,14 +6,14 @@ export interface EvolutionConfig {
   apiKey: string;
 }
 
-export function getEvolutionConfig(): EvolutionConfig {
+export function getEvolutionConfig(instanceEnvKey: string = 'EVOLUTION_INSTANCE'): EvolutionConfig {
   const baseUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, '');
-  const instance = process.env.EVOLUTION_INSTANCE;
+  const instance = process.env[instanceEnvKey];
   const apiKey = process.env.EVOLUTION_API_KEY;
 
   if (!baseUrl || !instance || !apiKey) {
     throw new Error(
-      'Evolution API não configurada (EVOLUTION_API_URL, EVOLUTION_INSTANCE, EVOLUTION_API_KEY)'
+      `Evolution API não configurada (EVOLUTION_API_URL, ${instanceEnvKey}, EVOLUTION_API_KEY)`
     );
   }
 
