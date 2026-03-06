@@ -181,7 +181,7 @@ async function processFile(filePath: string, stats: ImportStats): Promise<void> 
       const { data, error } = await supabase
         .from('growth_standards')
         .upsert(batch, {
-          onConflict: 'source,type,gender,age_months,x_value',
+          onConflict: 'source,type,gender,age_range,age_months,x_value',
         })
         .select();
 

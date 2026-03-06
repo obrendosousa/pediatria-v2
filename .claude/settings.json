@@ -103,7 +103,20 @@
       "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"healthcare medical clinic dashboard SaaS professional teal\" --design-system -p \"Painel Clínica - Atendimento\")",
       "Read(//tmp/ts-quality-hooks/.claude/hooks/**)",
       "Read(//private/tmp/ts-quality-hooks/.claude/hooks/**)",
-      "Bash(curl -s -X GET \"https://evolution-evolution-api.rozhd7.easypanel.host/webhook/find/atendimento-alianca\" -H \"apikey: E029AE5DFF08-47D4-BF7C-9800BEBCADE9\")"
+      "Bash(curl -s -X GET \"https://evolution-evolution-api.rozhd7.easypanel.host/webhook/find/atendimento-alianca\" -H \"apikey: E029AE5DFF08-47D4-BF7C-9800BEBCADE9\")",
+      "Bash(curl -s -X POST 'https://evolution-evolution-api.rozhd7.easypanel.host/message/sendMedia/atendimento-alianca' -H 'Content-Type: application/json' -H 'apikey: 519B6B25C0C2-4A42-A42F-A69779847C72' -d '{:*)",
+      "Bash(curl -s -X POST 'https://evolution-evolution-api.rozhd7.easypanel.host/message/sendMedia/atendimento-alianca' -H 'Content-Type: application/json' -H 'apikey: E029AE5DFF08-47D4-BF7C-9800BEBCADE9' -d '{:*)",
+      "Bash(curl -s -X POST 'https://evolution-evolution-api.rozhd7.easypanel.host/message/sendText/atendimento-alianca' -H 'Content-Type: application/json' -H 'apikey: 519B6B25C0C2-4A42-A42F-A69779847C72' -d '{:*)",
+      "Bash(curl -s -X POST 'https://evolution-evolution-api.rozhd7.easypanel.host/message/sendText/atendimento-alianca' -H 'Content-Type: application/json' -H 'apikey: E029AE5DFF08-47D4-BF7C-9800BEBCADE9' -d '{:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''ok'' if ''key'' in d else ''fail:'', json.dumps\\({k:d.get\\(k\\) for k in [''key'',''status'',''error'']}, indent=2\\)\\)\")",
+      "WebFetch(domain:juctfolupehtaoehjkwl.supabase.co)",
+      "Bash(npm run seed:growth)",
+      "WebFetch(domain:www.who.int)",
+      "WebFetch(domain:cdn.who.int)",
+      "WebFetch(domain:pmc.ncbi.nlm.nih.gov)",
+      "WebFetch(domain:www.cdc.gov)",
+      "WebFetch(domain:peditools.org)",
+      "WebFetch(domain:pediatrics.aappublications.org)"
     ],
     "additionalDirectories": [
       "/Users/brendosousa/Downloads/painel-clinica-main",

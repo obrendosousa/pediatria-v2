@@ -20,7 +20,7 @@ export interface AnthropometryEntry {
 // --- NOVOS TIPOS PARA O BANCO DE DADOS (Baseado no seu CSV) ---
 export interface GrowthStandardRow {
   id: string; // UUID vindo do banco
-  source: 'WHO' | 'CDC';
+  source: 'WHO' | 'CDC' | 'UNICAMP';
   type: 'wfa' | 'lhfa' | 'bmifa' | 'hcfa' | 'wfl' | 'wfh';
   gender: 'male' | 'female';
   age_range: string; // ex: '0_5', '2_20'
@@ -50,7 +50,7 @@ export interface GrowthStandardRow {
 }
 // -----------------------------------------------------------
 
-export type ChartReference = 'WHO' | 'CDC';
+export type ChartReference = 'WHO' | 'CDC' | 'UNICAMP';
 export type DisplayMode = 'PERCENTILE' | 'Z_SCORE';
 
 // Configuração usada para buscar os dados corretos

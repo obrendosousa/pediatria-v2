@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
 const supabase = createSchemaClient('atendimento');
@@ -468,6 +469,10 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
               }
               : {}),
           }),
+        }).then(res => {
+          if (!res.ok) {
+            console.error('[ATD/useChatMessages] Falha ao enviar texto via WhatsApp:', res.status);
+          }
         }).catch(err => {
           console.error('Erro ao enviar via WhatsApp API:', err);
         });

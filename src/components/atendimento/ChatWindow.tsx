@@ -312,6 +312,11 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
       if (!sendRes.ok) {
         const errBody = await sendRes.json().catch(() => ({}));
         console.error('[ATD/ChatWindow] Erro ao enviar mídia:', sendRes.status, errBody);
+        toast.error(`Falha ao enviar ${evolutionMediaType === 'audio' ? 'áudio' : evolutionMediaType === 'image' ? 'imagem' : 'arquivo'} via WhatsApp. Verifique a configuração da API.`);
+        // Marca a mensagem como falha no banco
+        if (dbMsg?.id) {
+          await supabase.from('chat_messages').update({ status: 'failed' }).eq('id', dbMsg.id);
+        }
       }
 
       if (isNewChat) {

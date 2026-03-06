@@ -86,9 +86,11 @@ export async function POST(req: Request) {
     // =========================================================================
 
     try {
-      getConfig();
-    } catch {
-      return NextResponse.json({ error: 'Evolution API (atendimento) não configurada' }, { status: 500 });
+      const cfg = getConfig();
+      console.log(`[ATD/Send] Config OK: instance=${cfg.instance} keyPrefix=${cfg.apiKey?.slice(0, 8)}...`);
+    } catch (cfgErr: any) {
+      console.error('[ATD/Send] Config FALHOU:', cfgErr?.message);
+      return NextResponse.json({ error: 'Evolution API (atendimento) não configurada. Verifique EVOLUTION_ATENDIMENTO_INSTANCE e EVOLUTION_ATENDIMENTO_API_KEY no ambiente.' }, { status: 500 });
     }
 
     const cleanPhone = String(phone).replace(/\D/g, '');
@@ -155,6 +157,10 @@ export async function POST(req: Request) {
 
     if (!ok) {
       console.error('[ATD/Send] Erro Evolution:', status, JSON.stringify(responseData).slice(0, 500));
+      // Marca a mensagem como failed no banco para o frontend saber
+      if (dbMessageId) {
+        await supabase.from('chat_messages').update({ status: 'failed' }).eq('id', dbMessageId);
+      }
       return NextResponse.json({ error: 'Falha ao enviar mensagem', details: responseData }, { status: status || 502 });
     }
     console.log(`[ATD/Send] Sucesso: type=${type} response=${JSON.stringify(responseData).slice(0, 200)}`);

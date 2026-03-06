@@ -5,7 +5,7 @@ import * as path from 'path';
 export interface GrowthFileMetadata {
   type: 'wfa' | 'lhfa' | 'bmifa' | 'hcfa' | 'wfl' | 'wfh';
   gender: 'male' | 'female';
-  source: 'WHO' | 'CDC';
+  source: 'WHO' | 'CDC' | 'UNICAMP';
   ageRange?: string;
   filename: string;
 }
@@ -22,8 +22,15 @@ export function parseGrowthFileName(filename: string): GrowthFileMetadata | null
   const basename = path.basename(filename, '.json');
   const parts = basename.toLowerCase().split('_');
 
-  // Detectar source (CDC ou WHO)
-  const source: 'WHO' | 'CDC' = basename.includes('cdc') ? 'CDC' : 'WHO';
+  // Detectar source (UNICAMP, CDC ou WHO)
+  let source: 'WHO' | 'CDC' | 'UNICAMP';
+  if (basename.includes('unicamp') || basename.includes('down')) {
+    source = 'UNICAMP';
+  } else if (basename.includes('cdc')) {
+    source = 'CDC';
+  } else {
+    source = 'WHO';
+  }
 
   // Mapear tipos de curva
   const typeMap: Record<string, 'wfa' | 'lhfa' | 'bmifa' | 'hcfa' | 'wfl' | 'wfh'> = {
@@ -114,7 +121,7 @@ export function validateMetadata(metadata: GrowthFileMetadata | null): boolean {
   
   const validTypes = ['wfa', 'lhfa', 'bmifa', 'hcfa', 'wfl', 'wfh'];
   const validGenders = ['male', 'female'];
-  const validSources = ['WHO', 'CDC'];
+  const validSources = ['WHO', 'CDC', 'UNICAMP'];
 
   return (
     validTypes.includes(metadata.type) &&

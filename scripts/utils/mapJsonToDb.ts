@@ -31,6 +31,7 @@ export interface GrowthStandardRow {
  */
 export interface PyGrowupJsonRow {
   Month?: number;
+  Week?: number;  // Para arquivos _0_13_ (dados semanais)
   Length?: number; // Para curvas peso x comprimento/altura
   Height?: number; // Para curvas peso x altura
   L?: number;
@@ -67,6 +68,9 @@ export function mapJsonRowToDb(
   // Para curvas baseadas em idade, usar Month como age_months
   if (jsonRow.Month !== undefined && jsonRow.Month !== null) {
     row.age_months = jsonRow.Month;
+  } else if (jsonRow.Week !== undefined && jsonRow.Week !== null) {
+    // Arquivos _0_13_ usam semanas (0-13), converter para meses
+    row.age_months = Math.round((Number(jsonRow.Week) / 4.345) * 100) / 100;
   }
 
   // Para curvas peso x altura/comprimento, usar Length/Height como x_value

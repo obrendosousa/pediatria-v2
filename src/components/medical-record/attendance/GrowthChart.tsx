@@ -54,28 +54,53 @@ export function GrowthChart({ data, chartConfig, displayMode, yAxisLabel, xAxisL
     }
   }, [chartConfig.dbType]);
 
-  // Tooltip customizado
+  // Tooltip customizado — mostra valores de TODAS as linhas de referência + paciente
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
 
     const patientPayload = payload.find((p: any) => p.dataKey === 'paciente');
+    const referencePayloads = payload.filter(
+      (p: any) => p.dataKey !== 'paciente' && p.value !== undefined && p.value !== null
+    );
     const xText = chartConfig.isXAxisLength
       ? `${Math.round(label)} cm`
       : formatXAxisLabel(label);
 
     return (
-      <div className="bg-white/95 dark:bg-[#1e2028]/95 backdrop-blur shadow-xl border border-slate-200 dark:border-gray-700 rounded-lg p-3 text-xs min-w-[130px]">
+      <div className="bg-white/95 dark:bg-[#1e2028]/95 backdrop-blur shadow-xl border border-slate-200 dark:border-gray-700 rounded-lg p-3 text-xs min-w-[150px]">
         <p className="text-slate-500 dark:text-gray-400 font-medium pb-1 mb-1.5 border-b border-slate-100 dark:border-gray-700">
           {xAxisLabel}: <span className="text-slate-700 dark:text-gray-200">{xText}</span>
         </p>
+
+        {/* Valores de todas as linhas de referência */}
+        {referencePayloads.length > 0 && (
+          <div className="space-y-0.5 mb-1.5">
+            {referencePayloads.map((p: any) => (
+              <div key={p.dataKey} className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block w-3 h-[2px] rounded flex-shrink-0"
+                    style={{ backgroundColor: p.stroke || p.color }}
+                  />
+                  <span className="text-slate-500 dark:text-gray-400">{p.dataKey}</span>
+                </div>
+                <span className="font-semibold text-slate-700 dark:text-gray-200 tabular-nums">
+                  {Number(p.value).toFixed(1)}{yUnit ? ` ${yUnit}` : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Valor do paciente (destaque) */}
         {patientPayload?.value !== undefined && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-1.5 border-t border-slate-100 dark:border-gray-700">
             <span className="w-2.5 h-2.5 rounded-full bg-slate-800 dark:bg-gray-200 border border-white flex-shrink-0" />
-            <div>
+            <div className="flex items-center justify-between w-full">
+              <p className="text-[10px] text-slate-400 dark:text-gray-500">Paciente</p>
               <p className="font-bold text-slate-800 dark:text-gray-100 text-sm">
                 {Number(patientPayload.value).toFixed(2)}{yUnit ? ` ${yUnit}` : ''}
               </p>
-              <p className="text-[10px] text-slate-400 dark:text-gray-500">Paciente</p>
             </div>
           </div>
         )}
