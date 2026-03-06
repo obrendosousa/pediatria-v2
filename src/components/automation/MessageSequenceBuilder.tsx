@@ -5,13 +5,14 @@ import { Trash2, GripVertical, Image as ImageIcon, FileText, Mic, Type, Clock, X
 import { AutomationMessage } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
-import { AVAILABLE_VARIABLES } from '@/utils/automationVariables';
+import { AVAILABLE_VARIABLES, replaceVariables } from '@/utils/automationVariables';
+import { Patient } from '@/types/patient';
 import { useToast } from '@/contexts/ToastContext';
 
 interface MessageSequenceBuilderProps {
   messages: AutomationMessage[];
   onChange: (messages: AutomationMessage[]) => void;
-  previewData?: unknown; // Dados para preview com variáveis
+  previewData?: Patient | null;
 }
 
 export default function MessageSequenceBuilder({
@@ -59,7 +60,7 @@ export default function MessageSequenceBuilder({
       updateMessage(index, { content: publicUrl });
     } catch (error) {
       console.error('Erro ao fazer upload:', error);
-      toast.toast.error('Erro ao fazer upload do arquivo');
+      toast.error('Erro ao fazer upload do arquivo');
     } finally {
       setUploadingIndex(null);
     }
@@ -264,11 +265,11 @@ export default function MessageSequenceBuilder({
                   <span className="text-xs text-slate-500 dark:text-gray-500">segundos</span>
                 </div>
 
-                {!!previewData && message.type === 'text' && message.content && (
+                {previewData && message.type === 'text' && message.content && (
                   <div className="mt-2 p-3 bg-rose-50 dark:bg-rose-900/20 rounded-lg border border-rose-200 dark:border-rose-900/30">
                     <div className="text-xs font-bold text-rose-700 dark:text-rose-400 mb-1">Preview:</div>
                     <div className="text-sm text-slate-700 dark:text-gray-200 whitespace-pre-wrap">
-                      {message.content}
+                      {replaceVariables(message.content, { patient: previewData })}
                     </div>
                   </div>
                 )}

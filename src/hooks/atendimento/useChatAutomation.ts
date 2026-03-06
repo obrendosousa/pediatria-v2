@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
 const supabase = createSchemaClient('atendimento');
@@ -339,6 +340,19 @@ export function useChatAutomation(activeChat: Chat | null) {
       }
   };
 
+  const handleUpdateSchedule = async (id: number, date: string, time: string, title?: string, content?: Record<string, unknown>) => {
+      const scheduledFor = new Date(`${date}T${time}:00`);
+      const updatePayload: Record<string, unknown> = { scheduled_for: scheduledFor.toISOString() };
+      if (title) updatePayload.title = title;
+      if (content) updatePayload.content = content;
+      const { error } = await supabase.from('scheduled_messages').update(updatePayload).eq('id', id);
+      if (error) {
+          toast.toast.error("Erro ao atualizar agendamento.");
+      } else {
+          fetchScheduledMessages();
+      }
+  };
+
   const handleCancelSchedule = async (id: number) => {
       await supabase.from('scheduled_messages').delete().eq('id', id);
       fetchScheduledMessages();
@@ -362,6 +376,7 @@ export function useChatAutomation(activeChat: Chat | null) {
       handleDeleteItem,
       handleScheduleItem,
       handleScheduleAdHoc,
+      handleUpdateSchedule,
       handleCancelSchedule
   };
 }

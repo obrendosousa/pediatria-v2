@@ -1,105 +1,153 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { 
-  Calendar, CheckCircle2, UserCheck, XCircle, 
-  Clock, TrendingUp, Activity, Users, Stethoscope
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import {
+  Users, CheckCircle2, XCircle, Clock, TrendingUp,
+  Activity, ArrowUpRight, ArrowDownRight,
+  CalendarCheck, Timer, UserCheck, BarChart3, RefreshCw
 } from 'lucide-react';
-import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import {
+  PieChart, Pie, Cell, XAxis, YAxis,
+  CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart
+} from 'recharts';
 import { fetchDashboardMetrics, DashboardMetrics } from '@/utils/dashboardMetrics';
 
-// Interface movida para dashboardMetrics.ts
+// Paleta profissional médica
+const THEME = {
+  teal: { base: '#0891B2', light: '#06B6D4', bg: '#ECFEFF', ring: 'ring-cyan-500/20' },
+  emerald: { base: '#059669', light: '#10B981', bg: '#ECFDF5', ring: 'ring-emerald-500/20' },
+  amber: { base: '#D97706', light: '#F59E0B', bg: '#FFFBEB', ring: 'ring-amber-500/20' },
+  rose: { base: '#E11D48', light: '#FB7185', bg: '#FFF1F2', ring: 'ring-rose-500/20' },
+  violet: { base: '#7C3AED', light: '#A78BFA', bg: '#F5F3FF', ring: 'ring-violet-500/20' },
+  slate: { base: '#475569', light: '#64748B', bg: '#F8FAFC', ring: 'ring-slate-500/20' },
+};
 
-const COLORS = {
-  primary: '#3b82f6',
-  secondary: '#8b5cf6',
-  success: '#10b981',
-  danger: '#ef4444',
-  warning: '#f59e0b',
-  blue: ['#3b82f6', '#60a5fa'],
-  orange: ['#f97316', '#fb923c'],
-  purple: ['#8b5cf6', '#a78bfa'],
+const CHART_COLORS = {
+  male: '#0891B2',
+  female: '#A78BFA',
+  newPatient: '#06B6D4',
+  recurring: '#0E7490',
+  consultation: '#059669',
+  returnVisit: '#10B981',
 };
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [period, setPeriod] = useState(30);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchMetrics();
-    // Auto-refresh a cada 5 minutos
-    const interval = setInterval(fetchMetrics, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [period]);
-
-  async function fetchMetrics() {
-    setIsLoading(true);
+  const fetchMetrics = useCallback(async () => {
+    setIsLoading((prev) => {
+      if (!prev) setIsRefreshing(true);
+      return prev;
+    });
     try {
-      const calculatedMetrics = await fetchDashboardMetrics(period);
-      setMetrics(calculatedMetrics);
+      const data = await fetchDashboardMetrics(period);
+      setMetrics(data);
     } catch (error) {
       console.error('Erro ao buscar métricas:', error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }
+  }, [period]);
 
-  // Preparar dados para gráficos
-  const genderData = metrics ? [
-    { name: 'Homens', value: metrics.demographics.male.count, fill: COLORS.blue[0] },
-    { name: 'Mulheres', value: metrics.demographics.female.count, fill: COLORS.purple[0] },
-  ] : [];
+  useEffect(() => {
+    fetchMetrics();
+    const interval = setInterval(fetchMetrics, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchMetrics]);
 
-  const proceduresData = metrics ? [
-    { name: 'Consulta', value: metrics.procedures.consultations.count, fill: COLORS.orange[1] },
-    { name: 'Retorno', value: metrics.procedures.returns.count, fill: COLORS.orange[0] },
-  ] : [];
+  // Dados dos gráficos (memoizados)
+  const genderData = useMemo(() => metrics ? [
+    { name: 'Masculino', value: metrics.demographics.male.count, fill: CHART_COLORS.male },
+    { name: 'Feminino', value: metrics.demographics.female.count, fill: CHART_COLORS.female },
+  ] : [], [metrics]);
 
-  const timelineData = metrics ? Object.entries(metrics.timeline.appointmentsByDate)
+  const newRecurringData = useMemo(() => metrics ? [
+    { name: 'Novos', value: metrics.demographics.new.count, fill: CHART_COLORS.newPatient },
+    { name: 'Recorrentes', value: metrics.demographics.recurring.count, fill: CHART_COLORS.recurring },
+  ] : [], [metrics]);
+
+  const proceduresData = useMemo(() => metrics ? [
+    { name: 'Consulta', value: metrics.procedures.consultations.count, fill: CHART_COLORS.consultation },
+    { name: 'Retorno', value: metrics.procedures.returns.count, fill: CHART_COLORS.returnVisit },
+  ] : [], [metrics]);
+
+  const timelineData = useMemo(() => metrics ? Object.entries(metrics.timeline.appointmentsByDate)
     .map(([date, count]) => ({ date, count }))
     .sort((a, b) => {
       const [dayA, monthA] = a.date.split('/');
       const [dayB, monthB] = b.date.split('/');
-      return new Date(2024, parseInt(monthA) - 1, parseInt(dayA)).getTime() - 
-             new Date(2024, parseInt(monthB) - 1, parseInt(dayB)).getTime();
+      return new Date(2024, parseInt(monthA) - 1, parseInt(dayA)).getTime() -
+        new Date(2024, parseInt(monthB) - 1, parseInt(dayB)).getTime();
     })
-    .slice(-30) : [];
+    .slice(-30) : [], [metrics]);
 
-  const attendanceTimelineData = metrics ? Object.entries(metrics.timeline.attendanceRateByDate)
+  const attendanceTimelineData = useMemo(() => metrics ? Object.entries(metrics.timeline.attendanceRateByDate)
     .map(([date, rate]) => ({ date, rate }))
     .sort((a, b) => {
       const [dayA, monthA] = a.date.split('/');
       const [dayB, monthB] = b.date.split('/');
-      return new Date(2024, parseInt(monthA) - 1, parseInt(dayA)).getTime() - 
-             new Date(2024, parseInt(monthB) - 1, parseInt(dayB)).getTime();
+      return new Date(2024, parseInt(monthA) - 1, parseInt(dayA)).getTime() -
+        new Date(2024, parseInt(monthB) - 1, parseInt(dayB)).getTime();
     })
-    .slice(-30) : [];
+    .slice(-30) : [], [metrics]);
 
-  const ageData = metrics ? Object.entries(metrics.demographics.ageDistribution)
+  const ageData = useMemo(() => metrics ? Object.entries(metrics.demographics.ageDistribution)
     .map(([age, count]) => ({ age: `${age}`, count }))
-    .sort((a, b) => parseInt(a.age) - parseInt(b.age)) : [];
+    .sort((a, b) => parseInt(a.age) - parseInt(b.age)) : [], [metrics]);
 
+  // Loading skeleton
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#0b141a] dark:to-[#11161d] min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-400"></div>
-          <p className="text-slate-500 dark:text-gray-400 font-medium">Carregando métricas...</p>
-        </div>
+      <div className="flex flex-col h-screen bg-gray-50 dark:bg-[#0C1117] overflow-hidden">
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-[1440px] mx-auto px-6 py-8 space-y-8">
+            {/* Header skeleton */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-3">
+                <div className="h-8 w-72 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+                <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800/60 rounded animate-pulse" />
+              </div>
+              <div className="h-10 w-40 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+            </div>
+            {/* Cards skeleton */}
+            <div className="grid grid-cols-4 gap-5">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-[140px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-gray-800/50 animate-pulse" />
+              ))}
+            </div>
+            <div className="grid grid-cols-4 gap-5">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-[140px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-gray-800/50 animate-pulse" />
+              ))}
+            </div>
+            {/* Charts skeleton */}
+            <div className="grid grid-cols-2 gap-5">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="h-[320px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-gray-800/50 animate-pulse" />
+              ))}
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (!metrics) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#0b141a] dark:to-[#11161d] min-h-screen">
-        <div className="text-center p-8 bg-white dark:bg-[#1e2028] rounded-2xl shadow-lg border border-slate-200 dark:border-gray-800">
-          <Activity className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-gray-400 font-medium">Erro ao carregar métricas</p>
-          <button 
+      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-[#0C1117] min-h-screen">
+        <div className="text-center p-10 bg-white dark:bg-[#161B22] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800/50 max-w-sm">
+          <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center mx-auto mb-5">
+            <Activity className="w-7 h-7 text-rose-500" />
+          </div>
+          <p className="text-gray-900 dark:text-gray-100 font-semibold text-lg mb-2">Erro ao carregar</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Nao foi possivel conectar ao banco de dados.</p>
+          <button
             onClick={fetchMetrics}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-sm font-medium transition-colors cursor-pointer"
           >
             Tentar novamente
           </button>
@@ -109,443 +157,448 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50/30 dark:from-[#0b141a] dark:via-[#0b141a] dark:to-[#11161d] overflow-hidden">
-      
-      {/* Main Content */}
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-[#0C1117] overflow-hidden">
       <main className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-          
-          {/* Header com Filtros */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-gray-50 mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Dashboard de Inteligência
-              </h1>
-              <p className="text-sm sm:text-base text-slate-600 dark:text-gray-400">Visão geral das operações da clínica</p>
-            </div>
-            <div className="flex gap-2 sm:gap-3">
-              <select 
-                value={period}
-                onChange={(e) => setPeriod(parseInt(e.target.value))}
-                className="px-3 sm:px-4 py-2 rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-              >
-                <option value={7}>Últimos 7 dias</option>
-                <option value={30}>Últimos 30 dias</option>
-                <option value={90}>Últimos 90 dias</option>
-              </select>
-            </div>
-          </div>
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
 
-          {/* 1. VISÃO GERAL - Cards Principais */}
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-slate-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-600" />
-              Visão Geral
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard
-                icon={<Users className="w-5 h-5 sm:w-6 sm:h-6" />}
+          {/* ─── Header ─── */}
+          <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-1.5 h-8 rounded-full bg-gradient-to-b from-cyan-500 to-teal-600" />
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50">
+                  Dashboard
+                </h1>
+                {isRefreshing && (
+                  <RefreshCw className="w-4 h-4 text-cyan-500 animate-spin" />
+                )}
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 ml-[18px]">
+                Visao geral das operacoes da clinica
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex bg-white dark:bg-[#161B22] rounded-xl border border-gray-200 dark:border-gray-700/50 p-1 shadow-sm">
+                {[
+                  { value: 7, label: '7d' },
+                  { value: 30, label: '30d' },
+                  { value: 90, label: '90d' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setPeriod(opt.value)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                      period === opt.value
+                        ? 'bg-cyan-600 text-white shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </header>
+
+          {/* ─── Visao Geral ─── */}
+          <section>
+            <SectionHeader icon={<BarChart3 className="w-4 h-4" />} title="Visao Geral" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              <KPICard
+                icon={<Users className="w-5 h-5" />}
                 label="Total de Pacientes"
                 value={metrics.totalPatients}
-                color={COLORS.primary}
-                delay={0}
+                theme={THEME.teal}
               />
-              <MetricCard
-                icon={<CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />}
+              <KPICard
+                icon={<CalendarCheck className="w-5 h-5" />}
                 label="Consultas Realizadas"
                 value={metrics.totalConsultations}
-                color={COLORS.success}
-                delay={100}
+                theme={THEME.emerald}
               />
-              <MetricCard
-                icon={<TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />}
+              <KPICard
+                icon={<UserCheck className="w-5 h-5" />}
                 label="Taxa de Comparecimento"
                 value={`${metrics.attendanceRate}%`}
-                color={COLORS.success}
-                delay={200}
+                theme={THEME.teal}
+                trend={metrics.attendanceRate >= 70 ? 'up' : 'down'}
               />
-              <MetricCard
-                icon={<Clock className="w-5 h-5 sm:w-6 sm:h-6" />}
-                label="Tempo Médio de Atendimento"
+              <KPICard
+                icon={<Timer className="w-5 h-5" />}
+                label="Tempo Medio de Atendimento"
                 value={`${metrics.averageServiceTime}min`}
-                color={COLORS.primary}
-                delay={300}
+                theme={THEME.violet}
               />
             </div>
-          </div>
+          </section>
 
-          {/* 2. OPERACIONAL - Métricas Secundárias */}
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-slate-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-purple-600" />
-              Performance Operacional
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard
-                icon={<TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />}
-                label="Taxa de Conversão"
+          {/* ─── Performance Operacional ─── */}
+          <section>
+            <SectionHeader icon={<Activity className="w-4 h-4" />} title="Performance Operacional" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              <KPICard
+                icon={<TrendingUp className="w-5 h-5" />}
+                label="Taxa de Conversao"
                 value={`${metrics.conversionRate}%`}
-                color={COLORS.secondary}
-                delay={400}
+                theme={THEME.emerald}
+                trend={metrics.conversionRate >= 10 ? 'up' : 'down'}
               />
-              <MetricCard
-                icon={<Clock className="w-5 h-5 sm:w-6 sm:h-6" />}
-                label="Tempo Médio na Fila"
+              <KPICard
+                icon={<Clock className="w-5 h-5" />}
+                label="Tempo Medio na Fila"
                 value={`${metrics.averageQueueTime}min`}
-                color={COLORS.warning}
-                delay={500}
+                theme={THEME.amber}
               />
-              <MetricCard
-                icon={<XCircle className="w-5 h-5 sm:w-6 sm:h-6" />}
+              <KPICard
+                icon={<XCircle className="w-5 h-5" />}
                 label="Taxa de Cancelamento"
                 value={`${metrics.cancellationRate}%`}
-                color={COLORS.danger}
-                delay={600}
+                theme={THEME.rose}
+                trend={metrics.cancellationRate <= 10 ? 'up' : 'down'}
               />
-              <MetricCard
-                icon={<CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />}
-                label="Eficiência de Agendamento"
+              <KPICard
+                icon={<CheckCircle2 className="w-5 h-5" />}
+                label="Eficiencia de Agendamento"
                 value={`${metrics.schedulingEfficiency}%`}
-                color={COLORS.success}
-                delay={700}
+                theme={THEME.emerald}
+                trend={metrics.schedulingEfficiency >= 50 ? 'up' : 'down'}
               />
             </div>
-          </div>
+          </section>
 
-          {/* 3. DEMOGRAFIA */}
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-slate-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-purple-600" />
-              Demografia
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Distribuição de Gênero */}
-              <ChartCard title="Distribuição por Gênero" icon={<Users className="w-5 h-5" />} delay={800}>
-                <div className="flex flex-col sm:flex-row gap-6 items-center">
-                  <div className="w-full sm:w-1/2 flex justify-center">
+          {/* ─── Demografia ─── */}
+          <section>
+            <SectionHeader icon={<Users className="w-4 h-4" />} title="Demografia" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+
+              {/* Genero */}
+              <ChartCard title="Distribuicao por Genero">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <div className="w-full sm:w-2/5">
                     <ResponsiveContainer width="100%" height={180}>
                       <PieChart>
                         <Pie
                           data={genderData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={35}
-                          outerRadius={70}
+                          innerRadius={48}
+                          outerRadius={78}
+                          paddingAngle={3}
                           dataKey="value"
+                          strokeWidth={0}
                         >
-                          {genderData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          {genderData.map((entry, i) => (
+                            <Cell key={i} fill={entry.fill} />
                           ))}
                         </Pie>
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex-1 space-y-4 w-full">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#2a2d36]">
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-blue-600"></div>
-                        <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Homens</span>
-                      </div>
-                      <span className="text-lg font-bold text-slate-900 dark:text-gray-100">
-                        {metrics.demographics.male.percentage}%
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#2a2d36]">
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-purple-600"></div>
-                        <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Mulheres</span>
-                      </div>
-                      <span className="text-lg font-bold text-slate-900 dark:text-gray-100">
-                        {metrics.demographics.female.percentage}%
-                      </span>
-                    </div>
-                    <div className="pt-3 border-t border-slate-200 dark:border-gray-700">
-                      <p className="text-center text-sm font-bold text-slate-500 dark:text-gray-400">Total: {metrics.demographics.total}</p>
+                  <div className="flex-1 w-full space-y-3">
+                    <LegendRow color={CHART_COLORS.male} label="Masculino" value={metrics.demographics.male.count} pct={metrics.demographics.male.percentage} />
+                    <LegendRow color={CHART_COLORS.female} label="Feminino" value={metrics.demographics.female.count} pct={metrics.demographics.female.percentage} />
+                    <div className="pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 text-center font-medium">
+                        Total: {metrics.demographics.total} pacientes
+                      </p>
                     </div>
                   </div>
                 </div>
               </ChartCard>
 
               {/* Novos vs Recorrentes */}
-              <ChartCard title="Novos vs Recorrentes" icon={<Users className="w-5 h-5" />} delay={900}>
-                <div className="flex flex-col sm:flex-row gap-6 items-center">
-                  <div className="w-full sm:w-1/2 flex justify-center">
+              <ChartCard title="Novos vs Recorrentes">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <div className="w-full sm:w-2/5">
                     <ResponsiveContainer width="100%" height={180}>
                       <PieChart>
                         <Pie
-                          data={[{ name: 'Novos', value: metrics.demographics.new.count }, { name: 'Recorrentes', value: metrics.demographics.recurring.count }]}
+                          data={newRecurringData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={35}
-                          outerRadius={70}
+                          innerRadius={48}
+                          outerRadius={78}
+                          paddingAngle={3}
                           dataKey="value"
+                          strokeWidth={0}
                         >
-                          <Cell fill={COLORS.blue[1]} />
-                          <Cell fill={COLORS.blue[0]} />
+                          {newRecurringData.map((entry, i) => (
+                            <Cell key={i} fill={entry.fill} />
+                          ))}
                         </Pie>
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex-1 space-y-4 w-full">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#2a2d36]">
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-blue-400"></div>
-                        <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Novos</span>
-                      </div>
-                      <span className="text-lg font-bold text-slate-900 dark:text-gray-100">
-                        {metrics.demographics.new.percentage}%
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#2a2d36]">
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-blue-600"></div>
-                        <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Recorrentes</span>
-                      </div>
-                      <span className="text-lg font-bold text-slate-900 dark:text-gray-100">
-                        {metrics.demographics.recurring.percentage}%
-                      </span>
-                    </div>
+                  <div className="flex-1 w-full space-y-3">
+                    <LegendRow color={CHART_COLORS.newPatient} label="Novos" value={metrics.demographics.new.count} pct={metrics.demographics.new.percentage} />
+                    <LegendRow color={CHART_COLORS.recurring} label="Recorrentes" value={metrics.demographics.recurring.count} pct={metrics.demographics.recurring.percentage} />
                   </div>
                 </div>
               </ChartCard>
 
-              {/* Distribuição Etária */}
-              <ChartCard title="Distribuição Etária" icon={<Users className="w-5 h-5" />} delay={1000}>
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={ageData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
-                    <XAxis 
-                      dataKey="age" 
-                      stroke="#94a3b8" 
-                      style={{ fontSize: '11px', fontWeight: 500 }}
-                      label={{ value: 'Idade (anos)', position: 'insideBottom', offset: -5, style: { fill: '#94a3b8', fontSize: '11px' } }}
+              {/* Distribuicao Etaria */}
+              <ChartCard title="Distribuicao Etaria">
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={ageData}>
+                    <defs>
+                      <linearGradient id="ageGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={THEME.violet.base} stopOpacity={0.2} />
+                        <stop offset="100%" stopColor={THEME.violet.base} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" strokeOpacity={0.4} vertical={false} />
+                    <XAxis
+                      dataKey="age"
+                      stroke="#94A3B8"
+                      tick={{ fontSize: 11, fontWeight: 500 }}
+                      axisLine={false}
+                      tickLine={false}
+                      label={{ value: 'Idade', position: 'insideBottom', offset: -5, style: { fill: '#94A3B8', fontSize: 11 } }}
                     />
-                    <YAxis 
-                      stroke="#94a3b8" 
-                      style={{ fontSize: '11px', fontWeight: 500 }}
-                      label={{ value: 'Pacientes', angle: -90, position: 'insideLeft', style: { fill: '#94a3b8', fontSize: '11px' } }}
+                    <YAxis
+                      stroke="#94A3B8"
+                      tick={{ fontSize: 11, fontWeight: 500 }}
+                      axisLine={false}
+                      tickLine={false}
                     />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1e2028', 
-                        border: '1px solid #334155', 
-                        borderRadius: '12px',
-                        padding: '12px'
-                      }}
-                      labelStyle={{ color: '#e2e8f0', fontWeight: 600 }}
-                      itemStyle={{ color: '#94a3b8' }}
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke={THEME.violet.base}
+                      strokeWidth={2.5}
+                      fill="url(#ageGrad)"
+                      dot={{ fill: THEME.violet.base, r: 3, strokeWidth: 0 }}
+                      activeDot={{ r: 5, fill: THEME.violet.base, stroke: '#fff', strokeWidth: 2 }}
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="count" 
-                      stroke={COLORS.secondary} 
-                      strokeWidth={3}
-                      dot={{ fill: COLORS.secondary, r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               </ChartCard>
 
               {/* Procedimentos */}
-              <ChartCard title="Procedimentos Realizados" icon={<Stethoscope className="w-5 h-5" />} delay={1100}>
-                <div className="text-center">
-                  <p className="text-4xl font-black text-slate-900 dark:text-gray-100 mb-6 bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-                    {metrics.procedures.total}
-                  </p>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <PieChart>
-                      <Pie
-                        data={proceduresData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={80}
-                        dataKey="value"
-                      >
-                        {proceduresData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="flex gap-6 justify-center mt-6">
+              <ChartCard title="Procedimentos Realizados">
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                    <ResponsiveContainer width={200} height={200}>
+                      <PieChart>
+                        <Pie
+                          data={proceduresData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={90}
+                          paddingAngle={3}
+                          dataKey="value"
+                          strokeWidth={0}
+                        >
+                          {proceduresData.map((entry, i) => (
+                            <Cell key={i} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Numero central */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-3xl font-bold text-gray-900 dark:text-gray-50">{metrics.procedures.total}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">total</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-8 mt-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-orange-400"></div>
-                      <span className="text-xs font-medium text-slate-600 dark:text-gray-400">Consulta {metrics.procedures.consultations.percentage}%</span>
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS.consultation }} />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Consulta <span className="font-semibold text-gray-900 dark:text-gray-200">{metrics.procedures.consultations.percentage}%</span></span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-orange-600"></div>
-                      <span className="text-xs font-medium text-slate-600 dark:text-gray-400">Retorno {metrics.procedures.returns.percentage}%</span>
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS.returnVisit }} />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Retorno <span className="font-semibold text-gray-900 dark:text-gray-200">{metrics.procedures.returns.percentage}%</span></span>
                     </div>
                   </div>
                 </div>
               </ChartCard>
             </div>
-          </div>
+          </section>
 
-          {/* 4. TENDÊNCIAS */}
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-slate-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-600" />
-              Tendências
-            </h2>
-            <div className="space-y-4">
-              {/* Gráfico de Atendimentos */}
-              <ChartCard title="Atendimentos ao Longo do Tempo" icon={<TrendingUp className="w-5 h-5" />} delay={1200}>
-                <ResponsiveContainer width="100%" height={320}>
+          {/* ─── Tendencias ─── */}
+          <section>
+            <SectionHeader icon={<TrendingUp className="w-4 h-4" />} title="Tendencias" />
+            <div className="space-y-5">
+              {/* Atendimentos ao longo do tempo */}
+              <ChartCard title="Atendimentos ao Longo do Tempo">
+                <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={timelineData}>
                     <defs>
-                      <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0}/>
+                      <linearGradient id="timelineGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={THEME.teal.base} stopOpacity={0.15} />
+                        <stop offset="100%" stopColor={THEME.teal.base} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#94a3b8"
-                      style={{ fontSize: '11px', fontWeight: 500 }}
-                      tickFormatter={(value) => {
-                        const [day, month] = value.split('/');
-                        return `${day}/${month}`;
-                      }}
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" strokeOpacity={0.4} vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#94A3B8"
+                      tick={{ fontSize: 11, fontWeight: 500 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => { const [d, m] = v.split('/'); return `${d}/${m}`; }}
                     />
-                    <YAxis stroke="#94a3b8" style={{ fontSize: '11px', fontWeight: 500 }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1e2028', 
-                        border: '1px solid #334155', 
-                        borderRadius: '12px',
-                        padding: '12px'
-                      }}
-                      labelStyle={{ color: '#e2e8f0', fontWeight: 600 }}
-                      itemStyle={{ color: '#94a3b8' }}
+                    <YAxis
+                      stroke="#94A3B8"
+                      tick={{ fontSize: 11, fontWeight: 500 }}
+                      axisLine={false}
+                      tickLine={false}
                     />
-                    <Area 
-                      type="monotone" 
-                      dataKey="count" 
-                      stroke={COLORS.primary} 
-                      strokeWidth={3}
-                      fillOpacity={1}
-                      fill="url(#colorCount)" 
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke={THEME.teal.base}
+                      strokeWidth={2.5}
+                      fill="url(#timelineGrad)"
+                      dot={false}
+                      activeDot={{ r: 5, fill: THEME.teal.base, stroke: '#fff', strokeWidth: 2 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </ChartCard>
 
-              {/* Gráfico de Taxa de Comparecimento */}
-              <ChartCard title="Taxa de Comparecimento ao Longo do Tempo" icon={<TrendingUp className="w-5 h-5" />} delay={1300}>
-                <ResponsiveContainer width="100%" height={320}>
+              {/* Taxa de Comparecimento ao longo do tempo */}
+              <ChartCard title="Taxa de Comparecimento ao Longo do Tempo">
+                <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={attendanceTimelineData}>
                     <defs>
-                      <linearGradient id="colorAttendance" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={COLORS.success} stopOpacity={0}/>
+                      <linearGradient id="attendGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={THEME.emerald.base} stopOpacity={0.15} />
+                        <stop offset="100%" stopColor={THEME.emerald.base} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#94a3b8"
-                      style={{ fontSize: '11px', fontWeight: 500 }}
-                      tickFormatter={(value) => {
-                        const [day, month] = value.split('/');
-                        return `${day}/${month}`;
-                      }}
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" strokeOpacity={0.4} vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#94A3B8"
+                      tick={{ fontSize: 11, fontWeight: 500 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => { const [d, m] = v.split('/'); return `${d}/${m}`; }}
                     />
-                    <YAxis 
-                      stroke="#94a3b8" 
-                      style={{ fontSize: '11px', fontWeight: 500 }}
+                    <YAxis
+                      stroke="#94A3B8"
+                      tick={{ fontSize: 11, fontWeight: 500 }}
+                      axisLine={false}
+                      tickLine={false}
                       domain={[0, 100]}
-                      label={{ value: 'Taxa (%)', angle: -90, position: 'insideLeft', style: { fill: '#94a3b8', fontSize: '11px' } }}
+                      tickFormatter={(v) => `${v}%`}
                     />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1e2028', 
-                        border: '1px solid #334155', 
-                        borderRadius: '12px',
-                        padding: '12px'
-                      }}
-                      labelStyle={{ color: '#e2e8f0', fontWeight: 600 }}
-                      itemStyle={{ color: '#94a3b8' }}
-                      formatter={(value: any) => `${value}%`}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="rate" 
-                      stroke={COLORS.success} 
-                      strokeWidth={3}
-                      fillOpacity={1}
-                      fill="url(#colorAttendance)" 
+                    <Tooltip content={<CustomTooltip suffix="%" />} />
+                    <Area
+                      type="monotone"
+                      dataKey="rate"
+                      stroke={THEME.emerald.base}
+                      strokeWidth={2.5}
+                      fill="url(#attendGrad)"
+                      dot={false}
+                      activeDot={{ r: 5, fill: THEME.emerald.base, stroke: '#fff', strokeWidth: 2 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </ChartCard>
             </div>
-          </div>
+          </section>
 
+          {/* Spacer inferior */}
+          <div className="h-4" />
         </div>
       </main>
     </div>
   );
 }
 
-// Componentes auxiliares
-function MetricCard({ 
-  icon, 
-  label, 
-  value, 
-  color, 
-  delay = 0 
-}: { 
-  icon: React.ReactNode; 
-  label: string; 
-  value: number | string; 
-  color: string;
-  delay?: number;
-}) {
+
+/* ════════════════════════════════════════════
+   Componentes Auxiliares
+   ════════════════════════════════════════════ */
+
+function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
-    <div 
-      className="group relative bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-200/60 dark:border-gray-800/60 p-5 sm:p-6 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-4"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50 dark:from-[#1e2028] dark:to-[#252830] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity -z-10"></div>
-      <div className="flex items-center justify-between mb-4">
-        <div 
-          className="p-3 rounded-xl transition-transform group-hover:scale-110"
-          style={{ backgroundColor: `${color}15`, color }}
-        >
-          {icon}
-        </div>
-      </div>
-      <p className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-gray-50 mb-2">{value}</p>
-      <p className="text-sm font-medium text-slate-600 dark:text-gray-400">{label}</p>
+    <div className="flex items-center gap-2.5 mb-4">
+      <div className="text-cyan-600 dark:text-cyan-400">{icon}</div>
+      <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{title}</h2>
     </div>
   );
 }
 
-function ChartCard({ 
-  title, 
-  children, 
-  icon,
-  delay = 0 
-}: { 
-  title: string; 
-  children: React.ReactNode;
-  icon?: React.ReactNode;
-  delay?: number;
+function KPICard({
+  icon, label, value, theme, trend,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+  theme: { base: string; light: string; bg: string; ring: string };
+  trend?: 'up' | 'down';
 }) {
   return (
-    <div 
-      className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-200/60 dark:border-gray-800/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 animate-in fade-in slide-in-from-bottom-4"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <h3 className="text-lg font-black text-slate-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-        {icon && <span className="text-blue-600">{icon}</span>}
-        {title}
-      </h3>
+    <div className="group relative bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-gray-800/50 p-5 sm:p-6 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/20 transition-all duration-200 cursor-default">
+      {/* Barra lateral de acento */}
+      <div
+        className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full transition-all duration-200 group-hover:top-3 group-hover:bottom-3"
+        style={{ backgroundColor: theme.base }}
+      />
+
+      <div className="flex items-start justify-between mb-4">
+        <div
+          className="p-2.5 rounded-xl"
+          style={{ backgroundColor: `${theme.base}10`, color: theme.base }}
+        >
+          {icon}
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-0.5 text-xs font-semibold ${
+            trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+          }`}>
+            {trend === 'up' ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+          </div>
+        )}
+      </div>
+
+      <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-1 tabular-nums tracking-tight">
+        {value}
+      </p>
+      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</p>
+    </div>
+  );
+}
+
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-gray-800/50 p-5 sm:p-6 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/20 transition-all duration-200">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-5">{title}</h3>
       {children}
+    </div>
+  );
+}
+
+function LegendRow({ color, label, value, pct }: { color: string; label: string; value: number; pct: number }) {
+  return (
+    <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-[#1C2128]">
+      <div className="flex items-center gap-2.5">
+        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+        <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">{value}</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{pct}%</span>
+      </div>
+    </div>
+  );
+}
+
+function CustomTooltip({ active, payload, label, suffix }: { active?: boolean; payload?: Array<{ value: number; color?: string }>; label?: string; suffix?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white dark:bg-[#1C2128] border border-gray-200 dark:border-gray-700/50 rounded-xl px-3.5 py-2.5 shadow-xl shadow-gray-200/30 dark:shadow-black/30">
+      <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-0.5">{label}</p>
+      <p className="text-sm font-bold" style={{ color: payload[0]?.color || THEME.teal.base }}>
+        {payload[0]?.value}{suffix || ''}
+      </p>
     </div>
   );
 }

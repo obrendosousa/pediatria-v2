@@ -2,10 +2,11 @@ import { randomUUID } from "node:crypto";
 import { END, START, StateGraph, MemorySaver } from "@langchain/langgraph";
 import { schedulerRunCommandSchema, workerAckSchema, type SchedulerRunCommandContract, type WorkerAckContract } from "@/lib/automation/contracts";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
-import { getAppointmentsNeedingReminder, getPatientWithRelations, getPatientsReachingMilestone, getReturnsNeedingReminder, hasSentMilestoneAutomation, recordAutomationSent } from "@/utils/automationUtils";
+import { getAppointmentsNeedingReminder, getPatientWithRelations, getPatientsReachingMilestone, getReturnsNeedingReminder, hasSentMilestoneAutomation, recordAutomationSent } from "@/lib/automation/automationUtilsServer";
 import { replaceVariables } from "@/utils/automationVariables";
 import type { AutomationMessage, AutomationRule } from "@/types";
 import { logRunEvent } from "@/lib/automation/observability/logger";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface SchedulerState {
   runId: string;
@@ -18,7 +19,7 @@ interface SchedulerState {
 }
 
 async function ensureChatId(phoneRaw: string, contactName?: string): Promise<number | null> {
-  const supabase = getSupabaseAdminClient() as any;
+  const supabase: SupabaseClient = getSupabaseAdminClient();
   const phone = phoneRaw.replace(/\D/g, "");
   const existing = await supabase.from("chats").select("id").eq("phone", phone).maybeSingle();
   if (existing.error) throw existing.error;
@@ -52,7 +53,7 @@ async function enqueueSequence(params: {
   appointmentId?: number;
   dryRun: boolean;
 }) {
-  const supabase = getSupabaseAdminClient() as any;
+  const supabase: SupabaseClient = getSupabaseAdminClient();
   let delaySeconds = 0;
   let created = 0;
 
@@ -103,28 +104,30 @@ async function enqueueSequence(params: {
   return created;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let compiledGraphPromise: Promise<ReturnType<StateGraph<SchedulerState>["compile"]>> | null = null;
 
 async function getCompiledSchedulerGraph() {
   if (!compiledGraphPromise) {
     compiledGraphPromise = (async () => {
-      // O scheduler nao precisa de checkpoint persistente para gerar filas.
-      // MemorySaver evita falhas de cron por indisponibilidade de conexao PG de checkpoint.
       const checkpointer = new MemorySaver();
+      // LangGraph StateGraph exige cast para lidar com tipagem dinâmica dos channels
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const graph = new StateGraph<SchedulerState>({
         channels: {
-          runId: { reducer: (_, y) => y, default: () => randomUUID() },
-          dryRun: { reducer: (_, y) => y, default: () => false },
-          nowIso: { reducer: (_, y) => y, default: () => new Date().toISOString() },
-          milestoneRules: { reducer: (_, y) => y, default: () => [] },
-          appointmentRule: { reducer: (_, y) => y, default: () => null },
-          returnRule: { reducer: (_, y) => y, default: () => null },
-          createdCount: { reducer: (_, y) => y, default: () => 0 },
+          runId: { reducer: (_: string, y: string) => y, default: () => randomUUID() },
+          dryRun: { reducer: (_: boolean, y: boolean) => y, default: () => false },
+          nowIso: { reducer: (_: string, y: string) => y, default: () => new Date().toISOString() },
+          milestoneRules: { reducer: (_: AutomationRule[], y: AutomationRule[]) => y, default: () => [] as AutomationRule[] },
+          appointmentRule: { reducer: (_: AutomationRule | null, y: AutomationRule | null) => y, default: () => null as AutomationRule | null },
+          returnRule: { reducer: (_: AutomationRule | null, y: AutomationRule | null) => y, default: () => null as AutomationRule | null },
+          createdCount: { reducer: (_: number, y: number) => y, default: () => 0 },
         },
-      }) as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
       graph.addNode("load_rules", async (state: SchedulerState) => {
-        const supabase = getSupabaseAdminClient() as any;
+        const supabase: SupabaseClient = getSupabaseAdminClient();
         const [milestoneRulesRes, appointmentRuleRes, returnRuleRes] = await Promise.all([
           supabase.from("automation_rules").select("*").eq("type", "milestone").eq("active", true).not("age_months", "is", null),
           supabase.from("automation_rules").select("*").eq("type", "appointment_reminder").eq("active", true).limit(1).maybeSingle(),
@@ -157,11 +160,14 @@ async function getCompiledSchedulerGraph() {
       graph.addNode("evaluate_and_enqueue", async (state: SchedulerState) => {
         let createdCount = 0;
         const now = new Date(state.nowIso);
-        const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        const currentHH = String(now.getHours()).padStart(2, "0");
+        const currentMM = String(now.getMinutes()).padStart(2, "0");
+        const currentTime = `${currentHH}:${currentMM}`;
 
+        // Milestones: dispara quando horário bate (janela de 1 minuto)
         for (const rule of state.milestoneRules) {
           const ruleTime = (rule.trigger_time || "08:00:00").slice(0, 5);
-          if (!currentTime.startsWith(ruleTime)) continue;
+          if (currentTime !== ruleTime) continue;
           const patients = await getPatientsReachingMilestone(rule.age_months || 0);
 
           for (const patient of patients) {
@@ -198,6 +204,7 @@ async function getCompiledSchedulerGraph() {
           }
         }
 
+        // Lembretes de consulta: avalia diariamente, agenda para amanhã no horário configurado
         if (state.appointmentRule) {
           const rule = state.appointmentRule;
           const appointments = await getAppointmentsNeedingReminder();
@@ -236,6 +243,7 @@ async function getCompiledSchedulerGraph() {
           }
         }
 
+        // Lembretes de retorno: avalia diariamente, agenda para amanhã no horário configurado
         if (state.returnRule) {
           const rule = state.returnRule;
           const returns = await getReturnsNeedingReminder();
@@ -276,8 +284,11 @@ async function getCompiledSchedulerGraph() {
         return { createdCount };
       });
 
+      // @ts-expect-error LangGraph tipagem dinâmica de nós
       graph.addEdge(START, "load_rules");
+      // @ts-expect-error LangGraph tipagem dinâmica de nós
       graph.addEdge("load_rules", "evaluate_and_enqueue");
+      // @ts-expect-error LangGraph tipagem dinâmica de nós
       graph.addEdge("evaluate_and_enqueue", END);
       return graph.compile({ checkpointer });
     })();

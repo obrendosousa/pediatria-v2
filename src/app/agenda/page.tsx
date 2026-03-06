@@ -187,8 +187,8 @@ export default function AgendaPage() {
     return false;
   };
 
-  const getAppointmentAt = (time: string) => {
-    return appointments.find(app => {
+  const getAppointmentsAt = (time: string) => {
+    return appointments.filter(app => {
       const dateStr = app.start_time;
       if (!dateStr) return false;
       const cleanDateStr = dateStr.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
@@ -228,7 +228,7 @@ export default function AgendaPage() {
               timeSlots={timeSlots}
               scrollContainerRef={scrollContainerRef}
               currentTimeSlotRef={currentTimeSlotRef}
-              getAppointmentAt={getAppointmentAt}
+              getAppointmentsAt={getAppointmentsAt}
               isCurrentTimeSlot={isCurrentTimeSlot}
               setSelectedAppointment={setSelectedAppointment}
               openNewSlotModal={openNewSlotModal}

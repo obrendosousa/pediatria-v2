@@ -52,7 +52,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const {
     macros, funnels, scheduledMessages, activeTab, setActiveTab, isProcessingMacro, processingActionId, executions,
     handleRunFunnel, handleRunScriptStep, handleMacroSend, handleSaveMacro, handleSaveSequence,
-    handleDeleteItem, handleScheduleItem, handleScheduleAdHoc, handleCancelSchedule
+    handleDeleteItem, handleScheduleItem, handleScheduleAdHoc, handleUpdateSchedule, handleCancelSchedule
   } = useChatAutomation(chat);
 
   // UI States
@@ -151,6 +151,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   const [isCreateScheduleOpen, setIsCreateScheduleOpen] = useState(false);
   const [schedulePrefill, setSchedulePrefill] = useState<{ item: any | null; type: 'macro' | 'funnel' } | null>(null);
   const [prefilledScheduleAdHoc, setPrefilledScheduleAdHoc] = useState<{ text: string; date: string; time: string } | null>(null);
+  const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmData, setConfirmData] = useState<any>(null);
   const [sequenceMode, setSequenceMode] = useState<'script' | 'funnel'>('funnel');
@@ -601,10 +602,30 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
   }, []);
 
   const handleOpenScheduleModal = useCallback((item?: any, type?: 'macro' | 'funnel') => {
+    setEditingScheduleId(null);
     setSchedulePrefill({
       item: item || null,
       type: type || 'macro',
     });
+    setIsCreateScheduleOpen(true);
+  }, []);
+
+  const handleEditSchedule = useCallback((sched: any) => {
+    const dt = new Date(sched.scheduled_for);
+    const dateStr = dt.toLocaleDateString('en-CA');
+    const timeStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+    setEditingScheduleId(sched.id);
+
+    if (sched.item_type === 'adhoc') {
+      const contentType = sched.content?.type || 'text';
+      const textContent = contentType === 'text' ? (sched.content?.content || '') : '';
+      setPrefilledScheduleAdHoc({ text: textContent, date: dateStr, time: timeStr });
+      setSchedulePrefill(null);
+    } else {
+      setSchedulePrefill({ item: { ...sched.content, id: sched.item_id, title: sched.title }, type: sched.item_type });
+      setPrefilledScheduleAdHoc(null);
+    }
     setIsCreateScheduleOpen(true);
   }, []);
 
@@ -801,13 +822,16 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           setIsCreateScheduleOpen(false);
           setSchedulePrefill(null);
           setPrefilledScheduleAdHoc(null);
+          setEditingScheduleId(null);
         }}
         macros={macros}
         funnels={funnels}
         preselectedItem={schedulePrefill}
         prefilledAdHoc={prefilledScheduleAdHoc}
+        editingScheduleId={editingScheduleId}
         onConfirmAdHoc={handleScheduleAdHoc}
         onConfirmSaved={handleScheduleItem}
+        onUpdate={handleUpdateSchedule}
       />
       <ConfirmModal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)} onConfirm={confirmData?.onConfirm || (() => { })} title={confirmData?.title || ''} message={confirmData?.message || ''} />
       <ForwardMessageModal
@@ -941,7 +965,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
             onOpenSequenceModal={handleOpenSequenceModal}
             onOpenScheduleModal={handleOpenScheduleModal}
             onRunFunnel={handleRunFunnel} onRunScriptStep={handleRunScriptStep} onMacroSend={handleMacroSend}
-            onDelete={confirmDeleteAction} onCancelSchedule={handleCancelSchedule}
+            onDelete={confirmDeleteAction} onEditSchedule={handleEditSchedule} onCancelSchedule={handleCancelSchedule}
             claraSuggestionCount={
               (aiDraftText && (draftPhase === 'minimized' || draftPhase === 'expanded') ? 1 : 0)
               + (aiDraftScheduleText && (schedulePhase === 'minimized' || schedulePhase === 'expanded') ? 1 : 0)

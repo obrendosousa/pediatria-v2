@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Zap, Plus, Calendar, RotateCcw, TrendingUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
@@ -22,14 +22,8 @@ export default function AutomationsPage() {
   const [editingAutomation, setEditingAutomation] = useState<AutomationRule | null>(null);
   const [modalType, setModalType] = useState<'milestone' | 'appointment_reminder' | 'return_reminder'>('milestone');
   const [modalAgeMonths, setModalAgeMonths] = useState<number | undefined>();
-  const [isAgePromptOpen, setIsAgePromptOpen] = useState(false);
-  const [agePromptValue, setAgePromptValue] = useState('');
 
-  useEffect(() => {
-    fetchAutomations();
-  }, []);
-
-  const fetchAutomations = async () => {
+  const fetchAutomations = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -55,25 +49,17 @@ export default function AutomationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchAutomations();
+  }, [fetchAutomations]);
 
   const handleCreateMilestone = () => {
-    setAgePromptValue('');
-    setIsAgePromptOpen(true);
-  };
-
-  const submitMilestoneAge = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const parsedAge = parseInt(agePromptValue, 10);
-    if (!isNaN(parsedAge) && parsedAge > 0) {
-      setModalType('milestone');
-      setModalAgeMonths(parsedAge);
-      setEditingAutomation(null);
-      setIsAgePromptOpen(false);
-      setIsModalOpen(true);
-    } else {
-      toast.error('Idade inválida. Digite um número maior que zero.');
-    }
+    setModalType('milestone');
+    setModalAgeMonths(undefined);
+    setEditingAutomation(null);
+    setIsModalOpen(true);
   };
 
   const handleEdit = (automation: AutomationRule) => {
@@ -144,9 +130,8 @@ export default function AutomationsPage() {
 
   return (
     <div className="flex flex-col h-screen bg-[#f8fafc] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300">
-      {/* Header Premium */}
+      {/* Header */}
       <div className="bg-white dark:bg-[#1e2028] px-8 py-8 border-b border-slate-200 dark:border-gray-800 flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center shrink-0 transition-colors relative overflow-hidden">
-        {/* Decorative background elements in header */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-rose-500/5 to-orange-400/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
         <div className="z-10">
@@ -178,7 +163,7 @@ export default function AutomationsPage() {
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Modern Tabs */}
+        {/* Tabs */}
         <div className="px-8 pt-6 pb-2 z-10">
           <div className="flex flex-col sm:flex-row gap-2 p-1.5 bg-slate-200/50 dark:bg-[#1a1d24] rounded-2xl lg:w-fit border border-slate-200/50 dark:border-gray-800">
             {tabs.map(tab => {
@@ -200,7 +185,7 @@ export default function AutomationsPage() {
           </div>
         </div>
 
-        {/* Content Area */}
+        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar relative">
           {loading ? (
             <div className="flex items-center justify-center h-full">
@@ -360,44 +345,6 @@ export default function AutomationsPage() {
         type="danger"
         confirmText="Excluir"
       />
-
-      {isAgePromptOpen && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200">
-          <div className="bg-white dark:bg-[#1e2028] rounded-3xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-black text-slate-800 dark:text-gray-100 mb-2">Idade do Marco</h3>
-            <p className="text-sm text-slate-500 dark:text-gray-400 mb-6">
-              Para qual idade em meses deseja criar a automação?
-            </p>
-            <form onSubmit={submitMilestoneAge}>
-              <input
-                type="number"
-                min="1"
-                autoFocus
-                value={agePromptValue}
-                onChange={(e) => setAgePromptValue(e.target.value)}
-                placeholder="Ex: 1, 3, 6 (em meses)"
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 mb-6"
-              />
-              <div className="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsAgePromptOpen(false)}
-                  className="px-5 py-2.5 bg-slate-100 dark:bg-[#2a2d36] text-slate-700 dark:text-gray-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={!agePromptValue}
-                  className="px-5 py-2.5 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-colors shadow-lg shadow-rose-200 dark:shadow-none disabled:opacity-50"
-                >
-                  Continuar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

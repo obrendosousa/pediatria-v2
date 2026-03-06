@@ -52,6 +52,7 @@ interface ChatSidebarProps {
   onRunScriptStep: (step: any, scriptTitle: string) => void;
   onMacroSend: (macro: Macro) => void;
   onDelete: (id: number, table: 'macros' | 'funnels') => void;
+  onEditSchedule: (sched: ScheduledMessage) => void;
   onCancelSchedule: (id: number) => void;
   // Badge de sugestões da Clara
   claraSuggestionCount?: number;
@@ -80,6 +81,7 @@ export default function ChatSidebar({
   onRunScriptStep,
   onMacroSend,
   onDelete,
+  onEditSchedule,
   onCancelSchedule,
   claraSuggestionCount = 0,
   onClaraBadgeClick
@@ -543,7 +545,10 @@ export default function ChatSidebar({
                                             <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--chat-accent)]"/>
                                             <div className="flex justify-between items-start mb-1.5 pl-2">
                                                 <span className="font-semibold text-gray-700 dark:text-gray-100 text-[12px] truncate max-w-[200px]">{sched.title || 'Agendamento'}</span>
-                                                <button onClick={() => onCancelSchedule(sched.id)} className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer opacity-0 group-hover:opacity-100" aria-label="Cancelar"><Trash2 size={13}/></button>
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                                                    <button onClick={() => onEditSchedule(sched)} className="text-gray-300 hover:text-cyan-500 transition-colors cursor-pointer" aria-label="Editar"><Edit2 size={13}/></button>
+                                                    <button onClick={() => onCancelSchedule(sched.id)} className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer" aria-label="Cancelar"><Trash2 size={13}/></button>
+                                                </div>
                                             </div>
                                             <div className="pl-2 flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400 mb-2">
                                                 <CalendarClock size={11}/>

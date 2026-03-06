@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Save, Clock, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import { X, Save, Clock, ChevronRight, ChevronLeft, CheckCircle2, Calendar } from 'lucide-react';
 import { AutomationRule, AutomationMessage } from '@/types';
 import MessageSequenceBuilder from './MessageSequenceBuilder';
 import { createClient } from '@/lib/supabase/client';
@@ -16,7 +16,7 @@ interface AutomationModalProps {
   onSuccess: () => void;
   automation?: AutomationRule | null;
   type: 'milestone' | 'appointment_reminder' | 'return_reminder';
-  ageMonths?: number; // Para tipo milestone
+  ageMonths?: number;
 }
 
 export default function AutomationModal({
@@ -25,11 +25,12 @@ export default function AutomationModal({
   onSuccess,
   automation,
   type,
-  ageMonths
+  ageMonths: initialAgeMonths
 }: AutomationModalProps) {
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [triggerTime, setTriggerTime] = useState('08:00');
+  const [ageMonths, setAgeMonths] = useState<number | ''>(initialAgeMonths || '');
   const [messages, setMessages] = useState<AutomationMessage[]>([]);
   const [active, setActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,8 +46,11 @@ export default function AutomationModal({
         setTriggerTime(time.substring(0, 5));
         setMessages(automation.message_sequence || []);
         setActive(automation.active);
+        setAgeMonths(automation.age_months || '');
       } else {
-        setName(type === 'milestone' ? `Marco de ${ageMonths} ${ageMonths === 1 ? 'mês' : 'meses'}` : '');
+        const age = initialAgeMonths || '';
+        setAgeMonths(age);
+        setName(type === 'milestone' && age ? `Marco de ${age} ${age === 1 ? 'mês' : 'meses'}` : '');
         setTriggerTime('08:00');
         setMessages([]);
         setActive(true);
@@ -54,7 +58,14 @@ export default function AutomationModal({
 
       loadPreviewPatient();
     }
-  }, [isOpen, automation, type, ageMonths]);
+  }, [isOpen, automation, type, initialAgeMonths]);
+
+  // Atualiza nome automaticamente quando muda a idade (só para novos milestones)
+  useEffect(() => {
+    if (type === 'milestone' && !automation && ageMonths) {
+      setName(`Marco de ${ageMonths} ${ageMonths === 1 ? 'mês' : 'meses'}`);
+    }
+  }, [ageMonths, type, automation]);
 
   const loadPreviewPatient = async () => {
     try {
@@ -64,7 +75,7 @@ export default function AutomationModal({
         .not('birth_date', 'is', null)
         .limit(1)
         .maybeSingle();
-      
+
       if (data) {
         setPreviewPatient(data as Patient);
       }
@@ -75,18 +86,23 @@ export default function AutomationModal({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.toast.error('Por favor, informe um nome para a automação');
+      toast.error('Por favor, informe um nome para a automação');
+      return;
+    }
+
+    if (type === 'milestone' && (!ageMonths || ageMonths <= 0)) {
+      toast.error('Por favor, informe a idade em meses para o marco');
       return;
     }
 
     if (messages.length === 0) {
-      toast.toast.error('Por favor, adicione pelo menos uma mensagem');
+      toast.error('Por favor, adicione pelo menos uma mensagem');
       return;
     }
 
     for (const msg of messages) {
       if (!msg.content.trim()) {
-        toast.toast.error(`Por favor, preencha o conteúdo da mensagem ${messages.indexOf(msg) + 1}`);
+        toast.error(`Por favor, preencha o conteúdo da mensagem ${messages.indexOf(msg) + 1}`);
         return;
       }
     }
@@ -100,7 +116,7 @@ export default function AutomationModal({
         active,
         trigger_time: triggerTime.length === 5 ? `${triggerTime}:00` : triggerTime,
         message_sequence: messages,
-        age_months: type === 'milestone' ? (ageMonths || automation?.age_months) : null,
+        age_months: type === 'milestone' ? (ageMonths || null) : null,
       };
 
       if (automation) {
@@ -120,10 +136,11 @@ export default function AutomationModal({
 
       onSuccess();
       onClose();
+      toast.success(automation ? 'Automação atualizada!' : 'Automação criada!');
     } catch (error: unknown) {
       console.error('Erro ao salvar automação:', error);
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast.toast.error(`Erro ao salvar automação: ${message}`);
+      toast.error(`Erro ao salvar automação: ${message}`);
     } finally {
       setSaving(false);
     }
@@ -137,18 +154,19 @@ export default function AutomationModal({
     { id: 3 as const, label: 'Revisão' },
   ];
 
-  const isSetupStepValid = name.trim().length > 0 && triggerTime.length >= 4;
+  const isSetupStepValid = name.trim().length > 0 && triggerTime.length >= 4 &&
+    (type !== 'milestone' || (typeof ageMonths === 'number' && ageMonths > 0));
   const isSequenceStepValid =
     messages.length > 0 && messages.every((message) => message.content.trim().length > 0);
 
   const handleNextStep = () => {
     if (step === 1 && !isSetupStepValid) {
-      toast.toast.error('Preencha nome e horário antes de continuar');
+      toast.error('Preencha todos os campos antes de continuar');
       return;
     }
 
     if (step === 2 && !isSequenceStepValid) {
-      toast.toast.error('Preencha todas as mensagens da sequência antes de continuar');
+      toast.error('Preencha todas as mensagens da sequência antes de continuar');
       return;
     }
 
@@ -170,6 +188,12 @@ export default function AutomationModal({
     }
   };
 
+  const getTypeTitle = () => {
+    if (type === 'milestone') return 'Marco de Idade';
+    if (type === 'appointment_reminder') return 'Lembrete de Consulta';
+    return 'Lembrete de Retorno';
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200">
       <div className="bg-white dark:bg-[#1e2028] rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -179,9 +203,7 @@ export default function AutomationModal({
               {automation ? 'Editar Automação' : 'Nova Automação'}
             </h2>
             <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
-              {type === 'milestone' && `Marco de ${ageMonths || automation?.age_months} ${(ageMonths || automation?.age_months) === 1 ? 'mês' : 'meses'}`}
-              {type === 'appointment_reminder' && 'Lembrete de Consulta'}
-              {type === 'return_reminder' && 'Lembrete de Retorno'}
+              {getTypeTitle()}
             </p>
             <div className="flex items-center gap-2 mt-4">
               {steps.map((item, index) => {
@@ -218,6 +240,29 @@ export default function AutomationModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
           {step === 1 && (
             <>
+              {type === 'milestone' && (
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Idade do Marco (em meses)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={ageMonths}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAgeMonths(val === '' ? '' : parseInt(val, 10));
+                    }}
+                    placeholder="Ex: 1, 3, 6, 12"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                    Quando o bebê completar essa idade, a mensagem será disparada automaticamente.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2">
                   Nome da Automação
@@ -290,6 +335,9 @@ export default function AutomationModal({
                   Resumo
                 </p>
                 <p className="text-sm text-slate-700 dark:text-gray-200"><strong>Nome:</strong> {name || '-'}</p>
+                {type === 'milestone' && (
+                  <p className="text-sm text-slate-700 dark:text-gray-200"><strong>Idade:</strong> {ageMonths} {ageMonths === 1 ? 'mês' : 'meses'}</p>
+                )}
                 <p className="text-sm text-slate-700 dark:text-gray-200"><strong>Horário:</strong> {triggerTime || '-'}</p>
                 <p className="text-sm text-slate-700 dark:text-gray-200"><strong>Status:</strong> {active ? 'Ativa' : 'Desativada'}</p>
                 <p className="text-sm text-slate-700 dark:text-gray-200"><strong>Mensagens:</strong> {messages.length}</p>

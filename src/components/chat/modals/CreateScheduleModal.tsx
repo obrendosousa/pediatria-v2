@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
@@ -5,7 +6,6 @@ import {
   X, 
   FileText, 
   Mic, 
-  Image as ImageIcon, 
   Trash2, 
   Square,
   CheckCircle2,
@@ -14,7 +14,7 @@ import {
   LayoutTemplate,
   Search,
   UploadCloud,
-  ChevronRight
+  // ChevronRight
 } from 'lucide-react';
 import { Macro, Funnel } from '@/types';
 import { useToast } from '@/contexts/ToastContext';
@@ -26,8 +26,10 @@ interface CreateScheduleModalProps {
   funnels: Funnel[];
   preselectedItem?: { item: any | null; type: 'macro' | 'funnel' } | null;
   prefilledAdHoc?: { text: string; date: string; time: string } | null;
+  editingScheduleId?: number | null;
   onConfirmAdHoc: (type: 'text'|'audio'|'image'|'video'|'document', content: string | File | Blob, date: string, time: string) => Promise<void>;
   onConfirmSaved: (item: any, type: 'macro' | 'funnel', date: string, time: string) => Promise<void>;
+  onUpdate?: (id: number, date: string, time: string, title?: string, content?: Record<string, unknown>) => Promise<void>;
 }
 
 export default function CreateScheduleModal({
@@ -37,8 +39,10 @@ export default function CreateScheduleModal({
   funnels,
   preselectedItem,
   prefilledAdHoc,
+  editingScheduleId,
   onConfirmAdHoc,
-  onConfirmSaved
+  onConfirmSaved,
+  onUpdate
 }: CreateScheduleModalProps) {
     const { toast } = useToast();
     const [mode, setMode] = useState<'custom' | 'saved'>('custom'); // 'custom' = Criar Agora, 'saved' = Biblioteca
@@ -117,21 +121,30 @@ export default function CreateScheduleModal({
 
     const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
+    const isEditing = !!editingScheduleId;
+
     // --- Submit ---
     const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
-            if (mode === 'custom') {
+            if (isEditing && onUpdate) {
+                // Modo edição: atualiza data/hora (e texto se for adhoc texto)
+                if (mode === 'custom' && customType === 'text') {
+                    await onUpdate(editingScheduleId, date, time, undefined, { type: 'text', content: text });
+                } else {
+                    await onUpdate(editingScheduleId, date, time);
+                }
+            } else if (mode === 'custom') {
                 if (customType === 'text' && !text.trim()) throw new Error("Digite uma mensagem.");
                 if ((customType === 'image' || customType === 'video' || customType === 'document') && !file) throw new Error("Selecione um arquivo.");
                 if (customType === 'audio' && !audioBlob) throw new Error("Grave um áudio.");
-                
+
                 if (customType === 'text') await onConfirmAdHoc('text', text, date, time);
                 else if (customType === 'image') await onConfirmAdHoc('image', file!, date, time);
                 else if (customType === 'video') await onConfirmAdHoc('video', file!, date, time);
                 else if (customType === 'document') await onConfirmAdHoc('document', file!, date, time);
                 else if (customType === 'audio') await onConfirmAdHoc('audio', audioBlob!, date, time);
-            
+
             } else {
                 if (!selectedItem) throw new Error("Selecione um item da lista.");
                 await onConfirmSaved(selectedItem.item, selectedItem.type, date, time);
@@ -155,7 +168,7 @@ export default function CreateScheduleModal({
                 {/* Header */}
                 <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
                     <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                        <Calendar className="text-pink-600" size={20}/> Novo Agendamento
+                        <Calendar className="text-pink-600" size={20}/> {isEditing ? 'Editar Agendamento' : 'Novo Agendamento'}
                     </h3>
                     <button onClick={onClose}><X size={20} className="text-gray-400 hover:text-gray-600"/></button>
                 </div>
@@ -264,7 +277,7 @@ export default function CreateScheduleModal({
                     <button onClick={onClose} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-bold">Cancelar</button>
                     <button onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg text-sm font-bold shadow-lg flex items-center gap-2">
                         {isSubmitting ? <Loader2 size={16} className="animate-spin"/> : <Clock size={16}/>}
-                        Agendar Disparo
+                        {isEditing ? 'Salvar Alterações' : 'Agendar Disparo'}
                     </button>
                 </div>
             </div>

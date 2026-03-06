@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { X, Printer, Download, FileText, Pill, Microscope, Loader2, FileCheck } from 'lucide-react';
-import { printPrescription, generatePrescriptionHTML } from '@/components/medical-record/attendance/screens/Prescriptions';
+import { X, Printer, Download, FileText, Pill, Microscope, Loader2, FileCheck, Syringe } from 'lucide-react';
+import { printPrescription, generatePrescriptionHTML, PrescriptionDocType } from '@/components/medical-record/attendance/screens/Prescriptions';
 import { printRequest, generateRequestHTML } from '@/components/medical-record/attendance/screens/ExamsAndProcedures';
 import { printDocument, generateDocumentHTML } from '@/components/medical-record/attendance/screens/DocumentsAndCertificates';
 import { format } from 'date-fns';
@@ -163,13 +163,13 @@ export default function PrintDocumentsModal({
   }
 
   // ── Print handlers ──
-  const handlePrintPrescription = (presc: any) => {
+  const handlePrintPrescription = (presc: any, docType: PrescriptionDocType) => {
     const draft = {
       medications: presc.items || [],
       exams: presc.exam_items || [],
       vaccines: presc.vaccine_items || [],
     };
-    printPrescription(draft, patientData);
+    printPrescription(draft, patientData, docType);
   };
 
   const handlePrintExamRequest = (req: any) => {
@@ -187,8 +187,13 @@ export default function PrintDocumentsModal({
   };
 
   // ── Download PDF handlers ──
-  const handleDownloadPrescription = async (presc: any, idx: number) => {
-    const key = `presc-${presc.id || idx}`;
+  const handleDownloadPrescription = async (presc: any, idx: number, docType: PrescriptionDocType) => {
+    const suffixMap: Record<PrescriptionDocType, string> = {
+      medications: 'Medicamentos',
+      exams: 'Exames',
+      vaccines: 'Vacinas',
+    };
+    const key = `presc-${presc.id || idx}-${docType}`;
     setDownloading(key);
     try {
       const draft = {
@@ -196,9 +201,9 @@ export default function PrintDocumentsModal({
         exams: presc.exam_items || [],
         vaccines: presc.vaccine_items || [],
       };
-      const html = generatePrescriptionHTML(draft, patientData);
-      const name = (presc.model_name || `Receita_${idx + 1}`).replace(/\s+/g, '_');
-      await downloadHtmlAsPdf(html, `${name}.pdf`);
+      const html = generatePrescriptionHTML(draft, patientData, docType);
+      const baseName = (presc.model_name || `Receita_${idx + 1}`).replace(/\s+/g, '_');
+      await downloadHtmlAsPdf(html, `${baseName}_${suffixMap[docType]}.pdf`);
     } catch (err) {
       console.error('Erro ao baixar receita:', err);
     } finally {
@@ -275,59 +280,66 @@ export default function PrintDocumentsModal({
             </div>
           ) : (
             <>
-              {/* Prescriptions */}
-              {prescriptions.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Pill className="w-3.5 h-3.5" />
-                    Receitas ({prescriptions.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {prescriptions.map((presc, idx) => {
-                      const medsCount = (presc.items || []).filter((i: any) => i.name?.trim()).length;
-                      const examsCount = (presc.exam_items || []).filter((i: any) => i.name?.trim()).length;
-                      const vaccCount = (presc.vaccine_items || []).filter((i: any) => i.name?.trim()).length;
-                      const parts = [];
-                      if (medsCount > 0) parts.push(`${medsCount} medicamento${medsCount > 1 ? 's' : ''}`);
-                      if (examsCount > 0) parts.push(`${examsCount} exame${examsCount > 1 ? 's' : ''}`);
-                      if (vaccCount > 0) parts.push(`${vaccCount} vacina${vaccCount > 1 ? 's' : ''}`);
-                      const dlKey = `presc-${presc.id || idx}`;
+              {/* Prescriptions — separadas por tipo */}
+              {prescriptions.length > 0 && prescriptions.map((presc: any, idx: number) => {
+                const medsCount = (presc.items || []).filter((i: any) => i.name?.trim()).length;
+                const examsCount = (presc.exam_items || []).filter((i: any) => i.name?.trim()).length;
+                const vaccCount = (presc.vaccine_items || []).filter((i: any) => i.name?.trim()).length;
+                const prescLabel = presc.model_name || `Receita ${idx + 1}`;
 
-                      return (
-                        <div key={presc.id || idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#2a2d36] rounded-lg border border-slate-200 dark:border-gray-700 p-3">
-                          <div className="min-w-0 flex-1 mr-3">
-                            <p className="text-sm font-bold text-slate-700 dark:text-gray-200">
-                              {presc.model_name || `Receita ${idx + 1}`}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-gray-400">
-                              {parts.join(' • ') || 'Vazia'}
-                            </p>
+                const types: { type: PrescriptionDocType; label: string; count: number; icon: React.ReactNode; iconColor: string; btnClass: string; btnDisabledClass: string }[] = [
+                  { type: 'medications', label: 'Medicamentos', count: medsCount, icon: <Pill className="w-3.5 h-3.5" />, iconColor: 'text-blue-500', btnClass: 'bg-blue-600 hover:bg-blue-700', btnDisabledClass: 'disabled:bg-blue-400' },
+                  { type: 'exams', label: 'Exames', count: examsCount, icon: <Microscope className="w-3.5 h-3.5" />, iconColor: 'text-emerald-500', btnClass: 'bg-emerald-600 hover:bg-emerald-700', btnDisabledClass: 'disabled:bg-emerald-400' },
+                  { type: 'vaccines', label: 'Vacinas', count: vaccCount, icon: <Syringe className="w-3.5 h-3.5" />, iconColor: 'text-purple-500', btnClass: 'bg-purple-600 hover:bg-purple-700', btnDisabledClass: 'disabled:bg-purple-400' },
+                ];
+
+                const activeTypes = types.filter(t => t.count > 0);
+                if (activeTypes.length === 0) return null;
+
+                return (
+                  <div key={presc.id || idx}>
+                    <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5" />
+                      {prescLabel}
+                    </h3>
+                    <div className="space-y-2">
+                      {activeTypes.map(({ type, label, count, icon, iconColor, btnClass, btnDisabledClass }) => {
+                        const dlKey = `presc-${presc.id || idx}-${type}`;
+                        return (
+                          <div key={type} className="flex items-center justify-between bg-slate-50 dark:bg-[#2a2d36] rounded-lg border border-slate-200 dark:border-gray-700 p-3">
+                            <div className="flex items-center gap-2 min-w-0 flex-1 mr-3">
+                              <span className={iconColor}>{icon}</span>
+                              <div>
+                                <p className="text-sm font-bold text-slate-700 dark:text-gray-200">{label}</p>
+                                <p className="text-xs text-slate-500 dark:text-gray-400">{count} ite{count > 1 ? 'ns' : 'm'}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                onClick={() => handlePrintPrescription(presc, type)}
+                                className={`flex items-center gap-1.5 px-3 py-2 ${btnClass} text-white rounded-lg text-xs font-bold transition-colors`}
+                                title="Imprimir"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                                Imprimir
+                              </button>
+                              <button
+                                onClick={() => handleDownloadPrescription(presc, idx, type)}
+                                disabled={downloading === dlKey}
+                                className={`flex items-center gap-1.5 px-3 py-2 ${btnClass} ${btnDisabledClass} text-white rounded-lg text-xs font-bold transition-colors`}
+                                title="Baixar PDF"
+                              >
+                                {downloading === dlKey ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                                PDF
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              onClick={() => handlePrintPrescription(presc)}
-                              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors"
-                              title="Imprimir"
-                            >
-                              <Printer className="w-3.5 h-3.5" />
-                              Imprimir
-                            </button>
-                            <button
-                              onClick={() => handleDownloadPrescription(presc, idx)}
-                              disabled={downloading === dlKey}
-                              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-lg text-xs font-bold transition-colors"
-                              title="Baixar PDF"
-                            >
-                              {downloading === dlKey ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                              PDF
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })}
 
               {/* Exam Requests */}
               {examRequests.length > 0 && (

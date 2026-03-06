@@ -37,7 +37,7 @@ export type CardColorClasses = {
   hover: string;
 };
 
-export function getCardColorClasses(app: { status?: string; patient_sex?: string }): CardColorClasses {
+export function getCardColorClasses(app: { status?: string; patient_sex?: string | null }): CardColorClasses {
   if (app.status === 'blocked') {
     return {
       bg: 'bg-red-50 dark:bg-red-900/20',
@@ -79,7 +79,7 @@ export function getCardColorClasses(app: { status?: string; patient_sex?: string
 }
 
 /** Retorna agendamentos de um dia a partir da lista semanal */
-export function getAppointmentsForDay(date: Date, weekAppointments: any[]): any[] {
+export function getAppointmentsForDay(date: Date, weekAppointments: Array<{ start_time?: string }>): Array<{ start_time?: string }> {
   const dateStr = date.toLocaleDateString('en-CA');
   return weekAppointments.filter(app => app.start_time?.startsWith(dateStr));
 }
