@@ -9,8 +9,10 @@ import { PatientMedicalRecordView } from './PatientMedicalRecordView';
 interface Patient {
   id: number;
   name: string;
-  phone?: string;
-  [key: string]: any;
+  phone: string | null;
+  created_at: string;
+  appointments?: { start_time: string }[];
+  [key: string]: unknown;
 }
 
 interface PatientWindowProps {
