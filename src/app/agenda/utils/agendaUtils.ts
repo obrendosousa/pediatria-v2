@@ -79,7 +79,7 @@ export function getCardColorClasses(app: { status?: string; patient_sex?: string
 }
 
 /** Retorna agendamentos de um dia a partir da lista semanal */
-export function getAppointmentsForDay(date: Date, weekAppointments: Array<{ start_time?: string }>): Array<{ start_time?: string }> {
+export function getAppointmentsForDay<T extends { start_time?: string }>(date: Date, weekAppointments: T[]): T[] {
   const dateStr = date.toLocaleDateString('en-CA');
   return weekAppointments.filter(app => app.start_time?.startsWith(dateStr));
 }
