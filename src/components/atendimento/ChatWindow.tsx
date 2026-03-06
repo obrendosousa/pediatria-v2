@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useChatMessages } from '@/hooks/atendimento/useChatMessages';
 import { useChatAutomation } from '@/hooks/atendimento/useChatAutomation';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
@@ -14,6 +14,9 @@ import ChatHeader from '@/components/chat/ChatHeader';
 import ChatInput from '@/components/chat/ChatInput';
 import MessageList from '@/components/chat/MessageList';
 import ChatSidebar from '@/components/chat/ChatSidebar';
+import ClaraSuggestionToast from '@/components/chat/ClaraSuggestionToast';
+import type { SuggestionPhase } from '@/components/chat/ClaraSuggestionToast';
+import ClaraSuggestionPanel from '@/components/chat/ClaraSuggestionPanel';
 
 // Modais de suporte (compartilhados)
 import MacroModal from '@/components/chat/modals/MacroModal';
@@ -171,6 +174,40 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
   const [aiDraftScheduleText, setAiDraftScheduleText] = useState<string | null>(chat?.ai_draft_schedule_text ?? null);
   const [aiDraftScheduleDate, setAiDraftScheduleDate] = useState<string | null>(chat?.ai_draft_schedule_date ?? null);
   const [aiDraftScheduleReason, setAiDraftScheduleReason] = useState<string | null>(chat?.ai_draft_schedule_reason ?? null);
+
+  // Fases de notificação das sugestões da Clara
+  const [draftPhase, setDraftPhase] = useState<SuggestionPhase>(null);
+  const [schedulePhase, setSchedulePhase] = useState<SuggestionPhase>(null);
+  const prevMessageCountRef = useRef(0);
+
+  useEffect(() => {
+    if (aiDraftText) {
+      setDraftPhase('toast');
+    } else {
+      setDraftPhase(null);
+    }
+  }, [aiDraftText]);
+
+  useEffect(() => {
+    if (aiDraftScheduleText) {
+      setSchedulePhase('toast');
+    } else {
+      setSchedulePhase(null);
+    }
+  }, [aiDraftScheduleText]);
+
+  useEffect(() => {
+    if (!messages || messages.length <= prevMessageCountRef.current) {
+      prevMessageCountRef.current = messages?.length ?? 0;
+      return;
+    }
+    const newMsgs = messages.slice(prevMessageCountRef.current);
+    prevMessageCountRef.current = messages.length;
+    const hasAgentMsg = newMsgs.some((m: any) => m.sender === 'HUMAN_AGENT' || m.sender === 'me');
+    const hasCustomerMsg = newMsgs.some((m: any) => m.sender === 'CUSTOMER' || m.sender === 'contact');
+    if (hasAgentMsg && aiDraftText) handleClearDraft();
+    if (hasCustomerMsg && aiDraftText) handleClearDraft();
+  }, [messages?.length]);
 
   const handleSendFile = useCallback(async (file: File | Blob, caption: string, typeOverride?: string, metadata?: any) => {
     if (!chat) return;
@@ -627,14 +664,16 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
     }).eq('id', chat.id);
   }, [chat]);
 
-  const handleApproveScheduleDraft = useCallback(async () => {
-    if (!chat || !aiDraftScheduleText || !aiDraftScheduleDate) return;
+  const handleApproveScheduleDraft = useCallback(async (text: string) => {
+    if (!chat || !aiDraftScheduleDate) return;
+    const finalText = text || aiDraftScheduleText;
+    if (!finalText) return;
     try {
       const { error } = await supabase.from('scheduled_messages').insert({
         chat_id: chat.id,
         item_type: 'adhoc',
         title: 'Follow-up sugerido pela IA',
-        content: { type: 'text', content: aiDraftScheduleText },
+        content: { type: 'text', content: finalText },
         scheduled_for: aiDraftScheduleDate,
         status: 'pending',
       });
@@ -813,19 +852,49 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
           onCancelReply={() => setReplyTo(null)}
           editingMessage={editingMessage}
           onCancelEdit={() => setEditingMessage(null)}
-          aiDraftText={aiDraftText}
-          aiDraftReason={aiDraftReason}
+          hasSuggestion={!!aiDraftText}
           isLoadingAISuggestion={isLoadingAISuggestion}
           onRequestAISuggestion={handleRequestAISuggestion}
-          onApproveAIDraft={handleApproveDraft}
-          onDiscardAIDraft={handleClearDraft}
-          aiDraftScheduleText={aiDraftScheduleText}
-          aiDraftScheduleDate={aiDraftScheduleDate}
-          aiDraftScheduleReason={aiDraftScheduleReason}
-          onApproveScheduleDraft={handleApproveScheduleDraft}
-          onEditScheduleDraft={handleEditScheduleDraft}
-          onDiscardScheduleDraft={handleDiscardScheduleDraft}
         />
+
+        {/* Toast de sugestão da Clara (20s, depois minimiza) */}
+        {(draftPhase === 'toast' || schedulePhase === 'toast') && (
+          <ClaraSuggestionToast
+            draftText={draftPhase === 'toast' ? aiDraftText : null}
+            draftReason={draftPhase === 'toast' ? aiDraftReason : null}
+            draftPhase={draftPhase}
+            onExpandDraft={() => setDraftPhase('expanded')}
+            onDismissDraft={handleClearDraft}
+            onApproveDraft={handleApproveDraft}
+            onAutoMinimizeDraft={() => setDraftPhase(prev => prev === 'toast' ? 'minimized' : prev)}
+            scheduleText={schedulePhase === 'toast' ? aiDraftScheduleText : null}
+            scheduleDate={schedulePhase === 'toast' ? aiDraftScheduleDate : null}
+            scheduleReason={schedulePhase === 'toast' ? aiDraftScheduleReason : null}
+            schedulePhase={schedulePhase}
+            onExpandSchedule={() => setSchedulePhase('expanded')}
+            onDismissSchedule={handleDiscardScheduleDraft}
+            onApproveSchedule={handleApproveScheduleDraft}
+            onAutoMinimizeSchedule={() => setSchedulePhase(prev => prev === 'toast' ? 'minimized' : prev)}
+          />
+        )}
+
+        {/* Painel expandido de sugestões da Clara */}
+        {(draftPhase === 'expanded' || schedulePhase === 'expanded') && (
+          <ClaraSuggestionPanel
+            isOpen={true}
+            onClose={() => { if (aiDraftText) setDraftPhase('minimized'); if (aiDraftScheduleText) setSchedulePhase('minimized'); }}
+            draftText={aiDraftText}
+            draftReason={aiDraftReason}
+            onApproveDraft={handleApproveDraft}
+            onDiscardDraft={handleClearDraft}
+            scheduleText={aiDraftScheduleText}
+            scheduleDate={aiDraftScheduleDate}
+            scheduleReason={aiDraftScheduleReason}
+            onApproveSchedule={handleApproveScheduleDraft}
+            onEditSchedule={handleEditScheduleDraft}
+            onDiscardSchedule={handleDiscardScheduleDraft}
+          />
+        )}
       </div>
 
       {/* Backdrop */}
@@ -854,6 +923,14 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
             onOpenScheduleModal={handleOpenScheduleModal}
             onRunFunnel={handleRunFunnel} onRunScriptStep={handleRunScriptStep} onMacroSend={handleMacroSend}
             onDelete={confirmDeleteAction} onCancelSchedule={handleCancelSchedule}
+            claraSuggestionCount={
+              (aiDraftText && (draftPhase === 'minimized' || draftPhase === 'expanded') ? 1 : 0)
+              + (aiDraftScheduleText && (schedulePhase === 'minimized' || schedulePhase === 'expanded') ? 1 : 0)
+            }
+            onClaraBadgeClick={() => {
+              if (draftPhase === 'minimized') setDraftPhase('expanded');
+              if (schedulePhase === 'minimized') setSchedulePhase('expanded');
+            }}
           />
         </div>
       </div>

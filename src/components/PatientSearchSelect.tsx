@@ -12,6 +12,7 @@ export interface PatientSearchOption {
   phone: string | null;
   biological_sex: 'M' | 'F' | null;
   parent_name: string | null;
+  birth_date: string | null;
 }
 
 interface PatientSearchSelectProps {
@@ -24,7 +25,7 @@ interface PatientSearchSelectProps {
 function extractParentName(familyMembers: unknown): string | null {
   if (!familyMembers || !Array.isArray(familyMembers)) return null;
   const responsible = familyMembers.find(
-    (m: any) => m?.relationship === 'Responsável'
+    (m: Record<string, unknown>) => m?.relationship === 'Responsável'
   );
   if (responsible?.name) return String(responsible.name).trim();
   const first = familyMembers[0];
@@ -54,7 +55,7 @@ export default function PatientSearchSelect({
     try {
       const { data, error } = await supabase
         .from('patients')
-        .select('id, name, phone, biological_sex, family_members')
+        .select('id, name, phone, biological_sex, family_members, birth_date')
         .or(`name.ilike.%${trimmed}%,phone.ilike.%${trimmed}%`)
         .limit(20)
         .order('name');
@@ -65,12 +66,13 @@ export default function PatientSearchSelect({
         return;
       }
 
-      const options: PatientSearchOption[] = (data || []).map((p: any) => ({
-        id: p.id,
-        name: p.name || '',
-        phone: p.phone || null,
-        biological_sex: p.biological_sex || null,
-        parent_name: extractParentName(p.family_members)
+      const options: PatientSearchOption[] = (data || []).map((p: Record<string, unknown>) => ({
+        id: p.id as number,
+        name: (p.name as string) || '',
+        phone: (p.phone as string) || null,
+        biological_sex: (p.biological_sex as 'M' | 'F') || null,
+        parent_name: extractParentName(p.family_members),
+        birth_date: (p.birth_date as string) || null
       }));
       setResults(options);
     } finally {

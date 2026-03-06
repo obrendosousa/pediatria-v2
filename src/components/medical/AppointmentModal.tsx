@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
+import { useState, useEffect, useCallback } from 'react';
+import {
   X, User, Phone, Calendar, Clock, FileText, Sparkles, Loader2, Save,
-  Wallet
+  Wallet, Cake
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
@@ -47,7 +47,7 @@ export default function AppointmentModal({
   const [doctors, setDoctors] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<PatientSearchOption | null>(null);
-  
+
   const [formData, setFormData] = useState({
     patientName: '',
     parentName: '',
@@ -57,6 +57,8 @@ export default function AppointmentModal({
     time: '',
     reason: '',
     patientSex: '' as 'M' | 'F' | '',
+    birthDateDisplay: '',
+    birthDate: '', // YYYY-MM-DD
     appointmentType: '' as 'consulta' | 'retorno' | '',
     // Campos Financeiros (Strings para controle de input com máscara)
     totalAmount: '',
@@ -102,68 +104,36 @@ export default function AppointmentModal({
     setFormData(prev => ({ ...prev, [field]: formatCurrency(rawValue) }));
   };
 
-  // Função para validar e formatar data enquanto digita
-  const handleDateInputChange = (value: string) => {
+  // Função genérica para formatar DD/MM/AAAA enquanto digita
+  const handleDateMaskedInput = (value: string, displayField: 'dateDisplay' | 'birthDateDisplay', isoField: 'date' | 'birthDate') => {
     const numbers = value.replace(/\D/g, '');
     const limited = numbers.slice(0, 8);
-    
     let formatted = '';
     if (limited.length > 0) {
       formatted = limited.slice(0, 2);
-      if (limited.length > 2) {
-        formatted += '/' + limited.slice(2, 4);
-      }
-      if (limited.length > 4) {
-        formatted += '/' + limited.slice(4, 8);
-      }
+      if (limited.length > 2) formatted += '/' + limited.slice(2, 4);
+      if (limited.length > 4) formatted += '/' + limited.slice(4, 8);
     }
-    
     setFormData(prev => ({
       ...prev,
-      dateDisplay: formatted,
-      date: formatDateToISO(formatted)
+      [displayField]: formatted,
+      [isoField]: formatDateToISO(formatted)
     }));
   };
 
-  // Carregar médicos e preencher formulário quando modal abrir
-  useEffect(() => {
-    if (isOpen) {
-      fetchDoctors();
-      
-      const today = new Date().toISOString().split('T')[0];
-      const defaultTime = '09:00';
-      const initialDate = initialData?.suggestedDate || today;
-      
-      setFormData({
-        patientName: initialData?.patientName || '',
-        parentName: initialData?.parentName || '',
-        phone: chatPhone || initialData?.phone || '',
-        date: initialDate,
-        dateDisplay: formatDateToDisplay(initialDate),
-        time: initialData?.suggestedTime || defaultTime,
-        reason: initialData?.reason || '',
-        patientSex: (initialData?.patientSex as 'M' | 'F' | '') || '',
-        appointmentType: '',
-        totalAmount: '',
-        paidAmount: ''
-      });
-      setSelectedPatient(null);
-    }
-  }, [isOpen, initialData, chatPhone]);
-
-  async function fetchDoctors() {
+  const fetchDoctors = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('doctors')
         .select('id, name')
         .eq('active', true)
         .order('name');
-      
+
       if (error) throw error;
-      
+
       if (data && data.length > 0) {
         setDoctors(data);
-        
+
         if (profile?.doctor_id) {
           const doctorUser = data.find(d => d.id === profile.doctor_id);
           if (doctorUser) {
@@ -178,16 +148,49 @@ export default function AppointmentModal({
     } catch (err) {
       console.error('Erro ao carregar médicos:', err);
     }
-  }
+  }, [profile?.doctor_id]);
+
+  // Carregar médicos e preencher formulário quando modal abrir
+  useEffect(() => {
+    if (isOpen) {
+      fetchDoctors();
+
+      const today = new Date().toISOString().split('T')[0];
+      const defaultTime = '09:00';
+      const initialDate = initialData?.suggestedDate || today;
+
+      setFormData({
+        patientName: initialData?.patientName || '',
+        parentName: initialData?.parentName || '',
+        phone: chatPhone || initialData?.phone || '',
+        date: initialDate,
+        dateDisplay: formatDateToDisplay(initialDate),
+        time: initialData?.suggestedTime || defaultTime,
+        reason: initialData?.reason || '',
+        patientSex: (initialData?.patientSex as 'M' | 'F' | '') || '',
+        birthDateDisplay: '',
+        birthDate: '',
+        appointmentType: '',
+        totalAmount: '',
+        paidAmount: ''
+      });
+      setSelectedPatient(null);
+    }
+  }, [isOpen, initialData, chatPhone, fetchDoctors]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
+
     if (!formData.patientName.trim()) {
       toast.error('Por favor, preencha o nome do paciente.');
       return;
     }
-    
+
+    if (!formData.birthDate || formData.birthDate.length !== 10) {
+      toast.error('Por favor, insira a data de nascimento do paciente.');
+      return;
+    }
+
     if (!selectedDoctorId) {
       toast.error('Por favor, selecione um médico.');
       return;
@@ -224,6 +227,7 @@ export default function AppointmentModal({
         patient_phone: formData.phone.trim() || null,
         notes: formData.reason.trim() || null,
         appointment_type: formData.appointmentType,
+        patient_birth_date: formData.birthDate || null,
         // Inserção dos dados financeiros
         total_amount: totalAmountNum,
         amount_paid: paidAmountNum
@@ -248,7 +252,8 @@ export default function AppointmentModal({
             patient_name: formData.patientName.trim(),
             patient_phone: formData.phone.trim() || null,
             patient_sex: formData.patientSex || null,
-            parent_name: formData.parentName.trim() || null
+            parent_name: formData.parentName.trim() || null,
+            patient_birth_date: formData.birthDate || null
           };
           patientId = await createBasicPatientFromAppointment(appointmentData as Appointment);
         }
@@ -287,14 +292,14 @@ export default function AppointmentModal({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[140] flex items-center justify-center p-4 animate-in fade-in">
       <div className="bg-white dark:bg-[#1e2028] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        
+
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2d36] flex justify-between items-center">
           <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
             <Sparkles className="text-pink-600 dark:text-pink-400" size={20}/>
             Agendar Paciente
           </h3>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors"
           >
@@ -303,7 +308,7 @@ export default function AppointmentModal({
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
-          
+
           {/* Paciente existente (opcional) */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
@@ -319,7 +324,9 @@ export default function AppointmentModal({
                     patientName: p.name,
                     phone: p.phone || '',
                     parentName: p.parent_name || '',
-                    patientSex: (p.biological_sex || '') as 'M' | 'F' | ''
+                    patientSex: (p.biological_sex || '') as 'M' | 'F' | '',
+                    birthDateDisplay: p.birth_date ? formatDateToDisplay(p.birth_date) : '',
+                    birthDate: p.birth_date || ''
                   }));
                 }
               }}
@@ -372,8 +379,8 @@ export default function AppointmentModal({
                 type="button"
                 onClick={() => setFormData({...formData, patientSex: 'M'})}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${
-                  formData.patientSex === 'M' 
-                    ? 'bg-white text-blue-600 shadow-sm dark:bg-[#2a2d36] dark:text-blue-400' 
+                  formData.patientSex === 'M'
+                    ? 'bg-white text-blue-600 shadow-sm dark:bg-[#2a2d36] dark:text-blue-400'
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
                 }`}
               >
@@ -383,13 +390,32 @@ export default function AppointmentModal({
                 type="button"
                 onClick={() => setFormData({...formData, patientSex: 'F'})}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${
-                  formData.patientSex === 'F' 
-                    ? 'bg-white text-pink-600 shadow-sm dark:bg-[#2a2d36] dark:text-pink-400' 
+                  formData.patientSex === 'F'
+                    ? 'bg-white text-pink-600 shadow-sm dark:bg-[#2a2d36] dark:text-pink-400'
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
                 }`}
               >
                 Feminino
               </button>
+            </div>
+          </div>
+
+          {/* Data de Nascimento */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+              Data de Nascimento * (DD/MM/AAAA)
+            </label>
+            <div className="relative">
+              <Cake className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
+              <input
+                type="text"
+                value={formData.birthDateDisplay}
+                onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')}
+                placeholder="DD/MM/AAAA"
+                maxLength={10}
+                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                required
+              />
             </div>
           </div>
 
@@ -421,7 +447,7 @@ export default function AppointmentModal({
                 <input
                   type="text"
                   value={formData.dateDisplay}
-                  onChange={e => handleDateInputChange(e.target.value)}
+                  onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')}
                   placeholder="DD/MM/AAAA"
                   maxLength={10}
                   className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
@@ -492,7 +518,7 @@ export default function AppointmentModal({
               <Wallet className="w-4 h-4 text-emerald-500" />
               Financeiro do Agendamento
             </h4>
-            
+
             <div className="grid grid-cols-2 gap-4">
               {/* Valor Total */}
               <div>

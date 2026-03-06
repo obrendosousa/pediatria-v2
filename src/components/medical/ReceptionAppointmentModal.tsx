@@ -6,7 +6,7 @@ const supabase = createClient();
 import { Appointment } from '@/types/medical';
 import {
   X, Edit2, FileText, CalendarDays, Clock, Stethoscope, User, Phone,
-  Save, Wallet, Info, Loader2
+  Save, Wallet, Info, Loader2, Cake
 } from 'lucide-react';
 import { saveAppointmentDateTime } from '@/utils/dateUtils';
 import { formatDateToDisplay, formatDateToISO, formatCurrency, parseCurrency } from '@/app/agenda/utils/agendaUtils';
@@ -19,6 +19,8 @@ const initialForm = {
   patient_name: '',
   patient_phone: '',
   parent_name: '',
+  birthDateDisplay: '',
+  birthDate: '', // YYYY-MM-DD
   notes: '',
   date: '',
   dateDisplay: '',
@@ -74,6 +76,8 @@ export default function ReceptionAppointmentModal({
         patient_name: appointment.patient_name || '',
         patient_phone: appointment.patient_phone || '',
         parent_name: appointment.parent_name || '',
+        birthDateDisplay: appointment.patient_birth_date ? formatDateToDisplay(appointment.patient_birth_date) : '',
+        birthDate: appointment.patient_birth_date || '',
         notes: appointment.anamnesis || appointment.notes || '',
         date: datePart || '',
         dateDisplay: datePart ? formatDateToDisplay(datePart) : '',
@@ -101,13 +105,14 @@ export default function ReceptionAppointmentModal({
     return amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const handleDateInput = (value: string) => {
+  // Função genérica para formatar DD/MM/AAAA enquanto digita
+  const handleDateMaskedInput = (value: string, displayField: 'dateDisplay' | 'birthDateDisplay', isoField: 'date' | 'birthDate') => {
     const numbers = value.replace(/\D/g, '').slice(0, 8);
     let formatted = '';
     if (numbers.length > 0) formatted = numbers.slice(0, 2);
     if (numbers.length > 2) formatted += '/' + numbers.slice(2, 4);
     if (numbers.length > 4) formatted += '/' + numbers.slice(4, 8);
-    setForm(prev => ({ ...prev, dateDisplay: formatted, date: formatDateToISO(formatted) }));
+    setForm(prev => ({ ...prev, [displayField]: formatted, [isoField]: formatDateToISO(formatted) }));
   };
 
   const handleMoneyInput = (field: 'totalAmount' | 'paidAmount', value: string) => {
@@ -214,6 +219,10 @@ export default function ReceptionAppointmentModal({
       toast.error('Selecione o médico.');
       return;
     }
+    if (!form.birthDate || form.birthDate.length !== 10) {
+      toast.error('Informe a data de nascimento do paciente.');
+      return;
+    }
     setSaving(true);
     try {
       const doctor = doctors.find(d => d.id === form.doctor_id);
@@ -227,6 +236,7 @@ export default function ReceptionAppointmentModal({
           patient_name: form.patient_name || null,
           patient_phone: form.patient_phone || null,
           parent_name: form.parent_name || null,
+          patient_birth_date: form.birthDate || null,
           notes: form.notes || null,
           anamnesis: form.notes || null,
           start_time,
@@ -242,6 +252,7 @@ export default function ReceptionAppointmentModal({
         patient_name: form.patient_name || null,
         patient_phone: form.patient_phone || null,
         parent_name: form.parent_name || null,
+        patient_birth_date: form.birthDate || null,
         notes: form.notes || null,
         anamnesis: form.notes || null,
         start_time,
@@ -291,7 +302,7 @@ export default function ReceptionAppointmentModal({
         </div>
 
         <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
-          {/* Bloco de pagamento pendente no topo — sempre visível e editável */}
+          {/* Bloco de pagamento pendente no topo */}
           {remainingDisplay > 0 && totalDisplay > 0 && !isEditing && (
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-3">
               <p className="text-xs font-bold text-amber-800 dark:text-amber-200 uppercase flex items-center gap-1.5">
@@ -350,43 +361,19 @@ export default function ReceptionAppointmentModal({
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[10px] uppercase text-slate-500 dark:text-gray-400">Pix</label>
-                      <input
-                        type="text"
-                        value={mixedPayments.pix}
-                        onChange={(e) => setMixedPayments((prev) => ({ ...prev, pix: formatMoneyInput(e.target.value) }))}
-                        placeholder="0,00"
-                        className="w-full rounded-lg border border-slate-200 dark:border-gray-700 px-2 py-1.5 text-xs bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200"
-                      />
+                      <input type="text" value={mixedPayments.pix} onChange={(e) => setMixedPayments((prev) => ({ ...prev, pix: formatMoneyInput(e.target.value) }))} placeholder="0,00" className="w-full rounded-lg border border-slate-200 dark:border-gray-700 px-2 py-1.5 text-xs bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200" />
                     </div>
                     <div>
                       <label className="text-[10px] uppercase text-slate-500 dark:text-gray-400">Dinheiro</label>
-                      <input
-                        type="text"
-                        value={mixedPayments.cash}
-                        onChange={(e) => setMixedPayments((prev) => ({ ...prev, cash: formatMoneyInput(e.target.value) }))}
-                        placeholder="0,00"
-                        className="w-full rounded-lg border border-slate-200 dark:border-gray-700 px-2 py-1.5 text-xs bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200"
-                      />
+                      <input type="text" value={mixedPayments.cash} onChange={(e) => setMixedPayments((prev) => ({ ...prev, cash: formatMoneyInput(e.target.value) }))} placeholder="0,00" className="w-full rounded-lg border border-slate-200 dark:border-gray-700 px-2 py-1.5 text-xs bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200" />
                     </div>
                     <div>
                       <label className="text-[10px] uppercase text-slate-500 dark:text-gray-400">Crédito</label>
-                      <input
-                        type="text"
-                        value={mixedPayments.credit_card}
-                        onChange={(e) => setMixedPayments((prev) => ({ ...prev, credit_card: formatMoneyInput(e.target.value) }))}
-                        placeholder="0,00"
-                        className="w-full rounded-lg border border-slate-200 dark:border-gray-700 px-2 py-1.5 text-xs bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200"
-                      />
+                      <input type="text" value={mixedPayments.credit_card} onChange={(e) => setMixedPayments((prev) => ({ ...prev, credit_card: formatMoneyInput(e.target.value) }))} placeholder="0,00" className="w-full rounded-lg border border-slate-200 dark:border-gray-700 px-2 py-1.5 text-xs bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200" />
                     </div>
                     <div>
                       <label className="text-[10px] uppercase text-slate-500 dark:text-gray-400">Débito</label>
-                      <input
-                        type="text"
-                        value={mixedPayments.debit_card}
-                        onChange={(e) => setMixedPayments((prev) => ({ ...prev, debit_card: formatMoneyInput(e.target.value) }))}
-                        placeholder="0,00"
-                        className="w-full rounded-lg border border-slate-200 dark:border-gray-700 px-2 py-1.5 text-xs bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200"
-                      />
+                      <input type="text" value={mixedPayments.debit_card} onChange={(e) => setMixedPayments((prev) => ({ ...prev, debit_card: formatMoneyInput(e.target.value) }))} placeholder="0,00" className="w-full rounded-lg border border-slate-200 dark:border-gray-700 px-2 py-1.5 text-xs bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200" />
                     </div>
                   </div>
                 )}
@@ -428,6 +415,36 @@ export default function ReceptionAppointmentModal({
             </div>
           </div>
 
+          {/* Data de Nascimento */}
+          {isEditing ? (
+            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-gray-700">
+              <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 rounded-md"><Cake size={14} /></div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-slate-500 dark:text-gray-400 uppercase">Data de Nascimento *</p>
+                <input
+                  type="text"
+                  value={form.birthDateDisplay}
+                  onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')}
+                  placeholder="DD/MM/AAAA"
+                  maxLength={10}
+                  className="w-full text-sm font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#2a2d36]"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-gray-700">
+              <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 rounded-md"><Cake size={14} /></div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-slate-500 dark:text-gray-400 uppercase">Data de Nascimento</p>
+                <p className="text-sm text-slate-700 dark:text-gray-200 font-medium">
+                  {appointment.patient_birth_date
+                    ? formatDateToDisplay(appointment.patient_birth_date)
+                    : 'Não informado'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Data e hora */}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-gray-700">
@@ -439,7 +456,7 @@ export default function ReceptionAppointmentModal({
                 <input
                   type="text"
                   value={form.dateDisplay}
-                  onChange={e => handleDateInput(e.target.value)}
+                  onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')}
                   placeholder="DD/MM/AAAA"
                   maxLength={10}
                   className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#2a2d36]"
@@ -544,7 +561,7 @@ export default function ReceptionAppointmentModal({
             </div>
           </div>
 
-          {/* Bloco financeiro — destaque na recepção */}
+          {/* Bloco financeiro */}
           <div className="bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-amber-200 dark:border-amber-800/50">
             <h5 className="text-xs font-bold text-amber-800 dark:text-amber-200 uppercase mb-2 flex items-center gap-1">
               <Wallet size={12} /> Pagamento
@@ -553,23 +570,11 @@ export default function ReceptionAppointmentModal({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] text-slate-500 dark:text-gray-400 uppercase">Total (R$)</label>
-                  <input
-                    type="text"
-                    value={form.totalAmount}
-                    onChange={e => handleMoneyInput('totalAmount', e.target.value)}
-                    className="w-full text-sm font-bold border border-slate-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-400"
-                    placeholder="0,00"
-                  />
+                  <input type="text" value={form.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full text-sm font-bold border border-slate-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-400" placeholder="0,00" />
                 </div>
                 <div>
                   <label className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase font-semibold">Valor pago (R$)</label>
-                  <input
-                    type="text"
-                    value={form.paidAmount}
-                    onChange={e => handleMoneyInput('paidAmount', e.target.value)}
-                    className="w-full text-sm font-bold border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                    placeholder="0,00"
-                  />
+                  <input type="text" value={form.paidAmount} onChange={e => handleMoneyInput('paidAmount', e.target.value)} className="w-full text-sm font-bold border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-400" placeholder="0,00" />
                 </div>
                 <div className="col-span-2 text-right text-xs font-bold text-slate-600 dark:text-gray-300 border-t border-amber-200 dark:border-amber-800 pt-2 mt-1">
                   Restante: <span className={editRemaining > 0 ? 'text-rose-500 dark:text-rose-400 text-sm' : 'text-emerald-600 dark:text-emerald-400 text-sm'}>

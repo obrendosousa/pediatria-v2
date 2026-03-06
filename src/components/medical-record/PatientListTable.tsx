@@ -7,8 +7,16 @@ const supabase = createClient();
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 
+interface PatientItem {
+  id: number;
+  name: string;
+  phone: string | null;
+  created_at: string;
+  appointments?: { start_time: string }[];
+}
+
 interface PatientListTableProps {
-  patients: any[];
+  patients: PatientItem[];
   isLoading: boolean;
   onSelectPatient: (id: number) => void;
   onNewPatient: () => void;
@@ -27,7 +35,7 @@ export function PatientListTable({
   onPatientDeleted
 }: PatientListTableProps) {
   const { toast } = useToast();
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; patient: any | null }>({
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; patient: PatientItem | null }>({
     isOpen: false,
     patient: null
   });
@@ -82,7 +90,7 @@ export function PatientListTable({
     (p.phone && p.phone.includes(searchTerm))
   );
 
-  const handleDeleteClick = (e: React.MouseEvent, patient: any) => {
+  const handleDeleteClick = (e: React.MouseEvent, patient: PatientItem) => {
     e.stopPropagation(); // Previne o clique na linha
     setDeleteModal({ isOpen: true, patient });
     setMenuOpenId(null);
@@ -194,7 +202,7 @@ export function PatientListTable({
         }
         
         // Log sempre com informações úteis (nunca objeto vazio)
-        const logInfo: any = {
+        const logInfo: Record<string, string | number> = {
           errorMessage,
           patientId: deleteModal.patient.id,
           patientName: deleteModal.patient.name || 'Nome não disponível'
@@ -234,18 +242,19 @@ export function PatientListTable({
       if (onPatientDeleted) {
         onPatientDeleted();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao deletar paciente (catch):', error);
-      
+
       let errorMessage = 'Erro desconhecido ao deletar paciente.';
-      
-      if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.details) {
-        errorMessage = error.details;
+      const err = error as Record<string, unknown>;
+
+      if (typeof err?.message === 'string') {
+        errorMessage = err.message;
+      } else if (typeof err?.details === 'string') {
+        errorMessage = err.details;
       } else if (typeof error === 'string') {
         errorMessage = error;
-      } else if (error?.code === '23503') {
+      } else if (err?.code === '23503') {
         errorMessage = 'Não é possível deletar este paciente. Ele está vinculado a outros registros (consultas, prontuários, checkouts, etc.).';
       } else {
         errorMessage = 'Não foi possível deletar o paciente. Ele pode estar vinculado a outros registros.';
@@ -351,7 +360,11 @@ export function PatientListTable({
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-slate-600 dark:text-gray-400">
                         <Calendar className="w-4 h-4 opacity-70" />
-                        <span>—</span> 
+                        <span>
+                          {patient.appointments?.[0]?.start_time
+                            ? new Date(patient.appointments[0].start_time).toLocaleDateString('pt-BR')
+                            : '—'}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">

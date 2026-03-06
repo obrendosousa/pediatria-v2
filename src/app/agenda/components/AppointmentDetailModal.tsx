@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logAudit } from '@/lib/audit';
 import {
   X, Ban, Edit2, FileText, CalendarDays, Clock, Stethoscope, User, Phone,
-  Save, Trash2, Info, Wallet
+  Save, Trash2, Info, Wallet, Cake
 } from 'lucide-react';
 import { saveAppointmentDateTime } from '@/utils/dateUtils';
 import { formatDateToDisplay, formatDateToISO, formatCurrency, parseCurrency } from '../utils/agendaUtils';
@@ -21,6 +21,8 @@ const initialEditForm = {
   patient_phone: '',
   parent_name: '',
   patient_sex: '' as 'M' | 'F' | '',
+  birthDateDisplay: '',
+  birthDate: '', // YYYY-MM-DD
   notes: '',
   date: '',
   dateDisplay: '',
@@ -60,6 +62,23 @@ export default function AppointmentDetailModal({
   const [editForm, setEditForm] = useState(initialEditForm);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
+  // Função genérica para formatar DD/MM/AAAA enquanto digita
+  const handleDateMaskedInput = (value: string, displayField: 'dateDisplay' | 'birthDateDisplay', isoField: 'date' | 'birthDate') => {
+    const numbers = value.replace(/\D/g, '');
+    const limited = numbers.slice(0, 8);
+    let formatted = '';
+    if (limited.length > 0) {
+      formatted = limited.slice(0, 2);
+      if (limited.length > 2) formatted += '/' + limited.slice(2, 4);
+      if (limited.length > 4) formatted += '/' + limited.slice(4, 8);
+    }
+    setEditForm(prev => ({
+      ...prev,
+      [displayField]: formatted,
+      [isoField]: formatDateToISO(formatted)
+    }));
+  };
+
   useEffect(() => {
     if (selectedAppointment) {
       const dateStr = selectedAppointment.start_time;
@@ -70,6 +89,8 @@ export default function AppointmentDetailModal({
         patient_phone: selectedAppointment.patient_phone || '',
         parent_name: selectedAppointment.parent_name || '',
         patient_sex: (selectedAppointment.patient_sex as 'M' | 'F' | '') || '',
+        birthDateDisplay: selectedAppointment.patient_birth_date ? formatDateToDisplay(selectedAppointment.patient_birth_date) : '',
+        birthDate: selectedAppointment.patient_birth_date || '',
         notes: selectedAppointment.anamnesis || selectedAppointment.notes || '',
         date: datePart || '',
         dateDisplay: datePart ? formatDateToDisplay(datePart) : '',
@@ -83,22 +104,6 @@ export default function AppointmentDetailModal({
       setIsEditing(false);
     }
   }, [selectedAppointment]);
-
-  const handleDateInputChange = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    const limited = numbers.slice(0, 8);
-    let formatted = '';
-    if (limited.length > 0) {
-      formatted = limited.slice(0, 2);
-      if (limited.length > 2) formatted += '/' + limited.slice(2, 4);
-      if (limited.length > 4) formatted += '/' + limited.slice(4, 8);
-    }
-    setEditForm(prev => ({
-      ...prev,
-      dateDisplay: formatted,
-      date: formatDateToISO(formatted)
-    }));
-  };
 
   const handleMoneyInput = (field: 'totalAmount' | 'paidAmount', value: string) => {
     const rawValue = value.replace(/\D/g, '');
@@ -124,6 +129,10 @@ export default function AppointmentDetailModal({
       toast.error('Por favor, selecione um médico');
       return;
     }
+    if (!editForm.birthDate || editForm.birthDate.length !== 10) {
+      toast.error('Por favor, insira a data de nascimento do paciente');
+      return;
+    }
     try {
       const selectedDoctor = doctors.find(d => d.id === editForm.doctor_id);
       if (!selectedDoctor) throw new Error('Médico não encontrado');
@@ -140,6 +149,7 @@ export default function AppointmentDetailModal({
         doctor_name: selectedDoctor.name,
         status: editForm.status,
         appointment_type: editForm.appointment_type || null,
+        patient_birth_date: editForm.birthDate || null,
         total_amount: totalNum,
         amount_paid: paidNum
       };
@@ -267,6 +277,13 @@ export default function AppointmentDetailModal({
                     </div>
                   </div>
                   <div>
+                    <label className="text-[10px] font-semibold text-slate-500 dark:text-gray-400 uppercase">Data de Nascimento *</label>
+                    <div className="relative mt-1">
+                      <Cake className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-2" />
+                      <input type="text" value={editForm.birthDateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full pl-7 text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#2a2d36] transition-all" />
+                    </div>
+                  </div>
+                  <div>
                     <label className="text-[10px] font-semibold text-slate-500 dark:text-gray-400 uppercase">Status</label>
                     <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#2a2d36] transition-all mt-1">
                       <option value="scheduled">Agendado</option><option value="waiting">Na Espera</option><option value="in_service">Em Atendimento</option><option value="finished">Finalizado</option><option value="blocked">Bloqueado</option><option value="cancelled">Cancelado</option>
@@ -289,11 +306,26 @@ export default function AppointmentDetailModal({
             </div>
           </div>
 
+          {/* Data de Nascimento (somente leitura) */}
+          {!isEditing && selectedAppointment.status !== 'blocked' && (
+            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-gray-700">
+              <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 rounded-md"><Cake size={14}/></div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-slate-500 dark:text-gray-400 uppercase">Data de Nascimento</p>
+                <p className="text-sm text-slate-700 dark:text-gray-200 font-medium">
+                  {selectedAppointment.patient_birth_date
+                    ? formatDateToDisplay(selectedAppointment.patient_birth_date)
+                    : 'Não informado'}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-gray-700">
               <div className="flex items-center gap-1.5 mb-1.5"><CalendarDays size={14} className="text-indigo-500 dark:text-indigo-400"/><span className="text-[10px] font-semibold text-slate-500 dark:text-gray-400 uppercase">Data</span></div>
               {isEditing ? (
-                <input type="text" value={editForm.dateDisplay} onChange={e => handleDateInputChange(e.target.value)} placeholder="DD/MM/AAAA" maxLength={10} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#2a2d36] transition-all" />
+                <input type="text" value={editForm.dateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#2a2d36] transition-all" />
               ) : (
                 <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">{new Date(selectedAppointment.start_time).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
               )}

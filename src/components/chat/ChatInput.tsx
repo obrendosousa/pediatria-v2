@@ -2,36 +2,37 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Paperclip, X, Smile, Trash2, Sparkles, Loader2, Upload } from 'lucide-react';
-import AIDraftBanner from './AIDraftBanner';
-import AIDraftScheduleBanner from './AIDraftScheduleBanner';
 import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
 import { useToast } from '@/contexts/ToastContext';
 
+interface MessageMetadata {
+  replyTo?: ChatMessage | null;
+  editingMessage?: ChatMessage | null;
+}
+
+interface ChatMessage {
+  id: string;
+  message_text?: string;
+  sender?: string;
+  sender_name?: string;
+  message_type?: string;
+}
+
 interface ChatInputProps {
-  onSendMessage: (text: string, type: string, file?: File, metadata?: any) => Promise<void> | void;
+  onSendMessage: (text: string, type: string, file?: File, metadata?: MessageMetadata) => Promise<void> | void;
   onSendAudio: (blob: Blob, duration: number) => void;
   onSendMedia: (file: File) => void;
   onFileDropped?: (file: File) => void;
   onTyping: (isTyping: boolean) => void;
-  replyTo: any;
+  replyTo: ChatMessage | null;
   onCancelReply: () => void;
-  editingMessage?: any;
+  editingMessage?: ChatMessage | null;
   onCancelEdit?: () => void;
   isRecordingProp?: boolean;
   // Copiloto
-  aiDraftText?: string | null;
-  aiDraftReason?: string | null;
+  hasSuggestion?: boolean;
   isLoadingAISuggestion?: boolean;
   onRequestAISuggestion?: () => void;
-  onApproveAIDraft?: (text: string) => Promise<void>;
-  onDiscardAIDraft?: () => Promise<void>;
-  // Follow-up sugerido pela Clara
-  aiDraftScheduleText?: string | null;
-  aiDraftScheduleDate?: string | null;
-  aiDraftScheduleReason?: string | null;
-  onApproveScheduleDraft?: () => Promise<void>;
-  onEditScheduleDraft?: () => void;
-  onDiscardScheduleDraft?: () => Promise<void>;
 }
 
 export default function ChatInput({
@@ -44,18 +45,9 @@ export default function ChatInput({
   onCancelReply,
   editingMessage = null,
   onCancelEdit = () => { },
-  aiDraftText,
-  aiDraftReason,
+  hasSuggestion = false,
   isLoadingAISuggestion = false,
   onRequestAISuggestion,
-  onApproveAIDraft,
-  onDiscardAIDraft,
-  aiDraftScheduleText,
-  aiDraftScheduleDate,
-  aiDraftScheduleReason,
-  onApproveScheduleDraft,
-  onEditScheduleDraft,
-  onDiscardScheduleDraft,
 }: ChatInputProps) {
   const { toast } = useToast();
   // --- ESTADOS ---
@@ -273,7 +265,7 @@ export default function ChatInput({
     handleInput();
   };
 
-  const onEmojiClick = (emojiData: any) => {
+  const onEmojiClick = (emojiData: { unified: string; emoji: string }) => {
     const unified = emojiData.unified;
     const url = `https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/${unified}.png`;
     const imgTag = `<img src="${url}" data-emoji="${emojiData.emoji}" alt="${emojiData.emoji}" class="inline-block w-[20px] h-[20px] align-bottom select-none pointer-events-none mx-0.5 align-text-bottom" style="vertical-align: sub;" />`;
@@ -290,11 +282,11 @@ export default function ChatInput({
     if (!editingMessage || !inputRef.current) return;
     const newText = String(editingMessage.message_text || '');
     inputRef.current.innerText = newText;
-    setMessage(newText);
     requestAnimationFrame(() => {
+      setMessage(newText);
       inputRef.current?.focus();
     });
-  }, [editingMessage?.id]);
+  }, [editingMessage]);
 
   // --- DRAG AND DROP ---
   const handleDragEnter = (e: React.DragEvent) => {
@@ -390,27 +382,6 @@ export default function ChatInput({
         </div>
       )}
 
-      {/* Balão flutuante de sugestão da IA */}
-      {aiDraftText && onApproveAIDraft && onDiscardAIDraft && (
-        <AIDraftBanner
-          draftText={aiDraftText}
-          draftReason={aiDraftReason || ''}
-          onApprove={onApproveAIDraft}
-          onDiscard={onDiscardAIDraft}
-        />
-      )}
-
-      {/* Balão flutuante de follow-up agendado sugerido pela Clara */}
-      {aiDraftScheduleText && onApproveScheduleDraft && onDiscardScheduleDraft && (
-        <AIDraftScheduleBanner
-          scheduleText={aiDraftScheduleText}
-          scheduleDate={aiDraftScheduleDate || ''}
-          scheduleReason={aiDraftScheduleReason || ''}
-          onApprove={onApproveScheduleDraft}
-          onEdit={onEditScheduleDraft || (() => {})}
-          onDiscard={onDiscardScheduleDraft}
-        />
-      )}
       <div className="min-h-[62px] px-2 py-2 flex items-end gap-2">
 
         {showEmojiPicker && (
@@ -467,7 +438,7 @@ export default function ChatInput({
                       {editingMessage.message_text}
                     </p>
                   </>
-                ) : (
+                ) : replyTo ? (
                   <>
                     <span className="text-xs font-bold text-[var(--chat-accent)] block mb-0.5">
                       {replyTo.sender === 'me' || replyTo.sender === 'HUMAN_AGENT' || replyTo.sender === 'AI_AGENT'
@@ -488,7 +459,7 @@ export default function ChatInput({
                                 : replyTo.message_text}
                     </p>
                   </>
-                )}
+                ) : null}
               </div>
               <button onClick={editingMessage ? onCancelEdit : onCancelReply} className="p-1 hover:bg-black/5 rounded">
                 <X size={14} className="text-gray-500" />
@@ -496,14 +467,14 @@ export default function ChatInput({
             </div>
           )}
 
-          <style jsx>{`
+          <style dangerouslySetInnerHTML={{ __html: `
             .custom-input:empty:before {
                 content: attr(data-placeholder);
                 color: var(--chat-text-muted);
                 pointer-events: none;
                 display: block;
             }
-        `}</style>
+          `}} />
 
           <div
             ref={inputRef}
@@ -525,7 +496,7 @@ export default function ChatInput({
               onClick={onRequestAISuggestion}
               disabled={isLoadingAISuggestion}
               title={isLoadingAISuggestion ? 'Gerando sugestão...' : 'Sugerir resposta com IA'}
-              className={`p-2 rounded-full transition-all active:scale-95 ${aiDraftText
+              className={`p-2 rounded-full transition-all active:scale-95 ${hasSuggestion
                 ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-800/50'
                 : 'text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-purple-500'
                 } disabled:opacity-40`}

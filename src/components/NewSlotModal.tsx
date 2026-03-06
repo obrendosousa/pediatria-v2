@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
-import { X, User, Ban, FileText, Phone, Calendar, Clock, Stethoscope, Loader2, Save, Wallet } from 'lucide-react';
+import { X, User, Ban, FileText, Phone, Calendar, Clock, Stethoscope, Loader2, Save, Wallet, Cake } from 'lucide-react';
 import { saveAppointmentDateTime } from '@/utils/dateUtils';
 import { linkPatientByPhone, createBasicPatientFromAppointment } from '@/utils/patientRelations';
 import { useToast } from '@/contexts/ToastContext';
@@ -33,7 +33,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [slotType, setSlotType] = useState<'booked' | 'blocked'>('booked');
-  
+
   // Estado interno para médicos
   const [doctors, setDoctors] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
@@ -49,6 +49,8 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
     parent_name: '',
     patient_phone: '',
     patient_sex: '' as 'M' | 'F' | '',
+    birthDateDisplay: '',
+    birthDate: '', // YYYY-MM-DD
     appointment_type: '' as 'consulta' | 'retorno' | '',
     notes: '',
     // Novos campos financeiros
@@ -96,30 +98,20 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
     return `${year}-${month}-${day}`;
   };
 
-  // Função para validar e formatar data enquanto digita
-  const handleDateInputChange = (value: string) => {
-    // Remove tudo que não é número
+  // Função genérica para formatar DD/MM/AAAA enquanto digita
+  const handleDateMaskedInput = (value: string, displayField: 'dateDisplay' | 'birthDateDisplay', isoField: 'date' | 'birthDate') => {
     const numbers = value.replace(/\D/g, '');
-    
-    // Limita a 8 dígitos
     const limited = numbers.slice(0, 8);
-    
-    // Formata com barras
     let formatted = '';
     if (limited.length > 0) {
       formatted = limited.slice(0, 2);
-      if (limited.length > 2) {
-        formatted += '/' + limited.slice(2, 4);
-      }
-      if (limited.length > 4) {
-        formatted += '/' + limited.slice(4, 8);
-      }
+      if (limited.length > 2) formatted += '/' + limited.slice(2, 4);
+      if (limited.length > 4) formatted += '/' + limited.slice(4, 8);
     }
-    
     setFormData(prev => ({
       ...prev,
-      dateDisplay: formatted,
-      date: formatDateToISO(formatted)
+      [displayField]: formatted,
+      [isoField]: formatDateToISO(formatted)
     }));
   };
 
@@ -143,6 +135,8 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         parent_name: initialPatient?.parentName || '',
         patient_phone: initialPatient?.phone || '',
         patient_sex: initialPatient?.patientSex || '',
+        birthDateDisplay: '',
+        birthDate: '',
         appointment_type: (initialPatient?.appointmentType as 'consulta' | 'retorno' | '') || '',
         notes: '',
         totalAmount: '',
@@ -160,9 +154,9 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         .select('id, name')
         .eq('active', true)
         .order('name');
-      
+
       if (error) throw error;
-      
+
       if (data && data.length > 0) {
         setDoctors(data);
         setSelectedDoctorId(data[0].id);
@@ -174,7 +168,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
+
     // Validar data antes de enviar (para ambos os tipos)
     if (!formData.date || formData.date.length !== 10) {
       toast.error('Por favor, insira uma data válida no formato DD/MM/AAAA');
@@ -186,7 +180,12 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         toast.error('Por favor, preencha o nome do paciente.');
         return;
       }
-      
+
+      if (!formData.birthDate || formData.birthDate.length !== 10) {
+        toast.error('Por favor, insira a data de nascimento do paciente.');
+        return;
+      }
+
       if (!selectedDoctorId) {
         toast.error('Por favor, selecione um médico.');
         return;
@@ -209,7 +208,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
       // Garantir que há um médico selecionado
       const doctorIdToUse = selectedDoctorId || doctors[0]?.id;
       const selectedDoctor = doctors.find(d => d.id === doctorIdToUse);
-      
+
       if (!selectedDoctor) {
         toast.error('Médico não encontrado. Por favor, verifique se há médicos cadastrados.');
         setLoading(false);
@@ -232,17 +231,18 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         insertData.patient_name = formData.patient_name.trim();
         insertData.patient_phone = formData.patient_phone.trim() || null;
         insertData.appointment_type = formData.appointment_type;
-        
+        insertData.patient_birth_date = formData.birthDate || null;
+
         // Inserir dados financeiros
         const totalAmountNum = parseCurrency(formData.totalAmount);
         const paidAmountNum = parseCurrency(formData.paidAmount);
         insertData.total_amount = totalAmountNum;
         insertData.amount_paid = paidAmountNum;
-        
+
         if (formData.parent_name.trim()) {
           insertData.parent_name = formData.parent_name.trim();
         }
-        
+
         if (formData.patient_sex) {
           insertData.patient_sex = formData.patient_sex;
         }
@@ -259,7 +259,8 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
               patient_name: formData.patient_name.trim(),
               patient_phone: formData.patient_phone.trim() || null,
               patient_sex: formData.patient_sex || null,
-              parent_name: formData.parent_name.trim() || null
+              parent_name: formData.parent_name.trim() || null,
+              patient_birth_date: formData.birthDate || null
             };
             patientId = await createBasicPatientFromAppointment(appointmentData as Appointment);
           }
@@ -274,7 +275,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         .insert(insertData);
 
       if (error) throw error;
-      
+
       onSuccess();
       onClose();
       toast.success(slotType === 'booked' ? 'Agendamento criado com sucesso!' : 'Horário bloqueado com sucesso!');
@@ -296,7 +297,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in">
       <div className="bg-white dark:bg-[#1e2028] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        
+
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2d36] flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -329,7 +330,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
               </button>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors"
           >
@@ -355,7 +356,9 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                         patient_name: p.name,
                         patient_phone: p.phone || '',
                         patient_sex: (p.biological_sex || '') as 'M' | 'F' | '',
-                        parent_name: p.parent_name || ''
+                        parent_name: p.parent_name || '',
+                        birthDateDisplay: p.birth_date ? formatDateToDisplay(p.birth_date) : '',
+                        birthDate: p.birth_date || ''
                       }));
                     }
                   }}
@@ -381,7 +384,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                 </div>
               </div>
 
-              {/* Nome do Responsável */}
+              {/* Nome do Responsável + Sexo */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
@@ -409,8 +412,8 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                       type="button"
                       onClick={() => setFormData({...formData, patient_sex: 'M'})}
                       className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all shadow-sm ${
-                        formData.patient_sex === 'M' 
-                          ? 'bg-white text-blue-600 shadow-sm dark:bg-[#2a2d36] dark:text-blue-400' 
+                        formData.patient_sex === 'M'
+                          ? 'bg-white text-blue-600 shadow-sm dark:bg-[#2a2d36] dark:text-blue-400'
                           : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
                       }`}
                     >
@@ -420,14 +423,33 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                       type="button"
                       onClick={() => setFormData({...formData, patient_sex: 'F'})}
                       className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all shadow-sm ${
-                        formData.patient_sex === 'F' 
-                          ? 'bg-white text-pink-600 shadow-sm dark:bg-[#2a2d36] dark:text-pink-400' 
+                        formData.patient_sex === 'F'
+                          ? 'bg-white text-pink-600 shadow-sm dark:bg-[#2a2d36] dark:text-pink-400'
                           : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
                       }`}
                     >
                       Feminino
                     </button>
                   </div>
+                </div>
+              </div>
+
+              {/* Data de Nascimento */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                  Data de Nascimento * (DD/MM/AAAA)
+                </label>
+                <div className="relative">
+                  <Cake className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
+                  <input
+                    type="text"
+                    value={formData.birthDateDisplay}
+                    onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')}
+                    placeholder="DD/MM/AAAA"
+                    maxLength={10}
+                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                    required
+                  />
                 </div>
               </div>
 
@@ -452,14 +474,14 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                    Data * (DD/MM/AAAA)
+                    Data da Consulta * (DD/MM/AAAA)
                   </label>
                   <div className="relative">
                     <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
                     <input
                       type="text"
                       value={formData.dateDisplay}
-                      onChange={e => handleDateInputChange(e.target.value)}
+                      onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')}
                       placeholder="DD/MM/AAAA"
                       maxLength={10}
                       className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
@@ -533,7 +555,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                   <Wallet className="w-4 h-4 text-emerald-500" />
                   Financeiro do Agendamento
                 </h4>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   {/* Valor Total */}
                   <div>
@@ -611,7 +633,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                     <input
                       type="text"
                       value={formData.dateDisplay}
-                      onChange={e => handleDateInputChange(e.target.value)}
+                      onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')}
                       placeholder="DD/MM/AAAA"
                       maxLength={10}
                       className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"

@@ -128,11 +128,11 @@ export async function removePhoneFromPatient(
 ): Promise<boolean> {
   try {
     const clean = cleanPhone(phone);
-    
+
     const { error } = await supabase
       .rpc('remove_phone_from_patient', {
         p_patient_id: patientId,
-        p_phone: phone
+        p_phone: clean
       });
     
     if (error) {
@@ -249,9 +249,9 @@ export async function createBasicPatientFromAppointment(
 
     // Preparar dados básicos do paciente
     // Usar data de nascimento padrão (2000-01-01) que pode ser editada depois
-    const patientPayload: any = {
+    const patientPayload: Record<string, unknown> = {
       name: appointment.patient_name.trim(),
-      birth_date: '2000-01-01', // Data padrão, será editada depois
+      birth_date: appointment.patient_birth_date || '2000-01-01',
       phone: appointment.patient_phone ? cleanPhone(appointment.patient_phone) : null,
       biological_sex: appointment.patient_sex || 'F', // Padrão feminino se não especificado
       active: true,
@@ -340,7 +340,7 @@ export async function createBasicPatientFromAppointment(
 /**
  * Busca appointments de um paciente
  */
-export async function getPatientAppointments(patientId: number): Promise<any[]> {
+export async function getPatientAppointments(patientId: number): Promise<Record<string, unknown>[]> {
   try {
     const { data, error } = await supabase
       .from('appointments')
@@ -363,7 +363,7 @@ export async function getPatientAppointments(patientId: number): Promise<any[]> 
 /**
  * Busca chats de um paciente
  */
-export async function getPatientChats(patientId: number): Promise<any[]> {
+export async function getPatientChats(patientId: number): Promise<Record<string, unknown>[]> {
   try {
     const { data, error } = await supabase
       .from('chats')

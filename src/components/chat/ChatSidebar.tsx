@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, @next/next/no-img-element */
 import {
+  Bot,
   FileText,
   Mic,
   Image as ImageIcon,
@@ -52,6 +53,9 @@ interface ChatSidebarProps {
   onMacroSend: (macro: Macro) => void;
   onDelete: (id: number, table: 'macros' | 'funnels') => void;
   onCancelSchedule: (id: number) => void;
+  // Badge de sugestões da Clara
+  claraSuggestionCount?: number;
+  onClaraBadgeClick?: () => void;
 }
 
 export default function ChatSidebar({
@@ -76,7 +80,9 @@ export default function ChatSidebar({
   onRunScriptStep,
   onMacroSend,
   onDelete,
-  onCancelSchedule
+  onCancelSchedule,
+  claraSuggestionCount = 0,
+  onClaraBadgeClick
 }: ChatSidebarProps) {
   const [selectedScriptId, setSelectedScriptId] = useState<number | null>(null);
 
@@ -616,6 +622,29 @@ export default function ChatSidebar({
             {renderSidebarIcon({ id:"schedule", icon:CalendarClock, label:"Agenda", colorClass:"bg-cyan-600" })}
 
             <div className="flex-1" />
+
+            {/* Badge de sugestões da Clara */}
+            {claraSuggestionCount > 0 && (
+              <div className="relative group mb-1">
+                <button
+                  onClick={onClaraBadgeClick}
+                  aria-label="Sugestões da Clara"
+                  className="relative w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer transition-all duration-200
+                    hover:bg-purple-50 dark:hover:bg-purple-900/20 animate-in zoom-in duration-200"
+                >
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm animate-pulse">
+                    <Bot size={14} className="text-white" />
+                  </div>
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#1e2028]">
+                    {claraSuggestionCount}
+                  </span>
+                </button>
+                <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-gray-900 dark:bg-gray-700 text-white text-[11px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                  Sugestões da Clara
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-l-gray-900 dark:border-l-gray-700"/>
+                </div>
+              </div>
+            )}
 
             {/* IA (fixo no fundo) */}
             {renderSidebarIcon({ id: "copiloto", icon: BotMessageSquare, label: "Copiloto IA", colorClass: "bg-violet-600" })}

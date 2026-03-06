@@ -107,6 +107,7 @@ export interface Appointment {
   // NOVOS CAMPOS FINANCEIROS
   total_amount?: number; // Valor total combinado (numeric no banco)
   amount_paid?: number;  // Quanto já foi pago (numeric no banco)
+  patient_birth_date?: string | null; // date (YYYY-MM-DD)
   appointment_type?: 'consulta' | 'retorno' | null;
   chat_id?: number | null;
   queue_entered_at?: string | null;

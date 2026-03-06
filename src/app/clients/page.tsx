@@ -1,69 +1,71 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-const supabase = createClient();
 import { PatientListTable } from '@/components/medical-record/PatientListTable';
 import { NewPatientModal } from '@/components/medical-record/NewPatientModal';
 
+interface PatientAppointment {
+  start_time: string;
+}
+
+interface PatientRow {
+  id: number;
+  name: string;
+  phone: string | null;
+  created_at: string;
+  appointments: PatientAppointment[];
+}
+
+const supabase = createClient();
+
 export default function ClientsPage() {
   const router = useRouter();
-  
-  // --- ESTADOS ---
-  const [patientsList, setPatientsList] = useState<any[]>([]);
+
+  const [patientsList, setPatientsList] = useState<PatientRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Estado do Modal
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
 
-  // --- EFEITOS ---
-  useEffect(() => {
-    fetchPatientsList();
-  }, []);
-
-  // --- FUNÇÕES DE DADOS ---
-  async function fetchPatientsList() {
+  const fetchPatientsList = useCallback(async () => {
     setIsLoading(true);
-    
-    // Busca os dados para preencher a tabela
+
     const { data, error } = await supabase
       .from('patients')
-      .select('id, name, phone, created_at') 
-      .order('name');
-    
+      .select('id, name, phone, created_at, appointments(start_time)')
+      .order('name')
+      .order('start_time', { referencedTable: 'appointments', ascending: false })
+      .limit(1, { referencedTable: 'appointments' });
+
     if (error) {
       console.error('Erro ao buscar pacientes:', error);
     }
 
     if (data) {
-      setPatientsList(data);
+      setPatientsList(data as unknown as PatientRow[]);
     }
-    
+
     setIsLoading(false);
-  }
+  }, []);
 
-  // --- AÇÕES ---
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carregamento inicial de dados
+    fetchPatientsList();
+  }, [fetchPatientsList]);
 
-  // Ao clicar na linha da tabela, navega para a rota dinâmica [id]
   const handleSelectPatient = (id: number) => {
     router.push(`/clients/${id}`);
   };
 
-  // Callback após criar paciente
-  const handlePatientCreated = (newId: number) => {
-    fetchPatientsList(); // Recarrega a tabela
-    setIsNewPatientModalOpen(false); // Fecha o modal
+  const handlePatientCreated = () => {
+    fetchPatientsList();
+    setIsNewPatientModalOpen(false);
   };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0b141a]">
-      
-      {/* IMPORTANTE: Aqui renderizamos APENAS a tabela.
-         Não há Sidebar nem Header Sticky nesta página.
-      */}
-      <PatientListTable 
+      <PatientListTable
         patients={patientsList}
         isLoading={isLoading}
         onSelectPatient={handleSelectPatient}
@@ -73,8 +75,7 @@ export default function ClientsPage() {
         onPatientDeleted={fetchPatientsList}
       />
 
-      {/* Modal para criar novo paciente (acessível pelo botão da tabela) */}
-      <NewPatientModal 
+      <NewPatientModal
         isOpen={isNewPatientModalOpen}
         onClose={() => setIsNewPatientModalOpen(false)}
         onSuccess={handlePatientCreated}
