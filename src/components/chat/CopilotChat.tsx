@@ -3,6 +3,7 @@
 import { FormEvent, Fragment, useEffect, useRef, useState } from "react";
 import { BotMessageSquare, Loader2, SendHorizonal, Sparkles, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import ClaraProgressPanel, { type ProgressEvent } from "./ClaraProgressPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MARKDOWN RENDERER LEVE (sem dependências externas)
@@ -142,36 +143,40 @@ interface CopilotChatProps {
   patientName: string;
 }
 
+// Supabase untyped table helper — avoids `as any` on .from()
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type UntypedSupabase = { from: (table: string) => any };
+
 export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMemory, setIsLoadingMemory] = useState(false);
-  const [uiLogs, setUiLogs] = useState<string[]>([]);
+  const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const supabase = createClient();
+  const supabase = createClient() as unknown as UntypedSupabase;
 
   // Carrega memória persistente ao trocar de paciente
   useEffect(() => {
     if (!chatId) return;
     setMessages([]);
     setInput("");
-    setUiLogs([]);
+    setProgressEvents([]);
     setIsLoading(false);
     setIsLoadingMemory(true);
 
     supabase
-      .from("copilot_memories" as any)
+      .from("copilot_memories")
       .select("role, content")
       .eq("chat_id", chatId)
       .order("created_at", { ascending: true })
       .limit(MEMORY_LIMIT)
-      .then(({ data, error }) => {
+      .then(({ data, error }: { data: Array<{ role: string; content: string }> | null; error: unknown }) => {
         if (!error && data && data.length > 0) {
           setMessages(
-            (data as any[]).map((m) => ({
+            data.map((m) => ({
               role: m.role as "user" | "assistant",
-              content: m.content as string,
+              content: m.content,
             }))
           );
         }
@@ -183,11 +188,11 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
   // Auto-scroll suave
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, uiLogs]);
+  }, [messages, progressEvents]);
 
   async function clearMemory() {
     if (!chatId) return;
-    await (supabase as any).from("copilot_memories").delete().eq("chat_id", chatId);
+    await supabase.from("copilot_memories").delete().eq("chat_id", chatId);
     setMessages([]);
   }
 
@@ -199,7 +204,7 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
 
     setMessages((prev) => [...prev, { role: "user", content: clean }]);
     setInput("");
-    setUiLogs([]);
+    setProgressEvents([]);
     setIsLoading(true);
 
     let fullResponse = "";
@@ -213,7 +218,7 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
 
       if (!response.ok || !response.body) {
         const payload = await response.json().catch(() => ({}));
-        throw new Error(payload?.error || "Falha ao conectar com a Clara.");
+        throw new Error((payload as { error?: string })?.error || "Falha ao conectar com a Clara.");
       }
 
       const reader = response.body.getReader();
@@ -235,11 +240,36 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
           for (const line of lines) {
             if (!line.trim()) continue;
             try {
-              const parsed = JSON.parse(line);
+              const parsed = JSON.parse(line) as {
+                type: string;
+                subtype?: string;
+                content: string;
+                metadata?: Record<string, unknown>;
+              };
               if (parsed.type === "ui_log") {
-                setUiLogs((prev) => [...prev, parsed.content]);
+                const subtype = (parsed.subtype || "query_start") as ProgressEvent["type"];
+                // Mark previous active events as done
+                setProgressEvents((prev) => {
+                  const updated = prev.map((e) =>
+                    e.status === "active" ? { ...e, status: "done" as const } : e
+                  );
+                  return [
+                    ...updated,
+                    {
+                      type: subtype,
+                      content: parsed.content,
+                      timestamp: new Date(),
+                      metadata: parsed.metadata,
+                      status: "active" as const,
+                    },
+                  ];
+                });
               } else if (parsed.type === "chunk") {
                 fullResponse += parsed.content;
+                // Mark all progress events as done when response starts
+                setProgressEvents((prev) =>
+                  prev.map((e) => (e.status === "active" ? { ...e, status: "done" as const } : e))
+                );
                 setMessages((prev) => {
                   const updated = [...prev];
                   const last = updated[updated.length - 1];
@@ -260,7 +290,7 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
 
       // Persiste o par pergunta + resposta na memória isolada deste paciente
       if (fullResponse.trim()) {
-        await (supabase as any).from("copilot_memories").insert([
+        await supabase.from("copilot_memories").insert([
           { chat_id: chatId, role: "user", content: clean },
           { chat_id: chatId, role: "assistant", content: fullResponse },
         ]);
@@ -269,7 +299,9 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido.";
       setMessages((prev) => [...prev, { role: "assistant", content: `⚠️ ${msg}` }]);
     } finally {
-      setUiLogs([]);
+      setProgressEvents((prev) =>
+        prev.map((e) => (e.status === "active" ? { ...e, status: "done" as const } : e))
+      );
       setIsLoading(false);
     }
   }
@@ -360,24 +392,19 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
           );
         })}
 
-        {/* Painel de logs/pensamento da IA — aparece enquanto processa */}
-        {isLoading && (
+        {/* Clara 2.0: Progress Panel com etapas detalhadas */}
+        {(isLoading || progressEvents.length > 0) && (
           <div className="flex justify-start">
-            <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 rounded-xl px-3 py-2 max-w-[88%]">
-              {uiLogs.length > 0 ? (
-                uiLogs.map((log, i) => (
-                  <p key={i} className="text-[11px] text-violet-500 dark:text-violet-400 flex items-center gap-1.5">
-                    <Loader2 size={10} className="animate-spin shrink-0" />
-                    {log}
-                  </p>
-                ))
-              ) : (
+            {progressEvents.length > 0 ? (
+              <ClaraProgressPanel events={progressEvents} isActive={isLoading} />
+            ) : (
+              <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 rounded-xl px-3 py-2 max-w-[88%]">
                 <div className="flex items-center gap-1.5">
                   <BotMessageSquare size={13} className="text-violet-400 animate-pulse" />
                   <span className="text-[11px] text-violet-400">Clara está pensando...</span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 

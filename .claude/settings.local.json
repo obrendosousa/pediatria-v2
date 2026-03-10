@@ -1,17 +1,4 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/react-app/quality-check.js"
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); keys=list\\(d.keys\\(\\)\\); print\\(''Keys:'', keys\\)\")",
@@ -41,7 +28,51 @@
       "Bash(xargs grep -l \"medical\\\\|checkout\")",
       "mcp__claude_ai_Supabase__list_projects",
       "mcp__claude_ai_Supabase__list_tables",
-      "Bash(npm install jspdf)"
+      "Bash(npm install jspdf)",
+      "Bash(xargs grep -l \"temporal\\\\|anchor\\\\|context.*separator\\\\|query.*validator\")",
+      "Bash(node node_modules/.bin/next build)",
+      "Bash(ls node_modules/.bin/next*)",
+      "Bash(grep -n \"^export.*type.*TemporalAnchor\\\\|^export.*type.*DbStats\\\\|^export.*type.*LoadedContext\\\\|^export.*type.*SpotCheckResult\" /c/Users/brend/Documents/pediatria-v2/src/ai/clara/*.ts)",
+      "Bash(npx tsc --noEmit --skipLibCheck)",
+      "Bash(! grep \"import.*deepResearchChatsTool\" src/ai/clara/graph.ts)",
+      "Bash(! grep \"import.*deepResearchChatsTool\" src/ai/clara/researcher_graph.ts)",
+      "Bash(node node_modules/typescript/bin/tsc --noEmit)",
+      "Bash(npx eslint src/ai/clara/graph.ts)",
+      "Bash(npx eslint src/ai/clara/load_context.ts)",
+      "Bash(node /tmp/fix-tools-any.js)",
+      "Bash(node /tmp/fix-tools-2.js)",
+      "Bash(npx eslint src/ai/clara/tools.ts)",
+      "Bash(/tmp/fix-tools-4.js:*)",
+      "Bash(node /tmp/fix-tools-4.js)",
+      "Bash(node /tmp/fix-final.js)",
+      "Bash(node /tmp/fix-supabase-query.js)",
+      "Bash(npx eslint src/ai/clara/interactive_questions.ts src/ai/clara/query_validator.ts src/ai/clara/spot_check_verifier.ts)",
+      "Bash(/tmp/fix-answer.js:*)",
+      "Bash(node /tmp/fix-answer.js)",
+      "Bash(node /tmp/fix-export.js)",
+      "Bash(node /tmp/fix-answer2.js)",
+      "Bash(npx eslint src/ai/clara/*.ts src/app/api/ai/copilot/answer/route.ts src/app/api/ai/copilot/chat/route.ts src/components/chat/ClaraStatusIndicator.tsx src/components/chat/ClaraMarkdownMessage.tsx)",
+      "Bash(npx eslint src/ai/clara/graph.ts src/ai/clara/tools.ts src/ai/clara/db_stats.ts src/ai/clara/load_context.ts src/ai/clara/raw_data_analyzer.ts src/ai/clara/system_prompt.ts src/ai/clara/temporal_anchor.ts src/ai/clara/query_validator.ts src/ai/clara/spot_check_verifier.ts src/ai/clara/context_compactor.ts src/ai/clara/interactive_questions.ts src/app/api/ai/copilot/answer/route.ts src/app/api/ai/copilot/chat/route.ts src/components/chat/ClaraStatusIndicator.tsx src/components/chat/ClaraInteractiveQuestion.tsx src/components/chat/ClaraMarkdownMessage.tsx)",
+      "Bash(node /tmp/fix-routes.js)",
+      "Bash(npx eslint src/app/api/ai/copilot/answer/route.ts src/app/api/ai/copilot/chat/route.ts src/components/chat/ClaraMarkdownMessage.tsx)",
+      "Bash(/tmp/fix-chat2.js:*)",
+      "Bash(node /tmp/fix-chat2.js)",
+      "Bash(npx eslint src/app/api/ai/copilot/chat/route.ts)",
+      "Bash(/tmp/fix-chat3.js:*)",
+      "Bash(node /tmp/fix-chat3.js)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/react-app/quality-check.js"
+          }
+        ]
+      }
     ]
   }
 }

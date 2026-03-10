@@ -11,15 +11,38 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { postgresCheckpointer } from "./checkpointer";
 
-import { claraTools, deepResearchChatsTool } from "./tools";
+import { claraTools, setCurrentTemporalAnchor } from "./tools";
 import { getFilteredChatsListTool, getChatCascadeHistoryTool, getAggregatedInsightsTool } from "@/ai/analyst/tools";
 import { researcherGraph } from "./researcher_graph";
-import { CLARA_SYSTEM_PROMPT } from "./system_prompt";
+import { buildClaraSystemPrompt, CLARA_SYSTEM_PROMPT } from "./system_prompt";
 import { CLARA_COMPANY } from "./company";
 import { CLARA_RULES } from "./rules";
 
+// Clara 2.0 imports
+import type { TemporalAnchor } from "./temporal_anchor";
+import { resolveTemporalAnchor } from "./temporal_anchor";
+import type { DbStats } from "./db_stats";
+import { getDbStats } from "./db_stats";
+import type { LoadedContext } from "./load_context";
+import { loadContextForInteraction } from "./load_context";
+import { compactMessages } from "./context_compactor";
+import { extractSpotCheckData, spotCheckCitations, type SpotCheckResult } from "./spot_check_verifier";
+
 // ─────────────────────────────────────────────────────────────────────────────
-// ESTADO PRINCIPAL DA CLARA (arquitetura open_deep_research adaptada)
+// Tipos auxiliares para respostas LLM e Supabase não-tipado
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface LLMContentPart {
+  text?: string;
+}
+
+interface ResearcherResult {
+  compressed_research?: string;
+  raw_notes?: string[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ESTADO PRINCIPAL DA CLARA 2.0
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ClaraState {
@@ -33,6 +56,13 @@ export interface ClaraState {
   research_complete: boolean;
   is_deep_research: boolean;
   is_planning_mode: boolean;
+
+  // Clara 2.0 — novos campos
+  temporal_anchor: TemporalAnchor | null;
+  db_stats: DbStats | null;
+  loaded_context: LoadedContext | null;
+  spot_check_result: SpotCheckResult | null;
+  pending_question: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -40,17 +70,15 @@ export interface ClaraState {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MAX_SUPERVISOR_ITERATIONS = 3;
-const MAX_PARALLEL_RESEARCHERS = 5;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FERRAMENTAS DO SIMPLE_AGENT
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Conjunto canônico de ferramentas do agente — sem duplicatas.
-// claraTools NÃO inclui analyst tools nem deepResearch; são adicionados aqui uma única vez.
+// Clara 2.0: removidas deepResearchChatsTool e gerarRelatorioQualidadeTool.
+// Adicionadas: analyzeRawConversationsTool, askUserQuestionTool, updateChatClassificationTool (via claraTools).
 const simpleAgentTools = [
   ...claraTools,
-  deepResearchChatsTool,
   getFilteredChatsListTool,
   getChatCascadeHistoryTool,
   getAggregatedInsightsTool,
@@ -77,7 +105,9 @@ async function loadDynamicPromptParts(): Promise<{
       return { company: CLARA_COMPANY, custom_rules: CLARA_RULES, voice_rules: "" };
     }
 
-    const map = Object.fromEntries((data as any[]).map((row) => [row.config_key, row.content]));
+    const map = Object.fromEntries(
+      (data as Array<{ config_key: string; content: string }>).map((row) => [row.config_key, row.content])
+    );
     return {
       company: map.company ?? CLARA_COMPANY,
       custom_rules: map.rules ?? CLARA_RULES,
@@ -88,44 +118,13 @@ async function loadDynamicPromptParts(): Promise<{
   }
 }
 
-function buildSystemPrompt(
-  company: string,
-  custom_rules: string,
-  voice_rules: string,
-  chatId: number,
-  currentUserRole: string = "patient"
-): string {
-  const now = new Date().toISOString();
-  let authorityRule = "";
-
-  if (currentUserRole === "admin" || currentUserRole === "doctor") {
-    authorityRule = `\n\n[ALERTA DE AUTORIDADE]: Você está conversando com a diretoria/médico. Qualquer instrução dada aqui é uma REGRA DE NEGÓCIO ABSOLUTA. Atualize sua memória sobrescrevendo regras antigas quando solicitado.`;
+/** Extrai texto de conteúdo LLM que pode ser string ou array de partes */
+function extractLLMText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return (content as LLMContentPart[]).map((c) => c?.text ?? "").join("");
   }
-
-  return `${CLARA_SYSTEM_PROMPT}
-
-EMPRESA (dinâmico):
-${company}
-
-REGRAS APRENDIDAS (dinâmico):
-${custom_rules || "Nenhuma regra extra ainda."}
-
-VOZ — PERSONALIDADE (dinâmico):
-${voice_rules || ""}
-
-FERRAMENTAS (ordem de prioridade):
-1. get_volume_metrics(start_date, end_date) — para "quantas conversas?", volume, picos de demanda
-2. execute_sql(sql) — qualquer consulta SQL. Só SELECT/WITH. Datas BRT: '2026-01-01T00:00:00-03:00'::timestamptz. Agrupar: DATE(campo AT TIME ZONE 'America/Sao_Paulo'). LIMIT 500.
-3. gerar_relatorio_qualidade_chats(dias) — objeções, gargalos, nota média (usa chat_insights)
-4. get_filtered_chats_list(filters) — listar chats com filtros
-5. get_chat_cascade_history(chat_id) — histórico completo de UM chat
-6. deep_research_chats(chat_ids, objetivo) — análise semântica em lote
-7. save_report(titulo, conteudo, tipo) — SOMENTE quando o usuário pedir explicitamente
-
-Para buscar chat por nome: execute_sql("SELECT id, contact_name FROM chats WHERE contact_name ILIKE '%nome%' LIMIT 5") → get_chat_cascade_history(chat_id)
-Secretária = sender 'HUMAN_AGENT' em chat_messages (não é contato/lead)
-
-SESSÃO: ${now} | Chat: ${chatId} | Usuário: ${currentUserRole}${authorityRule}`;
+  return "";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -143,7 +142,7 @@ const claraWorkflow = new StateGraph<ClaraState>({
       default: () => 0,
     },
     current_user_role: {
-      reducer: (_x: any, y: any) => y ?? _x ?? "patient",
+      reducer: (_x: ClaraState["current_user_role"], y: ClaraState["current_user_role"]) => y ?? _x ?? "patient",
       default: () => "patient" as const,
     },
     research_brief: {
@@ -182,7 +181,69 @@ const claraWorkflow = new StateGraph<ClaraState>({
       reducer: (_x: boolean, y: boolean) => (typeof y === "boolean" ? y : _x ?? false),
       default: () => false,
     },
+    // Clara 2.0 — novos canais
+    temporal_anchor: {
+      reducer: (_x: TemporalAnchor | null, y: TemporalAnchor | null) => y ?? _x ?? null,
+      default: () => null as TemporalAnchor | null,
+    },
+    db_stats: {
+      reducer: (_x: DbStats | null, y: DbStats | null) => y ?? _x ?? null,
+      default: () => null as DbStats | null,
+    },
+    loaded_context: {
+      reducer: (_x: LoadedContext | null, y: LoadedContext | null) => y ?? _x ?? null,
+      default: () => null as LoadedContext | null,
+    },
+    spot_check_result: {
+      reducer: (_x: SpotCheckResult | null, y: SpotCheckResult | null) => y ?? _x ?? null,
+      default: () => null as SpotCheckResult | null,
+    },
+    pending_question: {
+      reducer: (_x: string | null, y: string | null) => y ?? _x ?? null,
+      default: () => null as string | null,
+    },
   },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NODE 0: load_context_node (Clara 2.0 — roda ANTES do classify)
+// Resolve temporal anchor, carrega DB stats e Auto-RAG em paralelo.
+// ─────────────────────────────────────────────────────────────────────────────
+
+claraWorkflow.addNode("load_context_node", async (state: ClaraState) => {
+  const lastMessage = state.messages[state.messages.length - 1];
+  const userText =
+    typeof lastMessage?.content === "string"
+      ? lastMessage.content
+      : Array.isArray(lastMessage?.content)
+        ? (lastMessage.content as Array<{ type: string; text?: string }>)
+          .filter((c) => c.type === "text")
+          .map((c) => c.text ?? "")
+          .join(" ")
+        : "";
+
+  // Extrair apenas a pergunta do usuário (remover o contexto do copilot wrapper)
+  const questionMatch = new RegExp("PERGUNTA DO USUÁRIO:\\s*(.+?)(?:\\n|INSTRUÇÕES CRÍTICAS)", "s").exec(userText);
+  const pureQuestion = questionMatch ? questionMatch[1].trim() : userText;
+
+  // Multi-turn: usar temporal_anchor anterior como referência
+  const previousAnchor = state.temporal_anchor ?? null;
+
+  // Paralelizar: temporal anchor + DB stats + Auto-RAG
+  const [temporalAnchor, dbStats, loadedContext] = await Promise.all([
+    Promise.resolve(resolveTemporalAnchor(pureQuestion, previousAnchor)),
+    getDbStats(),
+    loadContextForInteraction(pureQuestion, state.chat_id).catch(() => null),
+  ]);
+
+  // Definir temporal anchor no módulo tools para validação de queries
+  setCurrentTemporalAnchor(temporalAnchor);
+
+  return {
+    temporal_anchor: temporalAnchor,
+    db_stats: dbStats,
+    loaded_context: loadedContext,
+  };
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -194,7 +255,6 @@ const SIMPLE_KEYWORDS = [
   "obrigado", "obrigada", "valeu", "ok", "certo", "entendi", "beleza", "ótimo", "otimo",
 ];
 
-// Verbos de ação no início = pedido direto → fast-path simple (sem chamar LLM classifier)
 const ACTION_VERBS = [
   "faz", "faca", "cria", "escreve", "manda", "envia", "gera", "prepara",
   "agenda", "monta", "marca", "registra", "salva", "atualiza", "mostra",
@@ -238,7 +298,6 @@ claraWorkflow.addNode("classify_node", async (state: ClaraState) => {
   const isGreeting = SIMPLE_KEYWORDS.some(
     (kw) => lower === kw || lower.startsWith(kw + " ") || lower.endsWith(" " + kw)
   );
-  // Pedidos de ação diretos: "faz uma mensagem...", "agenda...", "mostra..." → simple
   const isActionRequest = ACTION_VERBS.some(
     (v) => lower.startsWith(v + " ") || lower.startsWith(v + ",")
   );
@@ -253,45 +312,24 @@ claraWorkflow.addNode("classify_node", async (state: ClaraState) => {
 Hoje: ${today}
 
 REGRA FUNDAMENTAL:
-"simple" = a resposta pode vir de MÉTRICAS, LISTAS, DADOS ESTRUTURADOS, INSIGHTS JÁ PROCESSADOS (tabela chat_insights), ou VERIFICAÇÃO DE UM CHAT ESPECÍFICO por nome/ID.
-"research" = SOMENTE quando é necessário LER e ANALISAR o TEXTO BRUTO de MÚLTIPLAS conversas para análise semântica profunda (ex: padrões de linguagem em 30+ chats).
+"simple" = a resposta pode vir de MÉTRICAS, LISTAS, DADOS ESTRUTURADOS, ou VERIFICAÇÃO DE UM CHAT ESPECÍFICO.
+"research" = SOMENTE quando é necessário LER e ANALISAR o TEXTO BRUTO de MÚLTIPLAS conversas para análise semântica profunda.
 
-→ EXEMPLOS "simple" — responde com ferramentas diretas (SEM pipeline de pesquisa):
+→ EXEMPLOS "simple":
   • "Quantas conversas tivemos esta semana?" → simple
   • "Volume de chats dia a dia" → simple
-  • "Picos de demanda desta semana" → simple
-  • "Quantos leads estão em qualified?" → simple
-  • "Qual o sentimento médio dos leads?" → simple
-  • "Quais os chats mais recentes?" → simple
-  • "E quais foram as objeções levantadas na semana?" → simple ← usa gerar_relatorio_qualidade_chats
-  • "Quais os principais gargalos de atendimento?" → simple ← usa gerar_relatorio_qualidade_chats
-  • "Qual a nota média de atendimento?" → simple ← usa gerar_relatorio_qualidade_chats
-  • "Relatório de qualidade desta semana" → simple ← usa gerar_relatorio_qualidade_chats
-  • "Mostre os leads com sentimento negativo" → simple ← usa get_filtered_chats_list
-  • "Me mostra a conversa da Karol" → simple ← execute_sql (acha ID) + get_chat_cascade_history
-  • "Verifica o chat da [nome]" → simple ← execute_sql (acha ID) + get_chat_cascade_history
-  • "Estava olhando o chat de [nome] e não encontrei o que você disse" → simple ← relê o chat específico
-  • "Não achei essa parte na conversa da [nome], você leu errado" → simple ← relê o chat específico
-  • "Confirma se [nome] realmente disse isso" → simple ← lê o chat específico
-  • "Abre o chat [ID numérico]" → simple ← get_chat_cascade_history direto
-  • "O que você já aprendeu sobre X?" → simple ← manage_long_term_memory + search_knowledge_base
-  • "O que você sabe sobre o script da Joana?" → simple ← manage_long_term_memory consultar
-  • "O que você já aprendeu sobre o padrão de atendimento?" → simple ← consulta memória e knowledge_base
-  • "Faz uma mensagem de confirmação de consulta" → simple ← ação direta, gera o texto
-  • "Cria um texto para enviar pros pacientes" → simple ← ação direta
-  • "Monta um resumo do dia" → simple ← busca dados e formata
-  • "Prepara uma mensagem de boas-vindas" → simple ← ação direta
-  • "Agenda uma consulta para Maria" → simple ← usar criar_agendamento
-  • "Me fala quem tem consulta hoje" → simple ← execute_sql em appointments
+  • "Quais os principais gargalos de atendimento?" → simple (usa analyze_raw_conversations)
+  • "Relatório de qualidade desta semana" → simple (usa analyze_raw_conversations)
+  • "Me mostra a conversa da Karol" → simple
+  • "Faz uma mensagem de confirmação de consulta" → simple
 
-→ EXEMPLOS "research" — SOMENTE para análise semântica de MÚLTIPLAS conversas:
-  • "Leia as conversas e me diga o que os pacientes mais reclamam" → research (múltiplos chats)
-  • "Analise o tom e linguagem das conversas desta semana" → research (múltiplos chats)
-  • "Quais argumentos de vendas funcionaram melhor?" → research (múltiplos chats)
-  • "Analise o script que a secretária usa nas conversas" → research (lê mensagens HUMAN_AGENT)
-  • "Como a equipe responde leads com objeção de preço?" → research (lê transcrições)
+→ EXEMPLOS "research" — pipeline completo com múltiplos researchers:
+  • "Leia as conversas e me diga o que os pacientes mais reclamam" → research
+  • "Analise o tom e linguagem das conversas desta semana" → research
+  • "Quais argumentos de vendas funcionaram melhor?" → research
+  • "Analise o script que a secretária usa nas conversas" → research
 
-REGRA DE OURO: Verificar UM chat, confirmar uma análise, consultar memória = SEMPRE "simple". "research" é APENAS para descobrir padrões em MÚLTIPLAS conversas lendo o texto bruto.`;
+REGRA DE OURO: Verificar UM chat, consultar memória = SEMPRE "simple". "research" é APENAS para padrões em MÚLTIPLAS conversas.`;
 
   try {
     const classifierModel = new ChatGoogleGenerativeAI({
@@ -315,7 +353,7 @@ REGRA DE OURO: Verificar UM chat, confirmar uma análise, consultar memória = S
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NODE 2: simple_agent
+// NODE 2: simple_agent (Clara 2.0 — usa buildClaraSystemPrompt)
 // ─────────────────────────────────────────────────────────────────────────────
 
 claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
@@ -328,23 +366,61 @@ claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
   });
 
   const modelWithTools = model.bindTools(simpleAgentTools);
-  const systemPrompt = buildSystemPrompt(
-    company, custom_rules, voice_rules, state.chat_id, state.current_user_role
-  );
 
-  const safeMessages = state.messages.length > 0
-    ? state.messages
-    : [new HumanMessage("Olá.")];
+  // Clara 2.0: usa buildClaraSystemPrompt com temporal anchor, DB stats e memória
+  const systemPrompt = buildClaraSystemPrompt({
+    company,
+    rules: custom_rules,
+    voiceRules: voice_rules,
+    chatId: state.chat_id,
+    userRole: state.current_user_role,
+    temporalAnchor: state.temporal_anchor,
+    dbStats: state.db_stats,
+    loadedContext: state.loaded_context,
+  });
+
+  // Clara 2.0: compacta mensagens longas
+  const compactedMessages = await compactMessages(
+    state.messages.length > 0 ? state.messages : [new HumanMessage("Olá.")]
+  );
 
   const response = (await modelWithTools.invoke([
     new SystemMessage(systemPrompt),
-    ...safeMessages,
+    ...compactedMessages,
   ])) as AIMessage;
 
   return { messages: [response] };
 });
 
 claraWorkflow.addNode("tools", new ToolNode(simpleAgentTools));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NODE 2.5: spot_check_node (Clara 2.0 — verifica citações após tool calls)
+// ─────────────────────────────────────────────────────────────────────────────
+
+claraWorkflow.addNode("spot_check_node", async (state: ClaraState) => {
+  const lastMessage = state.messages[state.messages.length - 1];
+  const content = typeof lastMessage?.content === "string" ? lastMessage.content : "";
+
+  // Só executa spot-check se o último tool output contém __SPOT_CHECK_DATA__
+  if (!content.includes("__SPOT_CHECK_DATA__")) {
+    return {};
+  }
+
+  try {
+    const citations = extractSpotCheckData(content);
+    if (citations.length === 0) return {};
+
+    const supabase = getSupabaseAdminClient();
+    const result = await spotCheckCitations(citations, supabase);
+
+    return { spot_check_result: result };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.warn("[spot_check_node] Erro no spot-check:", message);
+    return {};
+  }
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NODE 3: write_research_brief_node
@@ -367,37 +443,29 @@ claraWorkflow.addNode("write_research_brief_node", async (state: ClaraState) => 
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 
-  const BRIEF_SYSTEM = `Você é o Estrategista de Pesquisa da Clara. Sua função é transformar a solicitação do usuário em um plano de pesquisa estruturado.
+  // Clara 2.0: inclui temporal anchor no brief
+  const temporalInfo = state.temporal_anchor
+    ? `\nPERÍODO RESOLVIDO: ${state.temporal_anchor.period_label}\nSQL start: ${state.temporal_anchor.sql_start}\nSQL end: ${state.temporal_anchor.sql_end}`
+    : "";
 
-Hoje: ${today} | Ontem: ${yesterday}
+  const BRIEF_SYSTEM = `Você é o Estrategista de Pesquisa da Clara. Transforme a solicitação em um plano de pesquisa estruturado.
 
-BANCO DE DADOS DISPONÍVEL:
-• chats: id, phone, contact_name, stage (new|em_triagem|agendando|fila_espera|qualified|lost|won|done), ai_sentiment (positive|negative|neutral), last_interaction_at (FILTRO DE DATA — base para "conversas ativas"), is_archived
+Hoje: ${today} | Ontem: ${yesterday}${temporalInfo}
+
+BANCO DE DADOS:
+• chats: id, phone, contact_name, stage, ai_sentiment, last_interaction_at, is_archived
 • chat_messages: id, chat_id, sender, message_text, created_at
-  - sender: 'AI_AGENT'=bot | 'HUMAN_AGENT'=secretária/Joana | 'contact'=paciente
-  - Para script da secretária: WHERE sender = 'HUMAN_AGENT'
-  - Para mensagens de pacientes: WHERE sender = 'contact'
-• chat_insights: id, chat_id, nota_atendimento (0-10), sentimento, objecoes[], gargalos[], decisao, resumo_analise, updated_at
-• clara_reports: id, titulo, conteudo_markdown, tipo, created_at
-• clara_memories: id, memory_type, content, updated_at
+  - sender: 'AI_AGENT'=bot | 'HUMAN_AGENT'=secretária | 'contact'=paciente
+• patients, appointments, sales, financial_transactions, medical_records
 
-FERRAMENTAS DISPONÍVEIS (EM ORDEM DE PRIORIDADE):
-• get_volume_metrics(start_date, end_date) — ⭐ USAR PRIMEIRO para volume de conversas, mensagens, picos por dia.
-• execute_sql(sql) — Para qualquer outra métrica. O researcher escreve o SQL. Datas BRT: '2026-02-24T00:00:00-03:00'::timestamptz
-• get_filtered_chats_list — Lista chats com detalhes de contato
-• get_chat_cascade_history — Histórico de um chat específico (use o chat_id)
-• deep_research_chats — Análise semântica profunda de múltiplos chats
-• gerar_relatorio_qualidade_chats — Métricas de chat_insights (objeções, notas, gargalos)
+FERRAMENTAS:
+• get_volume_metrics(start_date, end_date) — volume de conversas/mensagens
+• execute_sql(sql) — consultas SQL (SELECT/WITH, datas BRT)
+• analyze_raw_conversations(start_date, end_date, analysis_goals) — análise qualitativa
+• get_filtered_chats_list — listar chats com filtros
+• get_chat_cascade_history — histórico de um chat
 
-REGRAS DE SENDER — MENTION NO BRIEF QUANDO RELEVANTE:
-• sender = 'HUMAN_AGENT' → secretária/atendente humano (ex: Joana)
-• sender = 'contact' → paciente/lead
-• sender = 'AI_AGENT' → bot/Clara
-
-Para script/padrão da secretária, inclua no brief a instrução:
-"Researcher: execute execute_sql com: SELECT cm.message_text, c.contact_name, cm.created_at FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'HUMAN_AGENT' AND cm.message_text IS NOT NULL ORDER BY cm.created_at DESC LIMIT 200"
-
-Escreva um brief conciso (máx 250 palavras) especificando qual ferramenta e parâmetros exatos o researcher deve usar.`;
+Escreva um brief conciso (máx 250 palavras).`;
 
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3-flash-preview",
@@ -410,12 +478,7 @@ Escreva um brief conciso (máx 250 palavras) especificando qual ferramenta e par
     new HumanMessage(`Crie o brief de pesquisa para: "${userText}"`),
   ]);
 
-  const brief =
-    typeof response.content === "string"
-      ? response.content
-      : Array.isArray(response.content)
-        ? (response.content as Array<any>).map((c) => c?.text ?? "").join("")
-        : "";
+  const brief = extractLLMText(response.content);
 
   if (state.is_planning_mode) {
     const planMessage = new AIMessage(
@@ -438,21 +501,21 @@ Escreva um brief conciso (máx 250 palavras) especificando qual ferramenta e par
 const SupervisorDecisionSchema = z.object({
   action: z
     .enum(["conduct_research", "research_complete"])
-    .describe("Escolha 'conduct_research' para enviar pesquisadores para coletar dados ou 'research_complete' se os dados já foram coletados ou a pesquisa acabou."),
+    .describe("Escolha 'conduct_research' para coletar dados ou 'research_complete' se dados já coletados."),
   research_tasks: z
     .array(
       z.object({
-        topic: z.string().describe("Título curto do tópico a investigar."),
-        description: z.string().describe("Instrução EXATA de qual ferramenta usar: get_volume_metrics com datas, ou execute_sql com o SQL completo a executar."),
+        topic: z.string().describe("Título curto do tópico."),
+        description: z.string().describe("Instrução EXATA de qual ferramenta usar com parâmetros."),
       })
     )
     .max(5)
     .optional()
-    .describe("Lista de tarefas. OBRIGATÓRIO preencher se action = 'conduct_research'."),
+    .describe("Lista de tarefas. OBRIGATÓRIO se action = 'conduct_research'."),
   reason: z
     .string()
     .optional()
-    .describe("Motivo do encerramento. Preencher se action = 'research_complete'."),
+    .describe("Motivo do encerramento se action = 'research_complete'."),
 });
 
 claraWorkflow.addNode("research_supervisor_node", async (state: ClaraState) => {
@@ -474,53 +537,46 @@ claraWorkflow.addNode("research_supervisor_node", async (state: ClaraState) => {
       ]);
       insightCount = insightRes.count ?? 0;
       recentChatsCount = recentRes.count ?? 0;
-      console.log(`ℹ️ [Supervisor] Contexto Global Lido -> Insights(90d): ${insightCount} | Chats Ativos(7d): ${recentChatsCount}`);
-    } catch (e: any) {
-      console.warn("⚠️ [Supervisor] Falha ao coletar contexto:", e?.message);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      console.warn("⚠️ [Supervisor] Falha ao coletar contexto:", message);
     }
   }
 
   const rawNotesContext =
     state.raw_notes.length > 0
-      ? `\n\nDados já coletados pelos researchers:\n${state.raw_notes
+      ? `\n\nDados já coletados:\n${state.raw_notes
         .map((note, i) => `--- Researcher ${i + 1} ---\n${note}`)
         .join("\n\n")}`
       : "";
 
-  const SUPERVISOR_SYSTEM = `Você é o Supervisor de Pesquisa da Clara. Sua função é gerar tarefas precisas para os researchers coletarem dados do banco.
+  // Clara 2.0: inclui temporal anchor
+  const temporalInfo = state.temporal_anchor
+    ? `\nPERÍODO: ${state.temporal_anchor.period_label}\nSQL start: ${state.temporal_anchor.sql_start}\nSQL end: ${state.temporal_anchor.sql_end}`
+    : "";
+
+  const SUPERVISOR_SYSTEM = `Você é o Supervisor de Pesquisa da Clara.
 
 Hoje: ${today}
-Iteração atual: ${state.supervisor_iteration + 1}/${MAX_SUPERVISOR_ITERATIONS}
+Iteração: ${state.supervisor_iteration + 1}/${MAX_SUPERVISOR_ITERATIONS}${temporalInfo}
 
-DADOS GLOBAIS DA CLÍNICA (Status Real):
-- Chats com atividade nos últimos 7 dias: ${recentChatsCount}
-- Insights de qualidade processados (90 dias): ${insightCount}
+Chats ativos (7d): ${recentChatsCount} | Insights (90d): ${insightCount}
 
-BRIEF DE PESQUISA:
+BRIEF:
 ${state.research_brief}
 ${rawNotesContext}
 
-REGRA DE SENDER (CRÍTICA — use nos SQL das tasks):
-• sender = 'HUMAN_AGENT' → secretária/atendente humano (ex: Joana)
-• sender = 'contact' → paciente/lead
-• sender = 'AI_AGENT' → bot/Clara
+FERRAMENTAS:
+• get_volume_metrics(start_date, end_date)
+• execute_sql(sql) — datas BRT
+• analyze_raw_conversations(start_date, end_date, analysis_goals)
+• get_filtered_chats_list
+• get_chat_cascade_history
 
-GUIA DE FERRAMENTAS PARA AS TASKS:
-• get_volume_metrics(start_date, end_date) → USE PRIMEIRO para volume de chats/mensagens por dia. Datas: YYYY-MM-DD.
-  Exemplo: "Chame get_volume_metrics com start_date='${sevenDaysAgo}' e end_date='${today}'"
-• execute_sql(sql) → Para agendamentos, financeiro, pacientes, qualquer JOIN ou análise customizada.
-  Exemplo volume por stage: "Execute: SELECT stage, COUNT(*) FROM chats WHERE last_interaction_at >= '${sevenDaysAgo}T00:00:00-03:00'::timestamptz GROUP BY stage"
-  Exemplo script secretária: "Execute: SELECT cm.message_text, c.contact_name, cm.created_at FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'HUMAN_AGENT' AND cm.message_text IS NOT NULL ORDER BY cm.created_at DESC LIMIT 200"
-  Exemplo mensagens pacientes: "Execute: SELECT cm.message_text, c.contact_name, cm.created_at FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'contact' ORDER BY cm.created_at DESC LIMIT 200"
-• get_filtered_chats_list → Listar chats com detalhes de contato (stage, sentimento, data)
-• deep_research_chats → Analisar conteúdo semântico de conversas (padrões de linguagem, script)
-
-REGRA: Nunca instrua generate_sql_report ou query_database — essas ferramentas foram removidas.
-
-INSTRUÇÕES:
-1. Na iteração 1 (raw_notes vazio), escolha OBRIGATORIAMENTE action="conduct_research" e preencha "research_tasks".
-2. Tarefas devem ser explícitas: diga qual ferramenta chamar e com quais parâmetros.
-3. Somente escolha "research_complete" se raw_notes JÁ tiver dados REAIS coletados.`;
+REGRAS:
+1. Iteração 1 → OBRIGATORIAMENTE action="conduct_research"
+2. Tarefas explícitas com ferramenta e parâmetros
+3. "research_complete" só se raw_notes tem dados reais`;
 
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3-flash-preview",
@@ -533,29 +589,29 @@ INSTRUÇÕES:
   try {
     decision = await model.invoke([
       new SystemMessage(SUPERVISOR_SYSTEM),
-      new HumanMessage("Analise o brief e os dados. Qual é a próxima ação? Na iteração 1, preencha research_tasks e não encerre a pesquisa."),
+      new HumanMessage("Analise o brief e os dados. Qual é a próxima ação?"),
     ]);
-  } catch (e: any) {
-    console.error("⚠️ [Supervisor] Erro no Parse/LLM. Forçando pesquisa de emergência!", e.message);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("⚠️ [Supervisor] Erro. Forçando pesquisa.", message);
     decision = {
       action: "conduct_research",
       research_tasks: [
         {
-          topic: "Volume Bruto de Chats (Fallback)",
-          description: `Chame get_volume_metrics com start_date='${sevenDaysAgo}' e end_date='${today}' para obter o volume de conversas e mensagens dia a dia dos últimos 7 dias.`,
+          topic: "Volume Bruto (Fallback)",
+          description: `Chame get_volume_metrics com start_date='${sevenDaysAgo}' e end_date='${today}'.`,
         },
       ],
     };
   }
 
   if (decision.action === "research_complete" && state.supervisor_iteration === 0) {
-    console.warn("⚠️ [Supervisor] LLM tentou abortar na iteração 0. Interceptado e forçado a pesquisar.");
     decision = {
       action: "conduct_research",
       research_tasks: [
         {
-          topic: "Volume de Chats Recentes",
-          description: `Chame get_volume_metrics com start_date='${sevenDaysAgo}' e end_date='${today}' para obter o volume de conversas e mensagens dia a dia dos últimos 7 dias.`,
+          topic: "Volume de Chats",
+          description: `Chame get_volume_metrics com start_date='${sevenDaysAgo}' e end_date='${today}'.`,
         },
       ],
     };
@@ -563,8 +619,7 @@ INSTRUÇÕES:
 
   const EMPTY_INDICATORS = [
     "nenhum dado", "nenhum insight", "não foram encontrados", "sem dados",
-    "nenhuma interação", "0 chats", "não possui registros", "não retornou registros",
-    "ainda não foram submetidos", "dados brutos existem", "sem registros processados",
+    "nenhuma interação", "0 chats", "não possui registros", "sem registros",
     "nenhum chat encontrado", "nenhum resultado", "falha"
   ];
 
@@ -573,7 +628,7 @@ INSTRUÇÕES:
     state.raw_notes.every((n) => {
       if (!n?.trim()) return true;
       const lower = n.toLowerCase();
-      return EMPTY_INDICATORS.some((indicator) => lower.includes(indicator));
+      return EMPTY_INDICATORS.some((ind) => lower.includes(ind));
     });
 
   if (decision.action === "research_complete" && hasNoData && state.supervisor_iteration < MAX_SUPERVISOR_ITERATIONS - 1) {
@@ -581,8 +636,8 @@ INSTRUÇÕES:
       action: "conduct_research",
       research_tasks: [
         {
-          topic: "Pesquisa Forçada de Volume",
-          description: `Chame get_volume_metrics com start_date='${sevenDaysAgo}' e end_date='${today}' para obter o volume de conversas e mensagens dia a dia dos últimos 7 dias. Esta é a ferramenta correta para dados de volume — use-a imediatamente.`,
+          topic: "Pesquisa Forçada",
+          description: `Chame get_volume_metrics com start_date='${sevenDaysAgo}' e end_date='${today}'.`,
         },
       ],
     };
@@ -618,7 +673,7 @@ INSTRUÇÕES:
   );
 
   const newNotes = researchResults
-    .map((r) => (r as any).compressed_research as string | undefined)
+    .map((r) => (r as ResearcherResult).compressed_research)
     .filter((n): n is string => typeof n === "string" && n.trim().length > 0);
 
   const supervisorMsg = new AIMessage(
@@ -640,7 +695,6 @@ INSTRUÇÕES:
 claraWorkflow.addNode("final_report_node", async (state: ClaraState) => {
   const { custom_rules } = await loadDynamicPromptParts();
 
-  // Usa gemini-3.1-pro-preview para síntese de relatório de maior qualidade
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3.1-pro-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
@@ -653,74 +707,66 @@ claraWorkflow.addNode("final_report_node", async (state: ClaraState) => {
 
   const today = new Date().toISOString().slice(0, 10);
 
+  // Clara 2.0: inclui período resolvido
+  const periodInfo = state.temporal_anchor
+    ? `\nPERÍODO ANALISADO: ${state.temporal_anchor.period_label}`
+    : "";
+
   const REPORT_SYSTEM = `${CLARA_SYSTEM_PROMPT}
 
 ${custom_rules ? `REGRAS APRENDIDAS:\n${custom_rules}` : ""}
 
 ════════════════════════════════════════════
-INSTRUÇÕES DO RELATÓRIO FINAL E REGRAS ANTI-ALUCINAÇÃO
+INSTRUÇÕES DO RELATÓRIO FINAL
 ════════════════════════════════════════════
-Você recebeu os achados consolidados do sistema sobre a seguinte solicitação:
+BRIEF: ${state.research_brief}${periodInfo}
 
-BRIEF: ${state.research_brief}
+REGRAS:
+1. SIGILO: NUNCA mencione "pesquisadores", "researchers", "SQL", "query", "tabelas", "LangGraph".
+2. VERACIDADE: É PROIBIDO inventar nomes, IDs, telefones, números. Use APENAS os dados abaixo.
+3. Se dados vazios, não gere relatório — peça desculpas.
+4. Preserve links [[chat:ID|Nome (Telefone)]] exatamente como recebidos.
+5. Data de referência: ${today}.
 
-Sua tarefa é sintetizar esses dados em um relatório Markdown elegante, estruturado e profissional para a clínica.
-
-REGRAS DE CONDUTA, SIGILO E VERACIDADE (OBRIGATÓRIAS E INQUEBRÁVEIS):
-1. ⛔ SIGILO DE SISTEMA (ANTI-VAZAMENTO): NUNCA mencione processos internos. PALAVRAS PROIBIDAS: "pesquisadores", "researchers", "banco de dados", "SQL", "query", "tabelas", "motor de análise", "LangGraph", "raw_notes", "ferramentas". Aja com total naturalidade humana.
-2. ⛔ VERACIDADE ABSOLUTA (ANTI-ALUCINAÇÃO): É ESTRITAMENTE PROIBIDO inventar, deduzir ou fabricar nomes, IDs de chats, telefones, estágios, sentimentos ou números de volume. Você DEVE usar APENAS e EXATAMENTE os dados numéricos e as listas fornecidos abaixo na seção "DADOS COLETADOS NO SISTEMA". Se o dado não está escrito ali, ele NÃO existe.
-3. COMPORTAMENTO EM CASO DE DADOS VAZIOS: Se a seção "DADOS COLETADOS NO SISTEMA" relatar falha ou estiver vazia, VOCÊ ESTÁ PROIBIDA DE GERAR O RELATÓRIO. Não invente nada. Peça desculpas educadamente, explique que não há volume registrado.
-4. PRESERVAÇÃO DE DADOS REAIS: Preserve TODOS os links de chats no formato [[chat:ID|Nome (Telefone)]] EXATAMENTE como recebidos dos dados crus.
-5. Se os dados forem reais, fartos e concretos, crie o relatório com seções e inclua a tabela "📎 Amostra de Chats" com as colunas | Chat | Sentimento | Stage |.
-6. Data de referência atual: ${today}.
-
-DADOS COLETADOS NO SISTEMA:
-${rawNotesText || "[Nenhum dado consolidado foi encontrado para este pedido. Aja naturalmente informando que não possui esses registros no momento, sem inventar dados.]"}`;
+DADOS COLETADOS:
+${rawNotesText || "[Nenhum dado encontrado.]"}`;
 
   const response = (await model.invoke([
     new SystemMessage(REPORT_SYSTEM),
-    new HumanMessage(
-      "Sintetize os dados recebidos. Atenção máxima à regra Anti-Alucinação e de Sigilo Absoluto: não invente dados."
-    ),
+    new HumanMessage("Sintetize os dados. Atenção máxima à veracidade."),
   ])) as AIMessage;
 
-  const reportText =
-    typeof response.content === "string"
-      ? response.content
-      : Array.isArray(response.content)
-        ? (response.content as Array<any>).map((c) => c?.text ?? "").join("")
-        : "";
+  const reportText = extractLLMText(response.content);
 
-  // Salva automaticamente apenas quando o brief indica que o usuário pediu um relatório formal
+  // Auto-save apenas quando pedido
   const saveKeywords = /\b(salvar|save|gere um relat[oó]rio|gerar relat[oó]rio|relat[oó]rio formal|export|pdf)\b/i;
+  const lastMsgContent = state.messages[state.messages.length - 1]?.content;
   const shouldAutoSave = saveKeywords.test(state.research_brief) ||
-    saveKeywords.test((state.messages[state.messages.length - 1]?.content as string) ?? "");
+    saveKeywords.test(typeof lastMsgContent === "string" ? lastMsgContent : "");
 
   if (shouldAutoSave) {
     try {
       const supabase = getSupabaseAdminClient();
       const titulo = `Relatório — ${new Date().toLocaleDateString("pt-BR")}`;
-      const { data: saved, error: saveError } = await (supabase as any)
+      const insertResult = await supabase
         .from("clara_reports")
+        // @ts-expect-error — Supabase untyped admin client, clara_reports not in generated types
         .insert({ titulo, conteudo_markdown: reportText, tipo: "analise_chats", created_at: new Date().toISOString() })
         .select("id")
         .single();
+      const saved = insertResult.data as { id: number } | null;
+      const saveError = insertResult.error as { message: string } | null;
 
-      if (!saveError) {
-        const reportId = (saved as any)?.id;
-        if (reportId) {
-          console.log(`✅ [Clara] Relatório salvo — ID #${reportId}`);
-          return {
-            messages: [new AIMessage(
-              `${reportText}\n\n---\n📄 *Relatório salvo — ID #${reportId}. Acesse em /relatorios/${reportId}*`
-            )],
-          };
-        }
-      } else {
-        console.error("❌ [Clara] Erro ao salvar relatório:", saveError.message);
+      if (!saveError && saved?.id) {
+        return {
+          messages: [new AIMessage(
+            `${reportText}\n\n---\n📄 *Relatório salvo — ID #${saved.id}. Acesse em /relatorios/${saved.id}*`
+          )],
+        };
       }
-    } catch (e: any) {
-      console.error("❌ [Clara] Exceção ao salvar relatório:", e?.message ?? e);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      console.error("❌ [Clara] Exceção ao salvar relatório:", message);
     }
   }
 
@@ -728,29 +774,35 @@ ${rawNotesText || "[Nenhum dado consolidado foi encontrado para este pedido. Aja
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EDGES
+// EDGES (Clara 2.0)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// @ts-expect-error
-claraWorkflow.addEdge(START, "classify_node");
+// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
+claraWorkflow.addEdge(START, "load_context_node");
 
-// @ts-expect-error
+// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
+claraWorkflow.addEdge("load_context_node", "classify_node");
+
+// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addConditionalEdges("classify_node", (state: ClaraState) => {
   return state.is_deep_research ? "write_research_brief_node" : "simple_agent";
 });
 
-// @ts-expect-error
+// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addConditionalEdges("simple_agent", toolsCondition);
 
-// @ts-expect-error
-claraWorkflow.addEdge("tools", "simple_agent");
+// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
+claraWorkflow.addEdge("tools", "spot_check_node");
 
-// @ts-expect-error
+// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
+claraWorkflow.addEdge("spot_check_node", "simple_agent");
+
+// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addConditionalEdges("write_research_brief_node", (state: ClaraState) => {
   return state.research_complete ? END : "research_supervisor_node";
 });
 
-// @ts-expect-error
+// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addConditionalEdges("research_supervisor_node", (state: ClaraState) => {
   if (state.research_complete || state.supervisor_iteration >= MAX_SUPERVISOR_ITERATIONS) {
     return "final_report_node";
@@ -758,7 +810,7 @@ claraWorkflow.addConditionalEdges("research_supervisor_node", (state: ClaraState
   return "research_supervisor_node";
 });
 
-// @ts-expect-error
+// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addEdge("final_report_node", END);
 
 export const claraGraph = claraWorkflow.compile({ checkpointer: postgresCheckpointer });

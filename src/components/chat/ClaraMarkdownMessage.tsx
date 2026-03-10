@@ -10,9 +10,30 @@ interface Props {
 }
 
 // Converte [[chat:ID|Label]] → [Label](#chat-id-ID) antes de passar ao ReactMarkdown.
-// Usa fragmento de hash para evitar URL-encoding do scheme chat-open:// por remark-gfm.
 function preprocessChatLinks(text: string): string {
   return text.replace(/\[\[chat:(\d+)\|([^\]]+)\]\]/g, '[$2](#chat-id-$1)');
+}
+
+// Clara 2.0: Detecta e formata o bloco de período "📅 Período: ..." e badge de spot-check
+function preprocessClaraBlocks(text: string): string {
+  // Destaca período analisado como blockquote especial
+  let processed = text.replace(
+    /^(📅\s*Período(?:\s+analisado)?:\s*.+)$/gm,
+    '> $1'
+  );
+
+  // Destaca confiança do spot-check
+  processed = processed.replace(
+    /🔍\s*Confiança(?:\s+das\s+citações)?:\s*(HIGH|MEDIUM|LOW)/gi,
+    (_match, level: string) => {
+      const upper = level.toUpperCase();
+      if (upper === 'HIGH') return '🟢 Confiança das citações: **Alta** (verificado)';
+      if (upper === 'MEDIUM') return '🟡 Confiança das citações: **Média** (verificação parcial)';
+      return '🔴 Confiança das citações: **Baixa** (dados podem ter imprecisões)';
+    }
+  );
+
+  return processed;
 }
 
 const components: Components = {
@@ -166,7 +187,7 @@ const componentsWithCustomBullet: Components = {
   ),
   li: ({ children, ...props }) => {
     // Detecta se é item de lista ordenada pelo contexto do pai
-    const isOrdered = (props as any).ordered;
+    const isOrdered = (props as { ordered?: boolean }).ordered;
     if (isOrdered) {
       return (
         <li className="text-[#111b21] dark:text-[#e9edef] pl-0.5">
@@ -184,8 +205,8 @@ const componentsWithCustomBullet: Components = {
 };
 
 export default function ClaraMarkdownMessage({ text }: Props) {
-  // Pré-processa o texto para converter [[chat:ID|Label]] em links clicáveis
-  const processedText = preprocessChatLinks(text);
+  // Clara 2.0: pré-processa blocos especiais + links de chat
+  const processedText = preprocessChatLinks(preprocessClaraBlocks(text));
 
   return (
     <div className="clara-markdown text-[14.2px] leading-relaxed break-words min-w-0">

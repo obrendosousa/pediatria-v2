@@ -1,11 +1,21 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { GoogleGenAI } from "@google/genai";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { chatAnalyzerGraph } from "./chatAnalyzerGraph";
 import { Pool } from "pg";
+import { preValidateQuery, postValidateResults } from "./query_validator";
+import { analyzeRawConversationsTool } from "./raw_data_analyzer";
+import { askUserQuestionTool } from "./interactive_questions";
+import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
+import type { TemporalAnchor } from "./temporal_anchor";
+
+// ── Temporal Anchor global para validação de queries ────────────────────────
+// O graph.ts define antes de cada invocação do agente.
+let _currentTemporalAnchor: TemporalAnchor | null = null;
+export function setCurrentTemporalAnchor(anchor: TemporalAnchor | null) {
+  _currentTemporalAnchor = anchor;
+}
 // Analyst tools são importados diretamente em graph.ts/researcher_graph.ts — não re-exportar aqui
 
 // Garante bypass de certificado SSL auto-assinado independente da ordem de importação dos módulos.
@@ -22,19 +32,6 @@ async function embedText768(text: string): Promise<number[]> {
     config: { outputDimensionality: 768 },
   });
   return response.embeddings?.[0]?.values ?? [];
-}
-
-// Extrai texto de forma segura de respostas LLM — conteúdo pode ser string ou array de partes.
-// Usar .toString() em array retorna "[object Object],[object Object]" — este helper resolve isso.
-function extractTextContent(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((c: any) => (typeof c === "string" ? c : c?.text ?? ""))
-      .filter(Boolean)
-      .join("");
-  }
-  return String(content ?? "");
 }
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -81,12 +78,12 @@ export const readBrainFilesTool = new DynamicStructuredTool({
 
       if (error || !data || data.length === 0) return "Nenhum módulo encontrado no banco.";
 
-      const map = Object.fromEntries(data.map((row: any) => [row.config_key, row.content]));
+      const map = Object.fromEntries(data.map((row: { config_key: string; content: string }) => [row.config_key, row.content]));
       return keys
         .map((k) => (map[k] ? `### ${MODULE_LABELS[k]}\n${map[k]}` : `### ${MODULE_LABELS[k]}\n(vazio)`))
         .join("\n\n");
-    } catch (error: any) {
-      return `Erro ao ler configurações: ${error.message}`;
+    } catch (error: unknown) {
+      return `Erro ao ler configurações: ${error instanceof Error ? error.message : String(error)}`;
     }
   },
 });
@@ -109,8 +106,8 @@ export const updateBrainFileTool = new DynamicStructuredTool({
         );
       if (error) throw error;
       return `Sucesso! O módulo '${MODULE_LABELS[module]}' foi atualizado no banco de dados. As alterações já estão ativas.`;
-    } catch (error: any) {
-      return `Erro ao atualizar configuração: ${error.message}`;
+    } catch (error: unknown) {
+      return `Erro ao atualizar configuração: ${error instanceof Error ? error.message : String(error)}`;
     }
   },
 });
@@ -169,8 +166,8 @@ export const manageLongTermMemoryTool = new DynamicStructuredTool({
           if (insertError) throw insertError;
           return `Nova memória salva com sucesso na categoria '${memory_type}'.`;
         }
-      } catch (e: any) {
-        return `Erro ao processar memória com embeddings: ${e.message}`;
+      } catch (e: unknown) {
+        return `Erro ao processar memória com embeddings: ${e instanceof Error ? e.message : String(e)}`;
       }
     } else {
       // Busca vetorial (semântica) quando há conteúdo, ilike como fallback
@@ -183,7 +180,7 @@ export const manageLongTermMemoryTool = new DynamicStructuredTool({
             match_count: 5,
           });
           if (!vecError && vecMatches && vecMatches.length > 0) {
-            return `Memórias encontradas (busca semântica):\n${(vecMatches as any[])
+            return `Memórias encontradas (busca semântica):\n${(vecMatches as Array<{ content: string; similarity: number }>)
               .map((m) => `- ${m.content} (similaridade: ${(m.similarity * 100).toFixed(0)}%)`)
               .join("\n")}`;
           }
@@ -198,12 +195,12 @@ export const manageLongTermMemoryTool = new DynamicStructuredTool({
         .eq("memory_type", memory_type);
       if (content) query = query.ilike("content", `%${content}%`);
       const { data, error } = await query.order("created_at", { ascending: false }).limit(5);
-      if (error) return `Erro ao buscar memórias: ${error.message}`;
+      if (error) return `Erro ao buscar memórias: ${error instanceof Error ? error.message : String(error)}`;
       if (!data || data.length === 0) return "Nenhuma memória encontrada com esses critérios.";
       return `Memórias encontradas:\n${data
         .map(
           (m) =>
-            `- ${m.content} (salvo em ${new Date((m as any).created_at).toLocaleDateString()})`
+            `- ${m.content} (salvo em ${new Date((m as { created_at: string }).created_at).toLocaleDateString()})`
         )
         .join("\n")}`;
     }
@@ -244,7 +241,7 @@ Use action='write' para criar ou atualizar. action='read' para consultar explici
         { chat_id, notes: notes.trim(), updated_at: new Date().toISOString() },
         { onConflict: "chat_id" }
       );
-    if (error) return `Erro ao salvar observações: ${error.message}`;
+    if (error) return `Erro ao salvar observações: ${error instanceof Error ? error.message : String(error)}`;
     return `Observações do chat ${chat_id} atualizadas com sucesso.`;
   },
 });
@@ -263,7 +260,7 @@ export const extractAndSaveKnowledgeTool = new DynamicStructuredTool({
     const { error } = await supabase
       .from("knowledge_base")
       .insert({ pergunta, resposta_ideal, categoria, tags });
-    if (error) return `Erro ao salvar na base de conhecimento: ${error.message}`;
+    if (error) return `Erro ao salvar na base de conhecimento: ${error instanceof Error ? error.message : String(error)}`;
     return `Gabarito salvo com sucesso na base de conhecimento. (Categoria: ${categoria})`;
   },
 });
@@ -282,7 +279,7 @@ export const searchKnowledgeBaseTool = new DynamicStructuredTool({
       .or(`pergunta.ilike.%${termo_busca}%,tags.ilike.%${termo_busca}%`)
       .limit(3);
 
-    if (error) return `Erro ao buscar conhecimento: ${error.message}`;
+    if (error) return `Erro ao buscar conhecimento: ${error instanceof Error ? error.message : String(error)}`;
     if (!data || data.length === 0)
       return "Nenhum gabarito encontrado para este tema na sua base de conhecimento.";
 
@@ -292,154 +289,7 @@ export const searchKnowledgeBaseTool = new DynamicStructuredTool({
   },
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PASSO 2: FERRAMENTA MAP-REDUCE — deep_research_chats
-// ─────────────────────────────────────────────────────────────────────────────
-
-const CHUNK_SIZE = 5;
-
-function chunkArray<T>(arr: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
-}
-
-function normalizeSenderLabel(sender: string | null): string {
-  const s = String(sender ?? "").toUpperCase();
-  if (s === "AI_AGENT") return "BOT";
-  if (s === "HUMAN_AGENT" || s === "ME") return "SECRETÁRIA";
-  if (s === "CONTACT") return "PACIENTE";
-  return "PACIENTE";
-}
-
-export const deepResearchChatsTool = new DynamicStructuredTool({
-  name: "deep_research_chats",
-  description:
-    "Análise rápida e exploratória de múltiplos chats via processamento em lote (Map-Reduce). Use para identificar padrões gerais SEM salvar resultados estruturados no banco. Para análise profunda com salvamento de insights por chat (objeções, nota, gargalos), prefira analisar_chat_especifico.",
-  schema: z.object({
-    objetivo_da_analise: z
-      .string()
-      .describe(
-        "O objetivo claro da análise (ex: 'Mapear as principais objeções de preço' ou 'Resumir o histórico desses 3 pacientes')."
-      ),
-    chat_ids: z
-      .array(z.number())
-      .describe("Lista de IDs numéricos dos chats a serem analisados."),
-  }),
-  func: async ({ objetivo_da_analise, chat_ids }) => {
-    if (chat_ids.length === 0) {
-      return "Nenhum chat_id fornecido para análise.";
-    }
-
-    const chunks = chunkArray(chat_ids, CHUNK_SIZE);
-    const batch_insights: string[] = [];
-
-    // ── MAP: Processa cada lote com um LLM interno ──────────────────────────
-    for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx++) {
-      const chunk = chunks[chunkIdx];
-      try {
-        const transcripts: string[] = [];
-
-        for (const chatId of chunk) {
-          try {
-            const { data, error } = await supabase
-              .from("chat_messages")
-              .select("sender, message_text, bot_message, user_message, message_type, created_at")
-              .eq("chat_id", chatId)
-              .order("created_at", { ascending: true });
-
-            if (error || !data || data.length === 0) continue;
-
-            const timeline = data
-              .map((row) => {
-                const content = (
-                  row.message_text?.trim() ||
-                  row.user_message?.trim() ||
-                  row.bot_message?.trim() ||
-                  ""
-                );
-                if (!content || row.message_type === "audio" || row.message_type === "image") {
-                  return null;
-                }
-                const label = normalizeSenderLabel(row.sender);
-                return `[${label}]: ${content}`;
-              })
-              .filter((line): line is string => line !== null)
-              .join("\n");
-
-            if (timeline.trim()) {
-              transcripts.push(`--- Chat #${chatId} ---\n${timeline}`);
-            }
-          } catch {
-            // Ignora chats individuais que falham sem quebrar o lote
-          }
-        }
-
-        if (transcripts.length === 0) continue;
-
-        const internalModel = new ChatGoogleGenerativeAI({
-          model: "gemini-3-flash-preview",
-          apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-          temperature: 0.1,
-        });
-
-        const mapPrompt = `Você é um analista de dados restrito e objetivo. Seu objetivo principal é: "${objetivo_da_analise}". 
-REGRA DE OURO: Leia as transcrições fornecidas EXATAMENTE como estão. NÃO INVENTE nomes de pacientes, doenças, preços ou situações que não estejam EXPLÍCITAS no texto. Se um chat não tiver nada relevante para o objetivo, apenas ignore-o.
-Extraia apenas os pontos relevantes. Responda em formato de lista (bullets).
-
-Transcrições para análise rigorosa:
-${transcripts.join("\n\n")}`;
-
-        const response = await internalModel.invoke([new HumanMessage(mapPrompt)]);
-        const insight = extractTextContent(response.content).trim();
-        if (insight) {
-          batch_insights.push(insight);
-        }
-      } catch (error: any) {
-        batch_insights.push(`[Erro no lote ${chunkIdx + 1}: ${error.message}]`);
-      }
-    }
-
-    if (batch_insights.length === 0) {
-      return "Nenhum dado relevante encontrado nos chats fornecidos.";
-    }
-
-    if (batch_insights.length === 1) {
-      return batch_insights[0];
-    }
-
-    // ── REDUCE: Consolida todos os insights em um único relatório ───────────
-    try {
-      const consolidationModel = new ChatGoogleGenerativeAI({
-        model: "gemini-3-flash-preview",
-        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-        temperature: 0.1,
-      });
-
-      const reducePrompt = `Você é um Analista de Relatórios rigoroso. 
-Aqui estão as análises parciais de ${batch_insights.length} lotes de conversas. 
-Seu DEVER é consolidar essas informações em um ÚNICO relatório estruturado focado no objetivo: "${objetivo_da_analise}".
-
-REGRAS DE OURO:
-1. NUNCA INVENTE OU DEDUZ DA PRÓPRIA MENTE. 
-2. Use EXATAMENTE os dados fornecidos nas análises parciais abaixo. 
-3. Se um paciente não for mencionado nas análises parciais, não o invente.
-4. Remova duplicações, agrupe os achados por tema e organize por relevância/frequência.
-
-ANÁLISES PARCIAIS:
-${batch_insights
-          .map((insight, i) => `=== Lote ${i + 1} ===\n${insight}`)
-          .join("\n\n")}`;
-
-      const consolidated = await consolidationModel.invoke([new HumanMessage(reducePrompt)]);
-      return extractTextContent(consolidated.content);
-    } catch {
-      return batch_insights.join("\n\n---\n\n");
-    }
-  },
-});
+// Clara 2.0: deep_research_chats REMOVIDA — substituída por analyze_raw_conversations
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FERRAMENTA DE RELATÓRIO — save_report
@@ -474,10 +324,10 @@ export const saveReportTool = new DynamicStructuredTool({
         .single();
 
       if (error) throw error;
-      const reportId = (data as any)?.id;
+      const reportId = (data as { id: number } | null)?.id;
       return `Relatório salvo com sucesso! ID: ${reportId}. O gestor pode acessá-lo em /relatorios/${reportId}.`;
-    } catch (error: any) {
-      return `Erro ao salvar relatório: ${error.message}`;
+    } catch (error: unknown) {
+      return `Erro ao salvar relatório: ${error instanceof Error ? error.message : String(error)}`;
     }
   },
 });
@@ -504,7 +354,7 @@ export const analisarChatEspecificoTool = new DynamicStructuredTool({
       .select("id")
       .eq("phone", "00000000000")
       .single();
-    const claraChatId = (claraChat as any)?.id as number | undefined;
+    const claraChatId = (claraChat as { id: number } | null)?.id ?? undefined;
 
     // ── Envia status ao indicador da Clara via Realtime Broadcast ───────────
     // Aparece no ClaraStatusIndicator (header) — NÃO insere mensagem no chat.
@@ -531,7 +381,7 @@ export const analisarChatEspecificoTool = new DynamicStructuredTool({
       .select("id, contact_name")
       .in("id", safeIds);
     const nameMap = new Map<number, string>(
-      ((chatsMeta ?? []) as any[]).map((c) => [c.id as number, (c.contact_name as string) ?? `#${c.id}`])
+      ((chatsMeta ?? []) as Array<{ id: number; contact_name: string | null }>).map((c) => [c.id, (c.contact_name) ?? `#${c.id}`])
     );
 
     const scratchpadInsights: string[] = [];
@@ -577,9 +427,9 @@ export const analisarChatEspecificoTool = new DynamicStructuredTool({
             `  Resumo: ${ins.resumo_analise ?? ""}`,
           ].join("\n"));
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         errorCount++;
-        scratchpadInsights.push(`Chat #${chat_id} (${name}): Erro — ${e.message}`);
+        scratchpadInsights.push(`Chat #${chat_id} (${name}): Erro — ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -596,111 +446,7 @@ export const analisarChatEspecificoTool = new DynamicStructuredTool({
   },
 });
 
-export const gerarRelatorioQualidadeTool = new DynamicStructuredTool({
-  name: "gerar_relatorio_qualidade_chats",
-  description: "Acessa a tabela chat_insights para buscar gargalos, nota de atendimento média e objeções cadastradas recentemente pelas análises do Sub-Grafo. Útil para fazer um consolidado de qualidade.",
-  schema: z.object({
-    dias_retroativos: z.number().describe("Quantos dias olhar para trás (ex: 7)."),
-  }),
-  func: async ({ dias_retroativos }) => {
-    try {
-      const fetchInsights = async (days: number) => {
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - days);
-        return supabase
-          .from("chat_insights")
-          .select("id, chat_id, nota_atendimento, sentimento, gargalos, resumo_analise, metricas_extras, updated_at")
-          .gte("updated_at", cutoff.toISOString())
-          .order("updated_at", { ascending: false });
-      };
-
-      let { data, error } = await fetchInsights(dias_retroativos);
-      if (error) throw error;
-
-      // Auto-expansão de janela: se não há dados no período solicitado, tenta janelas maiores
-      let periodoEfetivo = dias_retroativos;
-      if (!data || data.length === 0) {
-        for (const fallback of [60, 90, 180]) {
-          const res = await fetchInsights(fallback);
-          if (!res.error && res.data && res.data.length > 0) {
-            data = res.data;
-            periodoEfetivo = fallback;
-            break;
-          }
-        }
-      }
-
-      if (!data || data.length === 0) return "Nenhum insight de chat encontrado. Execute get_filtered_chats_list e depois analisar_chat_especifico para gerar insights em tempo real.";
-
-      // Busca nome e telefone dos chats em uma única query (JOIN programático)
-      const chatIds = (data as any[]).map((d) => d.chat_id).filter(Boolean);
-      const { data: chatsData } = await supabase
-        .from("chats")
-        .select("id, contact_name, phone")
-        .in("id", chatIds);
-      const chatMetaMap = new Map<number, { name: string; phone: string }>(
-        ((chatsData ?? []) as any[]).map((c) => [
-          c.id as number,
-          {
-            name: (c.contact_name as string) || "",
-            phone: (c.phone as string) || "",
-          },
-        ])
-      );
-
-      // Agrega métricas
-      const notas = (data as any[]).map((d) => d.nota_atendimento).filter((n) => n !== null && n !== undefined) as number[];
-      const media = notas.length ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(1) : "N/A";
-
-      const countFreq = (arr: string[]) => {
-        const map: Record<string, number> = {};
-        for (const item of arr) { map[item] = (map[item] || 0) + 1; }
-        return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} (${v}x)`);
-      };
-
-      const allObjecoes: string[] = [];
-      const allGargalos: string[] = [];
-      const sentimentos: string[] = [];
-
-      for (const d of data as any[]) {
-        const extras = d.metricas_extras as Record<string, any> | null;
-        if (extras?.todas_objecoes && Array.isArray(extras.todas_objecoes)) {
-          allObjecoes.push(...extras.todas_objecoes);
-        }
-        if (d.gargalos && Array.isArray(d.gargalos)) {
-          allGargalos.push(...d.gargalos);
-        }
-        if (d.sentimento) sentimentos.push(d.sentimento);
-      }
-
-      // Resumo por chat (os 20 mais recentes) — inclui nome e telefone para links auditáveis
-      const chatSummaries = (data as any[]).slice(0, 20).map((d) => {
-        const extras = d.metricas_extras as Record<string, any> | null;
-        const objs = extras?.todas_objecoes?.join("; ") || "nenhuma";
-        const decisao = extras?.decisao || d.resumo_analise?.substring(0, 80) || "não identificada";
-        const meta = chatMetaMap.get(d.chat_id as number);
-        const label = meta?.name && meta?.phone
-          ? `${meta.name} (${meta.phone})`
-          : meta?.name || meta?.phone || `#${d.chat_id}`;
-        // Formato de link clicável para auditoria
-        return `[[chat:${d.chat_id}|${label}]] | Nota: ${d.nota_atendimento ?? "N/A"}/10 | Sentimento: ${d.sentimento ?? "N/A"} | Objeções: ${objs} | Decisão: ${decisao}`;
-      });
-
-      return JSON.stringify({
-        periodo_analisado: `últimos ${periodoEfetivo} dia(s)${periodoEfetivo !== dias_retroativos ? ` (solicitado: ${dias_retroativos} dias — expandido automaticamente pois não havia dados no período original)` : ""}`,
-        total_chats_analisados: data.length,
-        media_nota_atendimento: media,
-        distribuicao_sentimento: countFreq(sentimentos),
-        principais_objecoes: countFreq(allObjecoes).slice(0, 15),
-        principais_gargalos: countFreq(allGargalos).slice(0, 10),
-        resumo_por_chat: chatSummaries,
-        instrucao: "Use os links [[chat:ID|Nome (Tel)]] acima para criar a tabela de auditoria '📎 Chats Analisados' no relatório.",
-      });
-    } catch (e: any) {
-      return `Erro ao buscar relatórios de qualidade: ${e.message}`;
-    }
-  }
-});
+// Clara 2.0: gerar_relatorio_qualidade_chats REMOVIDA — substituída por analyze_raw_conversations
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FERRAMENTA SQL DIRETA — execute_sql
@@ -740,29 +486,41 @@ export const executeSqlTool = new DynamicStructuredTool({
         return "Erro: DATABASE_URL não configurada. Use get_volume_metrics para métricas de volume.";
       }
 
-      const trimmed = sql.trim();
-      const upper = trimmed.replace(/\s+/g, " ").toUpperCase();
-      if (!upper.startsWith("SELECT") && !upper.startsWith("WITH")) {
-        return `Segurança: apenas SELECT/WITH são permitidos. SQL recebido: ${trimmed.substring(0, 200)}`;
+      // ── PRÉ-VALIDAÇÃO (Camada 3) ──
+      const preVal = preValidateQuery(sql, _currentTemporalAnchor);
+      if (!preVal.is_valid && preVal.issues.some((i) => i.includes("rejeitada"))) {
+        return `Segurança: ${preVal.issues.join(" ")}`;
       }
+      const effectiveSql = (preVal.corrected_sql || sql).trim();
+      const preWarnings = preVal.issues.length > 0 ? `⚠️ Pré-validação: ${preVal.issues.join("; ")}\n` : "";
 
       const client = await dbPool.connect();
       try {
-        const result = await client.query(trimmed);
+        const result = await client.query(effectiveSql);
         const rows = result.rows;
 
         if (rows.length === 0) {
-          return `Consulta executada — 0 registros encontrados.\nSQL: ${trimmed}\nDica: verifique o intervalo de datas e os valores dos filtros.`;
+          return `${preWarnings}Consulta executada — 0 registros encontrados.\nSQL: ${effectiveSql}\nDica: verifique o intervalo de datas e os valores dos filtros.`;
         }
+
+        // ── PÓS-VALIDAÇÃO (Camada 3) ──
+        const postVal = postValidateResults(effectiveSql, rows, _currentTemporalAnchor);
+        const postSummary = postVal.summary_for_model ? `\n📋 ${postVal.summary_for_model}` : "";
+        const postWarnings = postVal.issues.length > 0 ? `\n⚠️ Pós-validação: ${postVal.issues.join("; ")}` : "";
+
+        // Se dados fora do range, inclui instrução explícita para retry
+        const retryHint = postVal.data_quality.has_out_of_range_data && _currentTemporalAnchor
+          ? `\n🔄 AÇÃO NECESSÁRIA: Dados fora do período. Re-execute com filtro de data usando: WHERE campo >= ${_currentTemporalAnchor.sql_start} AND campo < ${_currentTemporalAnchor.sql_end}`
+          : "";
 
         const displayed = rows.slice(0, 500);
         const truncNote = rows.length > 500 ? ` (mostrando 500 de ${rows.length})` : "";
-        return `✅ ${rows.length} registro(s)${truncNote}.\nSQL: ${trimmed}\n${JSON.stringify(displayed, null, 2)}`;
+        return `${preWarnings}✅ ${rows.length} registro(s)${truncNote}.${postSummary}${postWarnings}${retryHint}\nSQL: ${effectiveSql}\n${JSON.stringify(displayed, null, 2)}`;
       } finally {
         client.release();
       }
-    } catch (e: any) {
-      return `Erro SQL: ${e.message}\nSQL tentado: ${sql.substring(0, 400)}\nDica: verifique nomes de tabelas/colunas e syntax PostgreSQL.`;
+    } catch (e: unknown) {
+      return `Erro SQL: ${e instanceof Error ? e.message : String(e)}\nSQL tentado: ${sql.substring(0, 400)}\nDica: verifique nomes de tabelas/colunas e syntax PostgreSQL.`;
     }
   },
 });
@@ -780,7 +538,7 @@ function toBRTDateStr(isoStr: string): string {
 
 // Pagina resultados do Supabase (limite padrão = 1000 por request).
 async function supabaseQueryAll<T>(
-  queryBuilder: (range: [number, number]) => Promise<{ data: T[] | null; error: any }>
+  queryBuilder: (range: [number, number]) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
 ): Promise<T[]> {
   const results: T[] = [];
   const PAGE = 1000;
@@ -826,7 +584,7 @@ export const getVolumeMetricsTool = new DynamicStructuredTool({
           .select("id, last_interaction_at, created_at, stage, ai_sentiment, is_archived")
           .gte("last_interaction_at", startTs)
           .lte("last_interaction_at", endTs)
-          .range(from, to) as any
+          .range(from, to)
       );
 
       // Diagnóstico quando nenhum chat encontrado no período
@@ -841,7 +599,7 @@ export const getVolumeMetricsTool = new DynamicStructuredTool({
           periodo: { start_date, end_date },
           aviso: `Nenhum chat com atividade encontrado entre ${start_date} e ${end_date}.`,
           diagnostico: {
-            ultima_interacao_registrada: (diagData as any)?.[0]?.last_interaction_at ?? "N/A",
+            ultima_interacao_registrada: (diagData as Array<{ last_interaction_at: string }> | null)?.[0]?.last_interaction_at ?? "N/A",
             sugestao: "Verifique se o período está correto e tente um range de datas que inclua a última interação registrada.",
           },
         });
@@ -858,7 +616,7 @@ export const getVolumeMetricsTool = new DynamicStructuredTool({
           .select("created_at, sender, chat_id")
           .gte("created_at", startTs)
           .lte("created_at", endTs)
-          .range(from, to) as any
+          .range(from, to)
       );
 
       // Agrega chats por dia (fuso Brasília)
@@ -938,8 +696,8 @@ export const getVolumeMetricsTool = new DynamicStructuredTool({
         por_stage,
         por_sentimento,
       });
-    } catch (e: any) {
-      return `Erro ao buscar métricas de volume: ${e.message}`;
+    } catch (e: unknown) {
+      return `Erro ao buscar métricas de volume: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
 });
@@ -1088,19 +846,90 @@ export const criarAgendamentoTool = new DynamicStructuredTool({
         ...(motivo ? [`  Motivo: ${motivo}`] : []),
         `  Status do chat atualizado para 'agendando'.`,
       ].join("\n");
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("[criar_agendamento] Erro inesperado:", e);
-      return `Erro inesperado ao criar agendamento: ${e.message}`;
+      return `Erro inesperado ao criar agendamento: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CAMADA 12: Classificação Segura de Chats — update_chat_classification
+// Tool dedicada para classificar stage/sentiment de UM chat por vez.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const updateChatClassificationTool = new DynamicStructuredTool({
+  name: "update_chat_classification",
+  description: `Atualiza stage e/ou ai_sentiment de UM chat específico.
+Use SOMENTE quando tiver evidência real (de analyze_raw_conversations ou leitura do chat).
+NUNCA classifique em massa sem análise individual.
+Faz log de auditoria de cada alteração.`,
+
+  schema: z.object({
+    chat_id: z.number().describe("ID do chat a classificar"),
+    stage: z
+      .enum(["new", "contacted", "interested", "scheduled", "won", "lost", "no_response"])
+      .optional()
+      .describe("Novo stage do chat"),
+    sentiment: z
+      .enum(["positive", "neutral", "negative", "mixed"])
+      .optional()
+      .describe("Novo sentimento detectado"),
+    reason: z.string().describe("Motivo da classificação (evidência da análise)"),
+  }),
+
+  func: async ({ chat_id, stage, sentiment, reason }) => {
+    const adminSb = getSupabaseAdminClient();
+
+    const { data: chatRaw } = await adminSb
+      .from("chats")
+      .select("id, contact_name, stage, ai_sentiment")
+      .eq("id", chat_id)
+      .single();
+    const chat = chatRaw as { id: number; contact_name: string; stage: string; ai_sentiment: string } | null;
+
+    if (!chat) return `Erro: Chat ${chat_id} não encontrado.`;
+
+    const updates: Record<string, string> = {};
+    if (stage) updates.stage = stage;
+    if (sentiment) updates.ai_sentiment = sentiment;
+
+    if (Object.keys(updates).length === 0) {
+      return "Nenhum campo para atualizar. Forneça stage ou sentiment.";
+    }
+
+    // @ts-expect-error — Supabase untyped admin client for chats update
+    const { error } = await adminSb.from("chats").update(updates).eq("id", chat_id);
+    if (error) return `Erro ao atualizar: ${error instanceof Error ? error.message : String(error)}`;
+
+    const logEntry = `Chat ${chat_id} (${chat.contact_name}): ${stage ? `stage ${chat.stage} → ${stage}` : ""}${stage && sentiment ? ", " : ""}${sentiment ? `sentiment ${chat.ai_sentiment} → ${sentiment}` : ""}. Motivo: ${reason}`;
+
+    // Audit log
+    try {
+      // @ts-expect-error — Supabase untyped admin client for clara_memories insert
+      await adminSb.from("clara_memories").insert({
+        content: `[AUDIT] ${logEntry}`,
+        memory_type: "audit_log",
+      });
+    } catch { /* best-effort audit */ }
+
+    return `✅ ${logEntry}`;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPORTS: Ferramentas da Clara 2.0
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Ferramentas do simple_agent (Clara principal).
-// ATENÇÃO: Analyst tools (getFilteredChatsListTool, getChatCascadeHistoryTool, getAggregatedInsightsTool)
-// e deepResearchChatsTool são adicionados UMA ÚNICA VEZ em graph.ts — não incluir aqui.
+// Clara 2.0: removidas gerar_relatorio e deep_research, adicionadas analyze_raw_conversations,
+// ask_user_question e update_chat_classification.
 export const claraTools = [
-  getVolumeMetricsTool,           // Rápida e determinística — use primeiro para volume
-  executeSqlTool,                 // SQL direto para qualquer outra consulta
+  askUserQuestionTool,              // ⭐ NOVA — perguntas interativas com sugestões
+  getVolumeMetricsTool,             // Rápida e determinística — use primeiro para volume
+  executeSqlTool,                   // SQL direto para qualquer outra consulta
+  analyzeRawConversationsTool,      // ⭐ NOVA — análise direta na fonte (substitui gerar_relatorio + deep_research)
+  updateChatClassificationTool,     // ⭐ NOVA — classificação segura de chats
   readBrainFilesTool,
   updateBrainFileTool,
   manageLongTermMemoryTool,
@@ -1108,20 +937,20 @@ export const claraTools = [
   extractAndSaveKnowledgeTool,
   searchKnowledgeBaseTool,
   saveReportTool,
-  analisarChatEspecificoTool,
-  gerarRelatorioQualidadeTool,
-  criarAgendamentoTool,           // Cria agendamentos de consulta/retorno no sistema
+  analisarChatEspecificoTool,       // Mantida para análise estruturada individual
+  criarAgendamentoTool,
 ];
 
 // Ferramentas expostas aos Researchers do subgrafo de pesquisa paralela.
-// ATENÇÃO: Analyst tools são adicionados UMA ÚNICA VEZ em researcher_graph.ts — não incluir aqui.
 export const allResearchTools = [
-  getVolumeMetricsTool,           // Rápida e determinística — use primeiro para volume
-  executeSqlTool,                 // SQL direto para qualquer outra consulta
-  deepResearchChatsTool,
+  getVolumeMetricsTool,
+  executeSqlTool,
+  analyzeRawConversationsTool,
   analisarChatEspecificoTool,
-  gerarRelatorioQualidadeTool,
   searchKnowledgeBaseTool,
   manageLongTermMemoryTool,
   saveReportTool,
 ];
+
+// Re-exports para o graph.ts
+export { analyzeRawConversationsTool, askUserQuestionTool };

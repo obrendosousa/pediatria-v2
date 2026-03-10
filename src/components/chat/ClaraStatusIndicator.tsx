@@ -18,6 +18,12 @@ import {
   CheckCircle2,
   FileText,
   Globe,
+  MessageSquareMore,
+  Shield,
+  BarChart3,
+  Calendar,
+  Tag,
+  RefreshCw,
 } from 'lucide-react';
 
 type StatusConfig = {
@@ -164,6 +170,74 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
     dotColor: 'bg-amber-400',
     iconAnimation: 'pulse',
   },
+
+  // ── Clara 2.0 — Novas ferramentas ─────────────────────────────────────────
+  'tool:analyze_raw_conversations': {
+    Icon: FileSearch,
+    label: 'Analisando conversas na fonte (pode levar 30s)...',
+    iconBg: 'from-rose-500 to-pink-600',
+    dotColor: 'bg-rose-400',
+    iconAnimation: 'spin',
+  },
+  'tool:ask_user_question': {
+    Icon: MessageSquareMore,
+    label: 'Clara tem uma pergunta...',
+    iconBg: 'from-sky-500 to-blue-600',
+    dotColor: 'bg-sky-400',
+    iconAnimation: 'pulse',
+  },
+  'tool:update_chat_classification': {
+    Icon: Tag,
+    label: 'Classificando chat...',
+    iconBg: 'from-teal-500 to-emerald-600',
+    dotColor: 'bg-teal-400',
+    iconAnimation: 'pulse',
+  },
+  'tool:execute_sql': {
+    Icon: Database,
+    label: 'Consultando banco de dados...',
+    iconBg: 'from-emerald-500 to-teal-600',
+    dotColor: 'bg-emerald-400',
+    iconAnimation: 'spin',
+  },
+  'tool:get_volume_metrics': {
+    Icon: BarChart3,
+    label: 'Calculando métricas de volume...',
+    iconBg: 'from-blue-500 to-indigo-600',
+    dotColor: 'bg-blue-400',
+    iconAnimation: 'spin',
+  },
+  'tool:save_report': {
+    Icon: FileText,
+    label: 'Salvando relatório...',
+    iconBg: 'from-green-500 to-emerald-600',
+    dotColor: 'bg-green-400',
+    iconAnimation: 'pulse',
+  },
+  'tool:criar_agendamento': {
+    Icon: Calendar,
+    label: 'Criando agendamento...',
+    iconBg: 'from-violet-500 to-purple-600',
+    dotColor: 'bg-violet-400',
+    iconAnimation: 'bounce',
+  },
+
+  // ── Clara 2.0 — Nós do grafo ──────────────────────────────────────────────
+  loading_context: {
+    Icon: RefreshCw,
+    label: 'Carregando contexto e memória...',
+    iconBg: 'from-indigo-500 to-violet-600',
+    dotColor: 'bg-indigo-400',
+    iconAnimation: 'spin',
+  },
+  spot_checking: {
+    Icon: Shield,
+    label: 'Verificando citações...',
+    iconBg: 'from-amber-500 to-orange-600',
+    dotColor: 'bg-amber-400',
+    iconAnimation: 'pulse',
+  },
+
   'tool:extract_and_save_knowledge': {
     Icon: BookmarkPlus,
     label: 'Salvando novo conhecimento...',
@@ -182,11 +256,13 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
 
 interface Props {
   status: string;
+  dynamicLabel?: string;
 }
 
-export default function ClaraStatusIndicator({ status }: Props) {
+export default function ClaraStatusIndicator({ status, dynamicLabel }: Props) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.thinking;
-  const { Icon, label, iconBg, dotColor, iconAnimation } = config;
+  const displayLabel = dynamicLabel || config.label;
+  const { Icon, iconBg, dotColor, iconAnimation } = config;
 
   return (
     <>
@@ -248,7 +324,7 @@ export default function ClaraStatusIndicator({ status }: Props) {
 
             {/* Texto descritivo */}
             <span className="text-[11.5px] font-medium text-gray-500 dark:text-gray-400 select-none whitespace-nowrap transition-all duration-300">
-              {label}
+              {displayLabel}
             </span>
 
             {/* Três pontos animados */}
