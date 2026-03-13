@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { AttendanceTabKey, AttendanceScreenProps } from '@/types/attendance';
 import { AttendanceSidebar } from './AttendanceSidebar';
 import { AttendanceOverview } from './screens/AttendanceOverview';
@@ -17,10 +17,17 @@ import { EmergencyConsultation } from './screens/EmergencyConsultation';
 import { ExamsAndProcedures } from './screens/ExamsAndProcedures';
 import { Prescriptions } from './screens/Prescriptions';
 import { DocumentsAndCertificates } from './screens/DocumentsAndCertificates';
-import { ImagesAndAttachments } from './screens/ImagesAndAttachments';
+import { AttachmentsList } from './screens/AttachmentsList';
+import { ImageGallery } from './screens/ImageGallery';
+import { Allergies } from './screens/Allergies';
+import { EvolutionsList as Evolutions } from '@/components/medical-record/screens/EvolutionsList';
+import { CertificatesList as Certificates } from '@/components/medical-record/screens/CertificatesList';
+import { ReportsList as Reports } from '@/components/medical-record/screens/ReportsList';
+import { AnamnesesList } from '@/components/medical-record/screens/AnamnesesList';
 
 interface AttendanceLayoutProps {
   patientId: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   patientData: any;
   isConsultationActive: boolean;
   consultationDuration: number;
@@ -45,7 +52,13 @@ const screenComponents: Record<AttendanceTabKey, React.ComponentType<AttendanceS
   'exams-procedures': ExamsAndProcedures,
   'prescriptions': Prescriptions,
   'documents': DocumentsAndCertificates,
-  'images': ImagesAndAttachments,
+  'images': AttachmentsList,
+  'allergies': Allergies,
+  'evolutions': Evolutions,
+  'certificates': Certificates,
+  'reports': Reports,
+  'gallery': ImageGallery,
+  'anamneses-list': AnamnesesList,
 };
 
 export function AttendanceLayout({
@@ -62,19 +75,20 @@ export function AttendanceLayout({
   // Lazy mount: tela só monta na primeira visita, mas permanece montada depois
   const [visitedTabs, setVisitedTabs] = useState<Set<AttendanceTabKey>>(new Set(['overview']));
 
-  useEffect(() => {
-    setVisitedTabs((prev) => {
-      if (prev.has(activeTab)) return prev;
-      return new Set([...prev, activeTab]);
+  const handleTabChange = useCallback((tab: AttendanceTabKey) => {
+    setActiveTab(tab);
+    setVisitedTabs(prev => {
+      if (prev.has(tab)) return prev;
+      return new Set([...prev, tab]);
     });
-  }, [activeTab]);
+  }, []);
 
   return (
     <div className="flex flex-1 h-full bg-slate-50/50 dark:bg-[#0b141a]">
       {/* Sidebar */}
       <AttendanceSidebar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         isConsultationActive={isConsultationActive}
         consultationDuration={consultationDuration}
         onFinishConsultation={onFinishConsultation}

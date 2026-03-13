@@ -18,9 +18,17 @@ type AtendimentoAppointment = {
   amount_paid?: number;
 };
 
+export type DayBlock = {
+  title: string;
+  start_time: string | null;
+  end_time: string | null;
+  all_day: boolean;
+};
+
 type Props = {
   weekDays: Date[];
   weekAppointments: AtendimentoAppointment[];
+  dayBlocks?: Record<string, DayBlock[]>;
   setSelectedAppointment: (app: AtendimentoAppointment) => void;
   openNewSlotModal: (dateStr?: string) => void;
 };
@@ -30,7 +38,7 @@ function getAppointmentsForDay(day: Date, apps: AtendimentoAppointment[]) {
   return apps.filter(a => a.date === dateStr);
 }
 
-export default function AtendimentoWeekView({ weekDays, weekAppointments, setSelectedAppointment, openNewSlotModal }: Props) {
+export default function AtendimentoWeekView({ weekDays, weekAppointments, dayBlocks, setSelectedAppointment, openNewSlotModal }: Props) {
   return (
     <div className="h-full flex overflow-x-auto custom-scrollbar">
       <div className="flex-1 grid grid-cols-7 min-w-[1600px] divide-x divide-slate-100 dark:divide-gray-800">
@@ -45,6 +53,16 @@ export default function AtendimentoWeekView({ weekDays, weekAppointments, setSel
                 <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-lg font-bold ${isToday ? 'bg-teal-600 text-white shadow-md' : 'text-slate-700 dark:text-gray-400'}`}>{day.getDate()}</div>
               </div>
               <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
+                {/* Bloqueios do dia */}
+                {(dayBlocks?.[dateStr] || []).map((block, idx) => (
+                  <div key={`block-${idx}`} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-gray-700 flex items-center gap-1.5 text-slate-400 dark:text-gray-500">
+                    <Ban className="w-3 h-3 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold truncate">{block.title}</p>
+                      <p className="text-[9px]">{block.all_day ? 'Dia inteiro' : `${block.start_time?.slice(0, 5) || ''} — ${block.end_time?.slice(0, 5) || ''}`}</p>
+                    </div>
+                  </div>
+                ))}
                 {dayApps.map(app => {
                   const time = app.time ? app.time.substring(0, 5) : '00:00';
                   const total = app.consultation_value ?? app.total_amount ?? 0;

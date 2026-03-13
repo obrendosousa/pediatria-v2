@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Plus, Trash2, Search, Printer, Save, X, FileText, ChevronDown } from 'lucide-react';
-import { useExamRequests, searchTuss, ExamItem, ExamRequest } from '@/hooks/useExamRequests';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Search, Printer, Save, X, ClipboardList, FlaskConical } from 'lucide-react';
+import { useExamRequests, searchTuss, ExamItem } from '@/hooks/useExamRequests';
 import { AttendanceScreenProps } from '@/types/attendance';
 import { useToast } from '@/contexts/ToastContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ModelTemplateModal } from '../ModelTemplateModal';
+import { ExamResultsTab } from './ExamResultsTab';
+
+type ExamSubTab = 'pedidos' | 'resultados';
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 interface TussResult { id: number; code: string; name: string; category: string }
@@ -52,6 +55,7 @@ function ExamRow({
   // Sincronizar query quando exam muda externamente (ex: carregar modelo)
   useEffect(() => {
     const label = exam.name ? (exam.code ? `${exam.code} — ${exam.name}` : exam.name) : exam.code || '';
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuery(label);
   }, [exam.name, exam.code]);
 
@@ -158,7 +162,6 @@ function RequestCard({
   onPrint,
   onOpenModelManager,
   isSaving,
-  isNew,
 }: {
   draft: DraftRequest;
   onUpdate: (d: DraftRequest) => void;
@@ -167,7 +170,6 @@ function RequestCard({
   onPrint: () => void;
   onOpenModelManager: (action: 'load' | 'save', content?: string) => void;
   isSaving: boolean;
-  isNew: boolean;
 }) {
   const updateExam = (i: number, exam: ExamItem) =>
     onUpdate({ ...draft, exams: draft.exams.map((e, idx) => (idx === i ? exam : e)) });
@@ -334,10 +336,13 @@ function RequestCard({
 }
 
 // ─── Geração de HTML para solicitação de exames ──────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function generateRequestHTML(draft: any, patientData: any): string {
   const examsRows = draft.exams
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((e: any) => e.name || e.code)
     .map(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (e: any) => `
         <tr>
           <td>${e.code ? `${e.code} - ` : ''}${e.name}</td>
@@ -361,8 +366,10 @@ export function generateRequestHTML(draft: any, patientData: any): string {
   if (draft.request_type === 'SADT') {
     // ─── GUIA SP/SADT OFICIAL (TISS) ──────────────────────────────────────────
     const sadtExamsRows = draft.exams
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter((e: any) => e.name || e.code)
       .map(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (e: any) => `
           <tr class="tiss-tr">
             <td class="tiss-td-center">22</td>
@@ -749,6 +756,7 @@ export function generateRequestHTML(draft: any, patientData: any): string {
   return html;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function printRequest(draft: any, patientData: any) {
   const html = generateRequestHTML(draft, patientData);
   const iframe = document.createElement('iframe');
@@ -764,8 +772,9 @@ export function printRequest(draft: any, patientData: any) {
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export function ExamsAndProcedures({ patientId, patientData, appointmentId, medicalRecordId }: AttendanceScreenProps) {
+export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: AttendanceScreenProps) {
   const { toast } = useToast();
+  const [subTab, setSubTab] = useState<ExamSubTab>('pedidos');
   const { requests, isLoading, isSaving, createRequest, updateRequest, deleteRequest } =
     useExamRequests(patientId, medicalRecordId);
 
@@ -774,7 +783,6 @@ export function ExamsAndProcedures({ patientId, patientData, appointmentId, medi
   const [newDrafts, setNewDrafts] = useState<{ id: string; draft: DraftRequest }[]>([
     { id: 'initial-draft', draft: emptyDraft() },
   ]);
-  const [savedFeedback, setSavedFeedback] = useState<Set<string>>(new Set());
 
   // Estado do Modal de Modelos
   const [modelModalOpen, setModelModalOpen] = useState(false);
@@ -789,6 +797,7 @@ export function ExamsAndProcedures({ patientId, patientData, appointmentId, medi
     requests.forEach((r) => {
       if (r.id) m.set(String(r.id), { ...r });
     });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDrafts(m);
   }, [requests]);
 
@@ -796,11 +805,6 @@ export function ExamsAndProcedures({ patientId, patientData, appointmentId, medi
 
   const setDraft = (id: number, d: DraftRequest) =>
     setDrafts((prev) => new Map(prev).set(String(id), d));
-
-  const flashSaved = (key: string) => {
-    setSavedFeedback((prev) => new Set(prev).add(key));
-    setTimeout(() => setSavedFeedback((prev) => { const s = new Set(prev); s.delete(key); return s; }), 3000);
-  };
 
   // Salva nova solicitação
   const handleSaveNew = async (itemId: string) => {
@@ -826,7 +830,6 @@ export function ExamsAndProcedures({ patientId, patientData, appointmentId, medi
     const d = getDraft(id);
     try {
       await updateRequest(id, d);
-      flashSaved(String(id));
     } catch {
       toast.toast.error('Erro ao salvar.');
     }
@@ -890,6 +893,36 @@ export function ExamsAndProcedures({ patientId, patientData, appointmentId, medi
         <span className="text-xs text-slate-600 dark:text-gray-400 uppercase">{currentDate}</span>
       </div>
 
+      {/* Sub-abas */}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setSubTab('pedidos')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
+            subTab === 'pedidos'
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-100 dark:bg-[#2a2d36] text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-white/10'
+          }`}
+        >
+          <ClipboardList className="w-4 h-4" />
+          Pedidos
+        </button>
+        <button
+          onClick={() => setSubTab('resultados')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
+            subTab === 'resultados'
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-100 dark:bg-[#2a2d36] text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-white/10'
+          }`}
+        >
+          <FlaskConical className="w-4 h-4" />
+          Resultados
+        </button>
+      </div>
+
+      {subTab === 'resultados' ? (
+        <ExamResultsTab patientId={patientId} />
+      ) : (
+      <>
       <div className="space-y-4">
         {/* Solicitações já salvas */}
         {requests.map((req) => {
@@ -905,7 +938,6 @@ export function ExamsAndProcedures({ patientId, patientData, appointmentId, medi
               onPrint={() => printRequest(d, patientData)}
               onOpenModelManager={(action, content) => handleOpenModelManager(req.id!, action, content)}
               isSaving={isSaving}
-              isNew={false}
             />
           );
         })}
@@ -934,7 +966,6 @@ export function ExamsAndProcedures({ patientId, patientData, appointmentId, medi
               onPrint={() => printRequest(item.draft, patientData)}
               onOpenModelManager={(action, content) => handleOpenModelManager(item.id, action, content)}
               isSaving={isSaving}
-              isNew={true}
             />
           </div>
         ))}
@@ -959,10 +990,12 @@ export function ExamsAndProcedures({ patientId, patientData, appointmentId, medi
         isOpen={modelModalOpen}
         onClose={() => setModelModalOpen(false)}
         onSelect={handleModelSelect}
-        onSave={() => { }} // Not used entirely since the parent Modal handles its own save to DB now 
+        onSave={() => { }} // Not used entirely since the parent Modal handles its own save to DB now
         type="exames"
         currentContent={currentModelContent}
       />
+      </>
+      )}
     </div>
   );
 }

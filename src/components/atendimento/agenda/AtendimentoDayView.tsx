@@ -29,6 +29,7 @@ type Props = {
   currentTimeSlotRef: RefObject<HTMLDivElement | null>;
   getAppointmentsAt: (time: string) => AtendimentoAppointment[];
   isCurrentTimeSlot: (time: string) => boolean;
+  isSlotBlocked?: (time: string) => boolean;
   setSelectedAppointment: (app: AtendimentoAppointment) => void;
   openNewSlotModal: (dateStr?: string, timeStr?: string) => void;
 };
@@ -78,13 +79,14 @@ function AppointmentCard({ app, setSelectedAppointment }: { app: AtendimentoAppo
 
 export default function AtendimentoDayView({
   timeSlots, scrollContainerRef, currentTimeSlotRef,
-  getAppointmentsAt, isCurrentTimeSlot, setSelectedAppointment, openNewSlotModal
+  getAppointmentsAt, isCurrentTimeSlot, isSlotBlocked, setSelectedAppointment, openNewSlotModal
 }: Props) {
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-3 relative">
       {timeSlots.map((time) => {
         const apps = getAppointmentsAt(time);
         const isCurrent = isCurrentTimeSlot(time);
+        const blocked = isSlotBlocked?.(time) ?? false;
         return (
           <div key={time} ref={isCurrent ? currentTimeSlotRef : null} className="flex gap-4 group relative">
             {isCurrent && (
@@ -110,6 +112,10 @@ export default function AtendimentoDayView({
                   {apps.map((app) => (
                     <AppointmentCard key={app.id} app={app} setSelectedAppointment={setSelectedAppointment} />
                   ))}
+                </div>
+              ) : blocked ? (
+                <div className="w-full min-h-[40px] mt-1 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-gray-700 flex items-center justify-center gap-2 text-slate-400 dark:text-gray-500 text-xs font-bold cursor-not-allowed">
+                  <Ban className="w-3 h-3" /> Bloqueado
                 </div>
               ) : (
                 <button onClick={() => openNewSlotModal(undefined, time)} className="w-full h-full min-h-[40px] mt-1 rounded-xl border border-dashed border-transparent hover:border-teal-200 dark:hover:border-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/10 flex items-center justify-center text-teal-300 dark:text-teal-700 transition-all text-xs font-bold gap-2 opacity-0 group-hover:opacity-100"><Plus className="w-3 h-3" /> Adicionar</button>

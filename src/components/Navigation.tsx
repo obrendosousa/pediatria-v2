@@ -5,9 +5,10 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import {
   MessageSquare, CalendarDays, Settings, LogOut, LucideIcon,
-  LayoutDashboard, Trello, Stethoscope, CheckSquare, Bot,
+  LayoutDashboard, Trello, Stethoscope, CheckSquare,
   Store, PieChart, Heart, Sparkles, Users, Moon, Sun,
-  ChevronLeft, ChevronRight, Zap, FileText, ArrowLeftRight, Building2
+  ChevronLeft, ChevronRight, Zap, FileText, ArrowLeftRight, Receipt,
+  ClipboardList, Ban, DollarSign, BarChart3,
 } from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,23 +33,21 @@ export default function Navigation() {
 
   // Verifica se o usuário tem acesso a mais de um módulo
   const hasMultipleModules = modules.length > 1;
-  const hasAtendimentoAccess = modules.some(m => m.module === 'atendimento');
-
-  // --- LÓGICA DO TEMA (CORRIGIDA) ---
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  // --- LÓGICA DO TEMA ---
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light';
+    const saved = localStorage.getItem('theme');
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return saved === 'dark' || (!saved && systemDark) ? 'dark' : 'light';
+  });
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initialTheme = savedTheme === 'dark' || (!savedTheme && systemIsDark) ? 'dark' : 'light';
-
-    setTheme(initialTheme);
-    if (initialTheme === 'dark') {
+    if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, []);
+  }, [theme]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -95,6 +94,7 @@ export default function Navigation() {
         </button>
         <div className="flex items-center gap-3 w-full mb-2 transition-all duration-300">
           <div className={`relative w-10 h-10 flex items-center justify-center bg-white dark:bg-[#2a2d36] rounded-xl shadow-sm border ${isAtendimento ? 'border-blue-100 dark:border-gray-700' : 'border-pink-100 dark:border-gray-700'} p-1 transition-colors shrink-0`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://i.imgur.com/W5fMxRM.png"
               alt="Logo"
@@ -119,7 +119,7 @@ export default function Navigation() {
         {hasMultipleModules && !isCollapsed && (
           <Link
             href={isAtendimento ? '/' : '/atendimento'}
-            className={`mt-2 flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-all w-full justify-center`}
+            className={`mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-all duration-200 w-full justify-center cursor-pointer`}
           >
             <ArrowLeftRight className="w-3 h-3" />
             {isAtendimento ? 'Ir para Pediatria' : 'Ir para Clínica Geral'}
@@ -128,19 +128,36 @@ export default function Navigation() {
       </div>
 
       {/* --- NAVEGAÇÃO COMPACTA --- */}
-      <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-6 py-4">
+      <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-5 py-5">
 
         {isAtendimento ? (
           <>
-            {/* Menu do módulo Atendimento (Clínica Geral) — apenas chat */}
-            <NavItem
-              icon={MessageSquare}
-              label="Atendimento"
-              path="/atendimento"
-              active={pathname === '/atendimento'}
-              color="blue"
-              moduleTheme={mt}
-            />
+            {/* Menu do módulo Atendimento — PRD Support Clinic */}
+            <MenuGroup title="Operacional" moduleTheme={mt}>
+              <NavItem icon={LayoutDashboard} label="Dashboard" path="/atendimento/dashboard" active={isActive('/atendimento/dashboard')} color="blue" moduleTheme={mt} />
+              <NavItem icon={MessageSquare} label="Chat" path="/atendimento" active={pathname === '/atendimento'} color="teal" badge={unreadCount > 0 ? unreadCount : undefined} moduleTheme={mt} />
+              <NavItem icon={Trello} label="CRM" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} />
+              <NavItem icon={CheckSquare} label="Tasks" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} />
+            </MenuGroup>
+
+            <MenuGroup title="Agenda" moduleTheme={mt}>
+              <NavItem icon={CalendarDays} label="Agenda" path="/atendimento/agenda" active={pathname === '/atendimento/agenda'} color="blue" moduleTheme={mt} />
+              <NavItem icon={ClipboardList} label="Gerenciar" path="/atendimento/agenda/gerenciar" active={isActive('/atendimento/agenda/gerenciar')} color="blue" moduleTheme={mt} />
+              <NavItem icon={Ban} label="Bloqueios" path="/atendimento/agenda/bloqueios" active={isActive('/atendimento/agenda/bloqueios')} color="blue" moduleTheme={mt} />
+            </MenuGroup>
+
+            <MenuGroup title="Gestão" moduleTheme={mt}>
+              <NavItem icon={Users} label="Pacientes" path="/atendimento/clients" active={isActive('/atendimento/clients')} color="teal" moduleTheme={mt} />
+              <NavItem icon={Receipt} label="Orçamentos" path="/atendimento/orcamentos" active={isActive('/atendimento/orcamentos')} color="teal" moduleTheme={mt} />
+              <NavItem icon={DollarSign} label="Financeiro" path="/atendimento/financeiro" active={pathname === '/atendimento/financeiro'} color="green" moduleTheme={mt} />
+              <NavItem icon={FileText} label="NF-e" path="/atendimento/financeiro/nfe" active={isActive('/atendimento/financeiro/nfe')} color="green" moduleTheme={mt} />
+            </MenuGroup>
+
+            <MenuGroup title="Sistema" moduleTheme={mt}>
+              <NavItem icon={BarChart3} label="Relatórios" path="/atendimento/relatorios" active={isActive('/atendimento/relatorios')} color="indigo" moduleTheme={mt} />
+              <NavItem icon={Zap} label="Automações" path="/atendimento/automatizacoes" active={isActive('/atendimento/automatizacoes')} color="indigo" moduleTheme={mt} />
+              <NavItem icon={Settings} label="Configurações" path="/atendimento/configuracoes" active={isActive('/atendimento/configuracoes')} color="slate" moduleTheme={mt} />
+            </MenuGroup>
           </>
         ) : (
           <>
@@ -184,19 +201,19 @@ export default function Navigation() {
       </nav>
 
       {/* --- FOOTER COM TOGGLE DE TEMA --- */}
-      <div className={`p-3 border-t ${isAtendimento ? 'border-blue-50 dark:border-gray-800' : 'border-pink-50 dark:border-gray-800'} bg-white dark:bg-[#1e2028] transition-colors space-y-2`}>
+      <div className={`p-3 border-t ${isAtendimento ? 'border-blue-50 dark:border-gray-800' : 'border-pink-50 dark:border-gray-800'} bg-white dark:bg-[#1e2028] transition-colors space-y-1.5`}>
 
         {/* Botão de Tema */}
         <button
           onClick={toggleTheme}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group cursor-pointer border border-transparent hover:border-gray-100 dark:hover:border-gray-700 relative`}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all duration-200 group cursor-pointer border border-transparent hover:border-gray-100 dark:hover:border-gray-700 relative`}
           title={isCollapsed ? (theme === 'light' ? 'Modo Claro' : 'Modo Escuro') : undefined}
         >
           <div className="flex items-center gap-2">
             {theme === 'light' ? (
-              <Sun className="w-4 h-4 text-orange-400 shrink-0" />
+              <Sun className="w-[18px] h-[18px] text-orange-400 shrink-0" />
             ) : (
-              <Moon className="w-4 h-4 text-blue-300 shrink-0" />
+              <Moon className="w-[18px] h-[18px] text-blue-300 shrink-0" />
             )}
             <span
               className={`text-xs font-bold text-slate-500 dark:text-gray-400 group-hover:text-slate-800 dark:group-hover:text-gray-200 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
@@ -224,11 +241,11 @@ export default function Navigation() {
         <button
           type="button"
           onClick={() => signOut()}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors group cursor-pointer relative`}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 group cursor-pointer relative`}
           title={isCollapsed ? 'Sair' : undefined}
         >
           <div className="flex items-center gap-2">
-            <LogOut className="w-4 h-4 text-slate-400 dark:text-gray-500 group-hover:text-red-500 dark:group-hover:text-red-400 shrink-0" />
+            <LogOut className="w-[18px] h-[18px] text-slate-400 dark:text-gray-500 group-hover:text-red-500 dark:group-hover:text-red-400 shrink-0" />
             <span
               className={`text-xs font-bold text-slate-500 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
               style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
@@ -254,13 +271,13 @@ function MenuGroup({ title, children, moduleTheme }: { title: string, children: 
   return (
     <div>
       <p
-        className={`px-3 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mb-0' : 'opacity-100 h-auto mb-1'}`}
+        className={`px-3 text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mb-0' : 'opacity-100 h-auto mb-2'}`}
         style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
       >
         <Sparkles className={`w-3 h-3 ${moduleTheme.sparkleColor} shrink-0`} />
         <span className="overflow-hidden">{title}</span>
       </p>
-      <div className="space-y-0.5">
+      <div className="space-y-1">
         {children}
       </div>
     </div>
@@ -293,15 +310,15 @@ function NavItem({ icon: Icon, label, path, active, color, badge, moduleTheme }:
   };
 
   return (
-    <Link href={path} className="block group relative" title={isCollapsed ? label : undefined}>
+    <Link href={path} className="block group relative cursor-pointer" title={isCollapsed ? label : undefined}>
       <div className={`
-        relative flex items-center px-3 py-2 rounded-xl transition-all duration-200 text-sm font-medium overflow-hidden
+        relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium overflow-hidden
         ${active
           ? `${moduleTheme.activeGradient} text-white ${moduleTheme.shadowActive}`
           : `text-slate-600 dark:text-gray-400 ${moduleTheme.hoverBg} hover:text-slate-900 dark:hover:text-gray-100`}
       `}>
         <Icon
-          className={`w-5 h-5 transition-colors shrink-0 ${active ? 'text-white' : colorMap[color]}`}
+          className={`w-[18px] h-[18px] transition-colors duration-200 shrink-0 ${active ? 'text-white' : colorMap[color]}`}
         />
         <span
           className={`sidebar-content-transition whitespace-nowrap overflow-hidden inline-block ${isCollapsed ? 'opacity-0 w-0 ml-0' : 'opacity-100 w-auto ml-3'}`}

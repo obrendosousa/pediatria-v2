@@ -27,6 +27,8 @@ export interface Anamnesis {
   content: string | null;
   signed: boolean;
   signed_at: string | null;
+  show_date: boolean;
+  fill_date: string | null;
   created_at: string;
 }
 

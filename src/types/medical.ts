@@ -142,6 +142,7 @@ export interface Appointment {
   confirmed_at?: string | null;
   cancelled_at?: string | null;
   rescheduled_from?: number | null;
+  end_time?: string | null;
 
   created_at?: string;
 }

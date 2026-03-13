@@ -668,7 +668,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                 {[
                   { label: 'Prontuario', icon: FileText, href: `/atendimento/prontuario/${selectedPatient.id}` },
                   { label: 'Ver cadastro', icon: User, href: `/atendimento/pacientes/${selectedPatient.id}` },
-                  { label: 'Historico de agendamentos', icon: History, href: `/atendimento/resumo/${selectedPatient.id}/historico` }
+                  { label: 'Historico de agendamentos', icon: History, href: `/atendimento/agenda/historico/${selectedPatient.id}` }
                 ].map(link => (
                   <a
                     key={link.label}

@@ -15,10 +15,17 @@ export type AttendanceTabKey =
   | 'exams-procedures'
   | 'prescriptions'
   | 'documents'
-  | 'images';
+  | 'images'
+  | 'allergies'
+  | 'evolutions'
+  | 'certificates'
+  | 'reports'
+  | 'gallery'
+  | 'anamneses-list';
 
 export interface AttendanceScreenProps {
   patientId: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   patientData: any;
   onRefresh?: () => void;
   appointmentId?: number | null;

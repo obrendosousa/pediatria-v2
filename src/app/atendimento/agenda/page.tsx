@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 import AtendimentoAgendaHeader from '@/components/atendimento/agenda/AtendimentoAgendaHeader';
 import AtendimentoDayView from '@/components/atendimento/agenda/AtendimentoDayView';
-import AtendimentoWeekView from '@/components/atendimento/agenda/AtendimentoWeekView';
+import AtendimentoWeekView, { type DayBlock } from '@/components/atendimento/agenda/AtendimentoWeekView';
 import AtendimentoSidebar from '@/components/atendimento/agenda/AtendimentoSidebar';
 import NewAppointmentModal from '@/components/atendimento/agenda/NewAppointmentModal';
 import AtendimentoDetailModal from '@/components/atendimento/agenda/AtendimentoDetailModal';
@@ -34,6 +34,17 @@ type AtendimentoAppointment = {
   amount_paid?: number;
 };
 
+type RawBlock = {
+  doctor_id: number | null;
+  title: string;
+  start_date: string;
+  end_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  all_day: boolean;
+  recurrence: string;
+};
+
 function mapAppointment(row: Record<string, unknown>): AtendimentoAppointment {
   const patient = row.patients as { full_name?: string; phone?: string; sex?: string } | null;
   return {
@@ -54,6 +65,50 @@ function mapAppointment(row: Record<string, unknown>): AtendimentoAppointment {
   };
 }
 
+/** Verifica se um bloco cobre uma data específica (considerando recorrência) */
+function blockCoversDate(block: RawBlock, dateStr: string): boolean {
+  if (dateStr < block.start_date || dateStr > block.end_date) return false;
+  if (block.recurrence === 'none' || block.recurrence === 'daily') return true;
+  const targetDate = new Date(dateStr + 'T12:00:00');
+  const startDate = new Date(block.start_date + 'T12:00:00');
+  if (block.recurrence === 'weekly') return targetDate.getDay() === startDate.getDay();
+  if (block.recurrence === 'monthly') return targetDate.getDate() === startDate.getDate();
+  return true;
+}
+
+/** Gera set de time slots bloqueados para um dia */
+function buildBlockedSlots(blocks: RawBlock[], dateStr: string, doctorId: number | null, allSlots: string[]): Set<string> {
+  const blocked = new Set<string>();
+  for (const block of blocks) {
+    if (doctorId && block.doctor_id && block.doctor_id !== doctorId) continue;
+    if (!blockCoversDate(block, dateStr)) continue;
+    if (block.all_day) {
+      allSlots.forEach(s => blocked.add(s));
+    } else if (block.start_time && block.end_time) {
+      const st = block.start_time.slice(0, 5);
+      const et = block.end_time.slice(0, 5);
+      allSlots.forEach(s => { if (s >= st && s < et) blocked.add(s); });
+    }
+  }
+  return blocked;
+}
+
+/** Gera mapa de bloqueios por dia para a semana */
+function buildWeekBlocks(blocks: RawBlock[], weekDays: Date[], doctorId: number | null): Record<string, DayBlock[]> {
+  const map: Record<string, DayBlock[]> = {};
+  for (const day of weekDays) {
+    const dateStr = day.toLocaleDateString('en-CA');
+    const dayBlocks: DayBlock[] = [];
+    for (const block of blocks) {
+      if (doctorId && block.doctor_id && block.doctor_id !== doctorId) continue;
+      if (!blockCoversDate(block, dateStr)) continue;
+      dayBlocks.push({ title: block.title, start_time: block.start_time, end_time: block.end_time, all_day: block.all_day });
+    }
+    if (dayBlocks.length > 0) map[dateStr] = dayBlocks;
+  }
+  return map;
+}
+
 export default function AtendimentoAgendaPage() {
   const { profile, loading: authLoading } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -67,6 +122,7 @@ export default function AtendimentoAgendaPage() {
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   const [appointments, setAppointments] = useState<AtendimentoAppointment[]>([]);
   const [weekAppointments, setWeekAppointments] = useState<AtendimentoAppointment[]>([]);
+  const [rawBlocks, setRawBlocks] = useState<RawBlock[]>([]);
   const [doctorId, setDoctorId] = useState<number | null>(null);
   const [doctors, setDoctors] = useState<Array<{ id: number; name: string }>>([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -99,7 +155,7 @@ export default function AtendimentoAgendaPage() {
     })();
   }, []);
 
-  // Buscar agendamentos — lógica inline no effect para evitar set-state-in-effect
+  // Buscar agendamentos + bloqueios
   useEffect(() => {
     if (authLoading) return;
 
@@ -107,38 +163,63 @@ export default function AtendimentoAgendaPage() {
     const selectQuery = '*, patients:patient_id(full_name, phone, sex)';
 
     (async () => {
+      // Determinar range de datas
+      let startStr: string;
+      let endStr: string;
       if (viewMode === 'day') {
-        const dateStr = currentDate.toLocaleDateString('en-CA');
-        let query = supabase
-          .from('appointments')
-          .select(selectQuery)
-          .eq('date', dateStr)
-          .neq('status', 'cancelled')
-          .order('time');
-        if (effectiveDoctorId) query = query.eq('doctor_id', effectiveDoctorId);
-        const { data } = await query;
-        if (!cancelled && data) setAppointments(data.map(mapAppointment));
+        startStr = currentDate.toLocaleDateString('en-CA');
+        endStr = startStr;
       } else {
-        const startStr = currentWeekStart.toLocaleDateString('en-CA');
+        startStr = currentWeekStart.toLocaleDateString('en-CA');
         const endWeek = new Date(currentWeekStart);
         endWeek.setDate(endWeek.getDate() + 6);
-        const endStr = endWeek.toLocaleDateString('en-CA');
-        let query = supabase
-          .from('appointments')
-          .select(selectQuery)
-          .gte('date', startStr)
-          .lte('date', endStr)
-          .neq('status', 'cancelled')
-          .order('date')
-          .order('time');
-        if (effectiveDoctorId) query = query.eq('doctor_id', effectiveDoctorId);
-        const { data } = await query;
-        if (!cancelled && data) setWeekAppointments(data.map(mapAppointment));
+        endStr = endWeek.toLocaleDateString('en-CA');
       }
+
+      // Fetch paralelo: agendamentos + bloqueios
+      const appointmentPromise = (async () => {
+        let query = supabase.from('appointments').select(selectQuery);
+        if (viewMode === 'day') {
+          query = query.eq('date', startStr).neq('status', 'cancelled').order('time');
+        } else {
+          query = query.gte('date', startStr).lte('date', endStr).neq('status', 'cancelled').order('date').order('time');
+        }
+        if (effectiveDoctorId) query = query.eq('doctor_id', effectiveDoctorId);
+        return query;
+      })();
+
+      const blocksPromise = supabase
+        .from('schedule_blocks')
+        .select('doctor_id, title, start_date, end_date, start_time, end_time, all_day, recurrence')
+        .lte('start_date', endStr)
+        .gte('end_date', startStr);
+
+      const [apptResult, blocksResult] = await Promise.all([appointmentPromise, blocksPromise]);
+
+      if (cancelled) return;
+
+      if (apptResult.data) {
+        if (viewMode === 'day') setAppointments(apptResult.data.map(mapAppointment));
+        else setWeekAppointments(apptResult.data.map(mapAppointment));
+      }
+
+      if (blocksResult.data) setRawBlocks(blocksResult.data as RawBlock[]);
     })();
 
     return () => { cancelled = true; };
   }, [currentDate, currentWeekStart, viewMode, effectiveDoctorId, authLoading, refreshKey]);
+
+  // Derivar dados de bloqueio a partir de rawBlocks (sem setState em effect)
+  const dayBlockedSlots = useMemo(() => {
+    if (viewMode !== 'day') return new Set<string>();
+    const dateStr = currentDate.toLocaleDateString('en-CA');
+    return buildBlockedSlots(rawBlocks, dateStr, effectiveDoctorId, timeSlots);
+  }, [rawBlocks, currentDate, effectiveDoctorId, viewMode, timeSlots]);
+
+  const weekDayBlocksMap = useMemo(() => {
+    if (viewMode !== 'week') return {};
+    return buildWeekBlocks(rawBlocks, weekDays, effectiveDoctorId);
+  }, [rawBlocks, weekDays, effectiveDoctorId, viewMode]);
 
   const triggerRefresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
@@ -199,6 +280,10 @@ export default function AtendimentoAgendaPage() {
     return false;
   };
 
+  const isSlotBlocked = useCallback((time: string): boolean => {
+    return dayBlockedSlots.has(time);
+  }, [dayBlockedSlots]);
+
   const getAppointmentsAt = (time: string): AtendimentoAppointment[] => {
     return appointments.filter(app => {
       if (!app.time) return false;
@@ -242,6 +327,7 @@ export default function AtendimentoAgendaPage() {
               currentTimeSlotRef={currentTimeSlotRef}
               getAppointmentsAt={getAppointmentsAt}
               isCurrentTimeSlot={isCurrentTimeSlot}
+              isSlotBlocked={isSlotBlocked}
               setSelectedAppointment={handleSelectAppointment}
               openNewSlotModal={openNewSlotModal}
             />
@@ -249,6 +335,7 @@ export default function AtendimentoAgendaPage() {
             <AtendimentoWeekView
               weekDays={weekDays}
               weekAppointments={weekAppointments}
+              dayBlocks={weekDayBlocksMap}
               setSelectedAppointment={handleSelectAppointment}
               openNewSlotModal={openNewSlotModal}
             />
