@@ -89,6 +89,22 @@ export interface MedicationCatalogItem {
 }
 
 // === AGENDAMENTOS ===
+export type AppointmentStatus =
+  | 'scheduled' | 'confirmed' | 'waiting' | 'called'
+  | 'in_service' | 'waiting_payment' | 'finished'
+  | 'late' | 'no_show' | 'cancelled' | 'unmarked'
+  | 'not_attended' | 'rescheduled' | 'blocked';
+
+export interface AppointmentStatusLog {
+  id: number;
+  appointment_id: number;
+  old_status: string | null;
+  new_status: string;
+  changed_by: string | null;
+  changed_at: string;
+  notes: string | null;
+}
+
 export interface Appointment {
   id: number;
   start_time: string;
@@ -99,20 +115,33 @@ export interface Appointment {
   patient_sex?: 'M' | 'F' | null;
   doctor_name: string;
   doctor_id: number | null;
-  // Adicionado 'waiting_payment' para suportar o fluxo de checkout da secretária
-  status: 'scheduled' | 'called' | 'waiting' | 'in_service' | 'waiting_payment' | 'finished' | 'blocked' | 'cancelled' | 'no_show';
+  status: AppointmentStatus;
   notes?: string | null;
   anamnesis?: string | null;
-  
-  // NOVOS CAMPOS FINANCEIROS
-  total_amount?: number; // Valor total combinado (numeric no banco)
-  amount_paid?: number;  // Quanto já foi pago (numeric no banco)
-  patient_birth_date?: string | null; // date (YYYY-MM-DD)
+
+  // Campos financeiros
+  total_amount?: number;
+  amount_paid?: number;
+  patient_birth_date?: string | null;
   appointment_type?: 'consulta' | 'retorno' | null;
   chat_id?: number | null;
   queue_entered_at?: string | null;
   in_service_at?: string | null;
   finished_at?: string | null;
-  
+
+  // Campos de agendamento (PRD seção 6)
+  appointment_subtype?: 'orcamento' | 'simples' | null;
+  procedures?: string[] | null;
+  send_anamnesis?: boolean;
+  is_squeeze?: boolean;
+  is_teleconsultation?: boolean;
+  auto_confirm?: boolean;
+  generate_budget?: boolean;
+  description?: string | null;
+  scheduled_by?: string | null;
+  confirmed_at?: string | null;
+  cancelled_at?: string | null;
+  rescheduled_from?: number | null;
+
   created_at?: string;
 }

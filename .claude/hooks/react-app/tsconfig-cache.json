@@ -1,45 +1,45 @@
 {
   "hashes": {
-    "C:\\Users\\brend\\Documents\\pediatria-v2\\tsconfig.json": "a5317d6394c2eca2bedad6b88230be9ce47c18d28a50564e1c690b4c3914e0a4"
+    "/Users/brendosousa/Downloads/painel-clinica-main/tsconfig.json": "9dcd1a792a511e9e21ccda6c1be475423a0835503491c8d6844face577b2da93"
   },
   "mappings": {
     "next-env.d.ts": {
-      "configPath": "C:\\Users\\brend\\Documents\\pediatria-v2\\tsconfig.json",
+      "configPath": "/Users/brendosousa/Downloads/painel-clinica-main/tsconfig.json",
       "excludes": [
         "node_modules",
         "test-clara-langgraph.ts"
       ]
     },
     "**/*.ts": {
-      "configPath": "C:\\Users\\brend\\Documents\\pediatria-v2\\tsconfig.json",
+      "configPath": "/Users/brendosousa/Downloads/painel-clinica-main/tsconfig.json",
       "excludes": [
         "node_modules",
         "test-clara-langgraph.ts"
       ]
     },
     "**/*.tsx": {
-      "configPath": "C:\\Users\\brend\\Documents\\pediatria-v2\\tsconfig.json",
+      "configPath": "/Users/brendosousa/Downloads/painel-clinica-main/tsconfig.json",
       "excludes": [
         "node_modules",
         "test-clara-langgraph.ts"
       ]
     },
     ".next/types/**/*.ts": {
-      "configPath": "C:\\Users\\brend\\Documents\\pediatria-v2\\tsconfig.json",
+      "configPath": "/Users/brendosousa/Downloads/painel-clinica-main/tsconfig.json",
       "excludes": [
         "node_modules",
         "test-clara-langgraph.ts"
       ]
     },
     ".next/dev/types/**/*.ts": {
-      "configPath": "C:\\Users\\brend\\Documents\\pediatria-v2\\tsconfig.json",
+      "configPath": "/Users/brendosousa/Downloads/painel-clinica-main/tsconfig.json",
       "excludes": [
         "node_modules",
         "test-clara-langgraph.ts"
       ]
     },
     "**/*.mts": {
-      "configPath": "C:\\Users\\brend\\Documents\\pediatria-v2\\tsconfig.json",
+      "configPath": "/Users/brendosousa/Downloads/painel-clinica-main/tsconfig.json",
       "excludes": [
         "node_modules",
         "test-clara-langgraph.ts"
