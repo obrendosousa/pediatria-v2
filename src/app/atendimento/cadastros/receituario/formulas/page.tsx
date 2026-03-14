@@ -1,0 +1,130 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Plus, Trash2, ToggleLeft, ToggleRight, Copy, FlaskConical } from 'lucide-react';
+import DataTable from '@/components/cadastros/DataTable';
+import type { SortDirection } from '@/components/cadastros/DataTable';
+import { useToast } from '@/contexts/ToastContext';
+import { useFormulas } from '@/hooks/useFormulas';
+import type { Formula } from '@/types/cadastros';
+
+export default function FormulasPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const {
+    formulas,
+    totalCount,
+    loading,
+    listFormulas,
+    updateFormula,
+    deleteFormula,
+    duplicateFormula,
+  } = useFormulas();
+
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sort, setSort] = useState<{ key: string; direction: SortDirection } | undefined>();
+
+  const fetch = useCallback(() => {
+    listFormulas(searchTerm, page, pageSize, sort).catch(() => {
+      toast.error('Erro ao buscar fórmulas.');
+    });
+  }, [listFormulas, searchTerm, page, pageSize, sort, toast]);
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  const handleToggleStatus = useCallback(async (row: Formula) => {
+    try {
+      await updateFormula(row.id, {
+        status: row.status === 'active' ? 'inactive' : 'active',
+      });
+      toast.success(`Fórmula ${row.status === 'active' ? 'inativada' : 'ativada'}.`);
+      fetch();
+    } catch {
+      toast.error('Erro ao alterar status.');
+    }
+  }, [updateFormula, toast, fetch]);
+
+  const handleDuplicate = useCallback(async (row: Formula) => {
+    try {
+      await duplicateFormula(row.id);
+      toast.success('Fórmula duplicada com sucesso.');
+      fetch();
+    } catch {
+      toast.error('Erro ao duplicar fórmula.');
+    }
+  }, [duplicateFormula, toast, fetch]);
+
+  const handleDelete = useCallback(async (row: Formula) => {
+    if (!confirm(`Deseja excluir "${row.name}"?`)) return;
+    try {
+      await deleteFormula(row.id);
+      toast.success('Fórmula excluída.');
+      fetch();
+    } catch {
+      toast.error('Erro ao excluir fórmula.');
+    }
+  }, [deleteFormula, toast, fetch]);
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e2028]">
+        <div className="flex items-center gap-2">
+          <FlaskConical className="w-5 h-5 text-teal-600" />
+          <h1 className="text-lg font-bold text-slate-800 dark:text-gray-100">Fórmulas</h1>
+        </div>
+        <button
+          onClick={() => router.push('/atendimento/cadastros/receituario/formulas/criar')}
+          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
+        >
+          <Plus className="w-4 h-4" />
+          NOVA FÓRMULA
+        </button>
+      </div>
+
+      {/* Table */}
+      <DataTable<Formula>
+        columns={[
+          { key: 'name', label: 'Nome', sortable: true },
+          { key: 'status', label: 'Status' },
+        ]}
+        data={formulas}
+        loading={loading}
+        searchPlaceholder="Buscar fórmula..."
+        onSearch={(term) => { setSearchTerm(term); setPage(0); }}
+        onSort={(key, direction) => setSort({ key, direction })}
+        pagination={{ page, pageSize, total: totalCount }}
+        onPageChange={(p, size) => { setPage(p); setPageSize(size); }}
+        actions={[
+          { icon: 'edit', label: 'Editar', onClick: (row) => router.push(`/atendimento/cadastros/receituario/formulas/${row.id}`) },
+        ]}
+        menuActions={(row) => [
+          {
+            icon: <Copy className="w-4 h-4" />,
+            label: 'Copiar',
+            onClick: () => handleDuplicate(row),
+          },
+          {
+            icon: row.status === 'active'
+              ? <ToggleLeft className="w-4 h-4" />
+              : <ToggleRight className="w-4 h-4" />,
+            label: row.status === 'active' ? 'Inativar' : 'Ativar',
+            onClick: () => handleToggleStatus(row),
+          },
+          {
+            icon: <Trash2 className="w-4 h-4" />,
+            label: 'Excluir',
+            onClick: () => handleDelete(row),
+            className: 'text-red-500 dark:text-red-400',
+          },
+        ]}
+        emptyMessage="Nenhuma fórmula cadastrada."
+      />
+    </div>
+  );
+}

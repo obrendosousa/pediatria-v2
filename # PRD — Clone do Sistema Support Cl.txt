@@ -1,0 +1,1146 @@
+# PRD — Clone do Sistema Support Clinic v2.13.68
+## Product Requirements Document — Sistema de Gestão Clínica
+
+---
+
+## 1. VISÃO GERAL DO PRODUTO
+
+**Objetivo:** Sistema SaaS multi-tenant de gestão clínica completa, cobrindo agenda, prontuário eletrônico, pacientes, vendas, estoque, financeiro e CRM.
+
+**Tenant:** Cada clínica é um tenant (ID da clínica: ex. `22497`). Suporte a múltiplos colaboradores e profissionais por clínica.
+
+**Stack inferida:** SPA (Single Page Application), API REST, banco relacional (PostgreSQL/MySQL), autenticação por sessão com CSRF token.
+
+---
+
+## 2. NAVEGAÇÃO PRINCIPAL (Sidebar + Header)
+
+```
+Home
+Agenda
+  └─ Agenda (calendário)
+  └─ Gerenciar agendamentos
+  └─ Bloqueio de agenda
+Pacientes
+  └─ Pacientes (listagem)
+  └─ Resumo do paciente
+Produtos
+  └─ Estoque → Produtos
+  └─ Pedidos → Pedidos de injetáveis, Cupom de desconto, Injetáveis, Kits
+Vendas
+  └─ Orçamentos
+  └─ Relacionamento → Automações, Mensagens
+Financeiro
+  └─ NF-e
+Cadastros
+  └─ Cadastros gerais → Colaboradores, Profissionais
+  └─ Clínico → Procedimentos, Protocolos
+  └─ Receituário → Substâncias, Fórmulas, Protocolos, Medicamentos
+  └─ Modelos de prontuário → Anamneses, Atestados, Dietas, Evolução, Exames, Laudos, Receitas
+  └─ Modelos de Documentos
+Academy
+Support Lab
+```
+
+**Menu do Usuário (dropdown):** Editar perfil, Alterar senha, Perfil da clínica, Planos e pagamentos, Configurações, Logins ativos, Sugestões, Indique um amigo, Sair.
+
+---
+
+## 3. MÓDULO: HOME (Dashboard)
+
+**Filtros:** Período (select), Profissional (select)
+
+**KPIs (4 cards):**
+| Card | Cor |
+|---|---|
+| Agendamentos | Azul/Roxo |
+| Pacientes Confirmados | Azul claro |
+| Pacientes que Faltaram | Vermelho/Rosa |
+| Pacientes Atendidos | Verde |
+
+**Widgets:**
+- Pacientes do dia (sidebar esquerda — fila em tempo real)
+- Atendimentos por período (gráfico de barras)
+- Atendimentos por convênio
+- Tempo de atendimento (por tipo de atendimento)
+- Pacientes (gráfico com filtro por Sexo)
+- Procedimentos realizados
+- Aniversariantes (tabela: Paciente, Data)
+
+---
+
+## 4. MÓDULO: AGENDA
+
+### 4.1 Tela Principal da Agenda
+
+**Filtros:**
+
+| Campo | Tipo | Valores |
+|---|---|---|
+| `status` | select | `0:Todos os status`, `1:Agendado`, `7:Confirmado`, `6:Atrasado`, `2:Sala de espera`, `3:Em atendimento`, `4:Atendido`, `5:Cancelado`, `8:Faltou`, `9:Desmarcado`, `10:Reagendado`, `11:Não atendido` |
+| `professional_id` | select | `0:Todos os profissionais`, `{id}:{nome}` (14 profissionais) |
+| `date` | text (dd/mm/yyyy) | Data do calendário |
+
+**Grid de Slots:** Slots de 30 min (07:00 às 23:00), cada slot mostra: Data, Horário, Status ("Disponível" ou dados do paciente).
+
+**Painel lateral (ao clicar slot):** Status atual, Horário (ex: "11 Mac, 07:00 - 07:30"), botão "AGENDAR" se disponível, ou dados do paciente + ações se ocupado.
+
+**Dados do agendamento ocupado (painel lateral):**
+- foto_paciente (image)
+- Nome do paciente
+- Telefone
+- Email
+- Procedimento/Atendimento
+- Link "Enviar confirmação por WhatsApp"
+- "Mensagem enviada em:" (timestamp)
+- Link "Visualizar agendamento completo"
+
+### 4.2 Modal: Agendar Paciente
+
+**Dois modos (radio):** `Selecionar paciente` | `Cadastro rápido`
+
+**Modo "Selecionar paciente":**
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Pesquisar paciente | `client_id` | combobox (autocomplete) | Sim |
+
+**Modo "Cadastro rápido":**
+
+| Campo | name | type | Req | Obs |
+|---|---|---|---|---|
+| Nome do paciente | `name` | text | Sim* | Obrigatório |
+| Paciente estrangeiro | `exterior` | checkbox | Não | |
+| Telefone | `telephone` | text (mask) | Não | |
+| Celular | `cellphone` | text (mask) | Não | |
+| WhatsApp | `whatsapp` | text (mask) | Não | |
+| CPF | `cpf` | text (mask) | Não | |
+| E-mail | `email` | email | Não | |
+| Completar cadastro por e-mail | - | checkbox | Não | Envia link ao paciente |
+| Completar cadastro por WhatsApp | - | checkbox | Não | Envia link ao paciente |
+
+### 4.3 Modal: Enviar por WhatsApp
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Link válido até | - | text (date) | Não |
+| Número para ser enviado | - | text | Não |
+| Mensagem | - | textarea | Não |
+| **Ação:** | Abrir WhatsApp | submit | |
+
+### 4.4 Modal: Alterar mensagem de confirmação
+
+| Campo | type | Req |
+|---|---|---|
+| Mensagem de confirmação | textarea | Não |
+| **Ações:** | Cancelar (reset), Confirmar | |
+
+### 4.5 Modal: Lista de Espera
+
+Painel com tabela e formulário para adicionar pacientes à fila.
+
+**Filtros da lista:**
+
+| Campo | name | type |
+|---|---|---|
+| Profissional | `professional_id` | select (mesma lista) |
+| Buscar | - | text (pesquisar) |
+| Itens por página | - | select: 5, 10, 25, 50 |
+
+**Tabela da lista de espera:**
+
+| Coluna | Sortable |
+|---|---|
+| Paciente | Sim |
+| Profissional | Não |
+| Convênio | Sim |
+| Prioridade | Sim (desc) |
+| Data | Sim |
+| Opções | Não |
+
+**Formulário "Adicionar à lista":**
+
+| Campo | name | type | Req | Opções |
+|---|---|---|---|---|
+| Paciente | `client_id` | combobox (autocomplete) | Sim* | |
+| Profissional | `professional_id` | select | Sim* | (lista de profissionais) |
+| Prioridade | `priority_id` | select | Sim* | `1:Alta`, `2:Média`, `3:Normal`, `4:Baixa` |
+| Observações | `note` | textarea | Não | |
+
+### 4.6 Gerenciar Agendamentos
+
+**Filtros:**
+
+| Campo | type | Obs |
+|---|---|---|
+| Profissional | multi-select | Todos selecionados (14) |
+| Status | multi-select | Todos selecionados (11) |
+| De | date (dd/mm/yyyy) | Data inicial |
+| Até | date (dd/mm/yyyy) | Data final |
+
+**Tabela:**
+
+| Coluna |
+|---|
+| Paciente |
+| Descrição |
+| Profissional |
+| Status |
+| Data |
+| Opções |
+
+### 4.7 Bloqueio de Agenda
+
+**Tipo Simples:**
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Profissional | `professional_id` | select | Sim* |
+| Descrição | `description` | text | Sim* |
+| Início | `start_date` | date | Sim* |
+| Término | `end_date` | date | Sim* |
+| Horário inicial | `start_time` | time | Sim* |
+| Horário final | `end_time` | time | Sim* |
+| Observações | `note` | textarea | Não |
+
+**Tipo Recorrente:**
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Profissional | `professional_id` | select | Sim* |
+| Descrição | `description` | text | Sim* |
+| Dias | `days` | multi-select | Sim* |
+| Horário inicial | `start_time` | time | Sim* |
+| Horário final | `end_time` | time | Sim* |
+| Exceções | `exceptions` | text | Não |
+
+### 4.8 Fluxo de Status (State Machine)
+
+```
+AGENDADO ──→ CONFIRMADO ──→ SALA DE ESPERA ──→ EM ATENDIMENTO ──→ ATENDIDO
+    │              │                                                    
+    ├──→ ATRASADO ─┘                                                    
+    ├──→ CANCELADO                                                     
+    ├──→ DESMARCADO                                                    
+    ├──→ FALTOU                                                        
+    ├──→ REAGENDADO                                                    
+    └──→ NÃO ATENDIDO                                                 
+```
+
+---
+
+## 5. MÓDULO: PACIENTES
+
+### 5.1 Listagem de Pacientes
+
+**Menu lateral:** Pacientes, Resumo do paciente
+
+**Tabela:**
+
+| Coluna | Obs |
+|---|---|
+| Paciente | Avatar + Nome + Telefone |
+| Status | Badge (ATIVO verde) com dropdown |
+| Opções | 3 ícones: Prontuário, Visualizar, Menu (...) |
+
+**Menu de opções (...):** Editar informações, Alterar status, Agendamentos, Resumo
+
+### 5.2 Cadastro Completo do Paciente (Editar)
+
+#### Seção: INFORMAÇÕES BÁSICAS
+
+| Campo | name | type | Req | Opções (se select) |
+|---|---|---|---|---|
+| Nome | `name` | text | **SIM** | |
+| Nome social | `social` | text | Não | |
+| Data de nascimento | `birthday` | text (date mask) | Não | |
+| Sexo | `sex_id` | select | Não | `2:Feminino`, `1:Masculino` |
+| Estado civil | `marital_id` | select | Não | `6:Amasiado(a)`, `2:Casado(a)`, `4:Divorciado(a)`, `5:Separado(a)`, `1:Solteiro(a)`, `3:Viúvo(a)` |
+| Nome da mãe | `mother` | text | Não | |
+| Nome do pai | `father` | text | Não | |
+| Cônjuge | `conjunct` | text | Não | |
+| Foto do paciente | `file` | file (image) | Não | Suporte a crop |
+
+#### Seção: DOCUMENTAÇÃO E IDENTIDADE
+
+| Campo | name | type | Req | Opções |
+|---|---|---|---|---|
+| CPF | `cpf` | text (mask: 000.000.000-00) | Não | |
+| RG | `registry_number` | text | Não | |
+| Paciente estrangeiro | `exterior` | checkbox | Não | |
+| Órgão Expedidor | `institution_id` | select | Não | `4:CNT`, `6:CTPS`, `5:DIC`, `7:FGTS`, `8:IFP`, `10:IML`, `9:IPF`, `13:MAE`, `14:MEX`, `12:MMA`, `11:MTE`, `3:PC`, `2:PM`, `1:SSP`, etc. |
+| Estado | `registry_state_id` | select | Não | (27 UFs) |
+| Data de Emissão | `registry_emission` | text (date) | Não | |
+
+#### Seção: INFORMAÇÕES DE CONTATO
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Telefone | `telephone` | text (mask) | Não |
+| Celular | `cellphone` | text (mask) | Não |
+| WhatsApp | `whatsapp` | text (mask) | Não |
+| E-mail | `email` | email | Não |
+
+#### Seção: ENDEREÇO E LOCALIZAÇÃO
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| CEP | `zip_code` | text (mask, auto-fill) | Não |
+| Endereço | `street` | text | Não |
+| Estado | `state_id` | select | Não |
+| Cidade | `city_id` | select (dependente de state_id) | Não |
+| Bairro | `neighborhood` | text | Não |
+| Número | `number` | text | Não |
+| Referência | `reference` | text | Não |
+| Complemento | `complement` | text | Não |
+
+#### Seção: INFORMAÇÕES COMPLEMENTARES
+
+| Campo | name | type | Req | Opções |
+|---|---|---|---|---|
+| Escolaridade | `education_id` | select | Não | `1:Analfabeto`, `3:Fundamental completo`, `2:Fundamental incompleto`, `5:Médio completo`, `4:Médio incompleto`, `12:Pós-graduado com doutorado`, `10:Pós-graduado com especialização`, `11:Pós-graduado com mestrado`, `7:Superior completo`, `6:Superior incompleto` |
+| Profissão | `profession_id` | select | Não | (lista dinâmica) |
+| Renda mensal | `salary_id` | select | Não | `1:até R$ 1.000`, `2:R$ 1k-3k`, `3:R$ 3k-5k`, `4:R$ 5k-7k`, `5:R$ 7k-15k`, `7:R$ 15k-20k`, `8:acima de R$ 20k`, `6:Não quero informar` |
+| Necessidades especiais | `deficient_id` | select | Não | `2:Auditiva`, `3:Física`, `4:Intelectual`, `5:Múltipla`, `1:Visual` |
+| Nome contato emergência | `name_emergercy` | text | Não | |
+| Contato de emergência | `emergency_contact` | text | Não | |
+| Plano de saúde | `has_agreement` | checkbox | Não | |
+| Convênio | `plan_id` | select | Não | (dinâmico) |
+| Nome do convênio | `health_plan` | text | Não | |
+| Número da carteirinha | `plan_number` | text | Não | |
+
+#### Seção: INFORMAÇÕES DE ORIGEM
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Origem | `indication_id` | select | Não |
+| Nome | `indication_name` | text | Não |
+| Tags | `tags` | text | Não |
+| Observações | `note` | textarea | Não |
+
+#### Seção: RESPONSÁVEL FINANCEIRO
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Nome | `responsible_name` | text | Não |
+| CPF | `responsible_cpf` | text (mask) | Não |
+
+#### Seção: INFORMAÇÕES DO CADASTRO (readonly)
+
+| Campo | name | type |
+|---|---|---|
+| Data de criação | `created_at` | text (readonly) |
+| Responsável pelo cadastro | `emmployee_id` | text (readonly) |
+
+---
+
+## 6. MÓDULO: PRONTUÁRIO ELETRÔNICO
+
+**URL:** `/comercial/clientes/{patient_id}/prontuario`
+
+**Cabeçalho:** ID do paciente, Nome, CPF, Contato, Contato de emergência, Foto, Botão "Adicionar etiqueta", Botões de ação (PDF, Histórico).
+
+**Menu lateral do Prontuário (16 seções):**
+
+```
+Histórico do paciente (/clinico/timeline/{id})
+Anamnese (/clinico/anamnese/{id})
+Alergias (/clinico/alergias/{id})
+Evoluções (/clinico/evolucao/{id})
+Receitas (/clinico/receita/{id})
+Memed (integração externa)
+Atestados (/clinico/atestados/{id})
+Laudos (/clinico/laudos/{id})
+Exames
+  └─ Pedidos (/clinico/exames/{id})
+  └─ Resultados
+Support Lab
+Planos (/clinico/planos/{id})
+Anexos
+Dietas (/clinico/dietas/{id})
+CID's
+Galeria
+Documentos
+```
+
+### 6.1 Histórico do Paciente (Timeline)
+
+| Filtro | type | Obs |
+|---|---|---|
+| Itens | multi-select | Tipo de registro |
+| Profissional | multi-select | Todos selecionados (26) |
+| De | date | |
+| Até | date | |
+
+Exibe timeline cronológica com data/hora, profissional, tipo, conteúdo. Botão de impressão.
+
+### 6.2 Anamnese (Criar)
+
+| Campo | name | type | Req | Opções |
+|---|---|---|---|---|
+| Usar modelo | - | select (modelos) | Não | Modelos pré-configurados |
+| Assinar digitalmente | `digital_signature` | select | Não | `0:Selecione um certificado`, `1:Assinar com Bird ID` |
+| Título | `name` | text | Não | |
+| Pergunta (dinâmico) | `text-question` | text | Não | Construtor dinâmico |
+| Tipo da pergunta | `type-question` | select | Não | `3:Caixa de seleção`, `4:Calculadora gestacional`, `2:Multipla escolha`, `1:Texto` |
+| Opções da pergunta | `option-question[]` | text (array) | Não | Para tipos 2 e 3 |
+| CID | `cid_id[]` | select-multiple | Não | Base CID completa |
+| Salvar como modelo | `save_model` | checkbox | Não | |
+| Enviar ao paciente | `send_client` | checkbox | Não | |
+| Imprimir | `print` | checkbox | Não | |
+| Arquivo | `file[]` | file | Não | |
+
+**Comportamento:** Autosave automático (salva a cada alteração com timestamp).
+
+### 6.3 Evoluções (Criar)
+
+| Campo | name | type | Req | Opções |
+|---|---|---|---|---|
+| Usar modelo | - | select | Não | |
+| Assinar digitalmente | `digital_signature` | select | Não | `0:Selecione`, `1:Bird ID` |
+| Data | `date` | text (date) | **SIM** | |
+| Conteúdo | `note` | textarea (WYSIWYG) | **SIM** | Editor rico: fonte, B/I/U, cor, listas, tabelas, imagens, links |
+| Arquivos | `files` | file | Não | |
+| Bloquear evolução | `blocked` | toggle | Não | Impede edições futuras |
+| Salvar como modelo | `save_model` | checkbox | Não | |
+| Salvar e imprimir | `print` | checkbox | Não | |
+
+### 6.4 Receitas (Criar)
+
+| Campo | name | type | Req | Opções |
+|---|---|---|---|---|
+| Usar modelo | - | select | Não | |
+| Assinar digitalmente | `digital_signature` | select | Não | `0:Selecione`, `1:Bird ID` |
+| Nome | `name` | text | Não | |
+| Data | `date` | text (date) | Não | |
+| Exibir data | `show_date` | checkbox | Não | |
+| Conteúdo | `content` | textarea (WYSIWYG) | Não | |
+| Foco da receita | `note` | textarea | Não | |
+| Receita especial | `special` | checkbox | Não | Receita de controle especial |
+| Bloquear | `blocked` | checkbox | Não | |
+| Arquivos | `files` | file | Não | |
+| Salvar como modelo | `save_model` | checkbox | Não | |
+| Imprimir | `print` | checkbox | Não | |
+| Enviar para parceiro(s) | `pharmacy_id[]` | select-multiple | Não | `1:Central Farma Matriz`, `2:Central Farma Caratinga`, `875:Harmonize` |
+| Mensagem ao parceiro | `recipe_message` | textarea | Não | |
+
+### 6.5 Atestados (Criar)
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Usar modelo | - | select | Não |
+| Assinar digitalmente | `digital_signature` | select | Não |
+| Nome | `name` | text | Não |
+| Data | `date` | text (date) | Não |
+| Atestado | `note` | textarea (WYSIWYG) | **SIM** |
+| CID | `cid_id[]` | select-multiple | Não |
+| Arquivos | `files` | file | Não |
+| Salvar como modelo | `save_model` | checkbox | Não |
+| Imprimir | `print` | checkbox | Não |
+
+### 6.6 Laudos (Criar)
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Assinar digitalmente | `digital_signature` | select | Não |
+| Nome | `name` | text | Não |
+| Data | `date` | text (date) | Não |
+| Laudo | `note` | textarea (WYSIWYG) | **SIM** |
+| CID | `cid_id[]` | select-multiple | Não |
+| Arquivos | `files`, `file[]` | file | Não |
+| Imprimir | `print` | checkbox | Não |
+| Salvar como modelo | `save_model` | checkbox | Não |
+
+### 6.7 Exames - Pedidos (Criar)
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Descrição | `name` | text | **SIM** |
+| Assinar digitalmente | `digital_signature` | select | Não |
+| Data | `date` | text (date) | **SIM** |
+| Exibir data | `show_date` | checkbox | Não |
+| Conteúdo | `note` | textarea (WYSIWYG) | **SIM** |
+| CID | `cid_id[]` | select-multiple | Não |
+| Arquivos | `files` | file | Não |
+| Salvar como modelo | `save_model` | checkbox | Não |
+| Imprimir | `print` | checkbox | Não |
+| Enviar para parceiro(s) | `pharmacy_id[]` | select-multiple | Não |
+| Mensagem ao parceiro | `message` | textarea | Não |
+
+### 6.8 Dietas (Criar)
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Assinar digitalmente | `digital_signature` | select | Não |
+| Nome | `name` | text | **SIM** |
+| Conteúdo | `content` | textarea (WYSIWYG) | Não |
+| Observações | `note` | text | Não |
+| Arquivos | `files`, `file[]` | file | Não |
+| Salvar como modelo | `save_model` | checkbox | Não |
+
+### 6.9 Planos de Tratamento (Criar)
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Nome | `name` | text | Não |
+| Assinar digitalmente | `digital_signature` | select | Não |
+| Foco do tratamento | `focus` | textarea | Não |
+| Imprimir | `print` | checkbox | Não |
+
+### 6.10 Alergias
+
+Formulário com checkboxes organizados em categorias clínicas (não é um CRUD simples, é um formulário de check-list médico fixo com campos de observação para cada item).
+
+**Categorias:** Queixa principal, Medicamentos em uso, História da doença atual (Alergia respiratória, Alergia cutânea, Alergia alimentar), Exame Físico, Testes alérgicos.
+
+---
+
+## 7. MÓDULO: CADASTROS
+
+### 7.1 Profissional (Cadastro/Edição)
+
+| Campo | name | type | Req | Opções |
+|---|---|---|---|---|
+| Nome | `name` | text | **SIM** | |
+| Sexo | `sex_id` | select | Não | `2:Feminino`, `1:Masculino` |
+| Data de nascimento | `birthday` | text (date) | Não | |
+| Estado civil | `marital_id` | select | Não | (6 opções) |
+| CPF | `cpf` | text (mask) | **SIM** | |
+| RG | `registry_number` | text | Não | |
+| Logradouro | `street` | text | Não | |
+| CEP | `zip_code` | text (mask) | Não | |
+| Estado | `state_id` | select | Não | (27 UFs) |
+| Cidade | `city_id` | select | Não | (dependente) |
+| Bairro | `neighborhood` | text | Não | |
+| Número | `number` | text | Não | |
+| Complemento | `complement` | text | Não | |
+| E-mail | `email` | email | Não | |
+| Telefone | `telephone` | text | Não | |
+| Celular | `cellphone` | text | Não | |
+| WhatsApp | `whatsapp` | text | Não | |
+| Tipo de profissional | `type_id` | select | **SIM** | `10:Biomédico`, `11:Educador físico`, `2:Enfermeiro(a)`, `7:Esteticista`, `12:Farmacêutico`, `13:Fisioterapeuta`, `14:Fonoaudiólogo`, `1:Médico(a)`, `5:Nutricionista`, `6:Odontólogo`, `9:Outros`, `8:Psicólogo(a)`, `3:Técnico(a) de enfermagem`, `4:Terapeuta ocupacional` |
+| Especialidade | `expertise_id[]` | select-multiple | Não | 170+ especialidades médicas |
+| Estado de registro | `registry_state` | select | **SIM** | (27 UFs) |
+| Tipo de registro | `register_id` | select | **SIM** | `9:CRBM`, `1:COREN`, `8:CRF`, `2:CREFITO`, `3:CREFONO`, `4:CRM`, `5:CRN`, `7:CRO`, `6:CRP`, `10:Outros`, `11:Reg.Col.Med` |
+| Registro profissional | `record` | text | **SIM** | Número do registro |
+| Listagem dos agendamentos | `home_page` | select | **SIM** | `1:Abrir prontuário`, `2:Exibir lista de agendamentos` |
+| Acesso de administrador | `admin` | select | **SIM** | `0:Não`, `1:Sim` |
+| Perfil | `profile_id` | select | **SIM** | Perfis de acesso |
+| Restringir preços | `price` | checkbox | Não | |
+| Possui agenda | `schedule` | checkbox | Não | **Flag que habilita agenda** |
+| Restringir agenda | `schedule_restrict` | checkbox | Não | |
+| Responsável técnico | `technical_responsible` | checkbox | Não | |
+| Anexos | `file[]` | file | Não | |
+| Observações | `note` | text | Não | |
+
+### 7.2 Procedimentos (Cadastro)
+
+| Campo | name | type | Req | Opções |
+|---|---|---|---|---|
+| Nome | `treatment_name` | text | **SIM** | |
+| Tipo de procedimento | `type_id` | select | **SIM** | `3:Consultas`, `4:Exames`, `2:Injetáveis`, `1:Outros` |
+| Duração (minutos) | `time` | text | **SIM** | |
+| Via de aplicação | `way_id` | select | Não | |
+| Composição (toggle) | `compostion_switch` | checkbox | Não | |
+| Preparação | `note` | textarea | Não | |
+| Valor dos produtos | `composition_value` | text (money) | Não | |
+| Valor de honorários | `honorarium_value` | text (money) | **SIM** | |
+| Valor total | `total_value` | text (money) | Não | Auto-calculado |
+| Fórmula de precificação | `formula_id` | select | Não | |
+| **Impostos/Custos:** | | | | |
+| Custo do procedimento | `treatment_composition` | text (R$) | Não | |
+| Outros custos | `other_costs` | text (R$) | Não | |
+| Taxa cartão crédito | `card_tex` | text (%) | Não | |
+| Comissão | `commission` | text (%) | Não | |
+| Desconto | `discount` | text (%) | Não | |
+| INSS | `inss` | text (%) | Não | |
+| IRRF | `irrf` | text (%) | Não | |
+| IRPJ | `irpj` | text (%) | Não | |
+| CSLL | `csll` | text (%) | Não | |
+| PIS/PASEP | `pis` | text (%) | Não | |
+| COFINS | `cofins` | text (%) | Não | |
+| CPP | `cpp` | text (%) | Não | |
+| ISS (ISSQN) | `iss` | text (%) | Não | |
+| Outros impostos | `other_tax` | text (%) | Não | |
+| Margem de contribuição | `contribution_margin` | text (%/R$) | Não | Radio: % ou R$ |
+
+### 7.3 Perfil da Clínica
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Nome fantasia | `fantasy_name` | text | Não |
+| Razão social | `social_name` | text | Não |
+| Natureza | `nature-ref` | text | Não |
+| CNPJ | `cnpj` | text (mask) | Não |
+| Inscrição estadual | `state_registration` | text | Não |
+| Inscrição municipal | `municipal_registration` | text | Não |
+| E-mail | `email` | email | **SIM** |
+| Telefone | `telephone` | text | Não |
+| Celular | `cellphone` | text | Não |
+| WhatsApp | `whatsapp` | text | Não |
+| Logradouro | `street` | text | **SIM** |
+| CEP | `zipcode` | text | **SIM** |
+| Estado | `state_id` | select | **SIM** |
+| Cidade | `city_id` | select | **SIM** |
+| Bairro | `neighborhood` | text | **SIM** |
+| Número | `number` | text | **SIM** |
+| Complemento | `complement` | text | Não |
+| Usar modelo impressão | `use_model` | checkbox | Não |
+| Logo | `logo` | file | Não |
+
+---
+
+## 8. MÓDULO: VENDAS
+
+### 8.1 Orçamentos (Criar)
+
+| Campo | name | type | Req |
+|---|---|---|---|
+| Paciente | `client_id` | select (autocomplete) | **SIM** |
+| Profissional | `professional_id` | select | **SIM** |
+| Procedimentos | `consult_id` | select | Não |
+| Sessões | `quantity` | text (number) | Não |
+| Vezes | `times` | text (number) | Não |
+| Periodicidade | `period` | select | Não |
+| Protocolos | `protocol_id` | select | Não |
+| Desconto (%) | `discount` | text | **SIM** |
+| Desconto (R$) | `discount_value` | text | **SIM** |
+| Valor total | `total_value` | text | **SIM** |
+| Parcelas | `portion` | number | **SIM** |
+| Observações | `note` | textarea | Não |
+
+### 8.2 Relacionamento (CRM)
+
+**Seções:** NPS, Automações, Mensagens
+
+**Automações pré-existentes:**
+- Mensagem de aniversariantes
+- Confirmação de agendamento
+
+---
+
+## 9. MÓDULO: FINANCEIRO
+
+### NF-e
+
+| Filtro | type |
+|---|---|
+| De | date |
+| Até | date |
+| Status | multi-select (6 status) |
+
+| Coluna tabela |
+|---|
+| Registro, Paciente, Valor, Status, Data, Opções |
+
+---
+
+## 10. FUNCIONALIDADES TRANSVERSAIS
+
+### 10.1 Chat Interno
+Sistema de chat entre profissionais/colaboradores com lista de contatos, busca por nome, envio de mensagens em tempo real.
+
+### 10.2 Notificações
+Sistema de notificações no header com badge de contagem.
+
+### 10.3 Pesquisa Global
+Busca por paciente ou profissional em toda a aplicação (modal de pesquisa com `search` input).
+
+### 10.4 Assinatura Digital
+Integração com **Bird ID** para assinatura digital de documentos clínicos (Evoluções, Receitas, Atestados, Laudos, Exames, Anamneses, Dietas, Planos).
+
+### 10.5 Sistema de Modelos (Templates)
+Cada tipo de documento clínico suporta: usar modelo pré-configurado, salvar como novo modelo, imprimir.
+
+### 10.6 Integração com Parceiros
+Receitas e Pedidos de exames podem ser enviados para farmácias/laboratórios parceiros cadastrados.
+
+### 10.7 Integração Memed
+Prescrição digital via plataforma Memed.
+
+### 10.8 Autosave
+Anamneses possuem salvamento automático com exibição de timestamp.
+
+---
+
+## 11. MODELO DE DADOS (Entidades Principais)
+
+```
+Clinic (id, name, fantasy_name, social_name, cnpj, ...)
+User (id, clinic_id, name, email, role, ...)
+Professional (id, clinic_id, type_id, expertise_id[], register_id, record, schedule, ...)
+Collaborator (id, clinic_id, name, status, ...)
+Patient (id, clinic_id, name, cpf, sex_id, birthday, status, tags, ...)
+Appointment (id, clinic_id, patient_id, professional_id, date, time_start, time_end, status_id, procedure_id, ...)
+WaitingList (id, clinic_id, patient_id, professional_id, priority_id, note, ...)
+ScheduleBlock (id, clinic_id, professional_id, type[simple/recurring], description, start, end, ...)
+Procedure (id, clinic_id, name, type_id, time, value, taxes, ...)
+Evolution (id, patient_id, professional_id, date, content, blocked, digital_signature, ...)
+Anamnesis (id, patient_id, professional_id, title, questions[], model_id, ...)
+Prescription (id, patient_id, professional_id, name, date, content, special, pharmacy_ids[], ...)
+Certificate (id, patient_id, professional_id, name, date, content, cid_ids[], ...)
+Report (id, patient_id, professional_id, name, date, content, cid_ids[], ...)
+ExamRequest (id, patient_id, professional_id, name, date, content, pharmacy_ids[], ...)
+ExamResult (id, exam_request_id, ...)
+TreatmentPlan (id, patient_id, professional_id, name, focus, ...)
+Diet (id, patient_id, professional_id, name, content, ...)
+Allergy (id, patient_id, complaints, medications, history, exam, tests, ...)
+CID (id, code, description)
+Budget (id, clinic_id, patient_id, professional_id, procedure_id, quantity, discount, total, status, ...)
+Invoice (id, clinic_id, patient_id, value, status, date, ...)
+Automation (id, clinic_id, type, status, ...)
+Message (id, clinic_id, ...)
+Model/Template (id, clinic_id, type[anamnesis/evolution/...], name, content, ...)
+Attachment (id, entity_type, entity_id, file_path, ...)
+Partner (id, clinic_id, name, type, ...)
+```
+
+---
+
+Esse PRD cobre **todos os campos com nomes de atributos reais (`name`)**, tipos de input, validações de
+
+
+# PRD Complementar — 16 Seções do Prontuário do Paciente (Support Clinic)
+
+Abaixo está o mapeamento completo de todas as 16 seções do sidebar do prontuário, com campos, tipos, lógicas e estrutura de listagem/criação.
+
+---
+
+## Visão Geral do Prontuário
+
+**URL base:** `/comercial/clientes/{client_id}/prontuario`
+
+O prontuário é o hub central do paciente. Exibe um **cabeçalho fixo** (card azul) com: ID do paciente, nome, CPF, contato, contato de emergência, botão "Adicionar etiqueta", ícone de prontuário (PDF) e ícone de histórico. Abaixo do cabeçalho, o conteúdo muda conforme a seção selecionada no sidebar.
+
+---
+
+## 1. Prontuário (Tela principal)
+
+**URL:** `/comercial/clientes/{client_id}/prontuario`
+
+É uma **visualização read-only** das informações cadastrais do paciente (somente leitura; edição via ícone de lápis que redireciona para `/visualizar`).
+
+**Seções de dados exibidos:**
+
+**INFORMAÇÕES BÁSICAS:** `name` (Nome), `social` (Nome social), `birthday` (Data de nascimento), `sex_id` (Sexo), `marital_id` (Estado civil), `mother` (Nome da mãe), `father` (Nome do pai), `conjunct` (Cônjuge)
+
+**DOCUMENTAÇÃO:** `cpf`, `rg`, `rg_issue` (Órgão emissor), `institution_id` (Instituição)
+
+**CONTATO:** `phone` (Celular), `phone_secondary` (Telefone fixo), `email`
+
+**ENDEREÇO:** `zipcode`, `street` (Logradouro), `number`, `complement`, `neighborhood`, `city`, `state_id`
+
+**INFORMAÇÕES COMPLEMENTARES:** `education_id` (Escolaridade), `profession_id` (Profissão), `salary_id` (Renda mensal), `deficient_id` (Necessidades especiais), `name_emergercy` (Nome contato emergência), `emergency_contact`, `plan_id` (Convênio — **required**), `plan_number` (Nº carteirinha), `plan_validity` (Validade)
+
+**INFORMAÇÕES DE ORIGEM:** `origin_id` (Origem), `indication_id` (Indicação)
+
+**OBSERVAÇÕES:** `note` (textarea)
+
+**RESPONSÁVEL FINANCEIRO:** `responsible_name`, `responsible_cpf`
+
+**INFORMAÇÕES DE CADASTRO:** `created_at`, `emmployee_id` (Responsável pelo cadastro)
+
+---
+
+## 2. Histórico do Paciente (Timeline)
+
+**URL:** `/clinico/timeline/{client_id}`
+
+Tela de **consulta/filtro** — não possui formulário de criação. Exibe uma timeline cronológica de todos os registros do prontuário.
+
+**Campos de filtro:**
+
+| Campo | `name` | Tipo | Obrigatório | Valores |
+|-------|--------|------|-------------|---------|
+| Itens | `type[]` | select-multiple | Não | `AllergyMain` (Alergias), `AnamnesisMain` (Anamneses), `EvolutionMain` (Evoluções), `Migration` (Migração), `RecipeReview` (Receitas), `MedicalCertificate` (Atestados), `MedicalReport` (Laudos), `ExamMain` (Screening), `RequestMain` (Pedidos de Exames), `ExamReceived` (Resultados de Exames), `PlanMain` (Planos), `AttachmentMain` (Anexos), `DietMain` (Dietas), `NoteMain` (Anotações) |
+| Profissional | `professional_id[]` | select-multiple | Sim* | Lista dos 26 profissionais da clínica (default: "Todos selecionados") |
+| De | `start` | text (datepicker) | Sim* | Data início |
+| Até | `end` | text (datepicker) | Sim* | Data fim |
+
+**Ações:** Botão de filtrar (submit `#timeline-button`), Impressão.
+
+**Lógica:** A timeline agrega todos os tipos de registro clínico do paciente em uma única view ordenada cronologicamente. Cada item da timeline mostra tipo, data, profissional responsável e preview do conteúdo.
+
+---
+
+## 3. Anamnese
+
+**URL listagem:** `/clinico/anamnese/{client_id}`
+**URL criação:** `/clinico/anamnese/{client_id}/criar`
+
+**Listagem — Colunas:** Data, Título, Profissional + badge de status (RASCUNHO em amarelo / Finalizado)
+
+**Formulário de criação:**
+
+| Campo | `name` | Tipo | Obrigatório | Notas |
+|-------|--------|------|-------------|-------|
+| Assinatura digital | `digital_signature` | checkbox | Não | Toggle on/off |
+| Modelo | — | select | Não | Carrega modelo pré-definido (preenche automaticamente o formulário) |
+| Título | `name` | text | Sim | |
+| Pergunta (texto) | `text-question` | text | Dinâmico | Texto da pergunta — adição dinâmica |
+| Tipo da pergunta | `type-question` | select | Dinâmico | Texto / Caixa de seleção / Calculadora gestacional / Múltipla escolha |
+| Opções de resposta | `option-question[]` | text | Condicional | Aparece para Caixa de seleção e Múltipla escolha |
+| CIDs | `cid_id[]` | select (autocomplete) | Não | Busca na tabela CID |
+| Arquivos | `file[]` | file | Não | Upload de anexos |
+| Salvar como modelo | `save_model` | checkbox | Não | |
+| Enviar ao paciente | `send_client` | checkbox | Não | |
+| Imprimir | `print` | checkbox | Não | |
+
+**Lógica especial:** Sistema de autosave; perguntas dinâmicas podem ser adicionadas/removidas; a Calculadora gestacional é um tipo especial que calcula semanas gestacionais.
+
+---
+
+## 4. Alergias
+
+**URL:** `/clinico/alergias/{client_id}`
+
+Tela **única** (não tem listagem separada da criação). Formulário extenso com **84 checkboxes** organizados em **8 categorias**, mais campos de texto livre (textarea) para observações em itens específicos.
+
+**Estrutura de categorias e checkboxes (`name="answer_id[]"`):**
+
+**Queixa Principal (IDs 1-5):** Nariz, Olhos, Pulmão, Pele, Alergia Alimentar
+
+**Historia da Doença Atual — Alergia Respiratória (IDs 6-16):** Tosse, Coriza, Prurido nasoocular, Prurido em orofaringe e ouvidos, Roncos noturnos, Dorme com a boca aberta, Otorreia, Refluxo Ge, Sibilancia, Dispneia noturna, Dispneia diurna e noturna
+
+**Historia da Doença Atual — Alergia Cutânea (IDs 17-20 + textarea):** Estrofulo, Urticaria, Dermatite atopica, Dermatite de contato + textarea `note[20]`
+
+**Historia da Doença Atual — (IDs 21-30 + textarea):** Agioedema labial, Agioedema palpebral, Edema de língua, Edema de faringe, Alergia a leite de vaca, Intolerância ao lv, Alergia a soja, Alergia/intolerância frutos do mar, Alergia a corantes, Outras + textarea `note[30]`
+
+**Reações a Medicamento (IDs 31-34, 84):** AINNH (+ `note[31]`), Anti hipertensivos (+ `note[32]`), Ansiolíticos (+ `note[33]`), Antibióticos, Outros (+ `note[84]`)
+
+**Imunidade (IDs 35-38):** Vacinas de rotina, Outras vacinas, História de infecções de respiração (+ `note[37]`), Virais (+ `note[38]`)
+
+**História Patológica Pregressa (IDs 39-53):** Asma Bronquica, Pneumonias, Urticarias, Sinusites, Amigdalites, Refluxos Ge, Gastrite/esofagite eosiofilica, Estrufolo, Reações a insetos, Doença cardiovascular, Hipertensão arterial, Diabetes, Câncer, Tuberculose pulmonar/pleural, Tuberculose ganglionar
+
+**História Familiar (IDs 54-61):** AB, Rinite, Urticaria, Estrofulo, Reações a drogas, Dermatite de contato, Dermatite atópica, Outras (+ `note[61]`)
+
+**Medicamentos em Uso (IDs 62-68):** Propranolol, Enalapril, Benzodiazepínicos, Inibidores da eca, Diuréticos tiazídicos, Antiarlegicos, Corticosteroides
+
+**Exame Físico (IDs 69-81):** Pele (+ textarea), Ar (+ textarea), Rin Ant (+ textarea), Or (+ textarea), DP (+ textarea), DF (+ textarea), BT (+ textarea), PC (+ textarea), PG (+ textarea), Ba (+ textarea), Mo (+ textarea), CP (+ textarea), CN (+ textarea)
+
+**Conduta (IDs 82-83):** Medicamentos (+ `note[82]`), Exames (+ `note[83]`)
+
+**Campos de controle:**
+
+| Campo | `name` | Tipo | Notas |
+|-------|--------|------|-------|
+| Bloquear alergias | (toggle switch) | toggle | Seção RESTRIÇÕES |
+| Alertar no sistema | (checkbox) | checkbox | Exibe alerta ao abrir prontuário |
+| Botão | SALVAR INFORMAÇÕES | submit | |
+
+**Padrão dos textareas:** `note[{answer_id}]` — cada checkbox que tem campo de observação livre possui um textarea associado pelo ID.
+
+---
+
+## 5. Evoluções
+
+**URL listagem:** `/clinico/evolucao/{client_id}`
+**URL criação:** `/clinico/evolucao/{client_id}/criar`
+
+**Listagem — Colunas:** Data de criação, Data da evolução, Tipo, Profissional + badge RASCUNHO/Finalizado
+
+**Formulário de criação:**
+
+| Campo | `name` | Tipo | Obrigatório |
+|-------|--------|------|-------------|
+| Assinatura digital | `digital_signature` | checkbox | Não |
+| Data | `date` | text (datepicker) | Sim |
+| Conteúdo | `note` | textarea (WYSIWYG Summernote) | Sim |
+| Arquivos no editor | `files` | file | Não |
+| Anexos | `file[]` | file | Não |
+| Salvar como modelo | `save_model` | checkbox | Não |
+| Imprimir | `print` | checkbox | Não |
+
+**Editor WYSIWYG:** Summernote com toolbar: fonte (Roboto), tamanho (13), bold, italic, underline, marca-texto, strikethrough, cor, listas, tabela, undo/redo, inserir imagem, formato de título.
+
+---
+
+## 6. Receitas
+
+**URL listagem:** `/clinico/receita/{client_id}`
+**URL criação:** `/clinico/receita/{client_id}/criar`
+
+**Listagem — Colunas:** Data de criação, Data da receita, Nome, Profissional + badge RASCUNHO
+
+**Formulário de criação:**
+
+| Campo | `name` | Tipo | Obrigatório | Notas |
+|-------|--------|------|-------------|-------|
+| Assinatura digital | `digital_signature` | checkbox | Não | |
+| Modelo | — | select | Não | |
+| Nome | `name` | text | Sim | |
+| Data | `date` | text (datepicker) | Sim | |
+| Exibir data | `show_date` | checkbox | Não | |
+| Conteúdo | `content` | textarea (WYSIWYG) | Sim | |
+| Observações | `note` | textarea | Não | |
+| Receita especial | `special` | checkbox | Não | Receita de controle especial |
+| Bloqueada | `blocked` | checkbox | Não | |
+| Farmácia parceira | `pharmacy_id[]` | checkbox group | Não | 3 parceiras disponíveis |
+| Mensagem farmácia | `recipe_message` | textarea | Não | |
+| Arquivos | `file[]` | file | Não | |
+| Salvar como modelo | `save_model` | checkbox | Não | |
+| Imprimir | `print` | checkbox | Não | |
+
+---
+
+## 7. Memed (Integração Externa)
+
+**Acesso:** Via sidebar do prontuário (abre integração Memed)
+
+**Pré-requisito:** CPF do paciente é obrigatório + Especialidade do profissional.
+
+**Modal de configuração:**
+- Campo `Especialidade` (select, ex: Acupuntura) — deve ser salvo antes de acessar.
+
+**Lógica:** Memed é uma plataforma externa de prescrição digital integrada via SDK/iframe. Não possui URL própria dentro do sistema. O profissional prescreve medicamentos dentro do widget Memed que é renderizado no prontuário. As prescrições são sincronizadas automaticamente.
+
+---
+
+## 8. Atestados
+
+**URL listagem:** `/clinico/atestados/{client_id}`
+**URL criação:** `/clinico/atestados/{client_id}/criar`
+
+**Listagem — Colunas:** Data, Nome, Profissional, Opções
+
+**Formulário de criação:**
+
+| Campo | `name` | Tipo | Obrigatório |
+|-------|--------|------|-------------|
+| Assinatura digital | `digital_signature` | checkbox | Não |
+| Modelo | — | select | Não |
+| Nome | `name` | text | Sim |
+| Data | `date` | text (datepicker) | Sim |
+| Conteúdo | `note` | textarea (WYSIWYG) | Sim |
+| CIDs | `cid_id[]` | select (autocomplete) | Não |
+| Arquivos | `file[]` | file | Não |
+| Salvar como modelo | `save_model` | checkbox | Não |
+| Imprimir | `print` | checkbox | Não |
+
+---
+
+## 9. Laudos
+
+**URL listagem:** `/clinico/laudos/{client_id}`
+**URL criação:** `/clinico/laudos/{client_id}/criar`
+
+**Listagem — Colunas:** Data, Nome, Profissional, Opções
+
+**Formulário de criação:**
+
+| Campo | `name` | Tipo | Obrigatório |
+|-------|--------|------|-------------|
+| Assinatura digital | `digital_signature` | checkbox | Não |
+| Modelo | — | select | Não |
+| Nome | `name` | text | Sim |
+| Data | `date` | text (datepicker) | Sim |
+| Conteúdo | `note` | textarea (WYSIWYG) | Sim |
+| CIDs | `cid_id[]` | select (autocomplete) | Não |
+| Arquivos | `file[]` | file | Não |
+| Salvar como modelo | `save_model` | checkbox | Não |
+| Imprimir | `print` | checkbox | Não |
+
+---
+
+## 10. Exames — Pedidos
+
+**URL listagem:** `/clinico/exames/{client_id}`
+**URL criação:** `/clinico/exames/{client_id}/criar`
+
+**Listagem — Colunas:** Data de criação, Data do exame, Nome, Profissional
+
+**Formulário de criação:**
+
+| Campo | `name` | Tipo | Obrigatório |
+|-------|--------|------|-------------|
+| Nome | `name` | text | Sim |
+| Assinatura digital | `digital_signature` | checkbox | Não |
+| Data | `date` | text (datepicker) | Sim |
+| Exibir data | `show_date` | checkbox | Não |
+| Conteúdo | `note` | textarea (WYSIWYG) | Sim |
+| CIDs | `cid_id[]` | select (autocomplete) | Não |
+| Farmácia parceira | `pharmacy_id[]` | checkbox group | Não |
+| Mensagem | `message` | textarea | Não |
+| Arquivos | `file[]` | file | Não |
+| Salvar como modelo | `save_model` | checkbox | Não |
+| Imprimir | `print` | checkbox | Não |
+
+---
+
+## 11. Exames — Resultados
+
+**URL listagem:** `/clinico/exames/{client_id}/recebidos`
+**URL criação:** `/clinico/exames/{client_id}/recebidos/criar`
+
+**Listagem — Colunas:** Data, Nome, Profissional, Opções
+
+**Formulário de criação:**
+
+| Campo | `name` | Tipo | Obrigatório |
+|-------|--------|------|-------------|
+| Nome | `name` | text | Sim |
+| Descrição | `note` | textarea (WYSIWYG) | Não |
+| Restrição | `restriction` | hidden | Não |
+| Arquivos | `file[]` | file (drag & drop) | Não |
+
+Formulário mais simples — focado em upload de resultados de exames recebidos externamente.
+
+---
+
+## 12. Support Lab (Integração Externa)
+
+**URL:** Abre em nova aba → `app.supportlab.com.br`
+
+Serviço externo de exames laboratoriais com 4 planos:
+
+| Plano | Preço | Exames |
+|-------|-------|--------|
+| Essencial | R$ 49,90 | 10 exames |
+| Avançado | R$ 99,90 | 30 exames |
+| Profissional | R$ 149,90 | 60 exames |
+| Premium | R$ 199,90 | 100 exames |
+
+**Lógica:** É uma integração comercial para solicitar exames via plataforma parceira. Abre em nova aba com autenticação SSO.
+
+---
+
+## 13. Planos de Tratamento
+
+**URL listagem:** `/clinico/planos/{client_id}`
+**URL criação:** `/clinico/planos/{client_id}/criar`
+
+**Listagem — Colunas:** Nome, Data, Profissional, **Status**, Opções
+
+**Formulário de criação:**
+
+| Campo | `name` | Tipo | Obrigatório |
+|-------|--------|------|-------------|
+| Nome | `name` | text | Sim |
+| Assinatura digital | `digital_signature` | checkbox | Não |
+| Foco | `focus` | textarea (WYSIWYG) | Não |
+| Imprimir | `print` | checkbox | Não |
+
+**Nota:** A coluna Status na listagem sugere estados como Ativo/Finalizado.
+
+---
+
+## 14. Anexos
+
+**URL listagem:** `/clinico/anexos/{client_id}`
+**URL criação:** `/clinico/anexos/{client_id}/criar`
+
+**Listagem — Colunas:** Data, Nome, Profissional, Opções
+
+**Formulário de criação:**
+
+| Campo | `name` | Tipo | Obrigatório | Notas |
+|-------|--------|------|-------------|-------|
+| Nome | `name` | text | Sim | |
+| Descrição | `note` | textarea (WYSIWYG Summernote) | Não | Editor rich text |
+| Arquivos | `file[]` | file (drag & drop) | Não | **Extensões aceitas:** jpg, jpeg, png, bmp, gif, doc, docx, pdf, csv, xls, xlsx, txt, zip, text/plain |
+
+**Lógica:** Área de upload genérico para qualquer documento do paciente. Suporta drag & drop.
+
+---
+
+## 15. Dietas
+
+**URL listagem:** `/clinico/dietas/{client_id}`
+**URL criação:** `/clinico/dietas/{client_id}/criar`
+
+**Listagem — Colunas:** Data, Nome, Responsável, Opções
+
+**Formulário de criação:**
+
+| Campo | `name` | Tipo | Obrigatório |
+|-------|--------|------|-------------|
+| Nome | `name` | text | Sim |
+| Assinatura digital | `digital_signature` | checkbox | Não |
+| Conteúdo | `content` | textarea (WYSIWYG) | Não |
+| Observações | `note` | textarea | Não |
+| Arquivos | `file[]` | file | Não |
+| Salvar como modelo | `save_model` | checkbox | Não |
+
+---
+
+## 16. CID's (Tabela de Referência)
+
+**URL:** `/clinico/cid/{client_id}`
+
+Tela de **consulta** — tabela read-only do catálogo CID (Classificação Internacional de Doenças).
+
+**Colunas:** Código (ex: A00.0), Descrição (ex: Cólera devida a Vibrio 01, biótipo)
+
+**Funcionalidades:** Pesquisa por texto, paginação (10/25/50/100 por página), ordenação por coluna.
+
+**Lógica:** É a mesma base de dados CID usada nos campos `cid_id[]` dos formulários de Atestados, Laudos, Exames, Anamnese. Aqui o profissional pode consultar a tabela completa. É uma tabela compartilhada (padrão OMS, não editável pela clínica).
+
+---
+
+## 17. Galeria de Imagens
+
+**URL:** `/clinico/galeria/{client_id}`
+
+**Funcionalidades:** Grid de imagens do paciente com 2 modos: visualização e comparação.
+
+**Formulário de upload (inline):**
+
+| Campo | `name` | Tipo | Notas |
+|-------|--------|------|-------|
+| Legenda | `note` | text | Na adição |
+| Data | `date` | text (datepicker) | |
+| Arquivos | `file[]` | file | Upload de imagens |
+
+**Formulário de edição (modal):**
+
+| Campo | `name` | Tipo | Notas |
+|-------|--------|------|-------|
+| Legenda | `description` | text | Na edição |
+| Data | `date` | text (datepicker) | **required** no edit |
+| Gallery ID | `gallery_id` | hidden | |
+
+**Ações:** ADICIONAR FOTO, **COMPARAR IMAGENS** (abre comparador side-by-side), editar legenda/data, excluir.
+
+---
+
+## 18. Documentos (Termos)
+
+**URL:** `/clinico/termo/{client_id}`
+
+**Listagem — Colunas:** Data, Documento, Responsável, **Status**, Opções
+
+**Modal "Adicionar documento":**
+
+| Campo | `name` | Tipo | Obrigatório |
+|-------|--------|------|-------------|
+| Título | `title` | text | Sim |
+| Padrão | `default` | checkbox | Não |
+| Conteúdo | `content` | textarea (WYSIWYG) | Sim |
+
+**Modal "Envio de documentos":**
+
+| Campo | `name` | Tipo | Notas |
+|-------|--------|------|-------|
+| Tipo de envio | `send` | radio | E-mail / Whatsapp |
+| E-mail | `email` | email | Condicional (se radio = email) |
+| WhatsApp | `whatsapp` | text | Condicional (se radio = whatsapp) |
+| Conteúdo | `content_term` | textarea | Mensagem personalizada |
+| Anexos | `files` | file | |
+
+**Lógica:** Documentos/Termos (ex: Termo de Consentimento). Podem ser criados com conteúdo rich text, marcados como padrão, e enviados ao paciente via email ou WhatsApp. A coluna Status indica se o documento foi assinado/pendente.
+
+---
+
+## Padrões Transversais do Prontuário
+
+**Padrão de listagem comum:** Todas as seções com listagem usam DataTables com: busca textual, paginação (10/25/50/100), ordenação por coluna, botão "ADICIONAR [TIPO]".
+
+**Padrão de formulário clínico comum:** A maioria dos formulários de criação compartilha: assinatura digital (toggle), seletor de modelo pré-definido, editor WYSIWYG Summernote, upload de arquivos (drag & drop), salvar como modelo, impressão, CIDs (quando aplicável).
+
+**Sistema de status:** Documentos clínicos possuem status RASCUNHO (amarelo) e Finalizado (implícito — sem badge). Documentos em rascunho podem ser editados; finalizados são bloqueados.
+
+**Assinatura digital:** Toggle presente em 9 das 16 seções. Quando ativada, o documento é assinado digitalmente pelo profissional logado.
+
+**Modelos (Templates):** 7 seções suportam "Salvar como modelo" — permite reutilizar o conteúdo como template para futuros registros.
+
+**Integração CID:** 4 seções usam o campo `cid_id[]` com autocomplete da tabela CID: Anamnese, Atestados, Laudos, Exames/Pedidos.
