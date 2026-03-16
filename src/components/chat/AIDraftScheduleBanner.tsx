@@ -109,7 +109,7 @@ export default function AIDraftScheduleBanner({
       {/* Motivo */}
       {scheduleReason && (
         <div className="px-3 pt-1.5">
-          <p className="text-[11px] text-gray-400 dark:text-[#565d73] italic leading-snug line-clamp-2">
+          <p className="text-[11px] text-gray-400 dark:text-[#71717a] italic leading-snug line-clamp-2">
             {scheduleReason}
           </p>
         </div>

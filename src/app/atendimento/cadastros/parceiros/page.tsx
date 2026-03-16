@@ -11,13 +11,13 @@ import { usePartners } from '@/hooks/usePartners';
 import type { Partner } from '@/types/cadastros';
 
 const inputClass =
-  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400';
+  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400';
 
 const inputErrorClass =
-  'w-full px-3 py-2.5 text-sm border border-red-300 dark:border-red-700 rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-400';
+  'w-full px-3 py-2.5 text-sm border border-red-300 dark:border-red-700 rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-400';
 
 const labelClass =
-  'block text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider mb-1.5 ml-1';
+  'block text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wider mb-1.5 ml-1';
 
 interface PartnerForm {
   name: string;
@@ -165,10 +165,10 @@ export default function ParceirosPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
         <div className="flex items-center gap-2">
           <Handshake className="w-5 h-5 text-teal-600" />
-          <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">Parceiros</h1>
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Parceiros</h1>
         </div>
         <button
           onClick={openCreate}

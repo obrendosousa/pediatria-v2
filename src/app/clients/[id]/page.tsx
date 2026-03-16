@@ -19,7 +19,7 @@ export default function ClientDetailPage({ params }: PageProps) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#f8fafc] dark:bg-[#0b141a]">
         <div className="text-center">
-          <p className="text-lg font-medium text-slate-600 dark:text-[#828ca5] mb-2">
+          <p className="text-lg font-medium text-slate-600 dark:text-[#a1a1aa] mb-2">
             ID de paciente inválido
           </p>
           <button

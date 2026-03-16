@@ -171,11 +171,11 @@ export default function ReceptionCard({
       {/* Header compacto */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0 mr-2">
-          <h3 className="font-semibold text-slate-800 dark:text-[#e8ecf4] text-sm truncate">
+          <h3 className="font-semibold text-slate-800 dark:text-[#fafafa] text-sm truncate">
             {appointment.patient_name || 'Sem nome'}
           </h3>
           {appointment.patient_phone && (
-            <p className="text-[10px] text-slate-500 dark:text-[#828ca5] truncate mt-0.5">
+            <p className="text-[10px] text-slate-500 dark:text-[#a1a1aa] truncate mt-0.5">
               {appointment.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
             </p>
           )}
@@ -186,7 +186,7 @@ export default function ReceptionCard({
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
               position === 0 
                 ? 'bg-rose-500 text-white' 
-                : 'bg-slate-200 dark:bg-gray-600 text-slate-600 dark:text-[#a0a8be]'
+                : 'bg-slate-200 dark:bg-gray-600 text-slate-600 dark:text-[#d4d4d8]'
             }`}>
               {position + 1}º
             </span>
@@ -204,7 +204,7 @@ export default function ReceptionCard({
       </div>
 
       {/* Informações compactas */}
-      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#828ca5] mb-2">
+      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#a1a1aa] mb-2">
         <span className="flex items-center gap-1">
           <Clock className="w-3 h-3" />
           {formatTime(appointment.start_time)}
@@ -218,7 +218,7 @@ export default function ReceptionCard({
       </div>
 
       {/* Botões de ação compactos */}
-      <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-200/50 dark:border-[#252a3a]/50">
+      <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-200/50 dark:border-[#2e2e33]/50">
         {status === 'scheduled' && (
           <>
             <button

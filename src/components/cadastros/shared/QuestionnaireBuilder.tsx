@@ -57,7 +57,7 @@ function OptionsEditor({
 
   return (
     <div className="mt-2 ml-6 space-y-2">
-      <p className="text-[10px] font-bold text-slate-400 dark:text-[#565d73] uppercase tracking-wider">
+      <p className="text-[10px] font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wider">
         Opções de resposta
       </p>
 
@@ -90,7 +90,7 @@ function OptionsEditor({
           onChange={e => setNewOpt(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addOption(); } }}
           placeholder="Adicionar opção..."
-          className="flex-1 px-2.5 py-1 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+          className="flex-1 px-2.5 py-1 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
         />
         <button
           type="button"
@@ -197,12 +197,12 @@ export default function QuestionnaireBuilder({
     setDragOverIndex(null);
   };
 
-  const inputClass = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400';
+  const inputClass = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400';
 
   return (
     <div className="space-y-4">
       {/* Formulário de nova pergunta */}
-      <div className="bg-slate-50 dark:bg-[#141722] rounded-xl border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+      <div className="bg-slate-50 dark:bg-[#18181b] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
         <h4 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">
           Nova Pergunta
         </h4>
@@ -230,7 +230,7 @@ export default function QuestionnaireBuilder({
               }
               setError('');
             }}
-            className="px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 w-48"
+            className="px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 w-48"
           >
             {QUESTION_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -249,7 +249,7 @@ export default function QuestionnaireBuilder({
         {/* Editor de opções para nova pergunta */}
         {TYPE_NEEDS_OPTIONS(newType) && (
           <div className="space-y-2 pt-1">
-            <p className="text-[10px] font-bold text-slate-400 dark:text-[#565d73] uppercase tracking-wider">
+            <p className="text-[10px] font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wider">
               Opções de resposta ({newType === 'checkbox' ? 'Caixa de seleção' : 'Múltipla escolha'})
             </p>
 
@@ -282,7 +282,7 @@ export default function QuestionnaireBuilder({
                   if (e.key === 'Enter') { e.preventDefault(); handleAddNewOption(); }
                 }}
                 placeholder="Ex: Sim, Não, Às vezes..."
-                className="flex-1 px-3 py-1.5 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="flex-1 px-3 py-1.5 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
               <button
                 type="button"
@@ -311,7 +311,7 @@ export default function QuestionnaireBuilder({
 
       {/* Lista de perguntas */}
       {questions.length === 0 ? (
-        <p className="text-sm text-slate-400 dark:text-[#565d73] text-center py-8">
+        <p className="text-sm text-slate-400 dark:text-[#71717a] text-center py-8">
           Nenhuma pergunta adicionada. Use o formulário acima para começar.
         </p>
       ) : (
@@ -328,17 +328,17 @@ export default function QuestionnaireBuilder({
                 onDragOver={e => handleDragOver(e, idx)}
                 onDrop={() => handleDrop(idx)}
                 onDragEnd={resetDrag}
-                className={`bg-white dark:bg-[#0d0f15] rounded-xl border transition-colors ${
+                className={`bg-white dark:bg-[#0a0a0c] rounded-xl border transition-colors ${
                   dragOverIndex === idx
                     ? 'border-teal-300 dark:border-teal-700 bg-teal-50 dark:bg-teal-900/20'
-                    : 'border-slate-200 dark:border-[#252a3a]'
+                    : 'border-slate-200 dark:border-[#2e2e33]'
                 }`}
               >
                 {/* Linha principal */}
                 <div className="flex items-center gap-2 px-3 py-3">
                   <GripVertical className="w-4 h-4 text-slate-300 dark:text-gray-600 cursor-grab active:cursor-grabbing shrink-0" />
 
-                  <span className="text-xs text-slate-400 dark:text-[#565d73] font-mono w-6 text-center shrink-0">
+                  <span className="text-xs text-slate-400 dark:text-[#71717a] font-mono w-6 text-center shrink-0">
                     {idx + 1}
                   </span>
 
@@ -366,14 +366,14 @@ export default function QuestionnaireBuilder({
                         });
                         if (TYPE_NEEDS_OPTIONS(t)) setExpandedId(q.id);
                       }}
-                      className="text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-600 dark:text-[#a0a8be] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-400 w-44 shrink-0"
+                      className="text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-600 dark:text-[#d4d4d8] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-400 w-44 shrink-0"
                     >
                       {QUESTION_TYPES.map(t => (
                         <option key={t.value} value={t.value}>{t.label}</option>
                       ))}
                     </select>
                   ) : (
-                    <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-[#828ca5] rounded font-medium shrink-0">
+                    <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-[#a1a1aa] rounded font-medium shrink-0">
                       {QUESTION_TYPES.find(t => t.value === q.type)?.label ?? q.type}
                     </span>
                   )}
@@ -406,7 +406,7 @@ export default function QuestionnaireBuilder({
                     {q.options.map((opt, i) => (
                       <span
                         key={i}
-                        className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#141722] text-slate-500 dark:text-[#828ca5]"
+                        className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#18181b] text-slate-500 dark:text-[#a1a1aa]"
                       >
                         {opt}
                       </span>
@@ -416,7 +416,7 @@ export default function QuestionnaireBuilder({
 
                 {/* Editor de opções (quando expandido) */}
                 {needsOpts && isExpanded && onUpdate && (
-                  <div className="px-4 pb-4 border-t border-slate-100 dark:border-[#1e2334] pt-3">
+                  <div className="px-4 pb-4 border-t border-slate-100 dark:border-[#27272a] pt-3">
                     <OptionsEditor
                       options={q.options}
                       onChange={opts => onUpdate(q.id, { options: opts })}
@@ -439,7 +439,7 @@ export default function QuestionnaireBuilder({
       )}
 
       {questions.length > 0 && (
-        <p className="text-xs text-slate-400 dark:text-[#565d73]">
+        <p className="text-xs text-slate-400 dark:text-[#71717a]">
           Arraste os itens para reordenar. {questions.length} pergunta{questions.length !== 1 ? 's' : ''}.
         </p>
       )}

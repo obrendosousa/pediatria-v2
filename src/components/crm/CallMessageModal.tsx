@@ -289,7 +289,7 @@ export default function CallMessageModal({
         </div>
 
         <div className="p-6">
-          <label className="block text-xs font-bold text-slate-400 dark:text-[#565d73] uppercase mb-2">
+          <label className="block text-xs font-bold text-slate-400 dark:text-[#71717a] uppercase mb-2">
             Mensagem do Painel / WhatsApp
           </label>
 
@@ -297,7 +297,7 @@ export default function CallMessageModal({
           <div className="relative mb-4">
             <textarea
               ref={textareaRef}
-              className="w-full p-3 pr-20 bg-slate-50 dark:bg-[#111b21] rounded-xl border border-slate-200 dark:border-[#252a3a] text-slate-700 dark:text-gray-200 focus:outline-none focus:border-rose-400 resize-none"
+              className="w-full p-3 pr-20 bg-slate-50 dark:bg-[#111b21] rounded-xl border border-slate-200 dark:border-[#2e2e33] text-slate-700 dark:text-gray-200 focus:outline-none focus:border-rose-400 resize-none"
               value={message}
               onChange={e => setMessage(e.target.value)}
               rows={3}
@@ -317,7 +317,7 @@ export default function CallMessageModal({
                 }`}
                 title="Emojis"
               >
-                <Smile className="w-4 h-4 text-slate-500 dark:text-[#828ca5]" />
+                <Smile className="w-4 h-4 text-slate-500 dark:text-[#a1a1aa]" />
               </button>
               <button
                 type="button"
@@ -330,7 +330,7 @@ export default function CallMessageModal({
                 }`}
                 title="Mensagens salvas"
               >
-                <Paperclip className="w-4 h-4 text-slate-500 dark:text-[#828ca5]" />
+                <Paperclip className="w-4 h-4 text-slate-500 dark:text-[#a1a1aa]" />
               </button>
             </div>
 
@@ -338,7 +338,7 @@ export default function CallMessageModal({
             {showEmojiPicker && (
               <div 
                 ref={pickerRef} 
-                className="fixed md:absolute bottom-20 md:bottom-full right-4 md:right-0 top-auto md:top-auto mb-0 md:mb-2 z-[60] rounded-xl shadow-2xl border border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15] overflow-hidden"
+                className="fixed md:absolute bottom-20 md:bottom-full right-4 md:right-0 top-auto md:top-auto mb-0 md:mb-2 z-[60] rounded-xl shadow-2xl border border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] overflow-hidden"
                 style={{
                   maxWidth: 'min(350px, calc(100vw - 2rem))',
                   width: 'min(350px, calc(100vw - 2rem))',
@@ -366,14 +366,14 @@ export default function CallMessageModal({
             {/* Lista de mensagens salvas - Posicionado de forma responsiva */}
             {showSavedMessages && (
               <div 
-                className="fixed md:absolute bottom-20 md:bottom-full right-4 md:right-0 top-auto md:top-auto mb-0 md:mb-2 z-[60] bg-white dark:bg-[#0d0f15] rounded-xl shadow-xl border border-slate-200 dark:border-[#252a3a] overflow-y-auto"
+                className="fixed md:absolute bottom-20 md:bottom-full right-4 md:right-0 top-auto md:top-auto mb-0 md:mb-2 z-[60] bg-white dark:bg-[#0a0a0c] rounded-xl shadow-xl border border-slate-200 dark:border-[#2e2e33] overflow-y-auto"
                 style={{
                   width: 'min(320px, calc(100vw - 2rem))',
                   maxHeight: 'min(256px, calc(100vh - 12rem))'
                 }}
               >
-                <div className="p-3 border-b border-slate-200 dark:border-[#252a3a] flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-[#a0a8be]">Mensagens Salvas</span>
+                <div className="p-3 border-b border-slate-200 dark:border-[#2e2e33] flex items-center justify-between">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-[#d4d4d8]">Mensagens Salvas</span>
                   <button
                     onClick={() => setShowSavedMessages(false)}
                     className="p-1 hover:bg-slate-100 dark:hover:bg-gray-700 rounded"
@@ -383,7 +383,7 @@ export default function CallMessageModal({
                 </div>
                 <div className="p-2">
                   {savedMessages.length === 0 ? (
-                    <p className="text-xs text-slate-400 dark:text-[#565d73] text-center py-4">
+                    <p className="text-xs text-slate-400 dark:text-[#71717a] text-center py-4">
                       Nenhuma mensagem salva
                     </p>
                   ) : (
@@ -398,7 +398,7 @@ export default function CallMessageModal({
                               type="text"
                               value={editingContent}
                               onChange={e => setEditingContent(e.target.value)}
-                              className="flex-1 text-xs p-1.5 bg-slate-100 dark:bg-[#141722] rounded border border-slate-200 dark:border-[#252a3a]"
+                              className="flex-1 text-xs p-1.5 bg-slate-100 dark:bg-[#18181b] rounded border border-slate-200 dark:border-[#2e2e33]"
                               autoFocus
                             />
                             <button
@@ -420,7 +420,7 @@ export default function CallMessageModal({
                         ) : (
                           <>
                             <p
-                              className="text-xs text-slate-700 dark:text-[#a0a8be] cursor-pointer mb-1"
+                              className="text-xs text-slate-700 dark:text-[#d4d4d8] cursor-pointer mb-1"
                               onClick={() => handleSelectMessage(msg.content)}
                             >
                               {msg.content}
@@ -453,14 +453,14 @@ export default function CallMessageModal({
 
           {/* Área de áudio */}
           {audioUrl && (
-            <div className="mb-4 p-3 bg-slate-50 dark:bg-[#111b21] rounded-xl border border-slate-200 dark:border-[#252a3a] flex items-center justify-between">
+            <div className="mb-4 p-3 bg-slate-50 dark:bg-[#111b21] rounded-xl border border-slate-200 dark:border-[#2e2e33] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center">
                   <Mic className="w-5 h-5 text-rose-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-[#a0a8be]">Áudio gravado</p>
-                  <p className="text-xs text-slate-500 dark:text-[#828ca5]">{formatDuration(recordingDuration)}</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-[#d4d4d8]">Áudio gravado</p>
+                  <p className="text-xs text-slate-500 dark:text-[#a1a1aa]">{formatDuration(recordingDuration)}</p>
                 </div>
               </div>
               <button
@@ -479,7 +479,7 @@ export default function CallMessageModal({
               <button
                 type="button"
                 onClick={startRecording}
-                className="px-4 py-2 bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-[#a0a8be] rounded-xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-[#d4d4d8] rounded-xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
               >
                 <Mic className="w-4 h-4" />
                 Gravar Áudio
@@ -517,7 +517,7 @@ export default function CallMessageModal({
             <button
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 py-3 text-slate-500 dark:text-[#828ca5] font-bold text-sm hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3 text-slate-500 dark:text-[#a1a1aa] font-bold text-sm hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancelar
             </button>

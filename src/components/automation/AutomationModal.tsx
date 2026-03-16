@@ -196,13 +196,13 @@ export default function AutomationModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200">
-      <div className="bg-white dark:bg-[#0d0f15] rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#252a3a]">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#2e2e33]">
           <div>
-            <h2 className="text-2xl font-black text-slate-800 dark:text-[#e8ecf4]">
+            <h2 className="text-2xl font-black text-slate-800 dark:text-[#fafafa]">
               {automation ? 'Editar Automação' : 'Nova Automação'}
             </h2>
-            <p className="text-sm text-slate-500 dark:text-[#828ca5] mt-1">
+            <p className="text-sm text-slate-500 dark:text-[#a1a1aa] mt-1">
               {getTypeTitle()}
             </p>
             <div className="flex items-center gap-2 mt-4">
@@ -218,7 +218,7 @@ export default function AutomationModal({
                           ? 'bg-rose-600 text-white border-rose-600'
                           : isDone
                             ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                            : 'bg-slate-100 dark:bg-[#141722] text-slate-600 dark:text-[#a0a8be] border-slate-200 dark:border-[#252a3a]'
+                            : 'bg-slate-100 dark:bg-[#18181b] text-slate-600 dark:text-[#d4d4d8] border-slate-200 dark:border-[#2e2e33]'
                       }`}
                     >
                       {isDone ? <CheckCircle2 className="w-4 h-4" /> : item.label}
@@ -231,7 +231,7 @@ export default function AutomationModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-[#565d73] transition-colors"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-[#71717a] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -242,7 +242,7 @@ export default function AutomationModal({
             <>
               {type === 'milestone' && (
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-[#a0a8be] mb-2">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-[#d4d4d8] mb-2">
                     <Calendar className="w-4 h-4 inline mr-1" />
                     Idade do Marco (em meses)
                   </label>
@@ -255,16 +255,16 @@ export default function AutomationModal({
                       setAgeMonths(val === '' ? '' : parseInt(val, 10));
                     }}
                     placeholder="Ex: 1, 3, 6, 12"
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                   />
-                  <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-1">
+                  <p className="text-xs text-slate-500 dark:text-[#a1a1aa] mt-1">
                     Quando o bebê completar essa idade, a mensagem será disparada automaticamente.
                   </p>
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-[#a0a8be] mb-2">
+                <label className="block text-sm font-bold text-slate-700 dark:text-[#d4d4d8] mb-2">
                   Nome da Automação
                 </label>
                 <input
@@ -272,12 +272,12 @@ export default function AutomationModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Mensagem de 3 meses"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-[#a0a8be] mb-2">
+                <label className="block text-sm font-bold text-slate-700 dark:text-[#d4d4d8] mb-2">
                   <Clock className="w-4 h-4 inline mr-1" />
                   Horário de Disparo
                 </label>
@@ -285,19 +285,19 @@ export default function AutomationModal({
                   type="time"
                   value={triggerTime}
                   onChange={(e) => setTriggerTime(e.target.value)}
-                  className="px-4 py-3 bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                  className="px-4 py-3 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                 />
-                <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-1">
+                <p className="text-xs text-slate-500 dark:text-[#a1a1aa] mt-1">
                   Horário em que as mensagens serão enviadas (padrão: 08:00)
                 </p>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-[#141722] rounded-xl border border-slate-200 dark:border-[#252a3a]">
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-[#18181b] rounded-xl border border-slate-200 dark:border-[#2e2e33]">
                 <div>
-                  <div className="text-sm font-bold text-slate-700 dark:text-[#a0a8be]">
+                  <div className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8]">
                     Status da Automação
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-[#828ca5] mt-1">
+                  <div className="text-xs text-slate-500 dark:text-[#a1a1aa] mt-1">
                     {active ? 'Automação ativa e será executada automaticamente' : 'Automação desativada'}
                   </div>
                 </div>
@@ -306,7 +306,7 @@ export default function AutomationModal({
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     active
                       ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                      : 'bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-[#a0a8be] hover:bg-slate-400 dark:hover:bg-slate-500'
+                      : 'bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-[#d4d4d8] hover:bg-slate-400 dark:hover:bg-slate-500'
                   }`}
                 >
                   {active ? 'Ativa' : 'Desativada'}
@@ -317,7 +317,7 @@ export default function AutomationModal({
 
           {step === 2 && (
             <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-[#a0a8be] mb-3">
+              <label className="block text-sm font-bold text-slate-700 dark:text-[#d4d4d8] mb-3">
                 Sequência de Mensagens
               </label>
               <MessageSequenceBuilder
@@ -330,8 +330,8 @@ export default function AutomationModal({
 
           {step === 3 && (
             <div className="space-y-4">
-              <div className="p-4 rounded-xl border border-slate-200 dark:border-[#252a3a] bg-slate-50 dark:bg-[#141722]">
-                <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-[#565d73] mb-2">
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-[#2e2e33] bg-slate-50 dark:bg-[#18181b]">
+                <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-[#71717a] mb-2">
                   Resumo
                 </p>
                 <p className="text-sm text-slate-700 dark:text-gray-200"><strong>Nome:</strong> {name || '-'}</p>
@@ -344,14 +344,14 @@ export default function AutomationModal({
               </div>
 
               {previewPatient && messages.length > 0 && (
-                <div className="p-4 bg-slate-50 dark:bg-[#141722] rounded-xl border border-slate-200 dark:border-[#252a3a]">
-                  <div className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] mb-3">
+                <div className="p-4 bg-slate-50 dark:bg-[#18181b] rounded-xl border border-slate-200 dark:border-[#2e2e33]">
+                  <div className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] mb-3">
                     Preview da sequência
                   </div>
                   <div className="space-y-2">
                     {messages.map((msg, index) => (
-                      <div key={index} className="p-3 bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a]">
-                        <div className="text-xs font-medium text-slate-500 dark:text-[#828ca5] mb-1">
+                      <div key={index} className="p-3 bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
+                        <div className="text-xs font-medium text-slate-500 dark:text-[#a1a1aa] mb-1">
                           {index + 1}. {msg.type === 'text' ? 'Texto' : msg.type === 'audio' ? 'Áudio' : msg.type === 'image' ? 'Imagem' : 'Documento'}
                         </div>
                         {msg.type === 'text' ? (
@@ -359,7 +359,7 @@ export default function AutomationModal({
                             {getPreviewText(msg)}
                           </div>
                         ) : (
-                          <div className="text-sm text-slate-600 dark:text-[#828ca5]">
+                          <div className="text-sm text-slate-600 dark:text-[#a1a1aa]">
                             {msg.content ? (
                               <span className="text-emerald-600 dark:text-emerald-400">Arquivo carregado</span>
                             ) : (
@@ -373,7 +373,7 @@ export default function AutomationModal({
                           </div>
                         )}
                         {msg.delay && msg.delay > 0 && (
-                          <div className="text-xs text-slate-400 dark:text-[#565d73] mt-1">
+                          <div className="text-xs text-slate-400 dark:text-[#71717a] mt-1">
                             Delay: {msg.delay}s
                           </div>
                         )}
@@ -386,15 +386,15 @@ export default function AutomationModal({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 p-6 border-t border-slate-200 dark:border-[#252a3a]">
-          <div className="text-xs text-slate-500 dark:text-[#828ca5]">
+        <div className="flex items-center justify-between gap-3 p-6 border-t border-slate-200 dark:border-[#2e2e33]">
+          <div className="text-xs text-slate-500 dark:text-[#a1a1aa]">
             Etapa {step} de 3
           </div>
           <div className="flex items-center gap-3">
             {step > 1 && (
               <button
                 onClick={handlePreviousStep}
-                className="px-4 py-3 bg-slate-100 dark:bg-[#141722] text-slate-700 dark:text-[#a0a8be] rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors flex items-center gap-2"
+                className="px-4 py-3 bg-slate-100 dark:bg-[#18181b] text-slate-700 dark:text-[#d4d4d8] rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors flex items-center gap-2"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Voltar
@@ -414,7 +414,7 @@ export default function AutomationModal({
 
             <button
               onClick={onClose}
-              className="px-6 py-3 bg-slate-100 dark:bg-[#141722] text-slate-700 dark:text-[#a0a8be] rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+              className="px-6 py-3 bg-slate-100 dark:bg-[#18181b] text-slate-700 dark:text-[#d4d4d8] rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
             >
               Cancelar
             </button>

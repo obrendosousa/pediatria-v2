@@ -130,7 +130,7 @@ export default function PatientSearchSelect({
           }}
           onFocus={() => searchTerm.trim() && setOpen(true)}
           placeholder={placeholder}
-          className="w-full pl-9 pr-9 py-2.5 border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all placeholder:text-slate-400"
+          className="w-full pl-9 pr-9 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all placeholder:text-slate-400"
         />
         {selectedPatient && (
           <button
@@ -145,7 +145,7 @@ export default function PatientSearchSelect({
       </div>
 
       {selectedPatient && (
-        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500 dark:text-[#828ca5]">
+        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500 dark:text-[#a1a1aa]">
           <span>Paciente selecionado: {selectedPatient.name}</span>
           <button
             type="button"
@@ -158,13 +158,13 @@ export default function PatientSearchSelect({
       )}
 
       {open && (searchTerm.trim() || results.length > 0) && !selectedPatient && (
-        <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg shadow-lg custom-scrollbar">
+        <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg shadow-lg custom-scrollbar">
           {loading ? (
-            <div className="p-4 text-center text-sm text-slate-500 dark:text-[#828ca5]">
+            <div className="p-4 text-center text-sm text-slate-500 dark:text-[#a1a1aa]">
               Buscando...
             </div>
           ) : results.length === 0 ? (
-            <div className="p-4 text-center text-sm text-slate-500 dark:text-[#828ca5]">
+            <div className="p-4 text-center text-sm text-slate-500 dark:text-[#a1a1aa]">
               Nenhum paciente encontrado. Digite para buscar ou cadastre novo.
             </div>
           ) : (
@@ -173,9 +173,9 @@ export default function PatientSearchSelect({
                 key={p.id}
                 type="button"
                 onClick={() => handleSelect(p)}
-                className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-100 dark:border-[#1e2334] last:border-0 flex items-center gap-3"
+                className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-100 dark:border-[#27272a] last:border-0 flex items-center gap-3"
               >
-                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#141722] flex items-center justify-center text-slate-500 dark:text-[#828ca5] shrink-0">
+                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#18181b] flex items-center justify-center text-slate-500 dark:text-[#a1a1aa] shrink-0">
                   <User className="w-4 h-4" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -183,7 +183,7 @@ export default function PatientSearchSelect({
                     {p.name}
                   </p>
                   {(p.phone || p.parent_name) && (
-                    <p className="text-xs text-slate-500 dark:text-[#828ca5] truncate">
+                    <p className="text-xs text-slate-500 dark:text-[#a1a1aa] truncate">
                       {[p.phone, p.parent_name].filter(Boolean).join(' · ')}
                     </p>
                   )}

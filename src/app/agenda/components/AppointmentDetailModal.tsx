@@ -203,8 +203,8 @@ export default function AppointmentDetailModal({
   return (
     <>
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white dark:bg-[#202c33] w-full max-w-lg rounded-2xl shadow-lg border border-slate-200 dark:border-[#252a3a] overflow-hidden animate-scale-in">
-        <div className={`p-4 border-b border-slate-200 dark:border-[#252a3a] flex justify-between items-center ${
+      <div className="bg-white dark:bg-[#202c33] w-full max-w-lg rounded-2xl shadow-lg border border-slate-200 dark:border-[#2e2e33] overflow-hidden animate-scale-in">
+        <div className={`p-4 border-b border-slate-200 dark:border-[#2e2e33] flex justify-between items-center ${
           selectedAppointment.status === 'blocked' ? 'bg-red-50/50 dark:bg-red-900/10'
             : selectedAppointment.patient_sex === 'M' ? 'bg-blue-50/50 dark:bg-blue-900/10'
             : selectedAppointment.patient_sex === 'F' ? 'bg-pink-50/50 dark:bg-pink-900/10'
@@ -224,12 +224,12 @@ export default function AppointmentDetailModal({
             </h3>
           </div>
           <button onClick={() => setSelectedAppointment(null)} className="p-1.5 hover:bg-white/60 dark:hover:bg-white/10 rounded-lg transition-colors">
-            <X size={18} className="text-slate-400 dark:text-[#565d73]"/>
+            <X size={18} className="text-slate-400 dark:text-[#71717a]"/>
           </button>
         </div>
 
         <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-[#252a3a]">
+          <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-[#2e2e33]">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-semibold text-lg ${
               selectedAppointment.status === 'blocked' ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
                 : selectedAppointment.patient_sex === 'M' ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
@@ -241,12 +241,12 @@ export default function AppointmentDetailModal({
             <div className="flex-1">
               {isEditing ? (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">Nome do Paciente</label>
-                  <input type="text" className="w-full text-sm font-medium text-slate-800 dark:text-[#e8ecf4] border border-slate-200 dark:border-gray-600 rounded-lg px-3 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#141722] transition-all" value={editForm.patient_name} onChange={(e) => setEditForm({ ...editForm, patient_name: e.target.value })} placeholder="Digite o nome..." />
+                  <label className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Nome do Paciente</label>
+                  <input type="text" className="w-full text-sm font-medium text-slate-800 dark:text-[#fafafa] border border-slate-200 dark:border-gray-600 rounded-lg px-3 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#18181b] transition-all" value={editForm.patient_name} onChange={(e) => setEditForm({ ...editForm, patient_name: e.target.value })} placeholder="Digite o nome..." />
                 </div>
               ) : (
                 <>
-                  <h4 className="text-base font-semibold text-slate-800 dark:text-[#e8ecf4] mb-1.5">
+                  <h4 className="text-base font-semibold text-slate-800 dark:text-[#fafafa] mb-1.5">
                     {selectedAppointment.status === 'blocked' ? 'Horário Bloqueado' : (selectedAppointment.patient_name || 'Paciente sem nome')}
                   </h4>
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -270,31 +270,31 @@ export default function AppointmentDetailModal({
               {isEditing && (
                 <div className="space-y-2 mt-2">
                   <div>
-                    <label className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">Sexo da Criança</label>
+                    <label className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Sexo da Criança</label>
                     <div className="flex gap-0 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg mt-1">
-                      <button type="button" onClick={() => setEditForm({ ...editForm, patient_sex: 'M' })} className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${editForm.patient_sex === 'M' ? 'bg-white text-blue-600 shadow-sm dark:bg-[#141722] dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Masculino</button>
-                      <button type="button" onClick={() => setEditForm({ ...editForm, patient_sex: 'F' })} className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${editForm.patient_sex === 'F' ? 'bg-white text-pink-600 shadow-sm dark:bg-[#141722] dark:text-pink-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Feminino</button>
+                      <button type="button" onClick={() => setEditForm({ ...editForm, patient_sex: 'M' })} className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${editForm.patient_sex === 'M' ? 'bg-white text-blue-600 shadow-sm dark:bg-[#18181b] dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Masculino</button>
+                      <button type="button" onClick={() => setEditForm({ ...editForm, patient_sex: 'F' })} className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${editForm.patient_sex === 'F' ? 'bg-white text-pink-600 shadow-sm dark:bg-[#18181b] dark:text-pink-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Feminino</button>
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">Data de Nascimento *</label>
+                    <label className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data de Nascimento *</label>
                     <div className="relative mt-1">
                       <Cake className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-2" />
-                      <input type="text" value={editForm.birthDateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full pl-7 text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#141722] transition-all" />
+                      <input type="text" value={editForm.birthDateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full pl-7 text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#18181b] transition-all" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">Status</label>
-                    <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#141722] transition-all mt-1">
+                    <label className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Status</label>
+                    <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#18181b] transition-all mt-1">
                       <option value="scheduled">Agendado</option><option value="waiting">Na Espera</option><option value="in_service">Em Atendimento</option><option value="finished">Finalizado</option><option value="blocked">Bloqueado</option><option value="cancelled">Cancelado</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">Tipo</label>
+                    <label className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Tipo</label>
                     <select
                       value={editForm.appointment_type}
                       onChange={e => setEditForm({ ...editForm, appointment_type: e.target.value as 'consulta' | 'retorno' | '' })}
-                      className="w-full text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#141722] transition-all mt-1"
+                      className="w-full text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#18181b] transition-all mt-1"
                     >
                       <option value="">Não definido</option>
                       <option value="consulta">Consulta</option>
@@ -308,10 +308,10 @@ export default function AppointmentDetailModal({
 
           {/* Data de Nascimento (somente leitura) */}
           {!isEditing && selectedAppointment.status !== 'blocked' && (
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#252a3a]">
+            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
               <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 rounded-md"><Cake size={14}/></div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">Data de Nascimento</p>
+                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data de Nascimento</p>
                 <p className="text-sm text-slate-700 dark:text-gray-200 font-medium">
                   {selectedAppointment.patient_birth_date
                     ? formatDateToDisplay(selectedAppointment.patient_birth_date)
@@ -322,18 +322,18 @@ export default function AppointmentDetailModal({
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#252a3a]">
-              <div className="flex items-center gap-1.5 mb-1.5"><CalendarDays size={14} className="text-indigo-500 dark:text-indigo-400"/><span className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">Data</span></div>
+            <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
+              <div className="flex items-center gap-1.5 mb-1.5"><CalendarDays size={14} className="text-indigo-500 dark:text-indigo-400"/><span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data</span></div>
               {isEditing ? (
-                <input type="text" value={editForm.dateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#141722] transition-all" />
+                <input type="text" value={editForm.dateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#18181b] transition-all" />
               ) : (
                 <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">{new Date(selectedAppointment.start_time).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
               )}
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#252a3a]">
-              <div className="flex items-center gap-1.5 mb-1.5"><Clock size={14} className="text-indigo-500 dark:text-indigo-400"/><span className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">Horário</span></div>
+            <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
+              <div className="flex items-center gap-1.5 mb-1.5"><Clock size={14} className="text-indigo-500 dark:text-indigo-400"/><span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Horário</span></div>
               {isEditing ? (
-                <input type="time" value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#141722] transition-all" />
+                <input type="time" value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#18181b] transition-all" />
               ) : (
                 <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">
                   {(() => {
@@ -354,12 +354,12 @@ export default function AppointmentDetailModal({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#252a3a]">
+            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
               <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-500 dark:text-indigo-400 rounded-md"><Stethoscope size={14}/></div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">Médico</p>
+                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Médico</p>
                 {isEditing ? (
-                  <select value={editForm.doctor_id || ''} onChange={e => setEditForm({ ...editForm, doctor_id: Number(e.target.value) })} className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#141722] transition-all">
+                  <select value={editForm.doctor_id || ''} onChange={e => setEditForm({ ...editForm, doctor_id: Number(e.target.value) })} className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#18181b] transition-all">
                     <option value="">Selecione...</option>
                     {doctors.map(doctor => (<option key={doctor.id} value={doctor.id}>{doctor.name}</option>))}
                   </select>
@@ -368,23 +368,23 @@ export default function AppointmentDetailModal({
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#252a3a]">
+            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
               <div className="p-1.5 bg-purple-100 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400 rounded-md"><User size={14}/></div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">Responsável</p>
+                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Responsável</p>
                 {isEditing ? (
-                  <input type="text" value={editForm.parent_name} onChange={e => setEditForm({ ...editForm, parent_name: e.target.value })} placeholder="Nome do responsável" className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#141722] transition-all" />
+                  <input type="text" value={editForm.parent_name} onChange={e => setEditForm({ ...editForm, parent_name: e.target.value })} placeholder="Nome do responsável" className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#18181b] transition-all" />
                 ) : (
                   <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{selectedAppointment.parent_name || 'Não informado'}</p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#252a3a]">
+            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
               <div className="p-1.5 bg-green-100 dark:bg-green-900/20 text-green-500 dark:text-green-400 rounded-md"><Phone size={14}/></div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#828ca5] uppercase">WhatsApp</p>
+                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">WhatsApp</p>
                 {isEditing ? (
-                  <input type="text" className="w-full text-sm font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#141722] transition-all" value={editForm.patient_phone} onChange={(e) => setEditForm({ ...editForm, patient_phone: e.target.value })} placeholder="Ex: (99) 99999-9999" />
+                  <input type="text" className="w-full text-sm font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#18181b] transition-all" value={editForm.patient_phone} onChange={(e) => setEditForm({ ...editForm, patient_phone: e.target.value })} placeholder="Ex: (99) 99999-9999" />
                 ) : (
                   <p className="text-sm text-slate-700 dark:text-gray-200 font-medium">{selectedAppointment.patient_phone ? selectedAppointment.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : 'Não informado'}</p>
                 )}
@@ -393,27 +393,27 @@ export default function AppointmentDetailModal({
           </div>
 
           {selectedAppointment.status !== 'blocked' && (
-            <div className="bg-slate-50 dark:bg-[#1a1f28] p-3 rounded-xl border border-slate-200 dark:border-[#252a3a]">
+            <div className="bg-slate-50 dark:bg-[#1a1f28] p-3 rounded-xl border border-slate-200 dark:border-[#2e2e33]">
               <h5 className="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1"><Wallet size={12}/> Financeiro</h5>
               {isEditing ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] text-slate-400 uppercase">Total (R$)</label>
-                    <input type="text" value={editForm.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full text-sm font-bold border border-slate-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                    <input type="text" value={editForm.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full text-sm font-bold border border-slate-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400" />
                   </div>
                   <div>
                     <label className="text-[10px] text-slate-400 uppercase">Pago (R$)</label>
                     <input type="text" value={editForm.paidAmount} onChange={e => handleMoneyInput('paidAmount', e.target.value)} className="w-full text-sm font-bold border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400" />
                   </div>
-                  <div className="col-span-2 text-right text-xs font-bold text-slate-500 dark:text-[#828ca5] border-t border-slate-200 dark:border-[#252a3a] pt-2 mt-1">
+                  <div className="col-span-2 text-right text-xs font-bold text-slate-500 dark:text-[#a1a1aa] border-t border-slate-200 dark:border-[#2e2e33] pt-2 mt-1">
                     Restante a pagar: <span className={editRemaining > 0 ? 'text-rose-500 dark:text-rose-400 text-sm' : 'text-emerald-500 dark:text-emerald-400 text-sm'}>R$ {editRemaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               ) : (
-                <div className="flex justify-between items-center bg-white dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-[#252a3a]">
+                <div className="flex justify-between items-center bg-white dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-[#2e2e33]">
                   <div><p className="text-[10px] text-slate-400 uppercase font-semibold">Valor Total</p><p className="text-sm font-bold text-slate-700 dark:text-gray-200">R$ {totalDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
                   <div className="text-right"><p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 uppercase font-semibold">Valor Pago</p><p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">R$ {paidDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                  <div className="text-right pl-4 border-l border-slate-100 dark:border-[#252a3a] ml-4"><p className="text-[10px] text-slate-400 uppercase font-semibold">Falta</p><p className={`text-sm font-black ${remainingDisplay > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-400 dark:text-[#565d73]'}`}>R$ {remainingDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                  <div className="text-right pl-4 border-l border-slate-100 dark:border-[#2e2e33] ml-4"><p className="text-[10px] text-slate-400 uppercase font-semibold">Falta</p><p className={`text-sm font-black ${remainingDisplay > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-400 dark:text-[#71717a]'}`}>R$ {remainingDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
                 </div>
               )}
             </div>
@@ -425,22 +425,22 @@ export default function AppointmentDetailModal({
               <textarea className="w-full p-2.5 text-sm text-slate-700 dark:text-gray-200 border border-indigo-200 dark:border-indigo-800/30 rounded-lg focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#1a1f28] min-h-[80px] resize-y transition-all" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Digite as observações..." />
             ) : (
               <div className="p-2.5 bg-white/60 dark:bg-[#1a1f28]/60 rounded-lg">
-                <p className="text-xs text-slate-600 dark:text-[#a0a8be] leading-relaxed">{selectedAppointment.anamnesis || selectedAppointment.notes || 'Nenhuma observação registrada.'}</p>
+                <p className="text-xs text-slate-600 dark:text-[#d4d4d8] leading-relaxed">{selectedAppointment.anamnesis || selectedAppointment.notes || 'Nenhuma observação registrada.'}</p>
               </div>
             )}
           </div>
         </div>
 
-        <div className="p-4 bg-slate-50/50 dark:bg-[#0d0f15] border-t border-slate-200 dark:border-[#252a3a] flex gap-2">
+        <div className="p-4 bg-slate-50/50 dark:bg-[#0a0a0c] border-t border-slate-200 dark:border-[#2e2e33] flex gap-2">
           {isEditing ? (
             <>
-              <button onClick={() => setIsEditing(false)} className="flex-1 bg-white dark:bg-[#141722] border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-[#a0a8be] py-2 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-colors">Cancelar</button>
+              <button onClick={() => setIsEditing(false)} className="flex-1 bg-white dark:bg-[#18181b] border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-[#d4d4d8] py-2 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-colors">Cancelar</button>
               <button onClick={handleSaveEdit} className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5"><Save size={14}/> Salvar</button>
             </>
           ) : (
             <>
               <button onClick={handleDeleteAppointmentClick} className="px-3 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14}/> Cancelar</button>
-              <button onClick={() => setIsEditing(true)} className="flex-1 bg-white dark:bg-[#141722] border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-[#a0a8be] py-2 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5"><Edit2 size={14}/> Editar</button>
+              <button onClick={() => setIsEditing(true)} className="flex-1 bg-white dark:bg-[#18181b] border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-[#d4d4d8] py-2 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5"><Edit2 size={14}/> Editar</button>
               <button onClick={() => setSelectedAppointment(null)} className="flex-1 bg-rose-500 hover:bg-rose-600 text-white py-2 rounded-lg text-xs font-semibold shadow-sm transition-colors">Fechar</button>
             </>
           )}

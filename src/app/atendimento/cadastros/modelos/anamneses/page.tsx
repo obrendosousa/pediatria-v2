@@ -58,10 +58,10 @@ export default function AnamnesesPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
         <div className="flex items-center gap-2">
           <ClipboardList className="w-5 h-5 text-teal-600" />
-          <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">Modelos de Anamnese</h1>
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Modelos de Anamnese</h1>
         </div>
         <div className="flex items-center gap-3">
           {/* Toggle Meus Modelos */}
@@ -71,7 +71,7 @@ export default function AnamnesesPage() {
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
               onlyMine
                 ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300'
-                : 'bg-white dark:bg-[#141722] border-slate-200 dark:border-[#252a3a] text-slate-600 dark:text-[#828ca5] hover:bg-slate-50 dark:hover:bg-white/5'
+                : 'bg-white dark:bg-[#18181b] border-slate-200 dark:border-[#2e2e33] text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/5'
             }`}
           >
             <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${

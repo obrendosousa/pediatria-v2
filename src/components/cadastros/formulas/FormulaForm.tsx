@@ -60,9 +60,9 @@ interface FormulaFormProps {
 
 // --- Helpers ---
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 const selectClass = `${inputClass} appearance-none cursor-pointer`;
-const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 ml-1 block uppercase tracking-wider';
+const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
 
 function RequiredBadge() {
   return (
@@ -215,7 +215,7 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
         <button
           onClick={() => router.push('/atendimento/cadastros/receituario/formulas')}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -223,11 +223,11 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
           <ArrowLeft className="w-5 h-5 text-slate-500" />
         </button>
         <div>
-          <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
             <FlaskConical className="w-5 h-5 text-teal-600" />
             {title}
           </h1>
-          <p className="text-xs text-slate-400 dark:text-[#565d73]">{subtitle}</p>
+          <p className="text-xs text-slate-400 dark:text-[#71717a]">{subtitle}</p>
         </div>
       </div>
 
@@ -236,8 +236,8 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* ─── Seção 1: Informações do Composto ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <FlaskConical className="w-4 h-4 text-teal-500" />
               Informações do Composto
             </h2>
@@ -323,8 +323,8 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
           </section>
 
           {/* ─── Seção 2: Composição ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <Layers className="w-4 h-4 text-teal-500" />
               Composição
             </h2>
@@ -341,11 +341,11 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
                     value={subSearch}
                     onChange={e => { setSubSearch(e.target.value); setSelectedSubstance(null); }}
                     placeholder="Buscar substância..."
-                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
 
                   {subDropdownOpen && substances.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl shadow-xl">
+                    <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl shadow-xl">
                       {substances.map(s => (
                         <button
                           key={s.id}
@@ -405,24 +405,24 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
 
             {/* Tabela de composição */}
             {compositions.length > 0 ? (
-              <div className="bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
+              <div className="bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="bg-slate-100 dark:bg-[#141722] border-b border-slate-200 dark:border-[#252a3a]">
-                      <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Item</th>
-                      <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase text-center">Quantidade</th>
-                      <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase text-center">Unidade</th>
-                      <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase text-center w-16">Ação</th>
+                    <tr className="bg-slate-100 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                      <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Item</th>
+                      <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-center">Quantidade</th>
+                      <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-center">Unidade</th>
+                      <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-center w-16">Ação</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-gray-800">
                     {compositions.map((item, idx) => (
                       <tr key={item.substance_id} className="hover:bg-white dark:hover:bg-[#1e2028] transition-colors">
                         <td className="px-4 py-3 text-slate-700 dark:text-gray-200">{item.substance_name}</td>
-                        <td className="px-4 py-3 text-center text-slate-600 dark:text-[#a0a8be]">
+                        <td className="px-4 py-3 text-center text-slate-600 dark:text-[#d4d4d8]">
                           {item.quantity ?? '—'}
                         </td>
-                        <td className="px-4 py-3 text-center text-slate-600 dark:text-[#a0a8be]">
+                        <td className="px-4 py-3 text-center text-slate-600 dark:text-[#d4d4d8]">
                           {item.unit ?? '—'}
                         </td>
                         <td className="px-4 py-3 text-center">
@@ -440,16 +440,16 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
                 </table>
               </div>
             ) : (
-              <div className="text-center py-6 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-dashed border-slate-200 dark:border-[#252a3a]">
+              <div className="text-center py-6 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-dashed border-slate-200 dark:border-[#2e2e33]">
                 <Layers className="w-8 h-8 text-slate-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-slate-400 dark:text-[#565d73]">Nenhuma substância adicionada.</p>
+                <p className="text-sm text-slate-400 dark:text-[#71717a]">Nenhuma substância adicionada.</p>
               </div>
             )}
           </section>
 
           {/* ─── Seção 3: Dados Complementares ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <FileText className="w-4 h-4 text-teal-500" />
               Dados Complementares
             </h2>
@@ -513,11 +513,11 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
       </div>
 
       {/* Footer fixo */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15] flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex items-center justify-end gap-3">
         <button
           type="button"
           onClick={() => router.push('/atendimento/cadastros/receituario/formulas')}
-          className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+          className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
         >
           Cancelar
         </button>

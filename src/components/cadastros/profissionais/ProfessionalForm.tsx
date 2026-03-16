@@ -102,9 +102,9 @@ interface ProfessionalFormProps {
 
 // --- Helpers ---
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 const selectClass = `${inputClass} appearance-none cursor-pointer`;
-const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 ml-1 block uppercase tracking-wider';
+const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
 
 function RequiredBadge() {
   return (
@@ -229,7 +229,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
         <button
           onClick={() => router.push('/atendimento/cadastros/profissionais')}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -237,11 +237,11 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           <ArrowLeft className="w-5 h-5 text-slate-500" />
         </button>
         <div>
-          <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
             <Briefcase className="w-5 h-5 text-teal-600" />
             {title}
           </h1>
-          <p className="text-xs text-slate-400 dark:text-[#565d73]">{subtitle}</p>
+          <p className="text-xs text-slate-400 dark:text-[#71717a]">{subtitle}</p>
         </div>
       </div>
 
@@ -250,8 +250,8 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* ─── Seção 1: Informações Básicas ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <User className="w-4 h-4 text-teal-500" />
               Informações Básicas
             </h2>
@@ -332,7 +332,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 2: Endereço e Localização ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6">
             <AddressCepLookup
               value={form.address}
               onChange={(addr) => update('address', addr)}
@@ -340,8 +340,8 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 3: Informações de Contato ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <Phone className="w-4 h-4 text-teal-500" />
               Informações de Contato
             </h2>
@@ -393,8 +393,8 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 4: Informações Profissionais ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-teal-500" />
               Informações Profissionais
             </h2>
@@ -540,7 +540,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
               {/* Checkboxes */}
               <div className="col-span-12">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
-                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#1e2334] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#27272a] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <input
                       type="checkbox"
                       checked={form.restrict_prices}
@@ -549,10 +549,10 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                     />
                     <div>
                       <span className="text-sm font-medium text-slate-700 dark:text-gray-200 block">Restringir preços</span>
-                      <span className="text-[10px] text-slate-400 dark:text-[#565d73]">Impede este profissional de alterar valores de procedimentos</span>
+                      <span className="text-[10px] text-slate-400 dark:text-[#71717a]">Impede este profissional de alterar valores de procedimentos</span>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#1e2334] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#27272a] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <input
                       type="checkbox"
                       checked={form.has_schedule}
@@ -561,10 +561,10 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                     />
                     <div>
                       <span className="text-sm font-medium text-slate-700 dark:text-gray-200 block">Possui agenda</span>
-                      <span className="text-[10px] text-slate-400 dark:text-[#565d73]">Habilita este profissional para receber agendamentos de pacientes</span>
+                      <span className="text-[10px] text-slate-400 dark:text-[#71717a]">Habilita este profissional para receber agendamentos de pacientes</span>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#1e2334] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#27272a] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <input
                       type="checkbox"
                       checked={form.restrict_schedule}
@@ -573,7 +573,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                     />
                     <div>
                       <span className="text-sm font-medium text-slate-700 dark:text-gray-200 block">Restringir agenda</span>
-                      <span className="text-[10px] text-slate-400 dark:text-[#565d73]">Só permite visualizar seus próprios agendamentos, não os de outros profissionais</span>
+                      <span className="text-[10px] text-slate-400 dark:text-[#71717a]">Só permite visualizar seus próprios agendamentos, não os de outros profissionais</span>
                     </div>
                   </label>
                 </div>
@@ -583,13 +583,13 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
 
           {/* ─── Seção 5: Acesso ao Sistema ─── */}
           {showCreateLogin && (
-            <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-4">
-              <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+            <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-4">
+              <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
                 <User className="w-4 h-4 text-teal-500" />
                 Acesso ao Sistema
               </h2>
 
-              <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-slate-100 dark:border-[#1e2334] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+              <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-slate-100 dark:border-[#27272a] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                 <div className="pt-0.5">
                   <button
                     type="button"
@@ -607,7 +607,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                   <span className="text-sm font-semibold text-slate-700 dark:text-gray-200 block">
                     Criar login de acesso
                   </span>
-                  <span className="text-xs text-slate-400 dark:text-[#565d73] block mt-0.5">
+                  <span className="text-xs text-slate-400 dark:text-[#71717a] block mt-0.5">
                     Um login será criado automaticamente com o e-mail do profissional. A senha temporária será exibida após o cadastro para que você possa compartilhar com o profissional.
                   </span>
                   {form.create_login && !form.email.trim() && (
@@ -621,8 +621,8 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           )}
 
           {/* ─── Seção 6: Informações Complementares ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <FileText className="w-4 h-4 text-teal-500" />
               Informações Complementares
             </h2>
@@ -634,10 +634,10 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                 onDragOver={e => e.preventDefault()}
                 onDrop={handleFilesDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-200 dark:border-[#252a3a] rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors"
+                className="border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors"
               >
                 <Upload className="w-8 h-8 text-slate-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-slate-400 dark:text-[#565d73]">
+                <p className="text-sm text-slate-400 dark:text-[#71717a]">
                   Arraste arquivos aqui ou <span className="text-teal-600 dark:text-teal-400 font-semibold">clique para selecionar</span>
                 </p>
                 <input
@@ -652,8 +652,8 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
               {form.attachments.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {form.attachments.map((file, i) => (
-                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-[#15171e] rounded-lg border border-slate-200 dark:border-[#252a3a]">
-                      <span className="text-sm text-slate-600 dark:text-[#a0a8be] truncate">{file.name}</span>
+                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-[#15171e] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
+                      <span className="text-sm text-slate-600 dark:text-[#d4d4d8] truncate">{file.name}</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); removeFile(i); }}
                         className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/10 text-red-400 hover:text-red-600 transition-colors"
@@ -682,10 +682,10 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
       </div>
 
       {/* Footer fixo */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15] flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex items-center justify-end gap-3">
         <button
           onClick={() => router.push('/atendimento/cadastros/profissionais')}
-          className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+          className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
         >
           Cancelar
         </button>

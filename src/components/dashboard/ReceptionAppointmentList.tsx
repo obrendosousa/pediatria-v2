@@ -139,7 +139,7 @@ export default function ReceptionAppointmentList({
 
   if (loading) {
     return (
-      <div className="text-center p-10 text-slate-400 dark:text-[#565d73]">
+      <div className="text-center p-10 text-slate-400 dark:text-[#71717a]">
         <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
         Carregando...
       </div>
@@ -161,7 +161,7 @@ export default function ReceptionAppointmentList({
             className={`bg-white dark:bg-[#202c33] p-4 rounded-2xl border shadow-sm transition-all group relative ${
               isCalled 
                 ? 'border-amber-300 dark:border-amber-700 shadow-md ring-2 ring-amber-200 dark:ring-amber-800/50 bg-amber-50/50 dark:bg-amber-900/20' 
-                : 'border-slate-100 dark:border-[#252a3a] hover:border-rose-200'
+                : 'border-slate-100 dark:border-[#2e2e33] hover:border-rose-200'
             }`}
           >
             {isCalled && (
@@ -179,17 +179,17 @@ export default function ReceptionAppointmentList({
                     {apt.patient_name || 'Sem nome'}
                   </p>
                   {apt.patient_phone && (
-                    <p className="text-xs text-slate-400 dark:text-[#565d73] mt-0.5 truncate">
+                    <p className="text-xs text-slate-400 dark:text-[#71717a] mt-0.5 truncate">
                       {apt.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
                     </p>
                   )}
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-slate-500 dark:text-[#828ca5] flex items-center gap-1">
+                    <span className="text-[10px] text-slate-500 dark:text-[#a1a1aa] flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {formatTime(apt.start_time)}
                     </span>
                     {apt.doctor_name && (
-                      <span className="text-[10px] text-slate-500 dark:text-[#828ca5] flex items-center gap-1">
+                      <span className="text-[10px] text-slate-500 dark:text-[#a1a1aa] flex items-center gap-1">
                         <Stethoscope className="w-3 h-3" />
                         {apt.doctor_name}
                       </span>
@@ -198,7 +198,7 @@ export default function ReceptionAppointmentList({
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between border-t border-slate-50 dark:border-[#252a3a] pt-3 gap-2">
+            <div className="flex items-center justify-between border-t border-slate-50 dark:border-[#2e2e33] pt-3 gap-2">
               <button
                 onClick={() => onCallAppointment && onCallAppointment(apt)}
                 className="flex-1 bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-600 shadow-md shadow-rose-200 dark:shadow-none flex items-center justify-center gap-1.5 transition-transform active:scale-95"
@@ -246,13 +246,13 @@ export default function ReceptionAppointmentList({
           className={`bg-white dark:bg-[#202c33] p-4 rounded-2xl border shadow-sm transition-all group cursor-grab active:cursor-grabbing relative ${
             idx === 0 
               ? 'border-rose-300 dark:border-rose-700 shadow-md ring-1 ring-rose-100 dark:ring-rose-900/50' 
-              : 'border-slate-100 dark:border-[#252a3a] hover:border-rose-200'
+              : 'border-slate-100 dark:border-[#2e2e33] hover:border-rose-200'
           }`}
         >
           <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${
             idx === 0 
               ? 'bg-rose-500 text-white animate-pulse' 
-              : 'bg-slate-200 dark:bg-gray-600 text-slate-500 dark:text-[#a0a8be]'
+              : 'bg-slate-200 dark:bg-gray-600 text-slate-500 dark:text-[#d4d4d8]'
           }`}>
             {idx + 1}º
           </div>
@@ -266,17 +266,17 @@ export default function ReceptionAppointmentList({
                   {apt.patient_name || 'Sem nome'}
                 </p>
                 {apt.patient_phone && (
-                  <p className="text-xs text-slate-400 dark:text-[#565d73] mt-0.5 truncate">
+                  <p className="text-xs text-slate-400 dark:text-[#71717a] mt-0.5 truncate">
                     {apt.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
                   </p>
                 )}
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] text-slate-500 dark:text-[#828ca5] flex items-center gap-1">
+                  <span className="text-[10px] text-slate-500 dark:text-[#a1a1aa] flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {formatTime(apt.start_time)}
                   </span>
                   {apt.doctor_name && (
-                    <span className="text-[10px] text-slate-500 dark:text-[#828ca5] flex items-center gap-1">
+                    <span className="text-[10px] text-slate-500 dark:text-[#a1a1aa] flex items-center gap-1">
                       <Stethoscope className="w-3 h-3" />
                       {apt.doctor_name}
                     </span>
@@ -285,8 +285,8 @@ export default function ReceptionAppointmentList({
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between border-t border-slate-50 dark:border-[#252a3a] pt-3 gap-2">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#828ca5] bg-slate-50 dark:bg-white/5 px-2 py-1 rounded-lg">
+          <div className="flex items-center justify-between border-t border-slate-50 dark:border-[#2e2e33] pt-3 gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#a1a1aa] bg-slate-50 dark:bg-white/5 px-2 py-1 rounded-lg">
               <Clock className="w-3.5 h-3.5" />
               <span className="font-bold">{formatTime(apt.start_time)}</span>
             </div>

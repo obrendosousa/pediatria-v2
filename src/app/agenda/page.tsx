@@ -222,7 +222,7 @@ export default function AgendaPage() {
       />
 
       <div className="flex-1 overflow-hidden flex p-6 gap-6">
-        <div className="flex-1 bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] shadow-sm overflow-hidden flex flex-col transition-colors">
+        <div className="flex-1 bg-white dark:bg-[#0a0a0c] rounded-2xl border border-slate-100 dark:border-[#27272a] shadow-sm overflow-hidden flex flex-col transition-colors">
           {viewMode === 'day' ? (
             <DayView
               timeSlots={timeSlots}

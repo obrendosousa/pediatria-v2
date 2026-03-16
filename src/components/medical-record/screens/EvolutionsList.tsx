@@ -168,19 +168,19 @@ export function EvolutionsList({ patientId, patientData, appointmentId }: Attend
           <button onClick={handleBack} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors">
             <ArrowLeft className="w-5 h-5 text-slate-500" />
           </button>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">Evolução Clínica</h2>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Evolução Clínica</h2>
           <div className="ml-auto flex gap-2">
             <button onClick={() => handleEdit(selected)} className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
               <Pencil className="w-3.5 h-3.5" /> Editar
             </button>
-            <button onClick={() => handlePrint(selected)} className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-[#a0a8be] rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+            <button onClick={() => handlePrint(selected)} className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-[#d4d4d8] rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
               <Printer className="w-3.5 h-3.5" /> Imprimir
             </button>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-3">
-          <div className="flex gap-6 text-sm text-slate-500 dark:text-[#828ca5]">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-3">
+          <div className="flex gap-6 text-sm text-slate-500 dark:text-[#a1a1aa]">
             {selected.show_date && selected.evolution_date && (
               <span>Data: <strong className="text-slate-700 dark:text-gray-200">{new Date(selected.evolution_date + 'T12:00:00').toLocaleDateString('pt-BR')}</strong></span>
             )}
@@ -191,7 +191,7 @@ export function EvolutionsList({ patientId, patientData, appointmentId }: Attend
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ Assinado</span>
             )}
           </div>
-          <hr className="border-slate-100 dark:border-[#252a3a]" />
+          <hr className="border-slate-100 dark:border-[#2e2e33]" />
           <div className="prose dark:prose-invert max-w-none text-sm" dangerouslySetInnerHTML={{ __html: selected.content || '<p class="text-slate-400">Sem conteúdo</p>' }} />
         </div>
       </div>
@@ -206,7 +206,7 @@ export function EvolutionsList({ patientId, patientData, appointmentId }: Attend
           <button onClick={handleBack} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors">
             <ArrowLeft className="w-5 h-5 text-slate-500" />
           </button>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">
             {mode === 'create' ? 'Nova Evolução' : 'Editar Evolução'}
           </h2>
         </div>
@@ -216,7 +216,7 @@ export function EvolutionsList({ patientId, patientData, appointmentId }: Attend
           <button
             type="button"
             onClick={() => setDigitalSignature(!digitalSignature)}
-            className="flex items-center gap-2 text-sm text-slate-600 dark:text-[#828ca5] hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
+            className="flex items-center gap-2 text-sm text-slate-600 dark:text-[#a1a1aa] hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
           >
             {digitalSignature
               ? <ToggleRight className="w-6 h-6 text-blue-500" />
@@ -228,7 +228,7 @@ export function EvolutionsList({ patientId, patientData, appointmentId }: Attend
           <button
             type="button"
             onClick={() => setShowDate(!showDate)}
-            className="flex items-center gap-2 text-sm text-slate-600 dark:text-[#828ca5] hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
+            className="flex items-center gap-2 text-sm text-slate-600 dark:text-[#a1a1aa] hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
           >
             {showDate
               ? <ToggleRight className="w-6 h-6 text-blue-500" />
@@ -239,12 +239,12 @@ export function EvolutionsList({ patientId, patientData, appointmentId }: Attend
 
           {showDate && (
             <div>
-              <label className="text-xs font-bold text-slate-600 dark:text-[#828ca5] mb-1 block">Data da evolução</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-[#a1a1aa] mb-1 block">Data da evolução</label>
               <input
                 type="date"
                 value={evolutionDate}
                 onChange={e => setEvolutionDate(e.target.value)}
-                className="px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
             </div>
           )}
@@ -253,7 +253,7 @@ export function EvolutionsList({ patientId, patientData, appointmentId }: Attend
         {/* Editor + Painel de templates */}
         <div className="flex gap-4">
           <div className="flex-1 min-w-0">
-            <label className="text-xs font-bold text-slate-600 dark:text-[#828ca5] mb-1 block">Conteúdo</label>
+            <label className="text-xs font-bold text-slate-600 dark:text-[#a1a1aa] mb-1 block">Conteúdo</label>
             <RichTextEditor
               value={content}
               onChange={setContent}
@@ -277,7 +277,7 @@ export function EvolutionsList({ patientId, patientData, appointmentId }: Attend
           </button>
           <button
             onClick={handleBack}
-            className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-[#828ca5] bg-slate-100 dark:bg-[#141722] hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+            className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-[#a1a1aa] bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
           >
             CANCELAR
           </button>
@@ -290,7 +290,7 @@ export function EvolutionsList({ patientId, patientData, appointmentId }: Attend
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">Evoluções Clínicas</h2>
+        <h2 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Evoluções Clínicas</h2>
         <button
           onClick={handleCreate}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition-all active:scale-95"
@@ -302,29 +302,29 @@ export function EvolutionsList({ patientId, patientData, appointmentId }: Attend
       {evolutions.length === 0 ? (
         <div className="text-center py-16">
           <TrendingUp className="w-12 h-12 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
-          <p className="text-sm text-slate-400 dark:text-[#565d73]">Nenhuma evolução registrada.</p>
+          <p className="text-sm text-slate-400 dark:text-[#71717a]">Nenhuma evolução registrada.</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-slate-50 dark:bg-[#141722] border-b border-slate-200 dark:border-[#252a3a]">
-                <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Data criação</th>
-                <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Data da evolução</th>
-                <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Profissional</th>
-                <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase text-right">Opções</th>
+              <tr className="bg-slate-50 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Data criação</th>
+                <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Data da evolução</th>
+                <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Profissional</th>
+                <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-right">Opções</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
               {evolutions.map(ev => (
                 <tr key={ev.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 text-slate-600 dark:text-[#a0a8be]">
+                  <td className="px-4 py-3 text-slate-600 dark:text-[#d4d4d8]">
                     {new Date(ev.created_at).toLocaleDateString('pt-BR')}
                   </td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-[#a0a8be]">
+                  <td className="px-4 py-3 text-slate-600 dark:text-[#d4d4d8]">
                     {ev.evolution_date ? new Date(ev.evolution_date + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}
                   </td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-[#a0a8be]">
+                  <td className="px-4 py-3 text-slate-600 dark:text-[#d4d4d8]">
                     {ev.doctor_id ? (doctors[ev.doctor_id] || '—') : '—'}
                     {ev.signed && (
                       <span className="ml-2 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded font-bold">ASSINADO</span>
@@ -373,12 +373,12 @@ function EvolutionTemplatePanel({ templates, onSelect }: {
 }) {
   if (templates.length === 0) {
     return (
-      <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#252a3a] p-4">
+      <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-4">
         <div className="flex items-center gap-2 mb-3">
           <BookOpen className="w-4 h-4 text-slate-400" />
-          <h3 className="text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Modelos de evolução</h3>
+          <h3 className="text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Modelos de evolução</h3>
         </div>
-        <p className="text-xs text-slate-400 dark:text-[#565d73] text-center py-6">
+        <p className="text-xs text-slate-400 dark:text-[#71717a] text-center py-6">
           Nenhum modelo cadastrado.
         </p>
       </div>
@@ -386,23 +386,23 @@ function EvolutionTemplatePanel({ templates, onSelect }: {
   }
 
   return (
-    <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#252a3a] p-4 overflow-y-auto max-h-[500px]">
+    <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-4 overflow-y-auto max-h-[500px]">
       <div className="flex items-center gap-2 mb-3">
         <BookOpen className="w-4 h-4 text-slate-400" />
-        <h3 className="text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Modelos de evolução</h3>
+        <h3 className="text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Modelos de evolução</h3>
       </div>
       <div className="space-y-2">
         {templates.map(tmpl => (
           <button
             key={tmpl.id}
             onClick={() => onSelect(tmpl)}
-            className="w-full text-left p-3 rounded-lg bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all group"
+            className="w-full text-left p-3 rounded-lg bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all group"
           >
             <p className="text-xs font-bold text-slate-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
               {tmpl.title}
             </p>
             {tmpl.content && (
-              <p className="text-[10px] text-slate-400 dark:text-[#565d73] mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: tmpl.content.replace(/<[^>]*>/g, ' ').slice(0, 80) }} />
+              <p className="text-[10px] text-slate-400 dark:text-[#71717a] mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: tmpl.content.replace(/<[^>]*>/g, ' ').slice(0, 80) }} />
             )}
           </button>
         ))}

@@ -34,14 +34,14 @@ function KpiCard({
 }) {
   const palette = toneClassMap[tone];
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#1e2334] dark:bg-[#0d0f15]">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#27272a] dark:bg-[#0a0a0c]">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-[#828ca5]">{title}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-[#a1a1aa]">{title}</p>
             <InfoHelpButton title={title} description={helpText} />
           </div>
-          <p className="mt-1 text-2xl font-black text-slate-800 dark:text-[#e8ecf4]">{value}</p>
+          <p className="mt-1 text-2xl font-black text-slate-800 dark:text-[#fafafa]">{value}</p>
         </div>
         <div className={`rounded-xl p-2 ${palette.icon}`}>
           <Icon className="h-4 w-4" />
@@ -58,8 +58,8 @@ export default function KPIHeroGrid({ metrics }: KPIHeroGridProps) {
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-bold text-slate-800 dark:text-[#e8ecf4]">Indicadores críticos</h2>
-        <span className="text-xs text-slate-500 dark:text-[#828ca5]">Leitura rápida para decisão</span>
+        <h2 className="text-base font-bold text-slate-800 dark:text-[#fafafa]">Indicadores críticos</h2>
+        <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">Leitura rápida para decisão</span>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard

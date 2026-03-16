@@ -136,7 +136,7 @@ function SearchRow({
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
           placeholder={placeholder}
-          className="w-full pl-3 pr-8 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+          className="w-full pl-3 pr-8 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
         {value ? (
           <button type="button" onMouseDown={onClear} className="absolute right-2 top-2 text-slate-400 hover:text-slate-600">
@@ -149,13 +149,13 @@ function SearchRow({
 
       {/* Dropdown */}
       {open && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg shadow-xl max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg shadow-xl max-h-60 overflow-y-auto">
           {results.map((item, i) => (
             <button
               key={i}
               type="button"
               onMouseDown={() => { onSelect(item); setOpen(false); }}
-              className="w-full text-left px-3 py-2.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-[#252a3a]/50 last:border-0"
+              className="w-full text-left px-3 py-2.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-[#2e2e33]/50 last:border-0"
             >
               {renderResult(item)}
             </button>
@@ -184,7 +184,7 @@ function MedicationRow({
   useEffect(() => { setQuery(item.name); }, [item.name]);
 
   return (
-    <div className="relative bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg p-4">
+    <div className="relative bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg p-4">
       <div className="absolute -top-3 left-4 w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
         {index + 1}
       </div>
@@ -216,7 +216,7 @@ function MedicationRow({
           }}
           renderResult={(med) => (
             <div>
-              <span className="font-medium text-slate-800 dark:text-[#e8ecf4]">{med.name}</span>
+              <span className="font-medium text-slate-800 dark:text-[#fafafa]">{med.name}</span>
               {med.active_ingredient && (
                 <span className="block text-xs text-slate-400 mt-0.5">{med.active_ingredient}</span>
               )}
@@ -236,9 +236,9 @@ function MedicationRow({
             onChange={(e) => onUpdate(index, { ...item, posology: e.target.value })}
             placeholder="Digite a posologia..."
             rows={2}
-            className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all ${showError && !item.posology.trim()
+            className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all ${showError && !item.posology.trim()
                 ? 'border-red-400 dark:border-red-500 bg-red-50/30'
-                : 'border-slate-200 dark:border-[#252a3a]'
+                : 'border-slate-200 dark:border-[#2e2e33]'
               }`}
           />
           {showError && !item.posology.trim() && (
@@ -253,12 +253,12 @@ function MedicationRow({
           <input
             type="number" min={1} value={item.quantity}
             onChange={(e) => onUpdate(index, { ...item, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-            className="w-14 px-2 py-1.5 text-sm text-center border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-14 px-2 py-1.5 text-sm text-center border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
           <select
             value={item.unit}
             onChange={(e) => onUpdate(index, { ...item, unit: e.target.value })}
-            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           >
             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
@@ -268,7 +268,7 @@ function MedicationRow({
                 onClick={() => onUpdate(index, { ...item, receipt_type: t })}
                 className={`px-2.5 py-1 text-xs font-semibold rounded transition-colors ${item.receipt_type === t
                     ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 dark:bg-[#1e2334] text-slate-600 dark:text-[#a0a8be] hover:bg-slate-200 dark:hover:bg-gray-600'
+                    : 'bg-slate-100 dark:bg-[#27272a] text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-gray-600'
                   }`}
               >
                 {t === 'simples' ? 'Receituário Simples' : 'Especial'}
@@ -331,7 +331,7 @@ function ExamPrescriptionRow({
       <input
         type="number" min={1} value={item.quantity}
         onChange={(e) => onUpdate(index, { ...item, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-        className="w-16 px-2 py-2 text-sm text-center border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        className="w-16 px-2 py-2 text-sm text-center border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
       />
       {canRemove && (
         <button type="button" onClick={() => onRemove(index)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
@@ -378,7 +378,7 @@ function VaccineRow({
           }}
           renderResult={(vaccine) => (
             <div>
-              <span className="font-medium text-slate-800 dark:text-[#e8ecf4]">{vaccine.name}</span>
+              <span className="font-medium text-slate-800 dark:text-[#fafafa]">{vaccine.name}</span>
               <div className="flex gap-2 mt-0.5">
                 {vaccine.commercial_names && (
                   <span className="text-xs text-slate-400">{vaccine.commercial_names}</span>
@@ -398,7 +398,7 @@ function VaccineRow({
       <select
         value={item.dose || '1ª dose'}
         onChange={(e) => onUpdate(index, { ...item, dose: e.target.value })}
-        className="px-2 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        className="px-2 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
       >
         {DOSES.map((d) => <option key={d} value={d}>{d}</option>)}
       </select>
@@ -564,7 +564,7 @@ function PrescriptionCard({
   ].filter(Boolean).slice(0, 3).join(', ');
 
   return (
-    <div className="bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg p-4">
+    <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg p-4">
       <div className="flex items-start gap-3">
         {/* Calendário */}
         <div className="flex-shrink-0 text-center">
@@ -663,7 +663,7 @@ function PrescriptionTemplatesGrid({ onSelectTemplate }: {
 
   if (templates.length === 0) {
     return (
-      <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-[#252a3a] rounded-lg">
+      <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-lg">
         <BookOpen className="w-8 h-8 text-slate-300 dark:text-gray-600 mx-auto mb-2" />
         <p className="text-xs text-slate-400">Nenhum modelo salvo ainda.</p>
       </div>
@@ -685,7 +685,7 @@ function PrescriptionTemplatesGrid({ onSelectTemplate }: {
               }
             } catch { /* ignora */ }
           }}
-          className="text-left p-3 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all"
+          className="text-left p-3 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all"
         >
           <ClipboardList className="w-5 h-5 text-slate-400 mb-2" />
           <p className="text-xs font-semibold text-slate-700 dark:text-gray-200 line-clamp-2">{t.title}</p>
@@ -821,7 +821,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
   };
 
   if (isLoading) {
-    return <div className="p-6 text-center text-slate-500 dark:text-[#828ca5]">Carregando...</div>;
+    return <div className="p-6 text-center text-slate-500 dark:text-[#a1a1aa]">Carregando...</div>;
   }
 
   // ─── View: Formulário ──────────────────────────────────────────────────────
@@ -834,22 +834,22 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
             <button type="button" onClick={() => setView('landing')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-gray-300 transition-colors">
               <ChevronLeft className="w-4 h-4" /> Anterior
             </button>
-            <span className="text-sm font-semibold text-slate-600 dark:text-[#a0a8be]">Prescrever</span>
+            <span className="text-sm font-semibold text-slate-600 dark:text-[#d4d4d8]">Prescrever</span>
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={() => { setModelAction('load'); setModelModalOpen(true); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#a0a8be] border border-slate-200 dark:border-[#252a3a] rounded-md hover:bg-slate-50 dark:hover:bg-[#1e2334] transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-md hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors">
               <BookOpen className="w-3.5 h-3.5" /> Histórico
             </button>
             <button type="button" onClick={() => { setModelAction('save'); setModelModalOpen(true); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#a0a8be] border border-slate-200 dark:border-[#252a3a] rounded-md hover:bg-slate-50 dark:hover:bg-[#1e2334] transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-md hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors">
               <Save className="w-3.5 h-3.5" /> Usar Modelo
             </button>
           </div>
         </div>
 
         {/* Abas: Medicamentos | Exames | Vacinas */}
-        <div className="flex gap-0 border-b border-slate-200 dark:border-[#252a3a] mb-4">
+        <div className="flex gap-0 border-b border-slate-200 dark:border-[#2e2e33] mb-4">
           {([
             { key: 'medications', label: 'Medicamentos', icon: <Pill className="w-4 h-4" />, count: medCount },
             { key: 'exams', label: 'Exames', icon: <Microscope className="w-4 h-4" />, count: examCount },
@@ -859,7 +859,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === tab.key
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-300'
+                  : 'border-transparent text-slate-500 dark:text-[#a1a1aa] hover:text-slate-700 dark:hover:text-gray-300'
                 }`}
             >
               {tab.icon}
@@ -875,10 +875,10 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
 
         {/* Cabeçalho da seção */}
         <div className="mb-4">
-          <p className="text-xs font-medium text-slate-500 dark:text-[#828ca5] uppercase">
+          <p className="text-xs font-medium text-slate-500 dark:text-[#a1a1aa] uppercase">
             {activeTab === 'medications' ? 'Itens da Receita' : activeTab === 'exams' ? 'Itens do Exame' : 'Itens da Vacina'}
           </p>
-          <p className="text-xs text-slate-400 dark:text-[#565d73] mt-0.5">
+          <p className="text-xs text-slate-400 dark:text-[#71717a] mt-0.5">
             {activeTab === 'medications' ? 'Adicione itens de texto livre à sua receita' : activeTab === 'exams' ? 'Adicione itens de exame' : 'Adicione itens de vacina'}
           </p>
         </div>
@@ -893,7 +893,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
               />
             ))}
             <button type="button" onClick={addMed}
-              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#252a3a] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               <Plus className="w-4 h-4" /> Novo Item
             </button>
           </div>
@@ -913,7 +913,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
               />
             ))}
             <button type="button" onClick={addExam}
-              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#252a3a] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               <Plus className="w-4 h-4" /> Novo Item
             </button>
           </div>
@@ -933,21 +933,21 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
               />
             ))}
             <button type="button" onClick={addVaccine}
-              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#252a3a] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               <Plus className="w-4 h-4" /> Novo Item
             </button>
           </div>
         )}
 
         {/* Rodapé */}
-        <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100 dark:border-[#252a3a]/50">
+        <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100 dark:border-[#2e2e33]/50">
           <button type="button" onClick={() => setView('landing')} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-gray-300 transition-colors">
             Cancelar
           </button>
           <div className="flex items-center gap-2">
             <button type="button"
               onClick={() => { setModelAction('save'); setModelModalOpen(true); }}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#a0a8be] border border-slate-200 dark:border-[#252a3a] rounded-lg hover:bg-slate-50 dark:hover:bg-[#1e2334] transition-colors">
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors">
               <Save className="w-4 h-4" />
               Salvar como Modelo
             </button>
@@ -984,18 +984,18 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
     return (
       <div className="p-4 pb-6">
         <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">Prescrições</h1>
-          <span className="text-xs text-slate-600 dark:text-[#828ca5] uppercase">{currentDate}</span>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-[#fafafa]">Prescrições</h1>
+          <span className="text-xs text-slate-600 dark:text-[#a1a1aa] uppercase">{currentDate}</span>
         </div>
 
-        <div className="bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg p-5 mb-4">
+        <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg p-5 mb-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
               <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="font-semibold text-slate-800 dark:text-[#e8ecf4]">Prescrição Emitida</p>
-              <p className="text-xs text-slate-500 dark:text-[#828ca5]">
+              <p className="font-semibold text-slate-800 dark:text-[#fafafa]">Prescrição Emitida</p>
+              <p className="text-xs text-slate-500 dark:text-[#a1a1aa]">
                 {meds.length > 0 && `${meds.length} med. `}
                 {exams.length > 0 && `${exams.length} exam. `}
                 {vaccines.length > 0 && `${vaccines.length} vac.`}
@@ -1003,10 +1003,10 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
             </div>
           </div>
 
-          <p className="text-sm text-slate-500 dark:text-[#828ca5] mb-4">Imprima os documentos separadamente:</p>
+          <p className="text-sm text-slate-500 dark:text-[#a1a1aa] mb-4">Imprima os documentos separadamente:</p>
 
           {meds.length > 0 && (
-            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#252a3a] rounded-lg">
+            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#2e2e33] rounded-lg">
               <div className="flex items-center gap-2">
                 <Pill className="w-4 h-4 text-blue-500" />
                 <span className="text-sm text-slate-700 dark:text-gray-200">
@@ -1021,7 +1021,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
             </div>
           )}
           {exams.length > 0 && (
-            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#252a3a] rounded-lg">
+            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#2e2e33] rounded-lg">
               <div className="flex items-center gap-2">
                 <Microscope className="w-4 h-4 text-emerald-500" />
                 <span className="text-sm text-slate-700 dark:text-gray-200">
@@ -1036,7 +1036,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
             </div>
           )}
           {vaccines.length > 0 && (
-            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#252a3a] rounded-lg">
+            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#2e2e33] rounded-lg">
               <div className="flex items-center gap-2">
                 <Syringe className="w-4 h-4 text-purple-500" />
                 <span className="text-sm text-slate-700 dark:text-gray-200">
@@ -1064,21 +1064,21 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
   return (
     <div className="p-4 pb-6">
       <div className="mb-5 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">Prescrições</h1>
-        <span className="text-xs text-slate-600 dark:text-[#828ca5] uppercase">{currentDate}</span>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-[#fafafa]">Prescrições</h1>
+        <span className="text-xs text-slate-600 dark:text-[#a1a1aa] uppercase">{currentDate}</span>
       </div>
 
       {/* Criar Prescrição */}
-      <div className="bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg p-4 mb-5">
+      <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg p-4 mb-5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <span className="font-semibold text-slate-800 dark:text-[#e8ecf4]">Criar Prescrição</span>
+            <span className="font-semibold text-slate-800 dark:text-[#fafafa]">Criar Prescrição</span>
           </div>
           <div className="flex gap-2">
             <button type="button"
               onClick={() => { setModelAction('load'); setModelModalOpen(true); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#a0a8be] border border-slate-200 dark:border-[#252a3a] rounded-md hover:bg-slate-50 dark:hover:bg-[#1e2334] transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-md hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors">
               <BookOpen className="w-3.5 h-3.5" /> Usar Modelo
             </button>
             <button type="button" onClick={openNewForm}
@@ -1147,7 +1147,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
       {prescriptions.length === 0 && (
         <div className="mt-6 text-center py-12">
           <Pill className="w-10 h-10 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
-          <p className="text-sm text-slate-500 dark:text-[#828ca5]">Nenhuma prescrição registrada ainda.</p>
+          <p className="text-sm text-slate-500 dark:text-[#a1a1aa]">Nenhuma prescrição registrada ainda.</p>
           <button type="button" onClick={openNewForm}
             className="mt-4 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
             Criar primeira prescrição

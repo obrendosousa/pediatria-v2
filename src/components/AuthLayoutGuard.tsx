@@ -81,7 +81,7 @@ export default function AuthLayoutGuard({ children }: { children: React.ReactNod
       <div className="flex h-screen w-full items-center justify-center bg-[rgb(var(--background))]">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
-          <p className="text-sm text-slate-500 dark:text-[#828ca5]">Carregando...</p>
+          <p className="text-sm text-slate-500 dark:text-[#a1a1aa]">Carregando...</p>
         </div>
       </div>
     );

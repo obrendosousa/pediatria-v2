@@ -75,13 +75,13 @@ export default function QuickChatModal({ isOpen, onClose, patientPhone }: QuickC
 
   const modalContent = (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-[#0d0f15] rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
         
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-[#252a3a] bg-gray-50 dark:bg-[#141722] flex justify-between items-center">
+        <div className="p-4 border-b border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-between items-center">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-pink-600 dark:text-pink-400" />
-            <h3 className="font-bold text-gray-800 dark:text-[#e8ecf4]">
+            <h3 className="font-bold text-gray-800 dark:text-[#fafafa]">
               Chat com {chat?.contact_name || patientPhone}
             </h3>
           </div>
@@ -89,7 +89,7 @@ export default function QuickChatModal({ isOpen, onClose, patientPhone }: QuickC
             onClick={onClose}
             className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors"
           >
-            <X size={20} className="text-gray-400 dark:text-[#565d73]"/>
+            <X size={20} className="text-gray-400 dark:text-[#71717a]"/>
           </button>
         </div>
 
@@ -99,7 +99,7 @@ export default function QuickChatModal({ isOpen, onClose, patientPhone }: QuickC
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <Loader2 className="w-8 h-8 animate-spin text-pink-600 dark:text-pink-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-[#828ca5]">Carregando chat...</p>
+                <p className="text-sm text-gray-500 dark:text-[#a1a1aa]">Carregando chat...</p>
               </div>
             </div>
           ) : error ? (
@@ -115,7 +115,7 @@ export default function QuickChatModal({ isOpen, onClose, patientPhone }: QuickC
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <User className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-[#828ca5]">Nenhum chat encontrado</p>
+                <p className="text-sm text-gray-500 dark:text-[#a1a1aa]">Nenhum chat encontrado</p>
               </div>
             </div>
           )}

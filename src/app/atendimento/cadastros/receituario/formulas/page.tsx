@@ -73,10 +73,10 @@ export default function FormulasPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
         <div className="flex items-center gap-2">
           <FlaskConical className="w-5 h-5 text-teal-600" />
-          <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">Fórmulas</h1>
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Fórmulas</h1>
         </div>
         <button
           onClick={() => router.push('/atendimento/cadastros/receituario/formulas/criar')}

@@ -60,8 +60,8 @@ export default function EditContactModal({ isOpen, onClose, chat, onUpdate }: Ed
   const modalContent = (
     <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-[#202c33] w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-[#252a3a]">
-          <h2 className="text-md font-bold text-gray-800 dark:text-[#e8ecf4] flex items-center gap-2">
+        <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-[#2e2e33]">
+          <h2 className="text-md font-bold text-gray-800 dark:text-[#fafafa] flex items-center gap-2">
             <UserCog className="text-blue-500" size={18}/>
             Editar Contato
           </h2>
@@ -72,21 +72,21 @@ export default function EditContactModal({ isOpen, onClose, chat, onUpdate }: Ed
 
         <form onSubmit={handleSave} className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase text-gray-500 dark:text-[#828ca5] mb-1">Nome do Contato</label>
+            <label className="block text-xs font-bold uppercase text-gray-500 dark:text-[#a1a1aa] mb-1">Nome do Contato</label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-[#141722] border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold uppercase text-gray-500 dark:text-[#828ca5] mb-1">Telefone</label>
+            <label className="block text-xs font-bold uppercase text-gray-500 dark:text-[#a1a1aa] mb-1">Telefone</label>
             <input
               type="text"
               value={phone}
               onChange={e => setPhone(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-[#141722] border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
             />
           </div>
 

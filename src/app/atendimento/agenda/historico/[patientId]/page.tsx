@@ -41,7 +41,7 @@ export default function HistoricoAgendamentosPage() {
 
   if (!patientId || isNaN(patientId)) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-slate-50 dark:bg-[#16171c] text-slate-500 dark:text-[#828ca5]">
+      <div className="flex flex-col items-center justify-center h-screen bg-slate-50 dark:bg-[#16171c] text-slate-500 dark:text-[#a1a1aa]">
         <p className="text-sm">Paciente não encontrado.</p>
         <button onClick={() => router.back()} className="mt-3 text-xs text-teal-600 hover:underline">Voltar</button>
       </div>
@@ -51,7 +51,7 @@ export default function HistoricoAgendamentosPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#16171c] transition-colors">
       {/* Header */}
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0d0f15] border-b border-slate-100 dark:border-[#1e2334] shadow-sm">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0a0a0c] border-b border-slate-100 dark:border-[#27272a] shadow-sm">
         <div className="flex items-center gap-3">
           <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 transition-colors">
             <ArrowLeft className="w-5 h-5" />
@@ -60,8 +60,8 @@ export default function HistoricoAgendamentosPage() {
             <Calendar className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-800 dark:text-[#e8ecf4] leading-none">Histórico de Agendamentos</h1>
-            <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-0.5">{patientName || `Paciente #${patientId}`}</p>
+            <h1 className="text-base font-bold text-slate-800 dark:text-[#fafafa] leading-none">Histórico de Agendamentos</h1>
+            <p className="text-xs text-slate-500 dark:text-[#a1a1aa] mt-0.5">{patientName || `Paciente #${patientId}`}</p>
           </div>
         </div>
       </div>

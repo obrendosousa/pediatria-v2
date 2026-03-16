@@ -493,20 +493,20 @@ export default function CRMPage() {
     <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#0b141a] relative overflow-hidden transition-colors duration-300">
       
       {/* HEADER */}
-      <div className={`px-6 py-5 z-10 border-b border-slate-100 dark:border-[#1e2334] bg-white/50 dark:bg-[#0d0f15]/80 backdrop-blur-sm transition-all duration-300 ${isChatOpen ? 'mr-[400px]' : ''}`}>
+      <div className={`px-6 py-5 z-10 border-b border-slate-100 dark:border-[#27272a] bg-white/50 dark:bg-[#0a0a0c]/80 backdrop-blur-sm transition-all duration-300 ${isChatOpen ? 'mr-[400px]' : ''}`}>
         <div className="flex justify-between items-center mb-4">
-            <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
                 <div className="p-2 bg-rose-500 text-white rounded-lg shadow-lg shadow-rose-200 dark:shadow-none"><LayoutList className="w-5 h-5" /></div>
                 Central de Controle
             </h1>
-            <div className="flex bg-slate-100/80 dark:bg-[#111b21] p-1 rounded-xl shadow-inner border border-transparent dark:border-[#1e2334]">
+            <div className="flex bg-slate-100/80 dark:bg-[#111b21] p-1 rounded-xl shadow-inner border border-transparent dark:border-[#27272a]">
                 <button
                   type="button"
                   onClick={() => { setActiveTab('reception'); setReceptionFlowTab('flow'); }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                     activeTab === 'reception' && receptionFlowTab === 'flow'
-                      ? 'bg-white dark:bg-[#141722] text-blue-600 dark:text-blue-400 shadow-sm'
-                      : 'text-slate-500 dark:text-[#565d73] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'
+                      ? 'bg-white dark:bg-[#18181b] text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-slate-500 dark:text-[#71717a] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'
                   }`}
                 >
                   <Users className="w-4 h-4" /> Recepção (Fila)
@@ -516,14 +516,14 @@ export default function CRMPage() {
                   onClick={() => { setActiveTab('reception'); setReceptionFlowTab('checkout'); }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                     activeTab === 'reception' && receptionFlowTab === 'checkout'
-                      ? 'bg-white dark:bg-[#141722] text-purple-600 dark:text-purple-400 shadow-sm'
-                      : 'text-slate-500 dark:text-[#565d73] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'
+                      ? 'bg-white dark:bg-[#18181b] text-purple-600 dark:text-purple-400 shadow-sm'
+                      : 'text-slate-500 dark:text-[#71717a] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'
                   }`}
                 >
                   <DollarSign className="w-4 h-4" /> Checkout / Finalização
                 </button>
                 {TABS.filter(t => t.id === 'analytics').map(tab => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white dark:bg-[#141722] text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 dark:text-[#565d73] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'}`}>
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white dark:bg-[#18181b] text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 dark:text-[#71717a] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'}`}>
                     <tab.icon className="w-4 h-4" /> {tab.label}
                   </button>
                 ))}
@@ -538,10 +538,10 @@ export default function CRMPage() {
         {activeTab === 'reception' && (
             <div className="h-full flex flex-col p-6 overflow-hidden">
                 <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-4 bg-white dark:bg-[#0d0f15] px-2 py-1.5 rounded-full border border-slate-200 dark:border-[#252a3a] shadow-sm transition-colors">
-                        <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-[#828ca5]"><ChevronLeft className="w-5 h-5"/></button>
+                    <div className="flex items-center gap-4 bg-white dark:bg-[#0a0a0c] px-2 py-1.5 rounded-full border border-slate-200 dark:border-[#2e2e33] shadow-sm transition-colors">
+                        <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-[#a1a1aa]"><ChevronLeft className="w-5 h-5"/></button>
                         <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-rose-500" /><input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="text-sm font-bold text-slate-700 dark:text-gray-200 bg-transparent outline-none uppercase" /></div>
-                        <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-[#828ca5]"><ChevronRight className="w-5 h-5"/></button>
+                        <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-[#a1a1aa]"><ChevronRight className="w-5 h-5"/></button>
                     </div>
                     {receptionFlowTab !== 'checkout' && (
                       <button onClick={() => setIsNewSlotModalOpen(true)} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-rose-200 dark:shadow-none transition-all hover:-translate-y-0.5"><UserPlus className="w-4 h-4" /> Novo Paciente</button>
@@ -821,12 +821,12 @@ export default function CRMPage() {
 
       {/* --- SIDEBAR DO CHAT --- */}
       <div className={`
-        fixed inset-y-0 right-0 w-[400px] bg-white dark:bg-[#0d0f15] border-l dark:border-[#1e2334] shadow-2xl transform transition-transform duration-300 z-50
+        fixed inset-y-0 right-0 w-[400px] bg-white dark:bg-[#0a0a0c] border-l dark:border-[#27272a] shadow-2xl transform transition-transform duration-300 z-50
         ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
         <div className="h-full flex flex-col">
-          <div className="bg-gray-50 dark:bg-[#141722] border-b dark:border-[#252a3a] px-4 py-2 flex justify-between items-center shrink-0">
-            <span className="text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase tracking-wider flex items-center gap-2">
+          <div className="bg-gray-50 dark:bg-[#18181b] border-b dark:border-[#2e2e33] px-4 py-2 flex justify-between items-center shrink-0">
+            <span className="text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase tracking-wider flex items-center gap-2">
               <MessageSquare size={14} /> 
               Chat em Tempo Real
             </span>

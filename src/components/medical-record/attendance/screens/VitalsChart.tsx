@@ -230,16 +230,16 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
     <div className="p-5 space-y-5">
 
       {/* ── Área do Gráfico ─────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
 
         {/* Toolbar */}
-        <div className="flex flex-wrap gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-[#252a3a] items-center">
+        <div className="flex flex-wrap gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-[#2e2e33] items-center">
           {/* Seletor de gráfico */}
           <div className="flex-1 min-w-[220px]">
             <select
               value={selectedChartValue}
               onChange={(e) => setSelectedChartValue(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 dark:border-[#252a3a] rounded-lg text-sm bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
             >
               {/* Recomendados para a idade */}
               {recommendedCharts.length > 0 && (
@@ -259,13 +259,13 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
           </div>
 
           {/* Toggle Z-Score / Percentil */}
-          <div className="flex bg-slate-100 dark:bg-[#141722] rounded-lg p-1 gap-0.5">
+          <div className="flex bg-slate-100 dark:bg-[#18181b] rounded-lg p-1 gap-0.5">
             <button
               onClick={() => setDisplayMode('Z_SCORE')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                 displayMode === 'Z_SCORE'
                   ? 'bg-white dark:bg-[#353842] shadow text-blue-600 dark:text-blue-400'
-                  : 'text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-200'
+                  : 'text-slate-500 dark:text-[#a1a1aa] hover:text-slate-700 dark:hover:text-gray-200'
               }`}
             >
               Z-Score (OMS)
@@ -275,7 +275,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                 displayMode === 'PERCENTILE'
                   ? 'bg-white dark:bg-[#353842] shadow text-blue-600 dark:text-blue-400'
-                  : 'text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-200'
+                  : 'text-slate-500 dark:text-[#a1a1aa] hover:text-slate-700 dark:hover:text-gray-200'
               }`}
             >
               Percentil
@@ -288,7 +288,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
             className="p-2 hover:bg-slate-100 dark:hover:bg-[#2a2d36] rounded-lg transition-colors"
             title="Exportar PNG"
           >
-            <Download className="w-4 h-4 text-slate-500 dark:text-[#828ca5]" />
+            <Download className="w-4 h-4 text-slate-500 dark:text-[#a1a1aa]" />
           </button>
         </div>
 
@@ -297,7 +297,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
           {isLoadingReference ? (
             <div className="h-[460px] flex flex-col items-center justify-center gap-3">
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-slate-400 dark:text-[#565d73]">Carregando curvas de referência...</p>
+              <p className="text-sm text-slate-400 dark:text-[#71717a]">Carregando curvas de referência...</p>
             </div>
           ) : referenceError ? (
             <div className="h-[460px] flex flex-col items-center justify-center gap-2 text-red-500">
@@ -305,7 +305,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
               <span className="text-sm">{referenceError}</span>
             </div>
           ) : chartData.referenceLines.length === 0 ? (
-            <div className="h-[460px] flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-[#565d73]">
+            <div className="h-[460px] flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-[#71717a]">
               <Activity className="w-8 h-8" />
               <span className="text-sm">Nenhum dado de referência para este gráfico.</span>
             </div>
@@ -322,55 +322,55 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
       </div>
 
       {/* ── Formulário de Nova Medição ───────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-5">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-5">
         <h2 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide mb-4">
           Nova Medição
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide mb-1.5">
               Data
             </label>
             <input
               type="date"
               value={measurementDate}
               onChange={e => setMeasurementDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#252a3a] rounded-lg text-sm bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide mb-1.5">
               Peso (kg)
             </label>
             <input
               type="number" step="0.01" min="0"
               value={weightKg}
               onChange={e => setWeightKg(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#252a3a] rounded-lg text-sm bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="0.00"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide mb-1.5">
               Estatura (cm)
             </label>
             <input
               type="number" step="0.1" min="0"
               value={heightCm}
               onChange={e => setHeightCm(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#252a3a] rounded-lg text-sm bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="0.0"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide mb-1.5">
               PC (cm)
             </label>
             <input
               type="number" step="0.1" min="0"
               value={headCircumferenceCm}
               onChange={e => setHeadCircumferenceCm(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#252a3a] rounded-lg text-sm bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="0.0"
             />
           </div>
@@ -393,19 +393,19 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
               onChange={e => setIsPremature(e.target.checked)}
               className="w-4 h-4 rounded border-slate-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-slate-600 dark:text-[#a0a8be]">Paciente prematuro</span>
+            <span className="text-sm text-slate-600 dark:text-[#d4d4d8]">Paciente prematuro</span>
           </label>
           {isPremature && (
             <div className="flex items-center gap-2">
-              <label className="text-xs text-slate-500 dark:text-[#828ca5]">Idade gestacional:</label>
+              <label className="text-xs text-slate-500 dark:text-[#a1a1aa]">Idade gestacional:</label>
               <input
                 type="number" min="24" max="36"
                 value={gestationalAgeWeeks}
                 onChange={e => setGestationalAgeWeeks(e.target.value ? Number(e.target.value) : '')}
-                className="w-20 px-2 py-1.5 border border-slate-200 dark:border-[#252a3a] rounded-lg text-sm bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-20 px-2 py-1.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 placeholder="semanas"
               />
-              <span className="text-xs text-slate-400 dark:text-[#565d73]">semanas</span>
+              <span className="text-xs text-slate-400 dark:text-[#71717a]">semanas</span>
             </div>
           )}
         </div>
@@ -413,35 +413,35 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
 
       {/* ── Histórico de Medições ────────────────────────────────────────── */}
       {(isLoadingEntries || entries.length > 0) && (
-        <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 dark:border-[#252a3a] flex items-center justify-between">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-[#2e2e33] flex items-center justify-between">
             <h2 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">
               Histórico de Medições
             </h2>
-            <span className="text-xs text-slate-400 dark:text-[#565d73]">
+            <span className="text-xs text-slate-400 dark:text-[#71717a]">
               {entries.length} registro{entries.length !== 1 ? 's' : ''}
             </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#141722]">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase tracking-wide">
+                <tr className="bg-slate-50 dark:bg-[#18181b]">
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
                     Data
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase tracking-wide">
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
                     Peso (kg)
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase tracking-wide">
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
                     Estatura (cm)
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase tracking-wide">
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
                     PC (cm)
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase tracking-wide">
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
                     IMC
                   </th>
-                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase tracking-wide">
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
                     Idade
                   </th>
                   <th className="px-4 py-3 w-10" />
@@ -450,7 +450,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
               <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
                 {isLoadingEntries ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-6 text-center text-sm text-slate-400 dark:text-[#565d73]">
+                    <td colSpan={7} className="px-5 py-6 text-center text-sm text-slate-400 dark:text-[#71717a]">
                       Carregando...
                     </td>
                   </tr>
@@ -467,19 +467,19 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
                         <td className="px-5 py-3 font-medium text-slate-700 dark:text-gray-200 whitespace-nowrap">
                           {formatDateBR(entry.measurement_date)}
                         </td>
-                        <td className="px-4 py-3 text-right text-slate-600 dark:text-[#a0a8be] tabular-nums">
+                        <td className="px-4 py-3 text-right text-slate-600 dark:text-[#d4d4d8] tabular-nums">
                           {entry.weight_kg != null ? entry.weight_kg.toFixed(2) : '—'}
                         </td>
-                        <td className="px-4 py-3 text-right text-slate-600 dark:text-[#a0a8be] tabular-nums">
+                        <td className="px-4 py-3 text-right text-slate-600 dark:text-[#d4d4d8] tabular-nums">
                           {entry.height_cm != null ? entry.height_cm.toFixed(1) : '—'}
                         </td>
-                        <td className="px-4 py-3 text-right text-slate-600 dark:text-[#a0a8be] tabular-nums">
+                        <td className="px-4 py-3 text-right text-slate-600 dark:text-[#d4d4d8] tabular-nums">
                           {entry.head_circumference_cm != null ? entry.head_circumference_cm.toFixed(1) : '—'}
                         </td>
-                        <td className="px-4 py-3 text-right text-slate-600 dark:text-[#a0a8be] tabular-nums">
+                        <td className="px-4 py-3 text-right text-slate-600 dark:text-[#d4d4d8] tabular-nums">
                           {entry.bmi != null ? entry.bmi.toFixed(1) : '—'}
                         </td>
-                        <td className="px-4 py-3 text-slate-500 dark:text-[#828ca5] text-xs whitespace-nowrap">
+                        <td className="px-4 py-3 text-slate-500 dark:text-[#a1a1aa] text-xs whitespace-nowrap">
                           {ageAtMeasurement !== null ? formatXAxisLabel(ageAtMeasurement) : '—'}
                         </td>
                         <td className="px-4 py-3">
@@ -502,7 +502,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
       )}
 
       {/* ── Exame Físico ─────────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-5">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-5">
         <h2 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide mb-4">
           Exame Físico
         </h2>

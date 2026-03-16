@@ -53,19 +53,19 @@ export default function ClaraSuggestionPanel({
 
   return (
     <div className="absolute right-[52px] sm:right-[58px] top-[56px] bottom-[68px] z-[45] w-[360px] max-w-[calc(100vw-120px)]
-      flex flex-col bg-white dark:bg-[#1a2328] border-l border-gray-200 dark:border-[#252a3a]
+      flex flex-col bg-white dark:bg-[#1a2328] border-l border-gray-200 dark:border-[#2e2e33]
       shadow-2xl animate-in slide-in-from-right-4 fade-in duration-250">
 
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100 dark:border-[#252a3a]/80 shrink-0">
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100 dark:border-[#2e2e33]/80 shrink-0">
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
           <Bot size={14} className="text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-[#e8ecf4]">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-[#fafafa]">
             Sugestões da Clara
           </h3>
-          <p className="text-[10px] text-gray-400 dark:text-[#565d73]">
+          <p className="text-[10px] text-gray-400 dark:text-[#71717a]">
             {hasBoth ? '2 sugestões pendentes' : '1 sugestão pendente'}
           </p>
         </div>
@@ -80,7 +80,7 @@ export default function ClaraSuggestionPanel({
 
       {/* Tabs (só se tem ambos) */}
       {hasBoth && (
-        <div className="flex border-b border-gray-100 dark:border-[#252a3a]/80 shrink-0">
+        <div className="flex border-b border-gray-100 dark:border-[#2e2e33]/80 shrink-0">
           <button
             onClick={() => setActiveTab('draft')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium transition-colors

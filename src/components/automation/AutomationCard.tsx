@@ -55,18 +55,18 @@ export default function AutomationCard({
   };
 
   return (
-    <div className={`group relative bg-white dark:bg-[#0d0f15] border border-slate-200/60 dark:border-[#252a3a]/60 rounded-3xl p-6 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/50 hover:-translate-y-1 transition-all duration-300 overflow-hidden`}>
+    <div className={`group relative bg-white dark:bg-[#0a0a0c] border border-slate-200/60 dark:border-[#2e2e33]/60 rounded-3xl p-6 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/50 hover:-translate-y-1 transition-all duration-300 overflow-hidden`}>
       {/* Decorative Gradient Background */}
       <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${getGradient()} opacity-50 blur-3xl -z-10 rounded-full translate-x-10 -translate-y-10 group-hover:scale-110 transition-transform duration-500`} />
 
       <div className="flex items-start justify-between mb-6 z-10 relative">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center bg-white dark:bg-[#252833] shadow-sm border border-slate-100 dark:border-[#1e2334] ${getIconColor()}`}>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center bg-white dark:bg-[#252833] shadow-sm border border-slate-100 dark:border-[#27272a] ${getIconColor()}`}>
               <Zap className="w-5 h-5 fill-current opacity-80" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] line-clamp-1">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] line-clamp-1">
                 {automation.name}
               </h3>
               <span className={`text-[11px] uppercase tracking-wider font-bold ${getIconColor()} opacity-80`}>
@@ -74,7 +74,7 @@ export default function AutomationCard({
               </span>
             </div>
           </div>
-          <p className="text-sm text-slate-500 dark:text-[#828ca5] font-medium">
+          <p className="text-sm text-slate-500 dark:text-[#a1a1aa] font-medium">
             {automation.message_sequence.length} {automation.message_sequence.length === 1 ? 'mensagem' : 'mensagens'} na sequência
           </p>
         </div>
@@ -95,17 +95,17 @@ export default function AutomationCard({
       </div>
 
       <div className="flex flex-col gap-2 mb-6">
-        <div className="flex items-center gap-2.5 px-3 py-2.5 bg-slate-50 dark:bg-[#252833] rounded-xl border border-slate-100 dark:border-[#1e2334]/50">
-          <Clock className="w-4 h-4 text-slate-400 dark:text-[#565d73]" />
-          <span className="text-sm font-semibold text-slate-600 dark:text-[#a0a8be]">
+        <div className="flex items-center gap-2.5 px-3 py-2.5 bg-slate-50 dark:bg-[#252833] rounded-xl border border-slate-100 dark:border-[#27272a]/50">
+          <Clock className="w-4 h-4 text-slate-400 dark:text-[#71717a]" />
+          <span className="text-sm font-semibold text-slate-600 dark:text-[#d4d4d8]">
             Dispara às {automation.trigger_time?.substring(0, 5)}
           </span>
         </div>
 
         {automation.type === 'milestone' && (
-          <div className="flex items-center gap-2.5 px-3 py-2.5 bg-slate-50 dark:bg-[#252833] rounded-xl border border-slate-100 dark:border-[#1e2334]/50">
-            <Calendar className="w-4 h-4 text-slate-400 dark:text-[#565d73]" />
-            <span className="text-sm font-semibold text-slate-600 dark:text-[#a0a8be]">
+          <div className="flex items-center gap-2.5 px-3 py-2.5 bg-slate-50 dark:bg-[#252833] rounded-xl border border-slate-100 dark:border-[#27272a]/50">
+            <Calendar className="w-4 h-4 text-slate-400 dark:text-[#71717a]" />
+            <span className="text-sm font-semibold text-slate-600 dark:text-[#d4d4d8]">
               Aos {automation.age_months} {automation.age_months === 1 ? 'mês' : 'meses'} de vida
             </span>
           </div>
@@ -113,17 +113,17 @@ export default function AutomationCard({
       </div>
 
       {stats && (
-        <div className="grid grid-cols-2 gap-3 mb-6 p-4 bg-slate-50 dark:bg-[#252833] rounded-2xl border border-slate-100 dark:border-[#1e2334]/50">
+        <div className="grid grid-cols-2 gap-3 mb-6 p-4 bg-slate-50 dark:bg-[#252833] rounded-2xl border border-slate-100 dark:border-[#27272a]/50">
           <div>
-            <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#565d73] mb-1 tracking-wider">Total Enviado</div>
-            <div className="text-xl font-black text-slate-800 dark:text-[#e8ecf4]">
+            <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#71717a] mb-1 tracking-wider">Total Enviado</div>
+            <div className="text-xl font-black text-slate-800 dark:text-[#fafafa]">
               {stats.totalSent || 0}
             </div>
           </div>
           {stats.patientsReached !== undefined && (
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#565d73] mb-1 tracking-wider">Alcançados</div>
-              <div className="text-xl font-black text-slate-800 dark:text-[#e8ecf4]">
+              <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#71717a] mb-1 tracking-wider">Alcançados</div>
+              <div className="text-xl font-black text-slate-800 dark:text-[#fafafa]">
                 {stats.patientsReached}
               </div>
             </div>
@@ -134,14 +134,14 @@ export default function AutomationCard({
       <div className="flex items-center gap-2">
         <button
           onClick={onEdit}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] hover:border-slate-300 dark:hover:border-gray-600 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl text-sm font-bold text-slate-700 dark:text-[#a0a8be] transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] hover:border-slate-300 dark:hover:border-gray-600 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl text-sm font-bold text-slate-700 dark:text-[#d4d4d8] transition-colors"
         >
           <Edit2 className="w-4 h-4" />
           Editar
         </button>
         <button
           onClick={onDelete}
-          className="flex items-center justify-center p-2.5 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] hover:bg-red-50 hover:border-red-200 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:border-red-800/30 dark:hover:text-red-400 rounded-xl text-slate-400 transition-colors"
+          className="flex items-center justify-center p-2.5 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] hover:bg-red-50 hover:border-red-200 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:border-red-800/30 dark:hover:text-red-400 rounded-xl text-slate-400 transition-colors"
           title="Excluir"
         >
           <Trash2 className="w-4 h-4" />

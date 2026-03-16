@@ -31,12 +31,12 @@ function ReferenceLineLegend({ lines }: { lines: { label: string; color: string 
       {lines.map(l => (
         <div key={l.label} className="flex items-center gap-1">
           <span className="inline-block w-6 h-0.5 rounded" style={{ backgroundColor: l.color }} />
-          <span className="text-[11px] text-slate-500 dark:text-[#828ca5]">{l.label}</span>
+          <span className="text-[11px] text-slate-500 dark:text-[#a1a1aa]">{l.label}</span>
         </div>
       ))}
       <div className="flex items-center gap-1">
-        <span className="inline-block w-3 h-3 rounded-full bg-slate-800 dark:bg-gray-200 border-2 border-white dark:border-[#1e2334]" />
-        <span className="text-[11px] text-slate-500 dark:text-[#828ca5]">Paciente</span>
+        <span className="inline-block w-3 h-3 rounded-full bg-slate-800 dark:bg-gray-200 border-2 border-white dark:border-[#27272a]" />
+        <span className="text-[11px] text-slate-500 dark:text-[#a1a1aa]">Paciente</span>
       </div>
     </div>
   );
@@ -67,8 +67,8 @@ export function GrowthChart({ data, chartConfig, displayMode, yAxisLabel, xAxisL
       : formatXAxisLabel(label);
 
     return (
-      <div className="bg-white/95 dark:bg-[#0d0f15]/95 backdrop-blur shadow-xl border border-slate-200 dark:border-[#252a3a] rounded-lg p-3 text-xs min-w-[150px]">
-        <p className="text-slate-500 dark:text-[#828ca5] font-medium pb-1 mb-1.5 border-b border-slate-100 dark:border-[#252a3a]">
+      <div className="bg-white/95 dark:bg-[#0a0a0c]/95 backdrop-blur shadow-xl border border-slate-200 dark:border-[#2e2e33] rounded-lg p-3 text-xs min-w-[150px]">
+        <p className="text-slate-500 dark:text-[#a1a1aa] font-medium pb-1 mb-1.5 border-b border-slate-100 dark:border-[#2e2e33]">
           {xAxisLabel}: <span className="text-slate-700 dark:text-gray-200">{xText}</span>
         </p>
 
@@ -82,7 +82,7 @@ export function GrowthChart({ data, chartConfig, displayMode, yAxisLabel, xAxisL
                     className="inline-block w-3 h-[2px] rounded flex-shrink-0"
                     style={{ backgroundColor: p.stroke || p.color }}
                   />
-                  <span className="text-slate-500 dark:text-[#828ca5]">{p.dataKey}</span>
+                  <span className="text-slate-500 dark:text-[#a1a1aa]">{p.dataKey}</span>
                 </div>
                 <span className="font-semibold text-slate-700 dark:text-gray-200 tabular-nums">
                   {Number(p.value).toFixed(1)}{yUnit ? ` ${yUnit}` : ''}
@@ -94,11 +94,11 @@ export function GrowthChart({ data, chartConfig, displayMode, yAxisLabel, xAxisL
 
         {/* Valor do paciente (destaque) */}
         {patientPayload?.value !== undefined && (
-          <div className="flex items-center gap-2 pt-1.5 border-t border-slate-100 dark:border-[#252a3a]">
+          <div className="flex items-center gap-2 pt-1.5 border-t border-slate-100 dark:border-[#2e2e33]">
             <span className="w-2.5 h-2.5 rounded-full bg-slate-800 dark:bg-gray-200 border border-white flex-shrink-0" />
             <div className="flex items-center justify-between w-full">
-              <p className="text-[10px] text-slate-400 dark:text-[#565d73]">Paciente</p>
-              <p className="font-bold text-slate-800 dark:text-[#e8ecf4] text-sm">
+              <p className="text-[10px] text-slate-400 dark:text-[#71717a]">Paciente</p>
+              <p className="font-bold text-slate-800 dark:text-[#fafafa] text-sm">
                 {Number(patientPayload.value).toFixed(2)}{yUnit ? ` ${yUnit}` : ''}
               </p>
             </div>
@@ -129,7 +129,7 @@ export function GrowthChart({ data, chartConfig, displayMode, yAxisLabel, xAxisL
   const legendLines = data.referenceLines.map(l => ({ label: l.label, color: l.color }));
 
   return (
-    <div className="w-full bg-white dark:bg-[#0d0f15] rounded-lg">
+    <div className="w-full bg-white dark:bg-[#0a0a0c] rounded-lg">
       <ResponsiveContainer width="100%" height={460}>
         <LineChart data={chartData} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
           <CartesianGrid

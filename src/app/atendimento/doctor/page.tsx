@@ -343,7 +343,7 @@ export default function AtendimentoDoctorPage() {
       <div className="h-full flex items-center justify-center bg-slate-50 dark:bg-[#15171e]">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-[#828ca5]">Criando cadastro do paciente...</p>
+          <p className="text-slate-600 dark:text-[#a1a1aa]">Criando cadastro do paciente...</p>
         </div>
       </div>
     );
@@ -374,12 +374,12 @@ export default function AtendimentoDoctorPage() {
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {showPosition && index !== undefined && (
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-              index === 0 ? 'bg-teal-500 text-white' : 'bg-slate-200 dark:bg-gray-600 text-slate-600 dark:text-[#a0a8be]'
+              index === 0 ? 'bg-teal-500 text-white' : 'bg-slate-200 dark:bg-gray-600 text-slate-600 dark:text-[#d4d4d8]'
             }`}>
               {index + 1}º
             </span>
           )}
-          <h4 className="font-semibold text-sm text-slate-800 dark:text-[#e8ecf4] truncate">
+          <h4 className="font-semibold text-sm text-slate-800 dark:text-[#fafafa] truncate">
             {apt.patient_name || 'Sem nome'}
           </h4>
         </div>
@@ -387,7 +387,7 @@ export default function AtendimentoDoctorPage() {
           {getStatusLabel(apt.status || '')}
         </span>
       </div>
-      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
+      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#a1a1aa] mt-1">
         <Clock className="w-3 h-3" />
         <span>{formatTime(apt.start_time)}</span>
         {apt.doctor_name && (
@@ -398,7 +398,7 @@ export default function AtendimentoDoctorPage() {
         )}
       </div>
       {apt.patient_phone && (
-        <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
+        <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-[#a1a1aa] mt-1">
           <Phone className="w-3 h-3" />
           <span>{apt.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}</span>
         </div>
@@ -415,7 +415,7 @@ export default function AtendimentoDoctorPage() {
     if (items.length === 0) return null;
     return (
       <div className="mb-4">
-        <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase mb-2 flex items-center gap-2">
           {icon}
           {title} ({items.length})
         </h3>
@@ -429,14 +429,14 @@ export default function AtendimentoDoctorPage() {
   return (
     <div className="h-full flex bg-slate-50 dark:bg-[#15171e] relative overflow-hidden">
       {/* Sidebar */}
-      <div className="w-80 bg-white dark:bg-[#0d0f15] border-r border-slate-200 dark:border-[#1e2334] flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-[#1e2334]">
+      <div className="w-80 bg-white dark:bg-[#0a0a0c] border-r border-slate-200 dark:border-[#27272a] flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-slate-200 dark:border-[#27272a]">
           <div className="flex items-center gap-2 mb-3">
             <Stethoscope className="w-5 h-5 text-teal-500" />
-            <h2 className="font-bold text-lg text-slate-800 dark:text-[#e8ecf4]">Painel Médico</h2>
+            <h2 className="font-bold text-lg text-slate-800 dark:text-[#fafafa]">Painel Médico</h2>
           </div>
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-slate-500 dark:text-[#828ca5]" />
+            <Calendar className="w-4 h-4 text-slate-500 dark:text-[#a1a1aa]" />
             <input
               type="text"
               value={displayDate}
@@ -459,8 +459,8 @@ export default function AtendimentoDoctorPage() {
           {scheduled.length === 0 && called.length === 0 && waiting.length === 0 && inService.length === 0 && finished.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Users className="w-12 h-12 text-slate-300 dark:text-gray-600 mb-3" />
-              <p className="text-sm text-slate-500 dark:text-[#828ca5] font-medium">Nenhum paciente agendado</p>
-              <p className="text-xs text-slate-400 dark:text-[#565d73] mt-1">Os pacientes aparecerão aqui quando forem agendados</p>
+              <p className="text-sm text-slate-500 dark:text-[#a1a1aa] font-medium">Nenhum paciente agendado</p>
+              <p className="text-xs text-slate-400 dark:text-[#71717a] mt-1">Os pacientes aparecerão aqui quando forem agendados</p>
             </div>
           )}
         </div>
@@ -482,8 +482,8 @@ export default function AtendimentoDoctorPage() {
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center max-w-md">
               <Stethoscope className="w-20 h-20 text-teal-500/50 mx-auto mb-6" />
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-[#e8ecf4] mb-2">Aguardando Prontuário</h2>
-              <p className="text-slate-600 dark:text-[#828ca5]">
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-[#fafafa] mb-2">Aguardando Prontuário</h2>
+              <p className="text-slate-600 dark:text-[#a1a1aa]">
                 Quando um paciente for colocado em atendimento, o prontuário aparecerá automaticamente aqui.
               </p>
               {waiting.length > 0 && (

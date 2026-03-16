@@ -146,7 +146,25 @@
       "Bash(xargs sed:*)",
       "Bash(grep -r \"doctors\\\\|professionals\" /c/Users/brend/Documents/pediatria-v2/database/*.sql)",
       "Bash(grep -r \"CREATE TABLE.*doctors\\\\|CREATE TABLE.*patients\\\\|CREATE TABLE.*appointments\" /c/Users/brend/Documents/pediatria-v2/database/*.sql)",
-      "Bash(grep -rl \"dark:bg-\\\\[#1e2028\\\\]\\\\|dark:bg-\\\\[#2a2d36\\\\]\\\\|dark:border-gray-800\\\\b\\\\|dark:bg-gray-800\\\\b\" src/ --include=*.tsx --include=*.ts)"
+      "Bash(grep -rl \"dark:bg-\\\\[#1e2028\\\\]\\\\|dark:bg-\\\\[#2a2d36\\\\]\\\\|dark:border-gray-800\\\\b\\\\|dark:bg-gray-800\\\\b\" src/ --include=*.tsx --include=*.ts)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2/src -type f \\\\\\(-name *use*[Tt]ask* -o -name *Task* \\\\\\))",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2/database -type f -name *.sql)",
+      "Bash(/dev/null -i)",
+      "Bash(grep -A 30 \"CREATE TABLE.*tasks\" /c/Users/brend/Documents/pediatria-v2/database/*.sql)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2 -type f \\\\\\(-name *.md -o -name *.txt \\\\\\))",
+      "Bash(grep -r \"INSERT INTO.*tasks\\\\|CREATE TABLE.*tasks\" /c/Users/brend/Documents/pediatria-v2 --include=*.sql --include=*.ts)",
+      "Bash(grep -r \"from.*tasks\\\\|\\\\.from\\\\\\(''''tasks\" /c/Users/brend/Documents/pediatria-v2/src --include=*.ts --include=*.tsx)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2/src/components -type f -name *Modal* -o -name *Note*)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2/src -name *NotificationToast* -o -name *Toast*)",
+      "Bash(grep -r \"table.*tasks\\\\|tasks.*table\" /c/Users/brend/Documents/pediatria-v2 --include=*.md)",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/juctfolupehtaoehjkwl/database/query\" -H \"Authorization: Bearer sbp_9faf48f4573e85466e103a43d988f8b88c00c69c\" -H \"Content-Type: application/json\" -d \"{\"\"query\"\": \"\"SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = ''atendimento'' AND table_name = ''tasks'' ORDER BY ordinal_position;\"\"}\")",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/juctfolupehtaoehjkwl/database/query\" -H \"Authorization: Bearer sbp_9faf48f4573e85466e103a43d988f8b88c00c69c\" -H \"Content-Type: application/json\" -d \"{\"\"query\"\": \"\"SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = ''public'' AND table_name = ''tasks'' ORDER BY ordinal_position;\"\"}\")",
+      "Bash(__NEW_LINE_72f121661b59b15e__ node -e \":*)",
+      "Bash(npx tsc:*)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(grep -rl \"#0d0f15\\\\|#141722\\\\|#1a1e2e\\\\|#1e2334\\\\|#252a3a\\\\|#e8ecf4\\\\|#828ca5\\\\|#565d73\\\\|#10131c\" src/ --include=*.tsx --include=*.ts --include=*.css)",
+      "Bash(grep -rn \"#0d0f15\\\\|#141722\\\\|#1a1e2e\\\\|#1e2334\\\\|#252a3a\\\\|#e8ecf4\\\\|#828ca5\\\\|#565d73\\\\|#10131c\" src/ --include=*.tsx --include=*.ts --include=*.css)"
     ]
   },
   "hooks": {

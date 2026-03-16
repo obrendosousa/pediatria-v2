@@ -587,7 +587,7 @@ function MessageBubble({
           ? { bg: 'bg-emerald-500', lightBg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-500', label: 'Planilha' }
           : isWord
             ? { bg: 'bg-blue-500', lightBg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-500', label: 'Word' }
-            : { bg: 'bg-gray-500', lightBg: 'bg-gray-50 dark:bg-[#141722]', text: 'text-gray-500', label: 'Documento' };
+            : { bg: 'bg-gray-500', lightBg: 'bg-gray-50 dark:bg-[#18181b]', text: 'text-gray-500', label: 'Documento' };
 
       return (
         <div className="pt-1 w-[240px] sm:w-[260px]">
@@ -614,15 +614,15 @@ function MessageBubble({
             </div>
 
             {/* Rodapé com nome e tamanho */}
-            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/60 dark:bg-[#0d0f15]">
+            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/60 dark:bg-[#0a0a0c]">
               <div className={`w-8 h-8 rounded-full ${docStyle.lightBg} flex items-center justify-center shrink-0`}>
                 <FileText size={15} className={docStyle.text} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold truncate text-gray-800 dark:text-[#e8ecf4] leading-tight">
+                <p className="text-[12px] font-semibold truncate text-gray-800 dark:text-[#fafafa] leading-tight">
                   {fileName}
                 </p>
-                <p className="text-[10px] text-gray-500 dark:text-[#828ca5] mt-0.5">
+                <p className="text-[10px] text-gray-500 dark:text-[#a1a1aa] mt-0.5">
                   {docStyle.label}{fileSize ? ` \u2022 ${fileSize}` : ''} \u2022 Toque para abrir
                 </p>
               </div>
@@ -648,7 +648,7 @@ function MessageBubble({
           </div>
           <div className="flex-1 flex flex-col gap-1">
             <div className="h-[6px] rounded-full bg-gray-300 dark:bg-gray-600 w-full" />
-            <span className="text-[11px] text-gray-400 dark:text-[#565d73]">Áudio indisponível</span>
+            <span className="text-[11px] text-gray-400 dark:text-[#71717a]">Áudio indisponível</span>
           </div>
         </div>
       );
@@ -664,9 +664,9 @@ function MessageBubble({
 
     if (message.message_type === 'image') {
       return (
-        <div className="w-[240px] sm:w-[260px] aspect-[4/3] rounded-[inherit] bg-gray-200 dark:bg-[#1e2334] flex flex-col items-center justify-center gap-2">
-          <ImageIcon size={32} className="text-gray-400 dark:text-[#565d73]" />
-          <span className="text-[11px] text-gray-400 dark:text-[#565d73]">Imagem indisponível</span>
+        <div className="w-[240px] sm:w-[260px] aspect-[4/3] rounded-[inherit] bg-gray-200 dark:bg-[#27272a] flex flex-col items-center justify-center gap-2">
+          <ImageIcon size={32} className="text-gray-400 dark:text-[#71717a]" />
+          <span className="text-[11px] text-gray-400 dark:text-[#71717a]">Imagem indisponível</span>
         </div>
       );
     }
@@ -687,9 +687,9 @@ function MessageBubble({
             <div className="w-full h-[80px] bg-gray-500 flex items-center justify-center">
               <FileIcon size={28} className="text-white/70" />
             </div>
-            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/60 dark:bg-[#0d0f15]">
+            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/60 dark:bg-[#0a0a0c]">
               <FileText size={15} className="text-gray-400 shrink-0" />
-              <span className="text-[12px] text-gray-500 dark:text-[#828ca5] truncate">
+              <span className="text-[12px] text-gray-500 dark:text-[#a1a1aa] truncate">
                 Documento indisponível
               </span>
             </div>
@@ -732,7 +732,7 @@ function MessageBubble({
               </div>
             ) : (
               <div
-                className="w-[30px] h-[30px] rounded-full overflow-hidden border border-gray-100 dark:border-[#252a3a] flex items-center justify-center"
+                className="w-[30px] h-[30px] rounded-full overflow-hidden border border-gray-100 dark:border-[#2e2e33] flex items-center justify-center"
                 style={!chatPhoto ? { backgroundColor: getAvatarColorHex(chatId) } : {}}
               >
                 {chatPhoto && !imgError ? (
@@ -764,7 +764,7 @@ function MessageBubble({
         {/* Conteúdo */}
         <div className="min-w-0 overflow-hidden break-words">
           {message.tool_data?.forwarded === true && !isMe && (
-            <p className="text-[11px] text-gray-500 dark:text-[#828ca5] mb-1 flex items-center gap-1">
+            <p className="text-[11px] text-gray-500 dark:text-[#a1a1aa] mb-1 flex items-center gap-1">
               <Forward size={12} /> Encaminhada
             </p>
           )}
@@ -775,7 +775,7 @@ function MessageBubble({
                   ? 'Você'
                   : (replyData?.sender === 'CUSTOMER' || replyData?.sender === 'contact') ? (replyData?.sender_name || 'Contato') : replyData?.sender || 'Contato'}
               </p>
-              <p className="text-[12px] text-gray-600 dark:text-[#a0a8be] truncate">
+              <p className="text-[12px] text-gray-600 dark:text-[#d4d4d8] truncate">
                 {replyData?.message_type === 'audio' || replyData?.message_type === 'voice'
                   ? '\u{1F3B5} Áudio'
                   : replyData?.message_type === 'image'
@@ -873,7 +873,7 @@ function MessageBubble({
         {showReactionPopup && !showEmojiPicker && createPortal(
           <div
             data-reaction-popup
-            className="fixed z-[10000] bg-white dark:bg-[var(--chat-surface)] border border-gray-100 dark:border-[#252a3a] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-full"
+            className="fixed z-[10000] bg-white dark:bg-[var(--chat-surface)] border border-gray-100 dark:border-[#2e2e33] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-full"
             style={{
               top: reactionPosition.top,
               left: reactionPosition.left,
@@ -908,7 +908,7 @@ function MessageBubble({
         {showReactionPopup && showEmojiPicker && createPortal(
           <div
             data-reaction-popup
-            className="fixed z-[10000] bg-white dark:bg-[var(--chat-surface)] border border-gray-100 dark:border-[#252a3a] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden"
+            className="fixed z-[10000] bg-white dark:bg-[var(--chat-surface)] border border-gray-100 dark:border-[#2e2e33] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden"
             style={{
               top: reactionPosition.top,
               left: reactionPosition.left,

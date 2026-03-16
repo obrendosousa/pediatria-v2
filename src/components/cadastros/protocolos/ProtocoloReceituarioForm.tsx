@@ -145,20 +145,20 @@ export default function ProtocoloReceituarioForm({
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => router.back()}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-500 dark:text-[#828ca5]"
+            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-500 dark:text-[#a1a1aa]"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-teal-600" />
             <div>
-              <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">{title}</h1>
-              <p className="text-xs text-slate-400 dark:text-[#565d73]">{subtitle}</p>
+              <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">{title}</h1>
+              <p className="text-xs text-slate-400 dark:text-[#71717a]">{subtitle}</p>
             </div>
           </div>
         </div>
@@ -182,14 +182,14 @@ export default function ProtocoloReceituarioForm({
         {/* Left column */}
         <div className="flex-1 flex flex-col overflow-y-auto p-6 gap-5">
           {/* Informações do protocolo */}
-          <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-5">
-            <p className="text-xs font-bold text-slate-400 dark:text-[#565d73] uppercase tracking-wide mb-4">
+          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-5">
+            <p className="text-xs font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wide mb-4">
               INFORMAÇÕES DO PROTOCOLO
             </p>
             <div className="flex flex-col gap-4">
               {/* Nome */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
                   Nome <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -197,10 +197,10 @@ export default function ProtocoloReceituarioForm({
                   value={name}
                   onChange={e => { setName(e.target.value); setErrors(prev => ({ ...prev, name: '' })); }}
                   placeholder="Nome do protocolo"
-                  className={`w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 ${
+                  className={`w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 ${
                     errors.name
                       ? 'border-red-400 dark:border-red-500'
-                      : 'border-slate-200 dark:border-[#252a3a]'
+                      : 'border-slate-200 dark:border-[#2e2e33]'
                   }`}
                 />
                 {errors.name && (
@@ -210,13 +210,13 @@ export default function ProtocoloReceituarioForm({
 
               {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
                   Status
                 </label>
                 <select
                   value={status}
                   onChange={e => setStatus(e.target.value as RecordStatus)}
-                  className="w-48 px-3 py-2 border border-slate-200 dark:border-[#252a3a] rounded-lg text-sm bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-48 px-3 py-2 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
                 >
                   <option value="active">Ativo</option>
                   <option value="inactive">Inativo</option>
@@ -226,8 +226,8 @@ export default function ProtocoloReceituarioForm({
           </div>
 
           {/* Editor de conteúdo */}
-          <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-5 flex flex-col gap-3">
-            <p className="text-xs font-bold text-slate-400 dark:text-[#565d73] uppercase tracking-wide">
+          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-5 flex flex-col gap-3">
+            <p className="text-xs font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wide">
               CONTEÚDO
             </p>
             <RichTextEditor
@@ -239,9 +239,9 @@ export default function ProtocoloReceituarioForm({
         </div>
 
         {/* Right column — Side Panel */}
-        <div className="w-80 flex-shrink-0 flex flex-col border-l border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15] overflow-hidden">
+        <div className="w-80 flex-shrink-0 flex flex-col border-l border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] overflow-hidden">
           {/* Main tabs */}
-          <div className="flex border-b border-slate-200 dark:border-[#252a3a]">
+          <div className="flex border-b border-slate-200 dark:border-[#2e2e33]">
             {(['manipulados', 'industrializado'] as MainTab[]).map(tab => (
               <button
                 key={tab}
@@ -250,7 +250,7 @@ export default function ProtocoloReceituarioForm({
                 className={`flex-1 px-3 py-2.5 text-xs font-bold uppercase tracking-wide transition-colors ${
                   mainTab === tab
                     ? 'text-teal-600 dark:text-teal-400 border-b-2 border-teal-600 dark:border-teal-400'
-                    : 'text-slate-400 dark:text-[#565d73] hover:text-slate-600 dark:hover:text-gray-300'
+                    : 'text-slate-400 dark:text-[#71717a] hover:text-slate-600 dark:hover:text-gray-300'
                 }`}
               >
                 {tab === 'manipulados' ? 'MANIPULADOS' : 'INDUSTRIALIZADO'}
@@ -260,7 +260,7 @@ export default function ProtocoloReceituarioForm({
 
           {/* Sub tabs — only for manipulados */}
           {mainTab === 'manipulados' && (
-            <div className="flex gap-1 px-3 py-2 border-b border-slate-100 dark:border-[#1e2334]">
+            <div className="flex gap-1 px-3 py-2 border-b border-slate-100 dark:border-[#27272a]">
               {(['formulas', 'protocolos', 'substancias'] as SubTab[]).map(st => (
                 <button
                   key={st}
@@ -269,7 +269,7 @@ export default function ProtocoloReceituarioForm({
                   className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors ${
                     subTab === st
                       ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300'
-                      : 'text-slate-400 dark:text-[#565d73] hover:bg-slate-100 dark:hover:bg-white/5'
+                      : 'text-slate-400 dark:text-[#71717a] hover:bg-slate-100 dark:hover:bg-white/5'
                   }`}
                 >
                   {st === 'formulas' ? 'FÓRMULAS' : st === 'protocolos' ? 'PROTOCOLOS' : 'SUBSTÂNCIAS'}
@@ -279,7 +279,7 @@ export default function ProtocoloReceituarioForm({
           )}
 
           {/* Search */}
-          <div className="px-3 py-2 border-b border-slate-100 dark:border-[#1e2334]">
+          <div className="px-3 py-2 border-b border-slate-100 dark:border-[#27272a]">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
@@ -287,7 +287,7 @@ export default function ProtocoloReceituarioForm({
                 value={panelSearch}
                 onChange={e => setPanelSearch(e.target.value)}
                 placeholder="Buscar..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
               />
             </div>
           </div>
@@ -299,7 +299,7 @@ export default function ProtocoloReceituarioForm({
                 <Loader2 className="w-5 h-5 text-teal-500 animate-spin" />
               </div>
             ) : panelItems.length === 0 ? (
-              <p className="text-xs text-slate-400 dark:text-[#565d73] text-center py-6 px-3">
+              <p className="text-xs text-slate-400 dark:text-[#71717a] text-center py-6 px-3">
                 Nenhum item encontrado.
               </p>
             ) : (

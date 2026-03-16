@@ -87,7 +87,7 @@ export function DiagnosticHypothesis({ patientId, patientData, onRefresh, appoin
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="text-center text-slate-500 dark:text-[#828ca5]">Carregando...</div>
+        <div className="text-center text-slate-500 dark:text-[#a1a1aa]">Carregando...</div>
       </div>
     );
   }
@@ -95,17 +95,17 @@ export function DiagnosticHypothesis({ patientId, patientData, onRefresh, appoin
   return (
     <div className="p-4 pb-20">
       {/* Card Principal */}
-      <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] shadow-sm p-4">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] shadow-sm p-4">
         {/* Header */}
         <div className="mb-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">HIPÓTESE DIAGNOSTICA</h1>
-          <span className="text-xs text-slate-600 dark:text-[#828ca5] uppercase">{currentDate}</span>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-[#fafafa]">HIPÓTESE DIAGNOSTICA</h1>
+          <span className="text-xs text-slate-600 dark:text-[#a1a1aa] uppercase">{currentDate}</span>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Campo: OBSERVAÇÕES (Rich Text) */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-2">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-2">
               OBSERVAÇÕES
             </label>
             <RichTextEditor
@@ -119,7 +119,7 @@ export function DiagnosticHypothesis({ patientId, patientData, onRefresh, appoin
           </div>
 
           {/* Botão Salvar */}
-          <div className="flex justify-end items-center gap-3 pt-3 border-t border-slate-200 dark:border-[#252a3a]">
+          <div className="flex justify-end items-center gap-3 pt-3 border-t border-slate-200 dark:border-[#2e2e33]">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>
             )}

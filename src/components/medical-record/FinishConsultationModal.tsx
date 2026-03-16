@@ -327,24 +327,24 @@ export default function FinishConsultationModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-[#0d0f15] w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in-up">
+      <div className="bg-white dark:bg-[#0a0a0c] w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in-up">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 px-8 py-6 border-b border-slate-200 dark:border-[#252a3a] flex justify-between items-center">
+        <div className="bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 px-8 py-6 border-b border-slate-200 dark:border-[#2e2e33] flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-black text-slate-800 dark:text-[#e8ecf4] flex items-center gap-3">
+            <h2 className="text-2xl font-black text-slate-800 dark:text-[#fafafa] flex items-center gap-3">
               <CheckCircle2 className="w-7 h-7 text-rose-600 dark:text-rose-400" />
               Finalizar Consulta
             </h2>
-            <p className="text-sm text-slate-500 dark:text-[#828ca5] mt-1">
-              Paciente: <span className="font-bold text-slate-700 dark:text-[#a0a8be]">{patientName}</span>
+            <p className="text-sm text-slate-500 dark:text-[#a1a1aa] mt-1">
+              Paciente: <span className="font-bold text-slate-700 dark:text-[#d4d4d8]">{patientName}</span>
             </p>
           </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-slate-500 dark:text-[#828ca5]" />
+            <X className="w-5 h-5 text-slate-500 dark:text-[#a1a1aa]" />
           </button>
         </div>
 
@@ -353,22 +353,22 @@ export default function FinishConsultationModal({
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-bold text-slate-700 dark:text-[#a0a8be] mb-2 flex items-center gap-2">
+            <label className="block text-sm font-bold text-slate-700 dark:text-[#d4d4d8] mb-2 flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Anotacoes Finais para Recepcao
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-4 py-3 bg-white dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
+              className="w-full px-4 py-3 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
               rows={3}
               placeholder="Observacoes para a secretaria (ex: cobrar vacina X, agendar retorno com urgencia...)"
             />
           </div>
 
           {/* Return scheduling */}
-          <div className="bg-slate-50 dark:bg-[#141722] p-5 rounded-xl border border-slate-200 dark:border-[#252a3a]">
-            <label className="block text-sm font-bold text-slate-700 dark:text-[#a0a8be] mb-3 flex items-center gap-2">
+          <div className="bg-slate-50 dark:bg-[#18181b] p-5 rounded-xl border border-slate-200 dark:border-[#2e2e33]">
+            <label className="block text-sm font-bold text-slate-700 dark:text-[#d4d4d8] mb-3 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Agendar Retorno
             </label>
@@ -379,7 +379,7 @@ export default function FinishConsultationModal({
                   key={days}
                   type="button"
                   onClick={() => setReturnInDays(days)}
-                  className="px-4 py-2 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg text-xs font-bold text-slate-600 dark:text-[#a0a8be] hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-600 dark:hover:text-rose-400 transition-all"
+                  className="px-4 py-2 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg text-xs font-bold text-slate-600 dark:text-[#d4d4d8] hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-600 dark:hover:text-rose-400 transition-all"
                 >
                   {days} dias
                 </button>
@@ -391,7 +391,7 @@ export default function FinishConsultationModal({
                 type="date"
                 value={returnDate}
                 onChange={(e) => setReturnDate(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                className="w-full px-4 py-2.5 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                 min={new Date().toISOString().split('T')[0]}
               />
             </div>
@@ -399,16 +399,16 @@ export default function FinishConsultationModal({
             <textarea
               value={returnObs}
               onChange={(e) => setReturnObs(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
+              className="w-full px-4 py-2.5 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
               rows={2}
               placeholder="Observacoes sobre o retorno..."
             />
           </div>
 
           {/* Products / Vaccines */}
-          <div className="bg-slate-50 dark:bg-[#141722] p-5 rounded-xl border border-slate-200 dark:border-[#252a3a]">
+          <div className="bg-slate-50 dark:bg-[#18181b] p-5 rounded-xl border border-slate-200 dark:border-[#2e2e33]">
             <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-bold text-slate-700 dark:text-[#a0a8be] flex items-center gap-2">
+              <label className="block text-sm font-bold text-slate-700 dark:text-[#d4d4d8] flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4" />
                 Produtos / Vacinas
               </label>
@@ -424,16 +424,16 @@ export default function FinishConsultationModal({
 
             {/* Product Picker Sub-popup */}
             {showProductPicker && (
-              <div className="mb-4 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-xl shadow-lg overflow-hidden">
+              <div className="mb-4 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-xl shadow-lg overflow-hidden">
                 {/* Search */}
-                <div className="p-3 border-b border-slate-200 dark:border-[#252a3a]">
+                <div className="p-3 border-b border-slate-200 dark:border-[#2e2e33]">
                   <div className="relative">
                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                     <input
                       type="text"
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
                       placeholder="Buscar produto ou vacina..."
                       autoFocus
                     />
@@ -442,13 +442,13 @@ export default function FinishConsultationModal({
 
                 {/* Search results */}
                 {productSearch.length >= 1 && filteredProducts.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto border-b border-slate-200 dark:border-[#252a3a]">
+                  <div className="max-h-48 overflow-y-auto border-b border-slate-200 dark:border-[#2e2e33]">
                     {filteredProducts.map(product => (
                       <button
                         key={product.id}
                         type="button"
                         onClick={() => addProduct(product)}
-                        className="w-full text-left px-4 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-900/10 border-b border-slate-100 dark:border-[#1e2334] last:border-0 transition-colors flex items-center justify-between"
+                        className="w-full text-left px-4 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-900/10 border-b border-slate-100 dark:border-[#27272a] last:border-0 transition-colors flex items-center justify-between"
                       >
                         <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{product.name}</span>
                         <span className="text-xs font-bold text-rose-600 dark:text-rose-400">R$ {product.price_sale.toFixed(2)}</span>
@@ -458,7 +458,7 @@ export default function FinishConsultationModal({
                 )}
 
                 {productSearch.length >= 1 && filteredProducts.length === 0 && (
-                  <div className="px-4 py-3 text-sm text-slate-500 dark:text-[#828ca5] text-center border-b border-slate-200 dark:border-[#252a3a]">
+                  <div className="px-4 py-3 text-sm text-slate-500 dark:text-[#a1a1aa] text-center border-b border-slate-200 dark:border-[#2e2e33]">
                     Nenhum produto encontrado
                   </div>
                 )}
@@ -466,8 +466,8 @@ export default function FinishConsultationModal({
                 {/* Recent products */}
                 {productSearch.length < 1 && recentProducts.length > 0 && (
                   <div>
-                    <div className="px-4 py-2 bg-slate-50 dark:bg-[#141722] border-b border-slate-200 dark:border-[#252a3a]">
-                      <span className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase flex items-center gap-1.5">
+                    <div className="px-4 py-2 bg-slate-50 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                      <span className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase flex items-center gap-1.5">
                         <Package className="w-3 h-3" />
                         Produtos Recentes
                       </span>
@@ -478,7 +478,7 @@ export default function FinishConsultationModal({
                           key={product.id}
                           type="button"
                           onClick={() => addProduct(product)}
-                          className="w-full text-left px-4 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-900/10 border-b border-slate-100 dark:border-[#1e2334] last:border-0 transition-colors flex items-center justify-between"
+                          className="w-full text-left px-4 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-900/10 border-b border-slate-100 dark:border-[#27272a] last:border-0 transition-colors flex items-center justify-between"
                         >
                           <span className="text-sm font-medium text-slate-700 dark:text-gray-200">{product.name}</span>
                           <span className="text-xs font-bold text-rose-600 dark:text-rose-400">R$ {product.price_sale.toFixed(2)}</span>
@@ -489,11 +489,11 @@ export default function FinishConsultationModal({
                 )}
 
                 {/* Close */}
-                <div className="p-2 bg-slate-50 dark:bg-[#141722]">
+                <div className="p-2 bg-slate-50 dark:bg-[#18181b]">
                   <button
                     type="button"
                     onClick={() => { setShowProductPicker(false); setProductSearch(''); }}
-                    className="w-full py-1.5 text-xs font-medium text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-200 transition-colors"
+                    className="w-full py-1.5 text-xs font-medium text-slate-500 dark:text-[#a1a1aa] hover:text-slate-700 dark:hover:text-gray-200 transition-colors"
                   >
                     Fechar
                   </button>
@@ -505,19 +505,19 @@ export default function FinishConsultationModal({
             {selectedProducts.length > 0 && (
               <div className="space-y-2">
                 {selectedProducts.map(product => (
-                  <div key={product.id} className="bg-white dark:bg-[#0d0f15] p-3 rounded-lg border border-slate-200 dark:border-[#252a3a] flex items-center justify-between">
+                  <div key={product.id} className="bg-white dark:bg-[#0a0a0c] p-3 rounded-lg border border-slate-200 dark:border-[#2e2e33] flex items-center justify-between">
                     <div className="flex-1">
                       <p className="text-sm font-bold text-slate-700 dark:text-gray-200">{product.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-[#828ca5]">R$ {product.price.toFixed(2)} cada</p>
+                      <p className="text-xs text-slate-500 dark:text-[#a1a1aa]">R$ {product.price.toFixed(2)} cada</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 bg-slate-100 dark:bg-[#141722] rounded-lg">
+                      <div className="flex items-center gap-2 bg-slate-100 dark:bg-[#18181b] rounded-lg">
                         <button
                           type="button"
                           onClick={() => updateProductQuantity(product.id, -1)}
                           className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded transition-colors"
                         >
-                          <Minus className="w-3 h-3 text-slate-600 dark:text-[#828ca5]" />
+                          <Minus className="w-3 h-3 text-slate-600 dark:text-[#a1a1aa]" />
                         </button>
                         <span className="text-sm font-bold text-slate-700 dark:text-gray-200 w-8 text-center">
                           {product.quantity}
@@ -527,7 +527,7 @@ export default function FinishConsultationModal({
                           onClick={() => updateProductQuantity(product.id, 1)}
                           className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded transition-colors"
                         >
-                          <Plus className="w-3 h-3 text-slate-600 dark:text-[#828ca5]" />
+                          <Plus className="w-3 h-3 text-slate-600 dark:text-[#a1a1aa]" />
                         </button>
                       </div>
                       <span className="text-sm font-black text-rose-600 dark:text-rose-400 w-20 text-right">
@@ -543,9 +543,9 @@ export default function FinishConsultationModal({
                     </div>
                   </div>
                 ))}
-                <div className="pt-2 border-t border-slate-200 dark:border-[#252a3a]">
+                <div className="pt-2 border-t border-slate-200 dark:border-[#2e2e33]">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-slate-600 dark:text-[#828ca5]">Subtotal Produtos:</span>
+                    <span className="text-sm font-bold text-slate-600 dark:text-[#a1a1aa]">Subtotal Produtos:</span>
                     <span className="text-lg font-black text-slate-800 dark:text-gray-200">R$ {productsTotal.toFixed(2)}</span>
                   </div>
                 </div>
@@ -555,11 +555,11 @@ export default function FinishConsultationModal({
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-6 bg-slate-50 dark:bg-[#141722] border-t border-slate-200 dark:border-[#252a3a] flex justify-end gap-3">
+        <div className="px-8 py-6 bg-slate-50 dark:bg-[#18181b] border-t border-slate-200 dark:border-[#2e2e33] flex justify-end gap-3">
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-6 py-3 bg-slate-200 dark:bg-[#0d0f15] text-slate-700 dark:text-[#a0a8be] rounded-xl font-bold hover:bg-slate-300 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
+            className="px-6 py-3 bg-slate-200 dark:bg-[#0a0a0c] text-slate-700 dark:text-[#d4d4d8] rounded-xl font-bold hover:bg-slate-300 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>

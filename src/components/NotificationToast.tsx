@@ -25,7 +25,7 @@ export function NotificationToast({ notifications, onDismiss }: NotificationToas
         <div
           key={notification.id}
           className={`
-            bg-white dark:bg-[#0d0f15] rounded-xl shadow-2xl border-l-4 p-4 min-w-[320px] max-w-md
+            bg-white dark:bg-[#0a0a0c] rounded-xl shadow-2xl border-l-4 p-4 min-w-[320px] max-w-md
             animate-in slide-in-from-right fade-in
             ${notification.type === 'checkout' ? 'border-l-rose-500' : ''}
             ${notification.type === 'success' ? 'border-l-emerald-500' : ''}
@@ -48,11 +48,11 @@ export function NotificationToast({ notifications, onDismiss }: NotificationToas
             </div>
             <div className="flex-1 min-w-0">
               {notification.title ? (
-                <h4 className="font-bold text-sm text-slate-800 dark:text-[#e8ecf4] mb-1">
+                <h4 className="font-bold text-sm text-slate-800 dark:text-[#fafafa] mb-1">
                   {notification.title}
                 </h4>
               ) : null}
-              <p className={`text-slate-600 dark:text-[#828ca5] ${notification.title ? 'text-xs' : 'text-sm'}`}>
+              <p className={`text-slate-600 dark:text-[#a1a1aa] ${notification.title ? 'text-xs' : 'text-sm'}`}>
                 {notification.message}
               </p>
             </div>

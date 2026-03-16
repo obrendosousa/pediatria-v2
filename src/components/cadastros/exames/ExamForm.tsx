@@ -25,10 +25,10 @@ interface ExamFormProps {
 // --- Styles ---
 
 const inputClass =
-  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 
 const labelClass =
-  'text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 ml-1 block uppercase tracking-wider';
+  'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
 
 function RequiredBadge() {
   return (
@@ -99,21 +99,21 @@ export default function ExamForm({
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => router.push('/atendimento/cadastros/modelos/exames')}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-500 dark:text-[#828ca5]" />
+            <ArrowLeft className="w-5 h-5 text-slate-500 dark:text-[#a1a1aa]" />
           </button>
           <div>
-            <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
+            <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
               <FlaskConical className="w-5 h-5 text-teal-600" />
               {title}
             </h1>
-            <p className="text-xs text-slate-400 dark:text-[#565d73]">{subtitle}</p>
+            <p className="text-xs text-slate-400 dark:text-[#71717a]">{subtitle}</p>
           </div>
         </div>
       </div>
@@ -123,7 +123,7 @@ export default function ExamForm({
         <div className="max-w-6xl mx-auto flex gap-6">
           {/* Left column: Form */}
           <div className="flex-1 min-w-0 space-y-4">
-            <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-4">
+            <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-4">
               {/* Nome */}
               <div>
                 <label className={labelClass}>
@@ -157,16 +157,16 @@ export default function ExamForm({
 
           {/* Right column: Category panel */}
           <div className="w-72 shrink-0">
-            <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-200 dark:border-[#252a3a] overflow-hidden sticky top-0">
+            <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden sticky top-0">
               {/* Panel header */}
-              <div className="px-4 py-3 border-b border-slate-200 dark:border-[#252a3a] bg-slate-50 dark:bg-[#141722]">
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-[#2e2e33] bg-slate-50 dark:bg-[#18181b]">
                 <h3 className="text-sm font-extrabold text-slate-700 dark:text-gray-200 uppercase tracking-wide">
                   Tipos de pedidos
                 </h3>
               </div>
 
               {/* Search */}
-              <div className="px-4 py-3 border-b border-slate-100 dark:border-[#1e2334]">
+              <div className="px-4 py-3 border-b border-slate-100 dark:border-[#27272a]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
@@ -174,7 +174,7 @@ export default function ExamForm({
                     value={categorySearch}
                     onChange={e => setCategorySearch(e.target.value)}
                     placeholder="Buscar categoria..."
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
                 </div>
               </div>
@@ -182,7 +182,7 @@ export default function ExamForm({
               {/* Category list */}
               <div className="max-h-[calc(100vh-340px)] overflow-y-auto custom-scrollbar">
                 {filteredCategories.length === 0 ? (
-                  <p className="px-4 py-6 text-sm text-slate-400 dark:text-[#565d73] text-center">
+                  <p className="px-4 py-6 text-sm text-slate-400 dark:text-[#71717a] text-center">
                     Nenhuma categoria encontrada.
                   </p>
                 ) : (
@@ -208,7 +208,7 @@ export default function ExamForm({
       </form>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15] flex justify-end">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex justify-end">
         <button
           type="submit"
           disabled={saving}

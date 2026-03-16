@@ -151,7 +151,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="text-center text-slate-500 dark:text-[#828ca5]">Carregando...</div>
+        <div className="text-center text-slate-500 dark:text-[#a1a1aa]">Carregando...</div>
       </div>
     );
   }
@@ -160,42 +160,42 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
     <div className="p-4 pb-20">
       {/* Header */}
       <div className="mb-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">RESULTADO DE EXAMES?</h1>
-        <span className="text-xs text-slate-600 dark:text-[#828ca5] uppercase">{currentDate}</span>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-[#fafafa]">RESULTADO DE EXAMES?</h1>
+        <span className="text-xs text-slate-600 dark:text-[#a1a1aa] uppercase">{currentDate}</span>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         {/* Card: Exames de Imagem */}
-        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               ULTRASSOM
             </label>
             <input
               type="text"
               {...register('ultrasound')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os resultados do ultrassom..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               RAIO X
             </label>
             <input
               type="text"
               {...register('xray')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os resultados do raio X..."
             />
           </div>
         </div>
 
         {/* Campo: LABORATORIAS/ OBSERVAÇÕES (Rich Text) */}
-        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be]">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8]">
               LABORATORIAS/ OBSERVAÇÕES
             </label>
             <div className="flex gap-2">
@@ -226,193 +226,193 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
         </div>
 
         {/* Card: Hemograma */}
-        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               LEUCOCITOS
             </label>
             <input
               type="text"
               {...register('leukocytes')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de leucócitos..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               EOSINOFILOS
             </label>
             <input
               type="text"
               {...register('eosinophils')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de eosinófilos..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               PLAQUETAS
             </label>
             <input
               type="text"
               {...register('platelets')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de plaquetas..."
             />
           </div>
         </div>
 
         {/* Card: Função Renal e Hepática */}
-        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               UREIA/ CREATININA
             </label>
             <input
               type="text"
               {...register('urea_creatinine')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de ureia e creatinina..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               TGO/TGP
             </label>
             <input
               type="text"
               {...register('tgo_tgp')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de TGO e TGP..."
             />
           </div>
         </div>
 
         {/* Card: Vitaminas e Minerais */}
-        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               VITD, VITC, VIT B12 E ZINCO
             </label>
             <input
               type="text"
               {...register('vitamins')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de vitaminas D, C, B12 e zinco..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               FERRITINA/ PCR ULTRASSENSIVEL
             </label>
             <input
               type="text"
               {...register('ferritin_pcr')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de ferritina e PCR ultrassensível..."
             />
           </div>
         </div>
 
         {/* Card: Função Tireoidiana */}
-        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               TSH E T4 TOTAL
             </label>
             <input
               type="text"
               {...register('tsh_t4')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de TSH e T4 total..."
             />
           </div>
         </div>
 
         {/* Card: Urina */}
-        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               EAS/ UROCULTURA / EPF
             </label>
             <input
               type="text"
               {...register('eas_uroculture_epf')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os resultados de EAS, urocultura e EPF..."
             />
           </div>
         </div>
 
         {/* Card: Outros */}
-        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               TIPAGEM SANGUINEA
             </label>
             <input
               type="text"
               {...register('blood_typing')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite a tipagem sanguínea..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               SODIO/ POTASSIO/ CALCIO
             </label>
             <input
               type="text"
               {...register('electrolytes')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de sódio, potássio e cálcio..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               GLICEMIA JEJUM/ HB GLICADA/ INSULINA
             </label>
             <input
               type="text"
               {...register('glucose_insulin')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de glicemia em jejum, hemoglobina glicada e insulina..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               LIPIDOGRAMA
             </label>
             <input
               type="text"
               {...register('lipidogram')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores do lipidograma..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               CARIOTIPO
             </label>
             <input
               type="text"
               {...register('karyotype')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os resultados do cariótipo..."
             />
           </div>
         </div>
 
         {/* Botão Salvar */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#252a3a] -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#2e2e33] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

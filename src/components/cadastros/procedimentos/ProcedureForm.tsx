@@ -45,9 +45,9 @@ interface ProcedureFormProps {
 
 // --- Helpers ---
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 const selectClass = `${inputClass} appearance-none cursor-pointer`;
-const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 ml-1 block uppercase tracking-wider';
+const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
 
 function RequiredBadge() {
   return (
@@ -180,7 +180,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
         <button
           onClick={() => router.push('/atendimento/cadastros/procedimentos')}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -188,11 +188,11 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
           <ArrowLeft className="w-5 h-5 text-slate-500" />
         </button>
         <div>
-          <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
             <Stethoscope className="w-5 h-5 text-teal-600" />
             {title}
           </h1>
-          <p className="text-xs text-slate-400 dark:text-[#565d73]">{subtitle}</p>
+          <p className="text-xs text-slate-400 dark:text-[#71717a]">{subtitle}</p>
         </div>
       </div>
 
@@ -201,8 +201,8 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* ─── Seção: Informações do Procedimento ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <Stethoscope className="w-4 h-4 text-teal-500" />
               Informações do Procedimento
             </h2>
@@ -254,13 +254,13 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
           </section>
 
           {/* ─── Seção: Composição do Procedimento ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide">
+              <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide">
                 Composição do Procedimento
               </h2>
               <label className="flex items-center gap-2 cursor-pointer">
-                <span className="text-sm text-slate-600 dark:text-[#a0a8be]">Habilitar composição</span>
+                <span className="text-sm text-slate-600 dark:text-[#d4d4d8]">Habilitar composição</span>
                 <button
                   type="button"
                   onClick={() => update('composition_enabled', !form.composition_enabled)}
@@ -287,13 +287,13 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
                     value={compSearch}
                     onChange={e => setCompSearch(e.target.value)}
                     placeholder="Buscar procedimento para adicionar..."
-                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
                 </div>
 
                 {/* Lista de disponíveis (mostra quando tem busca) */}
                 {compSearch.trim() && availableProcedures.length > 0 && (
-                  <div className="max-h-40 overflow-y-auto bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#252a3a]">
+                  <div className="max-h-40 overflow-y-auto bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#2e2e33]">
                     {availableProcedures.slice(0, 10).map(proc => (
                       <button
                         key={proc.id}
@@ -311,18 +311,18 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
                 )}
 
                 {compSearch.trim() && availableProcedures.length === 0 && (
-                  <p className="text-xs text-slate-400 dark:text-[#565d73] px-1">Nenhum procedimento encontrado.</p>
+                  <p className="text-xs text-slate-400 dark:text-[#71717a] px-1">Nenhum procedimento encontrado.</p>
                 )}
 
                 {/* Itens adicionados */}
                 {compositions.length > 0 ? (
-                  <div className="bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
+                  <div className="bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
                     <table className="w-full text-left text-sm">
                       <thead>
-                        <tr className="bg-slate-100 dark:bg-[#141722] border-b border-slate-200 dark:border-[#252a3a]">
-                          <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Procedimento</th>
-                          <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase text-center w-24">Qtd</th>
-                          <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase text-center w-16">Ação</th>
+                        <tr className="bg-slate-100 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                          <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Procedimento</th>
+                          <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-center w-24">Qtd</th>
+                          <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-center w-16">Ação</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 dark:divide-gray-800">
@@ -335,7 +335,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
                                 min={1}
                                 value={item.quantity}
                                 onChange={e => updateCompositionQty(idx, Number(e.target.value))}
-                                className="w-16 px-2 py-1 text-sm text-center border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                className="w-16 px-2 py-1 text-sm text-center border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
                               />
                             </td>
                             <td className="px-4 py-3 text-center">
@@ -352,8 +352,8 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-6 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-dashed border-slate-200 dark:border-[#252a3a]">
-                    <p className="text-sm text-slate-400 dark:text-[#565d73]">Nenhum sub-procedimento adicionado.</p>
+                  <div className="text-center py-6 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-dashed border-slate-200 dark:border-[#2e2e33]">
+                    <p className="text-sm text-slate-400 dark:text-[#71717a]">Nenhum sub-procedimento adicionado.</p>
                   </div>
                 )}
               </>
@@ -361,8 +361,8 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
           </section>
 
           {/* ─── Seção: Precificação ─── */}
-          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-teal-500" />
               Precificação do Procedimento
             </h2>
@@ -387,7 +387,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
               {form.composition_enabled && compositions.length > 0 && (
                 <div className="col-span-6 md:col-span-4">
                   <label className={labelClass}>Composição</label>
-                  <div className="px-3 py-2.5 text-sm font-mono text-right text-slate-600 dark:text-[#a0a8be] bg-slate-100 dark:bg-[#15171e] border border-slate-200 dark:border-[#252a3a] rounded-xl">
+                  <div className="px-3 py-2.5 text-sm font-mono text-right text-slate-600 dark:text-[#d4d4d8] bg-slate-100 dark:bg-[#15171e] border border-slate-200 dark:border-[#2e2e33] rounded-xl">
                     {formatCurrency(compositionTotal)}
                   </div>
                 </div>
@@ -406,10 +406,10 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
       </div>
 
       {/* Footer fixo */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15] flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex items-center justify-end gap-3">
         <button
           onClick={() => router.push('/atendimento/cadastros/procedimentos')}
-          className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+          className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
         >
           Cancelar
         </button>

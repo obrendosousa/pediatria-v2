@@ -163,10 +163,10 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
   return (
     <div className="flex flex-col h-full">
       {/* Cabeçalho */}
-      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#252a3a]">
+      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#2e2e33]">
         <div>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">Pacientes</h2>
-          <p className="text-xs text-slate-400 dark:text-[#565d73] mt-0.5">{totalCount} paciente{totalCount !== 1 ? 's' : ''}</p>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Pacientes</h2>
+          <p className="text-xs text-slate-400 dark:text-[#71717a] mt-0.5">{totalCount} paciente{totalCount !== 1 ? 's' : ''}</p>
         </div>
         <button
           onClick={onNewPatient}
@@ -177,7 +177,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
       </div>
 
       {/* Barra de busca e filtros */}
-      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#1e2334]">
+      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#27272a]">
         {/* Busca */}
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -186,7 +186,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
             value={searchTerm}
             onChange={e => handleSearchChange(e.target.value)}
             placeholder="Buscar por nome, telefone ou CPF..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
           />
         </div>
 
@@ -200,7 +200,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
               className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                 statusFilter === f
                   ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300'
-                  : 'text-slate-500 dark:text-[#828ca5] hover:bg-slate-100 dark:hover:bg-white/5'
+                  : 'text-slate-500 dark:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-white/5'
               }`}
             >
               {f === 'all' ? 'Todos' : f === 'active' ? 'Ativos' : 'Inativos'}
@@ -212,7 +212,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
         <select
           value={pageSize}
           onChange={e => handlePageSizeChange(Number(e.target.value) as PageSize)}
-          className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-600 dark:text-[#a0a8be] focus:outline-none focus:ring-2 focus:ring-teal-400"
+          className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-teal-400"
         >
           <option value={10}>10 / página</option>
           <option value={25}>25 / página</option>
@@ -230,28 +230,28 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
         ) : patients.length === 0 ? (
           <div className="text-center py-16">
             <Users className="w-12 h-12 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-sm text-slate-400 dark:text-[#565d73]">
+            <p className="text-sm text-slate-400 dark:text-[#71717a]">
               {searchTerm ? `Nenhum paciente encontrado para "${searchTerm}".` : 'Nenhum paciente cadastrado.'}
             </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
+          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#141722] border-b border-slate-200 dark:border-[#252a3a]">
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase w-16">Reg.</th>
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Nome</th>
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Telefone</th>
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Convênio</th>
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Data nasc.</th>
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Status</th>
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase text-right">Opções</th>
+                <tr className="bg-slate-50 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase w-16">Reg.</th>
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Nome</th>
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Telefone</th>
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Convênio</th>
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Data nasc.</th>
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Status</th>
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-right">Opções</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
                 {patients.map(p => (
                   <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 text-xs text-slate-400 dark:text-[#565d73] font-mono">#{p.id}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400 dark:text-[#71717a] font-mono">#{p.id}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-xs font-bold text-teal-700 dark:text-teal-300 flex-shrink-0">
@@ -259,13 +259,13 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
                         </div>
                         <div>
                           <p className="font-medium text-slate-700 dark:text-gray-200">{p.full_name}</p>
-                          {p.cpf && <p className="text-xs text-slate-400 dark:text-[#565d73]">{p.cpf}</p>}
+                          {p.cpf && <p className="text-xs text-slate-400 dark:text-[#71717a]">{p.cpf}</p>}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       {p.phone ? (
-                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-[#a0a8be]">
+                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-[#d4d4d8]">
                           <Phone className="w-3.5 h-3.5 text-slate-400" />
                           {p.phone}
                         </div>
@@ -273,10 +273,10 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
                         <span className="text-slate-300 dark:text-gray-600">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-[#a0a8be]">{p.insurance || '—'}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-[#d4d4d8]">{p.insurance || '—'}</td>
                     <td className="px-4 py-3">
                       {p.birth_date ? (
-                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-[#a0a8be]">
+                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-[#d4d4d8]">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
                           {formatDate(p.birth_date)}
                         </div>
@@ -322,13 +322,13 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
 
       {/* Paginação */}
       {totalPages > 1 && (
-        <div className="px-6 py-3 border-t border-slate-200 dark:border-[#252a3a] flex items-center justify-between text-xs text-slate-500 dark:text-[#828ca5]">
+        <div className="px-6 py-3 border-t border-slate-200 dark:border-[#2e2e33] flex items-center justify-between text-xs text-slate-500 dark:text-[#a1a1aa]">
           <span>Mostrando {showingFrom} até {showingTo} de {totalCount}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#252a3a] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2e2e33] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
               Anterior
             </button>
@@ -343,7 +343,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
                   className={`px-3 py-1.5 rounded-lg border transition-colors ${
                     page === pageNum
                       ? 'bg-teal-600 text-white border-teal-600'
-                      : 'border-slate-200 dark:border-[#252a3a] hover:bg-slate-50 dark:hover:bg-white/5'
+                      : 'border-slate-200 dark:border-[#2e2e33] hover:bg-slate-50 dark:hover:bg-white/5'
                   }`}
                 >
                   {pageNum + 1}
@@ -353,7 +353,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
             <button
               onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#252a3a] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2e2e33] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
               Próximo
             </button>
@@ -365,7 +365,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
       {menuOpenId !== null && menuPosition && (
         <div
           ref={dropdownRef}
-          className="fixed z-50 w-44 bg-white dark:bg-[#141722] rounded-xl shadow-xl border border-slate-200 dark:border-[#252a3a] py-1 animate-in fade-in-0 zoom-in-95"
+          className="fixed z-50 w-44 bg-white dark:bg-[#18181b] rounded-xl shadow-xl border border-slate-200 dark:border-[#2e2e33] py-1 animate-in fade-in-0 zoom-in-95"
           style={{ top: menuPosition.top, left: menuPosition.left }}
         >
           {(() => {

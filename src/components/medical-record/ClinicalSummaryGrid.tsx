@@ -57,7 +57,7 @@ export function ClinicalSummaryGrid({ patientId, summaryData, onRefresh }: Clini
     }
 
     return (
-      <p className="text-xs text-slate-600 dark:text-[#828ca5] line-clamp-3 leading-relaxed">
+      <p className="text-xs text-slate-600 dark:text-[#a1a1aa] line-clamp-3 leading-relaxed">
         {data as string}
       </p>
     );
@@ -91,7 +91,7 @@ export function ClinicalSummaryGrid({ patientId, summaryData, onRefresh }: Clini
               key={card.key}
               onClick={() => setActiveSection(card.key)}
               className={`
-                relative bg-white dark:bg-[#0d0f15] p-4 rounded-2xl border border-slate-100 dark:border-[#1e2334] 
+                relative bg-white dark:bg-[#0a0a0c] p-4 rounded-2xl border border-slate-100 dark:border-[#27272a] 
                 shadow-sm hover:shadow-md hover:border-rose-200 dark:hover:border-rose-900/30 transition-all cursor-pointer group min-h-[140px] flex flex-col
                 ${hasData && card.key === 'allergies' ? 'border-l-4 border-l-red-500' : ''}
               `}
@@ -99,7 +99,7 @@ export function ClinicalSummaryGrid({ patientId, summaryData, onRefresh }: Clini
               {/* Header do Card */}
               <div className="flex items-center gap-2 mb-2">
                 <card.icon className={`w-4 h-4 ${card.colorClass}`} />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#565d73]">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#71717a]">
                   {card.title}
                 </h3>
               </div>

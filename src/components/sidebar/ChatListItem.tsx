@@ -151,7 +151,7 @@ const ChatListItem = memo(({
 
         let Content = null;
         const mediaIconClass = "shrink-0 mr-1 text-[#8696a0]";
-        const textClass = `truncate ${isUnread ? 'text-[var(--chat-text-primary)] dark:text-[#e8ecf4] font-medium' : 'text-[var(--chat-text-muted)] dark:text-[#8696a0]'}`;
+        const textClass = `truncate ${isUnread ? 'text-[var(--chat-text-primary)] dark:text-[#fafafa] font-medium' : 'text-[var(--chat-text-muted)] dark:text-[#8696a0]'}`;
 
         switch (type) {
             case 'audio':
@@ -210,7 +210,7 @@ const ChatListItem = memo(({
             default:
                 Content = (
                     <div 
-                        className={`text-[14px] leading-[1.35] overflow-hidden min-w-0 whitespace-nowrap truncate ${isUnread ? 'text-[var(--chat-text-primary)] dark:text-[#e8ecf4] font-medium' : 'text-[var(--chat-text-muted)] dark:text-[#8696a0]'}`}
+                        className={`text-[14px] leading-[1.35] overflow-hidden min-w-0 whitespace-nowrap truncate ${isUnread ? 'text-[var(--chat-text-primary)] dark:text-[#fafafa] font-medium' : 'text-[var(--chat-text-muted)] dark:text-[#8696a0]'}`}
                         style={{ overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: '1.35' }}
                     >
                         <span>{singleLineText}</span>
@@ -238,7 +238,7 @@ const ChatListItem = memo(({
     return (
       <div 
         onClick={isSelectionMode && !isAIChat ? () => onToggleSelection(chat.id) : () => onSelect(chat)}
-        className={`group relative flex items-stretch cursor-pointer transition-colors duration-150 ease-in-out border-b border-gray-100 dark:border-[#1e2334] min-h-[72px]
+        className={`group relative flex items-stretch cursor-pointer transition-colors duration-150 ease-in-out border-b border-gray-100 dark:border-[#27272a] min-h-[72px]
           ${isSelectionMode && isSelectedInMode 
             ? 'bg-primary/10' 
             : isSelected && !isSelectionMode
@@ -278,7 +278,7 @@ const ChatListItem = memo(({
             </div>
           ) : (
             <div 
-              className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-[#252a3a]"
+              className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-[#2e2e33]"
               style={!chat.profile_pic || avatarError ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
             >
               {chat.profile_pic && !avatarError ? (
@@ -358,29 +358,29 @@ const ChatListItem = memo(({
           <div 
             ref={menuRef}
             data-chat-menu
-            className={`fixed w-52 bg-white dark:bg-[#141722] rounded-lg shadow-lg py-2 z-[9999] border border-gray-100 dark:border-[#252a3a] transition-all ${isExiting ? (menuPosition.openUpward ? 'animate-chat-menu-out-upward' : 'animate-chat-menu-out') : (menuPosition.openUpward ? 'animate-chat-menu-in-upward' : 'animate-chat-menu-in')}`}
+            className={`fixed w-52 bg-white dark:bg-[#18181b] rounded-lg shadow-lg py-2 z-[9999] border border-gray-100 dark:border-[#2e2e33] transition-all ${isExiting ? (menuPosition.openUpward ? 'animate-chat-menu-out-upward' : 'animate-chat-menu-out') : (menuPosition.openUpward ? 'animate-chat-menu-in-upward' : 'animate-chat-menu-in')}`}
             style={{ top: menuPosition.top, left: menuPosition.left, transformOrigin: menuPosition.openUpward ? 'bottom right' : 'top right' }}
             onClick={(e) => e.stopPropagation()}
           >
             <button onClick={(e) => { e.stopPropagation(); onAction(e, 'edit_contact', chat); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--chat-text-primary)] dark:text-gray-200 text-[14.5px] flex items-center gap-3">
-              <UserCog size={17} className="text-[var(--chat-text-muted)] dark:text-[#828ca5]" /> Editar Contato
+              <UserCog size={17} className="text-[var(--chat-text-muted)] dark:text-[#a1a1aa]" /> Editar Contato
             </button>
             <button onClick={(e) => { e.stopPropagation(); onAction(e, 'tags', chat); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--chat-text-primary)] dark:text-gray-200 text-[14.5px] flex items-center gap-3">
-              <Tag size={17} className="text-[var(--chat-text-muted)] dark:text-[#828ca5]" /> Editar Etiquetas
+              <Tag size={17} className="text-[var(--chat-text-muted)] dark:text-[#a1a1aa]" /> Editar Etiquetas
             </button>
             <button onClick={(e) => onAction(e, 'archive', chat)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--chat-text-primary)] dark:text-gray-200 text-[14.5px] flex items-center gap-3">
-              <Archive size={17} className="text-[var(--chat-text-muted)] dark:text-[#828ca5]" /> {chat.is_archived ? 'Desarquivar' : 'Arquivar'}
+              <Archive size={17} className="text-[var(--chat-text-muted)] dark:text-[#a1a1aa]" /> {chat.is_archived ? 'Desarquivar' : 'Arquivar'}
             </button>
             <button onClick={(e) => onAction(e, 'pin', chat)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--chat-text-primary)] dark:text-gray-200 text-[14.5px] flex items-center gap-3">
-              <Pin size={17} className="text-[var(--chat-text-muted)] dark:text-[#828ca5]" /> {chat.is_pinned ? 'Desafixar' : 'Fixar'}
+              <Pin size={17} className="text-[var(--chat-text-muted)] dark:text-[#a1a1aa]" /> {chat.is_pinned ? 'Desafixar' : 'Fixar'}
             </button>
             <button onClick={(e) => onAction(e, 'unread', chat)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--chat-text-primary)] dark:text-gray-200 text-[14.5px] flex items-center gap-3">
-              <Mail size={17} className="text-[var(--chat-text-muted)] dark:text-[#828ca5]" /> {(chat.unread_count || 0) > 0 ? 'Marcar como lida' : 'Marcar como não lida'}
+              <Mail size={17} className="text-[var(--chat-text-muted)] dark:text-[#a1a1aa]" /> {(chat.unread_count || 0) > 0 ? 'Marcar como lida' : 'Marcar como não lida'}
             </button>
             <button onClick={(e) => onAction(e, 'select', chat)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--chat-text-primary)] dark:text-gray-200 text-[14.5px] flex items-center gap-3">
-              <CheckCircle2 size={17} className="text-[var(--chat-text-muted)] dark:text-[#828ca5]" /> Selecionar
+              <CheckCircle2 size={17} className="text-[var(--chat-text-muted)] dark:text-[#a1a1aa]" /> Selecionar
             </button>
-            <div className="my-1 border-t border-gray-100 dark:border-[#252a3a]"></div>
+            <div className="my-1 border-t border-gray-100 dark:border-[#2e2e33]"></div>
             <button onClick={(e) => onAction(e, 'delete', chat)} className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-red-500 text-[14.5px] flex items-center gap-3">
               <Trash2 size={17} /> Apagar conversa
             </button>

@@ -168,7 +168,7 @@ export function EditClinicalInfoModal({
 
   const renderTextEditor = () => (
     <textarea
-      className="w-full h-64 p-4 bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none resize-none text-slate-700 dark:text-gray-200"
+      className="w-full h-64 p-4 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none resize-none text-slate-700 dark:text-gray-200"
       placeholder="Digite as informações aqui..."
       value={textValue}
       onChange={(e) => setTextValue(e.target.value)}
@@ -182,7 +182,7 @@ export function EditClinicalInfoModal({
       <div className="relative mb-4">
         <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
         <input
-          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl outline-none focus:border-rose-500 transition-colors"
+          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl outline-none focus:border-rose-500 transition-colors"
           placeholder={config.type === 'list_allergies' ? "Buscar substância (ex: Dipirona)..." : "Buscar medicamento..."}
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
@@ -190,7 +190,7 @@ export function EditClinicalInfoModal({
 
         {/* Dropdown de Resultados */}
         {searchResults.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-xl shadow-xl z-20 overflow-hidden">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-xl shadow-xl z-20 overflow-hidden">
             {searchResults.map(result => (
               <button
                 key={result.id}
@@ -198,7 +198,7 @@ export function EditClinicalInfoModal({
                   ? { substance: result.name, criticality: 'high' }
                   : { name: result.name, dosage: result.dosage || '' }
                 )}
-                className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-[#2a2d36] border-b border-slate-100 dark:border-[#1e2334] last:border-0"
+                className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-[#2a2d36] border-b border-slate-100 dark:border-[#27272a] last:border-0"
               >
                 <p className="font-bold text-sm text-slate-800 dark:text-gray-200">{result.name}</p>
                 <p className="text-xs text-slate-500">{result.active_ingredient} &bull; {result.dosage}</p>
@@ -214,7 +214,7 @@ export function EditClinicalInfoModal({
            <div className="text-center py-10 text-slate-400 text-sm">Nenhum item adicionado.</div>
         )}
         {listValue.map((item, idx) => (
-          <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-[#141722] border border-slate-100 dark:border-[#252a3a] rounded-lg shadow-sm">
+          <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-[#18181b] border border-slate-100 dark:border-[#2e2e33] rounded-lg shadow-sm">
             <div>
                <p className="font-bold text-slate-700 dark:text-gray-200">
                  {item.substance || item.name}
@@ -246,11 +246,11 @@ export function EditClinicalInfoModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-[#0d0f15] w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-[#0a0a0c] w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
 
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-[#1e2334] bg-slate-50/50 dark:bg-[#141722]/50">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-[#27272a] bg-slate-50/50 dark:bg-[#18181b]/50">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
             {config.type === 'list_allergies' && <AlertTriangle className="text-rose-500"/>}
             {config.title}
           </h3>
@@ -265,7 +265,7 @@ export function EditClinicalInfoModal({
         </div>
 
         {/* Footer Navigation */}
-        <div className="p-4 bg-slate-50 dark:bg-[#141722] border-t border-slate-100 dark:border-[#1e2334] flex justify-between items-center">
+        <div className="p-4 bg-slate-50 dark:bg-[#18181b] border-t border-slate-100 dark:border-[#27272a] flex justify-between items-center">
 
           <button
             onClick={(e) => {

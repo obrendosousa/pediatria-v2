@@ -152,18 +152,18 @@ export default function OrphanedAppointmentsModal({
   return (
     <>
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#0d0f15] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#1e2334]">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#27272a]">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
               <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-[#fafafa]">
                 Atendimentos Pendentes
               </h2>
-              <p className="text-sm text-slate-500 dark:text-[#828ca5]">
+              <p className="text-sm text-slate-500 dark:text-[#a1a1aa]">
                 {appointments.length} atendimento{appointments.length > 1 ? 's' : ''} não finalizado{appointments.length > 1 ? 's' : ''} de dias anteriores
               </p>
             </div>
@@ -172,7 +172,7 @@ export default function OrphanedAppointmentsModal({
             onClick={handleClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-[#2a2d36] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-slate-500 dark:text-[#828ca5]" />
+            <X className="w-5 h-5 text-slate-500 dark:text-[#a1a1aa]" />
           </button>
         </div>
 
@@ -186,13 +186,13 @@ export default function OrphanedAppointmentsModal({
             return (
               <div
                 key={apt.id}
-                className="border border-slate-200 dark:border-[#252a3a] rounded-xl p-4 bg-slate-50/50 dark:bg-[#111b21]"
+                className="border border-slate-200 dark:border-[#2e2e33] rounded-xl p-4 bg-slate-50/50 dark:bg-[#111b21]"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <User className="w-4 h-4 text-slate-500 dark:text-[#828ca5]" />
-                      <h3 className="font-bold text-slate-800 dark:text-[#e8ecf4]">
+                      <User className="w-4 h-4 text-slate-500 dark:text-[#a1a1aa]" />
+                      <h3 className="font-bold text-slate-800 dark:text-[#fafafa]">
                         {apt.patient_name || 'Sem nome'}
                       </h3>
                       {isLongTime && (
@@ -201,7 +201,7 @@ export default function OrphanedAppointmentsModal({
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-[#828ca5]">
+                    <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-[#a1a1aa]">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-4 h-4" />
                         <span>{appointmentDate || 'Data não disponível'}</span>
@@ -258,7 +258,7 @@ export default function OrphanedAppointmentsModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-200 dark:border-[#1e2334] bg-slate-50/50 dark:bg-[#111b21]">
+        <div className="p-6 border-t border-slate-200 dark:border-[#27272a] bg-slate-50/50 dark:bg-[#111b21]">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -266,7 +266,7 @@ export default function OrphanedAppointmentsModal({
               onChange={(e) => setDontShowToday(e.target.checked)}
               className="w-4 h-4 rounded border-slate-300 dark:border-gray-600 text-amber-600 focus:ring-amber-500"
             />
-            <span className="text-sm text-slate-600 dark:text-[#828ca5]">
+            <span className="text-sm text-slate-600 dark:text-[#a1a1aa]">
               Não mostrar novamente hoje
             </span>
           </label>

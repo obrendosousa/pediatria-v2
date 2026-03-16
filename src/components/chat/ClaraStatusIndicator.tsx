@@ -323,7 +323,7 @@ export default function ClaraStatusIndicator({ status, dynamicLabel }: Props) {
             </div>
 
             {/* Texto descritivo */}
-            <span className="text-[11.5px] font-medium text-gray-500 dark:text-[#828ca5] select-none whitespace-nowrap transition-all duration-300">
+            <span className="text-[11.5px] font-medium text-gray-500 dark:text-[#a1a1aa] select-none whitespace-nowrap transition-all duration-300">
               {displayLabel}
             </span>
 

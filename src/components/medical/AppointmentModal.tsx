@@ -291,11 +291,11 @@ export default function AppointmentModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[140] flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-[#0d0f15] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-[#252a3a] bg-gray-50 dark:bg-[#141722] flex justify-between items-center">
-          <h3 className="font-bold text-gray-800 dark:text-[#e8ecf4] flex items-center gap-2">
+        <div className="p-4 border-b border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-between items-center">
+          <h3 className="font-bold text-gray-800 dark:text-[#fafafa] flex items-center gap-2">
             <Sparkles className="text-pink-600 dark:text-pink-400" size={20}/>
             Agendar Paciente
           </h3>
@@ -303,7 +303,7 @@ export default function AppointmentModal({
             onClick={onClose}
             className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors"
           >
-            <X size={20} className="text-gray-400 dark:text-[#565d73]"/>
+            <X size={20} className="text-gray-400 dark:text-[#71717a]"/>
           </button>
         </div>
 
@@ -311,7 +311,7 @@ export default function AppointmentModal({
 
           {/* Paciente existente (opcional) */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+            <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
               Paciente existente (opcional)
             </label>
             <PatientSearchSelect
@@ -336,7 +336,7 @@ export default function AppointmentModal({
 
           {/* Nome do Paciente */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+            <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
               Nome do Paciente *
             </label>
             <div className="relative">
@@ -345,7 +345,7 @@ export default function AppointmentModal({
                 type="text"
                 value={formData.patientName}
                 onChange={e => setFormData({...formData, patientName: e.target.value})}
-                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                 placeholder="Nome da criança"
                 required
               />
@@ -354,7 +354,7 @@ export default function AppointmentModal({
 
           {/* Nome do Responsável */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+            <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
               Nome do Responsável
             </label>
             <div className="relative">
@@ -363,7 +363,7 @@ export default function AppointmentModal({
                 type="text"
                 value={formData.parentName}
                 onChange={e => setFormData({...formData, parentName: e.target.value})}
-                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                 placeholder="Nome do pai/mãe/responsável"
               />
             </div>
@@ -371,7 +371,7 @@ export default function AppointmentModal({
 
           {/* Sexo da Criança */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+            <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
               Sexo da Criança
             </label>
             <div className="flex gap-0 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
@@ -380,7 +380,7 @@ export default function AppointmentModal({
                 onClick={() => setFormData({...formData, patientSex: 'M'})}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${
                   formData.patientSex === 'M'
-                    ? 'bg-white text-blue-600 shadow-sm dark:bg-[#141722] dark:text-blue-400'
+                    ? 'bg-white text-blue-600 shadow-sm dark:bg-[#18181b] dark:text-blue-400'
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
                 }`}
               >
@@ -391,7 +391,7 @@ export default function AppointmentModal({
                 onClick={() => setFormData({...formData, patientSex: 'F'})}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${
                   formData.patientSex === 'F'
-                    ? 'bg-white text-pink-600 shadow-sm dark:bg-[#141722] dark:text-pink-400'
+                    ? 'bg-white text-pink-600 shadow-sm dark:bg-[#18181b] dark:text-pink-400'
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
                 }`}
               >
@@ -402,7 +402,7 @@ export default function AppointmentModal({
 
           {/* Data de Nascimento */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+            <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
               Data de Nascimento * (DD/MM/AAAA)
             </label>
             <div className="relative">
@@ -413,7 +413,7 @@ export default function AppointmentModal({
                 onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')}
                 placeholder="DD/MM/AAAA"
                 maxLength={10}
-                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                 required
               />
             </div>
@@ -421,7 +421,7 @@ export default function AppointmentModal({
 
           {/* Telefone */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+            <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
               Telefone / WhatsApp
             </label>
             <div className="relative">
@@ -430,7 +430,7 @@ export default function AppointmentModal({
                 type="text"
                 value={formData.phone}
                 onChange={e => setFormData({...formData, phone: e.target.value})}
-                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                 placeholder="11999999999"
               />
             </div>
@@ -439,7 +439,7 @@ export default function AppointmentModal({
           {/* Data e Hora */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+              <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
                 Data da Consulta * (DD/MM/AAAA)
               </label>
               <div className="relative">
@@ -450,13 +450,13 @@ export default function AppointmentModal({
                   onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')}
                   placeholder="DD/MM/AAAA"
                   maxLength={10}
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                   required
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+              <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
                 Horário *
               </label>
               <div className="relative">
@@ -465,7 +465,7 @@ export default function AppointmentModal({
                   type="time"
                   value={formData.time}
                   onChange={e => setFormData({...formData, time: e.target.value})}
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                   required
                 />
               </div>
@@ -474,13 +474,13 @@ export default function AppointmentModal({
 
           {/* Médico */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+            <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
               Médico *
             </label>
             <select
               value={selectedDoctorId || ''}
               onChange={e => setSelectedDoctorId(Number(e.target.value))}
-              className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+              className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
               required
             >
               {doctors.length === 0 ? (
@@ -497,13 +497,13 @@ export default function AppointmentModal({
 
           {/* Tipo de atendimento */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+            <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
               Tipo de Atendimento *
             </label>
             <select
               value={formData.appointmentType}
               onChange={e => setFormData({ ...formData, appointmentType: e.target.value as 'consulta' | 'retorno' | '' })}
-              className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+              className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
               required
             >
               <option value="">Selecione...</option>
@@ -513,8 +513,8 @@ export default function AppointmentModal({
           </div>
 
           {/* --- BLOCO FINANCEIRO NOVO --- */}
-          <div className="bg-slate-50 dark:bg-[#141722]/50 p-4 rounded-xl border border-slate-200 dark:border-[#252a3a] space-y-4">
-            <h4 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] flex items-center gap-2">
+          <div className="bg-slate-50 dark:bg-[#18181b]/50 p-4 rounded-xl border border-slate-200 dark:border-[#2e2e33] space-y-4">
+            <h4 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] flex items-center gap-2">
               <Wallet className="w-4 h-4 text-emerald-500" />
               Financeiro do Agendamento
             </h4>
@@ -522,16 +522,16 @@ export default function AppointmentModal({
             <div className="grid grid-cols-2 gap-4">
               {/* Valor Total */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+                <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
                   Valor Total (R$)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-500 dark:text-[#828ca5] font-bold text-sm">R$</span>
+                  <span className="absolute left-3 top-2.5 text-gray-500 dark:text-[#a1a1aa] font-bold text-sm">R$</span>
                   <input
                     type="text"
                     value={formData.totalAmount}
                     onChange={e => handleMoneyInput('totalAmount', e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                     placeholder="0,00"
                   />
                 </div>
@@ -539,7 +539,7 @@ export default function AppointmentModal({
 
               {/* Valor Pago (Entrada) */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+                <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
                   Entrada / Pago (R$)
                 </label>
                 <div className="relative">
@@ -557,8 +557,8 @@ export default function AppointmentModal({
 
             {/* Resumo Restante */}
             {totalNum > 0 && (
-              <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-[#252a3a]">
-                <span className="text-sm text-slate-500 dark:text-[#828ca5]">Restante a pagar no local:</span>
+              <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-[#2e2e33]">
+                <span className="text-sm text-slate-500 dark:text-[#a1a1aa]">Restante a pagar no local:</span>
                 <span className={`text-lg font-black ${remaining > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
@@ -568,7 +568,7 @@ export default function AppointmentModal({
 
           {/* Motivo/Queixa */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+            <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
               Motivo / Queixa
             </label>
             <div className="relative">
@@ -576,7 +576,7 @@ export default function AppointmentModal({
               <textarea
                 value={formData.reason}
                 onChange={e => setFormData({...formData, reason: e.target.value})}
-                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all resize-none"
+                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all resize-none"
                 placeholder="Resumo dos sintomas ou motivo da consulta..."
                 rows={3}
               />
@@ -586,7 +586,7 @@ export default function AppointmentModal({
           {/* Resumo do Atendimento (somente leitura) */}
           {conversationSummary && (
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">
+              <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
                 Resumo do Atendimento (Chat)
               </label>
               <div className="relative">
@@ -594,7 +594,7 @@ export default function AppointmentModal({
                 <textarea
                   value={conversationSummary}
                   readOnly
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-gray-50 dark:bg-[#141722]/50 text-gray-600 dark:text-[#828ca5] resize-none cursor-not-allowed"
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-gray-50 dark:bg-[#18181b]/50 text-gray-600 dark:text-[#a1a1aa] resize-none cursor-not-allowed"
                   rows={4}
                 />
               </div>
@@ -603,10 +603,10 @@ export default function AppointmentModal({
         </form>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-[#252a3a] bg-gray-50 dark:bg-[#141722] flex justify-end gap-3">
+        <div className="p-4 border-t border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-500 dark:text-[#828ca5] hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-sm font-bold transition-colors"
+            className="px-4 py-2 text-gray-500 dark:text-[#a1a1aa] hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-sm font-bold transition-colors"
           >
             Cancelar
           </button>

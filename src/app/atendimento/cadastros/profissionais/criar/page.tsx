@@ -52,7 +52,7 @@ function CredentialsModal({ credentials, onClose }: { credentials: Credentials; 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#0d0f15] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-teal-600 to-cyan-500 px-6 py-5 text-white">
           <div className="flex items-center justify-between">
@@ -98,7 +98,7 @@ function CredentialsModal({ credentials, onClose }: { credentials: Credentials; 
             </div>
             <button
               onClick={() => copyToClipboard(credentials.email, 'email')}
-              className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1e2334] transition-colors shrink-0"
+              className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#27272a] transition-colors shrink-0"
             >
               {copiedField === 'email' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-slate-400" />}
             </button>
@@ -113,7 +113,7 @@ function CredentialsModal({ credentials, onClose }: { credentials: Credentials; 
             </div>
             <button
               onClick={() => copyToClipboard(credentials.password, 'password')}
-              className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#1e2334] transition-colors shrink-0"
+              className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#27272a] transition-colors shrink-0"
             >
               {copiedField === 'password' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-slate-400" />}
             </button>
@@ -131,7 +131,7 @@ function CredentialsModal({ credentials, onClose }: { credentials: Credentials; 
           </button>
           <button
             onClick={onClose}
-            className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-[#a0a8be] hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+            className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
           >
             Fechar
           </button>

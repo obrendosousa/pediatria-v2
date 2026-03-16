@@ -67,9 +67,9 @@ export default function CheckoutDetailPanel({
 
   if (!appointmentId) {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 dark:bg-[#111b21]/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-[#252a3a] p-8">
+      <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 dark:bg-[#111b21]/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-[#2e2e33] p-8">
         <User className="w-16 h-16 text-slate-300 dark:text-gray-600 mb-4" />
-        <p className="text-slate-500 dark:text-[#828ca5] font-medium text-center">
+        <p className="text-slate-500 dark:text-[#a1a1aa] font-medium text-center">
           Selecione um paciente na lista ao lado para ver o painel de fechamento.
         </p>
       </div>
@@ -78,7 +78,7 @@ export default function CheckoutDetailPanel({
 
   if (loading && !appointment) {
     return (
-      <div className="h-full flex items-center justify-center bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a]">
+      <div className="h-full flex items-center justify-center bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33]">
         <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
       </div>
     );
@@ -86,8 +86,8 @@ export default function CheckoutDetailPanel({
 
   if (!appointment) {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 dark:bg-[#111b21]/50 rounded-xl border border-slate-200 dark:border-[#252a3a] p-8">
-        <p className="text-slate-500 dark:text-[#828ca5] text-center">Paciente não encontrado.</p>
+      <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 dark:bg-[#111b21]/50 rounded-xl border border-slate-200 dark:border-[#2e2e33] p-8">
+        <p className="text-slate-500 dark:text-[#a1a1aa] text-center">Paciente não encontrado.</p>
       </div>
     );
   }
@@ -98,7 +98,7 @@ export default function CheckoutDetailPanel({
   const isFullyPaid = total <= 0 && (Number(appointment.amount_paid || 0) >= Number(appointment.total_amount || 0));
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
+    <div className="h-full flex flex-col bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
         {/* Bloco A – Entregáveis Médicos */}
         <section className="bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-200 dark:border-blue-800 p-4">
@@ -111,7 +111,7 @@ export default function CheckoutDetailPanel({
               type="button"
               onClick={() => setShowPrintModal(true)}
               disabled={!appointment.patient_id}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-[#141722] text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors font-bold text-xs shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-[#18181b] text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors font-bold text-xs shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Printer size={16} />
               Imprimir receitas e atestados
@@ -126,8 +126,8 @@ export default function CheckoutDetailPanel({
         </section>
 
         {/* Bloco B – Oportunidades e Lojinha */}
-        <section className="rounded-xl border border-slate-200 dark:border-[#252a3a] p-4 bg-slate-50/50 dark:bg-[#111b21]/50">
-          <h4 className="text-sm font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2 mb-3">
+        <section className="rounded-xl border border-slate-200 dark:border-[#2e2e33] p-4 bg-slate-50/50 dark:bg-[#111b21]/50">
+          <h4 className="text-sm font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2 mb-3">
             <ShoppingBag className="w-4 h-4 text-purple-500" />
             Indicações da {doctorName}
           </h4>
@@ -136,12 +136,12 @@ export default function CheckoutDetailPanel({
               {medicalCheckout!.checkout_items!.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#141722] rounded-lg border border-slate-200 dark:border-[#252a3a]"
+                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#18181b] rounded-lg border border-slate-200 dark:border-[#2e2e33]"
                 >
                   <span className="text-sm font-medium text-slate-800 dark:text-gray-200">
                     {item.products?.[0]?.name ?? 'Item'}
                   </span>
-                  <span className="text-xs text-slate-500 dark:text-[#828ca5]">
+                  <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">
                     R$ {item.products?.[0]?.price_sale != null ? Number(item.products[0].price_sale).toFixed(2) : '0,00'}
                     {item.quantity > 1 ? ` x ${item.quantity}` : ''}
                   </span>
@@ -152,9 +152,9 @@ export default function CheckoutDetailPanel({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-slate-500 dark:text-[#828ca5] mb-3">Nenhum produto indicado pela médica.</p>
+            <p className="text-xs text-slate-500 dark:text-[#a1a1aa] mb-3">Nenhum produto indicado pela médica.</p>
           )}
-          <label className="block text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2">
+          <label className="block text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase mb-2">
             Adicionar itens extras (lojinha)
           </label>
           <div className="relative mb-2">
@@ -164,7 +164,7 @@ export default function CheckoutDetailPanel({
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar produto..."
-              className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+              className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
             />
           </div>
           {search && (
@@ -172,11 +172,11 @@ export default function CheckoutDetailPanel({
               {filteredCatalog.map(product => (
                 <div
                   key={product.id}
-                  className="flex items-center justify-between p-2 rounded-lg border border-slate-200 dark:border-[#252a3a] hover:border-purple-300 dark:hover:border-purple-700 cursor-pointer bg-white dark:bg-[#141722]"
+                  className="flex items-center justify-between p-2 rounded-lg border border-slate-200 dark:border-[#2e2e33] hover:border-purple-300 dark:hover:border-purple-700 cursor-pointer bg-white dark:bg-[#18181b]"
                   onClick={() => addItem(product, product.category === 'servico' ? 'service' : 'product')}
                 >
                   <span className="text-sm font-medium text-slate-800 dark:text-gray-200">{product.name}</span>
-                  <span className="text-xs text-slate-500 dark:text-[#828ca5] mr-2">
+                  <span className="text-xs text-slate-500 dark:text-[#a1a1aa] mr-2">
                     R$ {product.price_sale.toFixed(2)}
                   </span>
                   <span className="p-1.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
@@ -225,7 +225,7 @@ export default function CheckoutDetailPanel({
         {/* Lista de itens na conta (resumo da cobrança) */}
         {selectedItems.length > 0 && (
           <section>
-            <h4 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2">
+            <h4 className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase mb-2">
               Resumo da cobrança
             </h4>
             <div className="space-y-2">
@@ -237,7 +237,7 @@ export default function CheckoutDetailPanel({
                       ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'
                       : item.type === 'medical_item'
                       ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'
-                      : 'bg-white dark:bg-[#141722] border-slate-200 dark:border-[#252a3a]'
+                      : 'bg-white dark:bg-[#18181b] border-slate-200 dark:border-[#2e2e33]'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
@@ -245,7 +245,7 @@ export default function CheckoutDetailPanel({
                     {item.type === 'debt' && <Wallet className="w-4 h-4 text-amber-500 shrink-0" />}
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800 dark:text-gray-200 truncate">{item.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-[#828ca5]">
+                      <p className="text-xs text-slate-500 dark:text-[#a1a1aa]">
                         R$ {item.price.toFixed(2)} {item.qty > 1 ? `x ${item.qty}` : ''}
                       </p>
                     </div>
@@ -259,7 +259,7 @@ export default function CheckoutDetailPanel({
                         <button
                           type="button"
                           onClick={() => removeItem(item)}
-                          className="p-1.5 rounded bg-slate-100 dark:bg-[#1e2334] hover:bg-slate-200 dark:hover:bg-gray-600"
+                          className="p-1.5 rounded bg-slate-100 dark:bg-[#27272a] hover:bg-slate-200 dark:hover:bg-gray-600"
                         >
                           <Minus size={12} />
                         </button>
@@ -267,7 +267,7 @@ export default function CheckoutDetailPanel({
                         <button
                           type="button"
                           onClick={() => item.product && addItem(item.product, item.type as 'product' | 'service')}
-                          className="p-1.5 rounded bg-slate-100 dark:bg-[#1e2334] hover:bg-slate-200 dark:hover:bg-gray-600"
+                          className="p-1.5 rounded bg-slate-100 dark:bg-[#27272a] hover:bg-slate-200 dark:hover:bg-gray-600"
                         >
                           <Plus size={12} />
                         </button>
@@ -290,16 +290,16 @@ export default function CheckoutDetailPanel({
         )}
 
         {/* Bloco D – Resumo financeiro (barra fixa no final do scroll) */}
-        <section className="mt-auto pt-4 border-t border-slate-200 dark:border-[#252a3a]">
+        <section className="mt-auto pt-4 border-t border-slate-200 dark:border-[#2e2e33]">
           <div className="flex flex-wrap items-center gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase mb-1">
                 Forma de pagamento
               </label>
               <select
                 value={paymentMethod}
                 onChange={e => setPaymentMethod(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-800 dark:text-gray-200 text-sm"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-800 dark:text-gray-200 text-sm"
               >
                 <option value="cash">Dinheiro</option>
                 <option value="pix">PIX</option>
@@ -315,8 +315,8 @@ export default function CheckoutDetailPanel({
                 </div>
               ) : total > 0 ? (
                 <div className="text-right">
-                  <p className="text-xs text-slate-500 dark:text-[#828ca5] uppercase">Total a pagar</p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-[#e8ecf4]">R$ {total.toFixed(2)}</p>
+                  <p className="text-xs text-slate-500 dark:text-[#a1a1aa] uppercase">Total a pagar</p>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-[#fafafa]">R$ {total.toFixed(2)}</p>
                 </div>
               ) : null}
             </div>

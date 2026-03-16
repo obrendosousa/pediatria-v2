@@ -66,7 +66,7 @@ export default function Navigation() {
 
   return (
     <div
-      className="flex shrink-0 flex-col bg-white dark:bg-[#0d0f15] border-r border-slate-200/80 dark:border-[#1e2334]/60 relative z-10 h-screen overflow-hidden sidebar-transition"
+      className="flex shrink-0 flex-col bg-white dark:bg-[#0a0a0c] border-r border-slate-200/80 dark:border-[#27272a]/60 relative z-10 h-screen overflow-hidden sidebar-transition"
       style={{
         width: isCollapsed ? '80px' : '272px',
         minWidth: isCollapsed ? '80px' : '272px',
@@ -75,23 +75,23 @@ export default function Navigation() {
     >
 
       {/* --- HEADER / LOGO --- */}
-      <div className="relative z-10 flex flex-col items-center pt-14 pb-5 px-5 border-b border-slate-100 dark:border-[#1e2334]/60 overflow-hidden">
+      <div className="relative z-10 flex flex-col items-center pt-14 pb-5 px-5 border-b border-slate-100 dark:border-[#27272a]/60 overflow-hidden">
 
         {/* Botão Toggle */}
         <button
           onClick={toggleSidebar}
-          className={`absolute ${isCollapsed ? 'top-3 right-2' : 'top-3 right-3'} z-50 w-7 h-7 rounded-full bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] shadow-sm flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 group cursor-pointer`}
+          className={`absolute ${isCollapsed ? 'top-3 right-2' : 'top-3 right-3'} z-50 w-7 h-7 rounded-full bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] shadow-sm flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 group cursor-pointer`}
           aria-label={isCollapsed ? 'Expandir menu' : 'Minimizar menu'}
         >
           {isCollapsed ? (
-            <ChevronRight className="w-4 h-4 text-slate-500 dark:text-[#828ca5]" />
+            <ChevronRight className="w-4 h-4 text-slate-500 dark:text-[#a1a1aa]" />
           ) : (
-            <ChevronLeft className="w-4 h-4 text-slate-500 dark:text-[#828ca5]" />
+            <ChevronLeft className="w-4 h-4 text-slate-500 dark:text-[#a1a1aa]" />
           )}
         </button>
 
         <div className="flex items-center gap-3 w-full transition-all duration-300">
-          <div className="relative w-11 h-11 flex items-center justify-center bg-white dark:bg-[#141722] rounded-xl shadow-sm border border-slate-100 dark:border-[#1e2334] p-1.5 transition-colors shrink-0">
+          <div className="relative w-11 h-11 flex items-center justify-center bg-white dark:bg-[#18181b] rounded-xl shadow-sm border border-slate-100 dark:border-[#27272a] p-1.5 transition-colors shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://i.imgur.com/W5fMxRM.png"
@@ -103,8 +103,8 @@ export default function Navigation() {
             className={`text-left sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
             style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
           >
-            <h2 className="text-sm font-bold text-slate-800 dark:text-[#e8ecf4] leading-tight">Centro Médico</h2>
-            <h2 className="text-sm font-bold text-slate-800 dark:text-[#e8ecf4] leading-tight">Aliança</h2>
+            <h2 className="text-sm font-bold text-slate-800 dark:text-[#fafafa] leading-tight">Centro Médico</h2>
+            <h2 className="text-sm font-bold text-slate-800 dark:text-[#fafafa] leading-tight">Aliança</h2>
           </div>
         </div>
 
@@ -124,7 +124,7 @@ export default function Navigation() {
         {hasMultipleModules && !isCollapsed && !isDoctor && (
           <Link
             href={isAtendimento ? '/' : '/atendimento'}
-            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-slate-400 dark:text-[#565d73] hover:text-slate-600 dark:hover:text-[#c0c7d8] hover:bg-slate-50 dark:hover:bg-white/5 transition-all duration-200 w-full justify-center cursor-pointer"
+            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-slate-400 dark:text-[#71717a] hover:text-slate-600 dark:hover:text-[#d4d4d8] hover:bg-slate-50 dark:hover:bg-white/5 transition-all duration-200 w-full justify-center cursor-pointer"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
             {isAtendimento ? 'Ir para Pediatria' : 'Ir para Sistema Geral'}
@@ -225,12 +225,12 @@ export default function Navigation() {
       </nav>
 
       {/* --- FOOTER --- */}
-      <div className="p-3 border-t border-slate-100 dark:border-[#1e2334]/60 bg-white dark:bg-[#0d0f15] transition-colors space-y-1">
+      <div className="p-3 border-t border-slate-100 dark:border-[#27272a]/60 bg-white dark:bg-[#0a0a0c] transition-colors space-y-1">
 
         {/* Botão de Tema */}
         <button
           onClick={toggleTheme}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all duration-200 group cursor-pointer relative`}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.06] transition-all duration-200 group cursor-pointer relative`}
           title={isCollapsed ? (theme === 'light' ? 'Modo Claro' : 'Modo Escuro') : undefined}
         >
           <div className="flex items-center gap-3">
@@ -240,7 +240,7 @@ export default function Navigation() {
               <Moon className="w-5 h-5 text-blue-400 shrink-0" />
             )}
             <span
-              className={`text-[13px] font-medium text-slate-600 dark:text-[#828ca5] group-hover:text-slate-800 dark:group-hover:text-[#e8ecf4] sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
+              className={`text-[13px] font-medium text-slate-600 dark:text-[#a1a1aa] group-hover:text-slate-800 dark:group-hover:text-[#fafafa] sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
               style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
             >
               {theme === 'light' ? 'Modo Claro' : 'Modo Escuro'}
@@ -254,9 +254,9 @@ export default function Navigation() {
           </div>
 
           {isCollapsed && (
-            <div className="absolute left-full ml-2 px-3 py-2 bg-[#1a1e2e] text-[#e8ecf4] text-xs font-medium rounded-lg border border-[#252a3a] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
+            <div className="absolute left-full ml-2 px-3 py-2 bg-[#1f1f23] text-[#fafafa] text-xs font-medium rounded-lg border border-[#2e2e33] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
               {theme === 'light' ? 'Modo Claro' : 'Modo Escuro'}
-              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#1a1e2e]"></div>
+              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#1f1f23]"></div>
             </div>
           )}
         </button>
@@ -269,18 +269,18 @@ export default function Navigation() {
           title={isCollapsed ? 'Sair' : undefined}
         >
           <div className="flex items-center gap-3">
-            <LogOut className="w-5 h-5 text-slate-400 dark:text-[#565d73] group-hover:text-red-500 dark:group-hover:text-red-400 shrink-0" />
+            <LogOut className="w-5 h-5 text-slate-400 dark:text-[#71717a] group-hover:text-red-500 dark:group-hover:text-red-400 shrink-0" />
             <span
-              className={`text-[13px] font-medium text-slate-600 dark:text-[#828ca5] group-hover:text-red-600 dark:group-hover:text-red-400 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
+              className={`text-[13px] font-medium text-slate-600 dark:text-[#a1a1aa] group-hover:text-red-600 dark:group-hover:text-red-400 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
               style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
             >
               Sair
             </span>
           </div>
           {isCollapsed && (
-            <div className="absolute left-full ml-2 px-3 py-2 bg-[#1a1e2e] text-[#e8ecf4] text-xs font-medium rounded-lg border border-[#252a3a] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
+            <div className="absolute left-full ml-2 px-3 py-2 bg-[#1f1f23] text-[#fafafa] text-xs font-medium rounded-lg border border-[#2e2e33] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
               Sair
-              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#1a1e2e]"></div>
+              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#1f1f23]"></div>
             </div>
           )}
         </button>
@@ -298,7 +298,7 @@ function MenuGroup({ title, children }: { title: string, children: React.ReactNo
         className={`px-3 mb-2.5 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mb-0' : 'opacity-100 h-auto mb-2.5'}`}
         style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
       >
-        <p className="text-[11px] font-semibold text-slate-400 dark:text-[#565d73] uppercase tracking-widest">
+        <p className="text-[11px] font-semibold text-slate-400 dark:text-[#71717a] uppercase tracking-widest">
           {title}
         </p>
       </div>
@@ -327,7 +327,7 @@ function NavItem({ icon: Icon, label, path, active, badge, moduleTheme }: NavIte
         relative flex items-center px-3 py-3 rounded-xl transition-all duration-200 text-[13.5px] font-medium overflow-hidden
         ${active
           ? `${moduleTheme.activeGradient} text-white ${moduleTheme.shadowActive}`
-          : 'text-slate-600 dark:text-[#828ca5] hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-[#e8ecf4]'}
+          : 'text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/[0.06] hover:text-slate-900 dark:hover:text-[#fafafa]'}
       `}>
         {/* Active indicator bar */}
         {active && (
@@ -335,7 +335,7 @@ function NavItem({ icon: Icon, label, path, active, badge, moduleTheme }: NavIte
         )}
 
         <Icon
-          className={`w-5 h-5 transition-colors duration-200 shrink-0 ${active ? 'text-white' : 'text-slate-400 dark:text-[#565d73]'}`}
+          className={`w-5 h-5 transition-colors duration-200 shrink-0 ${active ? 'text-white' : 'text-slate-400 dark:text-[#71717a]'}`}
         />
         <span
           className={`sidebar-content-transition whitespace-nowrap overflow-hidden inline-block ${isCollapsed ? 'opacity-0 w-0 ml-0' : 'opacity-100 w-auto ml-3'}`}
@@ -348,16 +348,16 @@ function NavItem({ icon: Icon, label, path, active, badge, moduleTheme }: NavIte
           <div
             className={`absolute ${isCollapsed ? 'right-1 top-1' : 'right-2.5 top-1/2 -translate-y-1/2'} transition-all duration-500 ease-in-out z-10`}
           >
-            <span className={`flex ${badge > 99 ? 'min-w-[28px] px-1.5' : 'h-5 w-5'} items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#0d0f15]`}>
+            <span className={`flex ${badge > 99 ? 'min-w-[28px] px-1.5' : 'h-5 w-5'} items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#0a0a0c]`}>
               {badge > 99 ? '99+' : badge}
             </span>
           </div>
         )}
 
         {isCollapsed && (
-          <div className="absolute left-full ml-2 px-3 py-2 bg-[#1a1e2e] text-[#e8ecf4] text-xs font-medium rounded-lg border border-[#252a3a] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
+          <div className="absolute left-full ml-2 px-3 py-2 bg-[#1f1f23] text-[#fafafa] text-xs font-medium rounded-lg border border-[#2e2e33] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
             {label}
-            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#1a1e2e]"></div>
+            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#1f1f23]"></div>
           </div>
         )}
       </div>

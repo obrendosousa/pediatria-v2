@@ -104,7 +104,7 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
     <>
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] flex items-center gap-2">
+        <h3 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] flex items-center gap-2">
           <Phone className="w-4 h-4 text-rose-500" />
           Números de Contato ({phones.length})
         </h3>
@@ -130,7 +130,7 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
                 setNewPhone(formatted);
               }}
               placeholder="(00) 00000-0000"
-              className="flex-1 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="flex-1 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               maxLength={15}
             />
             <button
@@ -161,7 +161,7 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
       {phones.length === 0 ? (
         <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/30 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
           <Phone className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-          <p className="text-sm text-slate-500 dark:text-[#828ca5]">Nenhum número cadastrado</p>
+          <p className="text-sm text-slate-500 dark:text-[#a1a1aa]">Nenhum número cadastrado</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -171,7 +171,7 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
               className={`p-3 rounded-lg border transition-all ${
                 phone.is_primary
                   ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                  : 'bg-white dark:bg-[#0d0f15] border-slate-200 dark:border-slate-700'
+                  : 'bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-slate-700'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -183,7 +183,7 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
                   )}
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-800 dark:text-[#e8ecf4]">
+                      <span className="font-semibold text-slate-800 dark:text-[#fafafa]">
                         {phone.phone_formatted || phone.phone}
                       </span>
                       {phone.is_primary && (
@@ -193,7 +193,7 @@ export function PatientPhonesManager({ patientId, onPhoneAdded, onPhoneRemoved }
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-slate-500 dark:text-[#828ca5]">
+                      <span className="text-[10px] text-slate-500 dark:text-[#a1a1aa]">
                         {phone.source === 'chat' && '💬 Chat'}
                         {phone.source === 'appointment' && '📅 Agendamento'}
                         {phone.source === 'patient_registration' && '📝 Cadastro'}

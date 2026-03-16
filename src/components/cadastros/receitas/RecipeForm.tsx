@@ -30,10 +30,10 @@ interface RecipeFormProps {
 // --- Styles ---
 
 const inputClass =
-  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 
 const labelClass =
-  'text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 ml-1 block uppercase tracking-wider';
+  'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
 
 function RequiredBadge() {
   return (
@@ -139,21 +139,21 @@ export default function RecipeForm({
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => router.push('/atendimento/cadastros/modelos/receitas')}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-500 dark:text-[#828ca5]" />
+            <ArrowLeft className="w-5 h-5 text-slate-500 dark:text-[#a1a1aa]" />
           </button>
           <div>
-            <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
+            <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
               <Pill className="w-5 h-5 text-teal-600" />
               {title}
             </h1>
-            <p className="text-xs text-slate-400 dark:text-[#565d73]">{subtitle}</p>
+            <p className="text-xs text-slate-400 dark:text-[#71717a]">{subtitle}</p>
           </div>
         </div>
       </div>
@@ -163,7 +163,7 @@ export default function RecipeForm({
         {/* Left column: Form */}
         <div className="flex-1 min-w-0 overflow-y-auto p-6 custom-scrollbar">
           <div className="max-w-3xl space-y-4">
-            <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-4">
+            <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-4">
               {/* Nome */}
               <div>
                 <label className={labelClass}>
@@ -199,7 +199,7 @@ export default function RecipeForm({
         {/* Right column: Side panel */}
         <div className="w-80 shrink-0">
           {/* Custom tab switcher above the panel */}
-          <div className="flex border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
+          <div className="flex border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
             {MAIN_TABS.map(tab => (
               <button
                 key={tab.key}
@@ -208,7 +208,7 @@ export default function RecipeForm({
                 className={`flex-1 px-3 py-2.5 text-xs font-bold uppercase tracking-wide transition-colors ${
                   activeTab === tab.key
                     ? 'text-teal-600 dark:text-teal-400 border-b-2 border-teal-600 dark:border-teal-400'
-                    : 'text-slate-400 dark:text-[#565d73] hover:text-slate-600 dark:hover:text-gray-300'
+                    : 'text-slate-400 dark:text-[#71717a] hover:text-slate-600 dark:hover:text-gray-300'
                 }`}
               >
                 {tab.label}
@@ -227,7 +227,7 @@ export default function RecipeForm({
       </form>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15] flex justify-end">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex justify-end">
         <button
           type="submit"
           disabled={saving}

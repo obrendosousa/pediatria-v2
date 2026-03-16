@@ -17,7 +17,7 @@ import { NotificationToast, useNotifications } from '@/components/NotificationTo
 
 // CORES ADAPTADAS PARA DARK MODE
 const NOTES_COLORS: any = {
-  white: 'bg-white border-slate-200 text-slate-800 dark:bg-[#141722] dark:border-gray-600 dark:text-[#e8ecf4]',
+  white: 'bg-white border-slate-200 text-slate-800 dark:bg-[#18181b] dark:border-gray-600 dark:text-[#fafafa]',
   yellow: 'bg-yellow-100 border-yellow-200 text-yellow-900 dark:bg-yellow-900/20 dark:border-yellow-700/50 dark:text-yellow-200',
   rose: 'bg-rose-100 border-rose-200 text-rose-900 dark:bg-rose-900/20 dark:border-rose-700/50 dark:text-rose-200',
   blue: 'bg-blue-100 border-blue-200 text-blue-900 dark:bg-blue-900/20 dark:border-blue-700/50 dark:text-blue-200',
@@ -318,10 +318,10 @@ export default function TasksPage() {
                   )}
               </div>
               <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => handleToggleStatus(task.id, task.status, false, false)} className={`p-1.5 rounded-lg hover:bg-black/10 transition-colors ${task.status === 'done' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300' : 'text-slate-400 dark:text-[#828ca5]'}`}>
+                  <button onClick={() => handleToggleStatus(task.id, task.status, false, false)} className={`p-1.5 rounded-lg hover:bg-black/10 transition-colors ${task.status === 'done' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300' : 'text-slate-400 dark:text-[#a1a1aa]'}`}>
                       {task.status === 'done' ? <Undo2 className="w-4 h-4"/> : <Check className="w-4 h-4" />}
                   </button>
-                  <button onClick={() => requestDelete(task.id)} className="p-1.5 text-slate-300 dark:text-[#565d73] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                  <button onClick={() => requestDelete(task.id)} className="p-1.5 text-slate-300 dark:text-[#71717a] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
                       <Trash2 className="w-4 h-4"/>
                   </button>
               </div>
@@ -351,12 +351,12 @@ export default function TasksPage() {
       )}
 
       {/* Header */}
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0d0f15] border-b border-slate-100 dark:border-[#1e2334] shadow-sm z-20 transition-colors">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0a0a0c] border-b border-slate-100 dark:border-[#27272a] shadow-sm z-20 transition-colors">
         <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 rounded-lg"><CheckSquare className="w-5 h-5" /></div>
             <div>
-                <h1 className="text-base font-bold text-slate-800 dark:text-[#e8ecf4] leading-none">Mesa da Secretária</h1>
-                <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-0.5">Organize seu dia e as ordens da clínica</p>
+                <h1 className="text-base font-bold text-slate-800 dark:text-[#fafafa] leading-none">Mesa da Secretária</h1>
+                <p className="text-xs text-slate-500 dark:text-[#a1a1aa] mt-0.5">Organize seu dia e as ordens da clínica</p>
             </div>
         </div>
       </div>
@@ -364,17 +364,17 @@ export default function TasksPage() {
       <div className="flex-1 flex flex-col sm:flex-row gap-4 sm:gap-6 p-3 sm:p-6 overflow-hidden">
         
         {/* COLUNA 1: AGENDA (TIMELINE GRADE) */}
-        <div className="flex-1 flex flex-col bg-white dark:bg-[#0d0f15] rounded-xl sm:rounded-2xl border border-slate-200 dark:border-[#252a3a] shadow-sm overflow-hidden relative transition-colors">
-            <div className="p-3 sm:p-4 border-b border-slate-100 dark:border-[#252a3a] flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
+        <div className="flex-1 flex flex-col bg-white dark:bg-[#0a0a0c] rounded-xl sm:rounded-2xl border border-slate-200 dark:border-[#2e2e33] shadow-sm overflow-hidden relative transition-colors">
+            <div className="p-3 sm:p-4 border-b border-slate-100 dark:border-[#2e2e33] flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
-                    <button onClick={() => changeDate(-1)} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-500 dark:text-[#828ca5] transition-colors"><ChevronLeft className="w-4 h-4"/></button>
-                    <h2 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-[#e8ecf4] capitalize min-w-[120px] sm:min-w-[140px] text-center">{currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</h2>
-                    <button onClick={() => changeDate(1)} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-500 dark:text-[#828ca5] transition-colors"><ChevronRight className="w-4 h-4"/></button>
+                    <button onClick={() => changeDate(-1)} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-500 dark:text-[#a1a1aa] transition-colors"><ChevronLeft className="w-4 h-4"/></button>
+                    <h2 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-[#fafafa] capitalize min-w-[120px] sm:min-w-[140px] text-center">{currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</h2>
+                    <button onClick={() => changeDate(1)} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-500 dark:text-[#a1a1aa] transition-colors"><ChevronRight className="w-4 h-4"/></button>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
-                    <div className="flex bg-slate-100 dark:bg-[#141722] p-1 rounded-lg">
-                        <button onClick={() => setViewMode('day')} className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs font-bold transition-all ${viewMode === 'day' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-400 dark:text-[#565d73]'}`}>Dia</button>
-                        <button onClick={() => setViewMode('month')} className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs font-bold transition-all ${viewMode === 'month' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-400 dark:text-[#565d73]'}`}>Mês</button>
+                    <div className="flex bg-slate-100 dark:bg-[#18181b] p-1 rounded-lg">
+                        <button onClick={() => setViewMode('day')} className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs font-bold transition-all ${viewMode === 'day' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-400 dark:text-[#71717a]'}`}>Dia</button>
+                        <button onClick={() => setViewMode('month')} className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs font-bold transition-all ${viewMode === 'month' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-400 dark:text-[#71717a]'}`}>Mês</button>
                     </div>
                     <button onClick={() => { setModalType('general'); setModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold shadow-md flex items-center gap-1 transition-colors"><Plus className="w-3 h-3"/> <span className="hidden sm:inline">Tarefa</span></button>
                 </div>
@@ -388,7 +388,7 @@ export default function TasksPage() {
                             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, index) => (
                                 <div 
                                     key={`day-header-${index}`} 
-                                    className="text-center text-[10px] sm:text-xs font-bold text-slate-500 dark:text-[#828ca5] py-2 px-1"
+                                    className="text-center text-[10px] sm:text-xs font-bold text-slate-500 dark:text-[#a1a1aa] py-2 px-1"
                                 >
                                     {day}
                                 </div>
@@ -422,7 +422,7 @@ export default function TasksPage() {
                                             transition-all hover:scale-[1.02] hover:shadow-md
                                             ${isToday 
                                                 ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 dark:border-indigo-600 shadow-sm' 
-                                                : 'border-slate-200 dark:border-[#252a3a] dark:bg-[#141722] hover:border-indigo-300 dark:hover:border-indigo-600 bg-white'
+                                                : 'border-slate-200 dark:border-[#2e2e33] dark:bg-[#18181b] hover:border-indigo-300 dark:hover:border-indigo-600 bg-white'
                                             }
                                         `}
                                     >
@@ -432,7 +432,7 @@ export default function TasksPage() {
                                                 text-xs sm:text-sm font-bold leading-none
                                                 ${isToday 
                                                     ? 'text-indigo-600 dark:text-indigo-300' 
-                                                    : 'text-slate-700 dark:text-[#a0a8be]'
+                                                    : 'text-slate-700 dark:text-[#d4d4d8]'
                                                 }
                                             `}>
                                                 {d.getDate()}
@@ -475,8 +475,8 @@ export default function TasksPage() {
                 {viewMode === 'day' && (
                     <div className="pb-10 min-h-full">
                         {tasksByHour['none'] && tasksByHour['none'].length > 0 && (
-                            <div className="p-4 border-b border-slate-100 dark:border-[#252a3a] bg-white/50 dark:bg-[#202c33]/50 mb-2">
-                                <h4 className="text-[10px] font-bold uppercase text-slate-400 dark:text-[#565d73] mb-2">Sem Horário Definido</h4>
+                            <div className="p-4 border-b border-slate-100 dark:border-[#2e2e33] bg-white/50 dark:bg-[#202c33]/50 mb-2">
+                                <h4 className="text-[10px] font-bold uppercase text-slate-400 dark:text-[#71717a] mb-2">Sem Horário Definido</h4>
                                 <div className="space-y-2">
                                     {tasksByHour['none'].map(task => renderTaskCard(task))}
                                 </div>
@@ -486,13 +486,13 @@ export default function TasksPage() {
                             const tasksInThisHour = tasksByHour[hour] || [];
                             const isNow = isCurrentHour(hour);
                             return (
-                                <div key={hour} className="flex min-h-[100px] border-b border-slate-100 dark:border-[#1e2334] relative group">
+                                <div key={hour} className="flex min-h-[100px] border-b border-slate-100 dark:border-[#27272a] relative group">
                                     {isNow && (
                                         <div className="absolute left-0 right-0 border-t-2 border-red-500 z-10 pointer-events-none flex items-center" style={{ top: getCurrentLinePosition() }}>
                                             <div className="w-3 h-3 bg-red-500 rounded-full -ml-1.5"></div>
                                         </div>
                                     )}
-                                    <div className="w-16 border-r border-slate-100 dark:border-[#1e2334] py-2 text-right pr-3 text-xs font-bold text-slate-400 dark:text-[#565d73] bg-white/50 dark:bg-[#0d0f15]">
+                                    <div className="w-16 border-r border-slate-100 dark:border-[#27272a] py-2 text-right pr-3 text-xs font-bold text-slate-400 dark:text-[#71717a] bg-white/50 dark:bg-[#0a0a0c]">
                                         {hour}:00
                                     </div>
                                     <div className="flex-1 p-2 bg-white/20 dark:bg-[#111b21] hover:bg-white/60 dark:hover:bg-[#202c33] transition-colors relative">
@@ -509,16 +509,16 @@ export default function TasksPage() {
         </div>
 
         {/* COLUNA 2: MURAL (Drag & Drop) */}
-        <div className="w-full sm:w-80 bg-slate-50 dark:bg-[#0d0f15] rounded-xl sm:rounded-2xl border border-slate-200 dark:border-[#252a3a] flex flex-col overflow-hidden transition-colors">
-            <div className="p-4 border-b border-slate-200 dark:border-[#252a3a] bg-white/50 dark:bg-[#202c33] flex flex-col gap-3">
+        <div className="w-full sm:w-80 bg-slate-50 dark:bg-[#0a0a0c] rounded-xl sm:rounded-2xl border border-slate-200 dark:border-[#2e2e33] flex flex-col overflow-hidden transition-colors">
+            <div className="p-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white/50 dark:bg-[#202c33] flex flex-col gap-3">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider flex items-center gap-2"><StickyNote className="w-4 h-4" /> Mural</h3>
+                    <h3 className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wider flex items-center gap-2"><StickyNote className="w-4 h-4" /> Mural</h3>
                     <div className="flex bg-slate-200 dark:bg-[#111b21] p-0.5 rounded-lg">
-                        <button onClick={() => setNotesFilter('active')} className={`text-[10px] font-bold px-2 py-0.5 rounded transition-all ${notesFilter === 'active' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-500 dark:text-[#565d73]'}`}>Ativos</button>
-                        <button onClick={() => setNotesFilter('done')} className={`text-[10px] font-bold px-2 py-0.5 rounded transition-all ${notesFilter === 'done' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-500 dark:text-[#565d73]'}`}>Feitos</button>
+                        <button onClick={() => setNotesFilter('active')} className={`text-[10px] font-bold px-2 py-0.5 rounded transition-all ${notesFilter === 'active' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-500 dark:text-[#71717a]'}`}>Ativos</button>
+                        <button onClick={() => setNotesFilter('done')} className={`text-[10px] font-bold px-2 py-0.5 rounded transition-all ${notesFilter === 'done' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-500 dark:text-[#71717a]'}`}>Feitos</button>
                     </div>
                 </div>
-                <button onClick={() => { setModalType('sticky_note'); setModalOpen(true); }} className="w-full bg-white dark:bg-[#141722] border border-slate-200 dark:border-gray-600 hover:border-rose-300 dark:hover:border-rose-500/50 text-rose-500 px-3 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-all"><Plus className="w-3 h-3"/> Criar Nota Rápida</button>
+                <button onClick={() => { setModalType('sticky_note'); setModalOpen(true); }} className="w-full bg-white dark:bg-[#18181b] border border-slate-200 dark:border-gray-600 hover:border-rose-300 dark:hover:border-rose-500/50 text-rose-500 px-3 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-all"><Plus className="w-3 h-3"/> Criar Nota Rápida</button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar relative" ref={listRef}>

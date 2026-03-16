@@ -215,7 +215,7 @@ export default function FilePreviewModal({ files, onSend, onClose, onAddMore }: 
           onClick={onClose}
           className="w-10 h-10 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer"
         >
-          <X size={22} className="text-gray-500 dark:text-[#828ca5]" />
+          <X size={22} className="text-gray-500 dark:text-[#a1a1aa]" />
         </button>
         {!isVisual && file && (
           <span className="ml-4 text-[15px] text-gray-800 dark:text-gray-200 font-medium truncate">
@@ -223,7 +223,7 @@ export default function FilePreviewModal({ files, onSend, onClose, onAddMore }: 
           </span>
         )}
         {files.length > 1 && (
-          <span className="ml-auto text-[13px] text-gray-500 dark:text-[#828ca5]">
+          <span className="ml-auto text-[13px] text-gray-500 dark:text-[#a1a1aa]">
             {selectedIndex + 1} / {files.length}
           </span>
         )}
@@ -254,7 +254,7 @@ export default function FilePreviewModal({ files, onSend, onClose, onAddMore }: 
               <p className="text-gray-800 dark:text-gray-200 font-medium text-[15px] max-w-[300px] break-all leading-snug">
                 {file.name}
               </p>
-              <p className="text-gray-500 dark:text-[#828ca5] text-[13px] mt-1.5">
+              <p className="text-gray-500 dark:text-[#a1a1aa] text-[13px] mt-1.5">
                 {docInfo.label} &bull; {formatFileSize(file.size)}
               </p>
             </div>
@@ -266,8 +266,8 @@ export default function FilePreviewModal({ files, onSend, onClose, onAddMore }: 
       <div className="shrink-0 pb-4 relative z-10 bg-[var(--chat-surface)] dark:bg-[var(--chat-surface)]">
         {/* Caption input */}
         <div className="flex items-center gap-2 mx-auto max-w-[600px] px-4 mb-4 pt-4">
-          <div className="flex-1 flex items-center bg-gray-100 dark:bg-[#141722] rounded-lg px-3 h-[42px]">
-            <Smile size={20} className="text-gray-400 dark:text-[#565d73] shrink-0 mr-2" />
+          <div className="flex-1 flex items-center bg-gray-100 dark:bg-[#18181b] rounded-lg px-3 h-[42px]">
+            <Smile size={20} className="text-gray-400 dark:text-[#71717a] shrink-0 mr-2" />
             <input
               ref={captionRef}
               type="text"
@@ -299,7 +299,7 @@ export default function FilePreviewModal({ files, onSend, onClose, onAddMore }: 
                 {/* X para remover do lote */}
                 <button
                   onClick={(e) => { e.stopPropagation(); handleRemoveFile(i); }}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-red-500 text-gray-600 dark:text-[#a0a8be] hover:text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity shadow-md cursor-pointer z-10"
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-red-500 text-gray-600 dark:text-[#d4d4d8] hover:text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity shadow-md cursor-pointer z-10"
                 >
                   <X size={10} strokeWidth={3} />
                 </button>
@@ -309,7 +309,7 @@ export default function FilePreviewModal({ files, onSend, onClose, onAddMore }: 
             {/* Botão + adicionar mais */}
             <button
               onClick={() => onAddMore ? onAddMore() : addMoreRef.current?.click()}
-              className="w-[52px] h-[52px] rounded-md border-2 border-dashed border-gray-400 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-[#565d73] hover:border-[var(--chat-accent)]/40 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer shrink-0"
+              className="w-[52px] h-[52px] rounded-md border-2 border-dashed border-gray-400 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-[#71717a] hover:border-[var(--chat-accent)]/40 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer shrink-0"
             >
               <span className="text-2xl leading-none font-light">+</span>
             </button>

@@ -75,7 +75,7 @@ export default function AddressCepLookup({ value, onChange, disabled = false }: 
     }
   }, [value, onChange, update]);
 
-  const inputClass = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50 disabled:cursor-not-allowed';
+  const inputClass = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
     <div className="space-y-4">
@@ -104,7 +104,7 @@ export default function AddressCepLookup({ value, onChange, disabled = false }: 
 
         {/* Estado */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">Estado</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">Estado</label>
           <select
             value={value.state}
             onChange={e => update('state', e.target.value)}
@@ -120,7 +120,7 @@ export default function AddressCepLookup({ value, onChange, disabled = false }: 
 
         {/* Cidade */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">Cidade</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">Cidade</label>
           <input
             type="text"
             value={value.city}
@@ -135,7 +135,7 @@ export default function AddressCepLookup({ value, onChange, disabled = false }: 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Logradouro */}
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">Logradouro</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">Logradouro</label>
           <input
             type="text"
             value={value.street}
@@ -150,7 +150,7 @@ export default function AddressCepLookup({ value, onChange, disabled = false }: 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Bairro */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">Bairro</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">Bairro</label>
           <input
             type="text"
             value={value.neighborhood}
@@ -163,7 +163,7 @@ export default function AddressCepLookup({ value, onChange, disabled = false }: 
 
         {/* Número */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">Número</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">Número</label>
           <input
             type="text"
             value={value.number}
@@ -176,7 +176,7 @@ export default function AddressCepLookup({ value, onChange, disabled = false }: 
 
         {/* Complemento */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">Complemento</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">Complemento</label>
           <input
             type="text"
             value={value.complement}

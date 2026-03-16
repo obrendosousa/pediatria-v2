@@ -255,31 +255,31 @@ export function AttendanceForm({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         {/* Header com data */}
         <div className="flex justify-end mb-3">
-          <span className="text-xs text-slate-500 dark:text-[#828ca5] uppercase">
+          <span className="text-xs text-slate-500 dark:text-[#a1a1aa] uppercase">
             {currentDate}
           </span>
         </div>
 
       {/* Seção: Anamnese */}
-      <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
         <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200 mb-3">Atendimento</h2>
         
         {/* Queixa Principal */}
         <div>
-          <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
             Queixa principal:
           </label>
           <input
             {...register('chief_complaint')}
             type="text"
-            className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             placeholder="Digite a queixa principal..."
           />
         </div>
 
         {/* História da Moléstia Atual */}
         <div>
-          <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-2">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-2">
             História da moléstia atual:
           </label>
           <RichTextEditor
@@ -294,7 +294,7 @@ export function AttendanceForm({
 
         {/* Histórico e Antecedentes */}
         <div>
-          <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-2">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-2">
             Histórico e antecedentes:
           </label>
           <RichTextEditor
@@ -309,12 +309,12 @@ export function AttendanceForm({
       </div>
 
       {/* Seção: Exame Físico & Vitals */}
-      <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
         <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200 mb-3">Exame físico</h2>
 
         {/* Exame Físico */}
         <div>
-          <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-2">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-2">
             Exame físico:
           </label>
           <RichTextEditor
@@ -334,27 +334,27 @@ export function AttendanceForm({
           </label>
           <div className="flex items-end gap-3">
             <div className="w-20">
-              <label className="block text-xs text-slate-600 dark:text-[#828ca5] mb-1">Peso</label>
+              <label className="block text-xs text-slate-600 dark:text-[#a1a1aa] mb-1">Peso</label>
               <div className="flex items-center gap-1">
                 <input
                   {...register('weight', { valueAsNumber: true })}
                   type="number"
                   step="0.1"
-                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center"
+                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center"
                   placeholder="0"
                 />
                 <span className="text-xs text-slate-500">kg</span>
               </div>
             </div>
             <div className="w-20">
-              <label className="block text-xs text-slate-600 dark:text-[#828ca5] mb-1">Altura</label>
+              <label className="block text-xs text-slate-600 dark:text-[#a1a1aa] mb-1">Altura</label>
               <div className="flex items-center gap-1">
                 <input
                   type="text"
                   value={formatHeight(heightDigitsState)}
                   onKeyDown={handleHeightKeyDown}
                   readOnly
-                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center cursor-text"
+                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center cursor-text"
                   placeholder="0,00"
                 />
                 <span className="text-xs text-slate-500">m</span>
@@ -370,7 +370,7 @@ export function AttendanceForm({
       </div>
 
       {/* Seção: Diagnóstico */}
-      <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
         <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200 mb-3">Diagnóstico</h2>
         <DiagnosisSelect
           value={watch('diagnosis')}
@@ -388,7 +388,7 @@ export function AttendanceForm({
               >
                 <div>
                   <span className="font-medium text-blue-700 dark:text-blue-300">{diag.code}</span>
-                  <span className="text-sm text-slate-600 dark:text-[#828ca5] ml-2">{diag.description}</span>
+                  <span className="text-sm text-slate-600 dark:text-[#a1a1aa] ml-2">{diag.description}</span>
                 </div>
                 <button
                   type="button"
@@ -411,7 +411,7 @@ export function AttendanceForm({
       </div>
 
       {/* Seção: Condutas */}
-      <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
         <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200 mb-3">Condutas</h2>
         <RichTextEditor
           value={watch('conducts')}
@@ -424,7 +424,7 @@ export function AttendanceForm({
       </div>
 
         {/* Barra de Ações */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#252a3a] -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#2e2e33] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

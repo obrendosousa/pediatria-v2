@@ -48,39 +48,39 @@ export default function AtendimentoChatPage() {
                 <Stethoscope className="w-10 h-10 text-white" strokeWidth={1.8} />
               </div>
 
-              <h1 className="text-2xl font-bold text-slate-800 dark:text-[#e8ecf4] mb-2 transition-colors">
+              <h1 className="text-2xl font-bold text-slate-800 dark:text-[#fafafa] mb-2 transition-colors">
                 Atendimento — Clínica Geral
               </h1>
-              <p className="text-slate-500 dark:text-[#828ca5] text-sm leading-relaxed mb-8 transition-colors">
+              <p className="text-slate-500 dark:text-[#a1a1aa] text-sm leading-relaxed mb-8 transition-colors">
                 Selecione uma conversa ao lado para iniciar o atendimento.
               </p>
 
               {/* Status Compactos */}
               <div className="grid grid-cols-2 gap-3 w-full mb-8">
                 {/* Card IA */}
-                <div className="bg-white dark:bg-[#141722] p-3.5 rounded-xl border border-slate-100 dark:border-[#252a3a] shadow-sm flex items-center gap-3 hover:border-teal-200 dark:hover:border-teal-500/30 transition-all cursor-default">
+                <div className="bg-white dark:bg-[#18181b] p-3.5 rounded-xl border border-slate-100 dark:border-[#2e2e33] shadow-sm flex items-center gap-3 hover:border-teal-200 dark:hover:border-teal-500/30 transition-all cursor-default">
                     <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg text-teal-600 dark:text-teal-300">
                         <Activity className="w-4 h-4"/>
                     </div>
                     <div className="text-left">
-                        <p className="text-[10px] font-semibold text-slate-400 dark:text-[#565d73] uppercase tracking-wider">Copiloto IA</p>
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-[#71717a] uppercase tracking-wider">Copiloto IA</p>
                         <p className="text-xs font-bold text-teal-700 dark:text-teal-300">Ativa</p>
                     </div>
                 </div>
 
                 {/* Card Conexão */}
-                <div className="bg-white dark:bg-[#141722] p-3.5 rounded-xl border border-slate-100 dark:border-[#252a3a] shadow-sm flex items-center gap-3 hover:border-cyan-200 dark:hover:border-cyan-500/30 transition-all cursor-default">
+                <div className="bg-white dark:bg-[#18181b] p-3.5 rounded-xl border border-slate-100 dark:border-[#2e2e33] shadow-sm flex items-center gap-3 hover:border-cyan-200 dark:hover:border-cyan-500/30 transition-all cursor-default">
                     <div className="p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg text-cyan-600 dark:text-cyan-300">
                         <Zap className="w-4 h-4"/>
                     </div>
                     <div className="text-left">
-                        <p className="text-[10px] font-semibold text-slate-400 dark:text-[#565d73] uppercase tracking-wider">WhatsApp</p>
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-[#71717a] uppercase tracking-wider">WhatsApp</p>
                         <p className="text-xs font-bold text-cyan-700 dark:text-cyan-300">Conectado</p>
                     </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400 dark:text-[#565d73] bg-white/80 dark:bg-[#202c33]/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-100 dark:border-[#252a3a] transition-colors">
+              <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400 dark:text-[#71717a] bg-white/80 dark:bg-[#202c33]/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-100 dark:border-[#2e2e33] transition-colors">
                 <ShieldCheck className="w-3.5 h-3.5" /> Criptografia ponta a ponta
               </div>
 

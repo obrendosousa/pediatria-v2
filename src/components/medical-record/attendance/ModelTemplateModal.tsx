@@ -114,7 +114,7 @@ function ExamsEditor({
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-[80px_1fr_70px_32px] gap-2 text-xs font-medium text-slate-500 dark:text-[#828ca5] uppercase px-1">
+      <div className="grid grid-cols-[80px_1fr_70px_32px] gap-2 text-xs font-medium text-slate-500 dark:text-[#a1a1aa] uppercase px-1">
         <span>Código</span>
         <span>Nome do Exame</span>
         <span>Qtd.</span>
@@ -127,21 +127,21 @@ function ExamsEditor({
             value={exam.code}
             onChange={(e) => update(i, 'code', e.target.value)}
             placeholder="Código"
-            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
           <input
             type="text"
             value={exam.name}
             onChange={(e) => update(i, 'name', e.target.value)}
             placeholder="Nome do exame"
-            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
           <input
             type="number"
             min={1}
             value={exam.quantity}
             onChange={(e) => update(i, 'quantity', parseInt(e.target.value) || 1)}
-            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
+            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
           />
           <button
             onClick={() => remove(i)}
@@ -218,20 +218,20 @@ function PrescriptionEditor({
       {/* Medicamentos */}
       {(data.medications.length > 0) && (
         <div>
-          <h4 className="text-xs font-semibold text-slate-600 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-1.5">
+          <h4 className="text-xs font-semibold text-slate-600 dark:text-[#a1a1aa] uppercase mb-2 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-blue-500"></span>
             Medicamentos ({data.medications.filter(m => m.name.trim()).length})
           </h4>
           <div className="space-y-2">
             {data.medications.map((med, i) => (
-              <div key={i} className="p-3 border border-slate-200 dark:border-[#252a3a] rounded-lg space-y-2">
+              <div key={i} className="p-3 border border-slate-200 dark:border-[#2e2e33] rounded-lg space-y-2">
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={med.name}
                     onChange={(e) => updateMed(i, 'name', e.target.value)}
                     placeholder="Nome do medicamento"
-                    className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                   <button
                     onClick={() => removeMed(i)}
@@ -246,7 +246,7 @@ function PrescriptionEditor({
                   value={med.posology}
                   onChange={(e) => updateMed(i, 'posology', e.target.value)}
                   placeholder="Posologia"
-                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <div className="flex gap-2">
                   <input
@@ -254,9 +254,9 @@ function PrescriptionEditor({
                     min={1}
                     value={med.quantity}
                     onChange={(e) => updateMed(i, 'quantity', parseInt(e.target.value) || 1)}
-                    className="w-20 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
+                    className="w-20 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
                   />
-                  <span className="text-xs text-slate-500 dark:text-[#828ca5] self-center">{med.unit}</span>
+                  <span className="text-xs text-slate-500 dark:text-[#a1a1aa] self-center">{med.unit}</span>
                 </div>
               </div>
             ))}
@@ -270,7 +270,7 @@ function PrescriptionEditor({
       {/* Exames */}
       {(data.exams.length > 0) && (
         <div>
-          <h4 className="text-xs font-semibold text-slate-600 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-1.5">
+          <h4 className="text-xs font-semibold text-slate-600 dark:text-[#a1a1aa] uppercase mb-2 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             Exames ({data.exams.filter(e => e.name.trim()).length})
           </h4>
@@ -282,21 +282,21 @@ function PrescriptionEditor({
                   value={exam.code}
                   onChange={(e) => updateExam(i, 'code', e.target.value)}
                   placeholder="Código"
-                  className="w-20 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-20 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <input
                   type="text"
                   value={exam.name}
                   onChange={(e) => updateExam(i, 'name', e.target.value)}
                   placeholder="Nome do exame"
-                  className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <input
                   type="number"
                   min={1}
                   value={exam.quantity}
                   onChange={(e) => updateExam(i, 'quantity', parseInt(e.target.value) || 1)}
-                  className="w-16 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
+                  className="w-16 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
                 />
                 <button onClick={() => removeExam(i)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md transition-colors">
                   <Minus className="w-4 h-4 text-red-500" />
@@ -313,7 +313,7 @@ function PrescriptionEditor({
       {/* Vacinas */}
       {(data.vaccines.length > 0) && (
         <div>
-          <h4 className="text-xs font-semibold text-slate-600 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-1.5">
+          <h4 className="text-xs font-semibold text-slate-600 dark:text-[#a1a1aa] uppercase mb-2 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-amber-500"></span>
             Vacinas ({data.vaccines.filter(v => v.name.trim()).length})
           </h4>
@@ -325,14 +325,14 @@ function PrescriptionEditor({
                   value={vac.name}
                   onChange={(e) => updateVaccine(i, 'name', e.target.value)}
                   placeholder="Nome da vacina"
-                  className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <input
                   type="text"
                   value={vac.dose}
                   onChange={(e) => updateVaccine(i, 'dose', e.target.value)}
                   placeholder="Dose"
-                  className="w-28 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-28 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <button onClick={() => removeVaccine(i)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md transition-colors">
                   <Minus className="w-4 h-4 text-red-500" />
@@ -359,14 +359,14 @@ function FormattedContentView({ content }: { content: string }) {
     return (
       <div className="space-y-1.5">
         {exams.map((exam, i) => (
-          <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#141722] rounded-md">
+          <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#18181b] rounded-md">
             {exam.code && (
-              <span className="text-xs font-mono text-slate-500 dark:text-[#828ca5] bg-slate-100 dark:bg-[#1e2334] px-1.5 py-0.5 rounded">
+              <span className="text-xs font-mono text-slate-500 dark:text-[#a1a1aa] bg-slate-100 dark:bg-[#27272a] px-1.5 py-0.5 rounded">
                 {exam.code}
               </span>
             )}
             <span className="text-sm text-slate-700 dark:text-gray-200 flex-1">{exam.name}</span>
-            <span className="text-xs text-slate-500 dark:text-[#828ca5]">x{exam.quantity}</span>
+            <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">x{exam.quantity}</span>
           </div>
         ))}
       </div>
@@ -383,35 +383,35 @@ function FormattedContentView({ content }: { content: string }) {
       <div className="space-y-4">
         {meds.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase mb-1.5">Medicamentos</h4>
+            <h4 className="text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase mb-1.5">Medicamentos</h4>
             {meds.map((m, i) => (
-              <div key={i} className="p-2 bg-slate-50 dark:bg-[#141722] rounded-md mb-1.5">
+              <div key={i} className="p-2 bg-slate-50 dark:bg-[#18181b] rounded-md mb-1.5">
                 <div className="text-sm font-medium text-slate-700 dark:text-gray-200">{m.name}</div>
-                {m.posology && <div className="text-xs text-slate-500 dark:text-[#828ca5] mt-0.5">{m.posology}</div>}
-                <div className="text-xs text-slate-400 dark:text-[#565d73] mt-0.5">{m.quantity} {m.unit}</div>
+                {m.posology && <div className="text-xs text-slate-500 dark:text-[#a1a1aa] mt-0.5">{m.posology}</div>}
+                <div className="text-xs text-slate-400 dark:text-[#71717a] mt-0.5">{m.quantity} {m.unit}</div>
               </div>
             ))}
           </div>
         )}
         {exams.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase mb-1.5">Exames</h4>
+            <h4 className="text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase mb-1.5">Exames</h4>
             {exams.map((e, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#141722] rounded-md mb-1.5">
-                {e.code && <span className="text-xs font-mono text-slate-500 bg-slate-100 dark:bg-[#1e2334] px-1.5 py-0.5 rounded">{e.code}</span>}
+              <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#18181b] rounded-md mb-1.5">
+                {e.code && <span className="text-xs font-mono text-slate-500 bg-slate-100 dark:bg-[#27272a] px-1.5 py-0.5 rounded">{e.code}</span>}
                 <span className="text-sm text-slate-700 dark:text-gray-200 flex-1">{e.name}</span>
-                <span className="text-xs text-slate-500 dark:text-[#828ca5]">x{e.quantity}</span>
+                <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">x{e.quantity}</span>
               </div>
             ))}
           </div>
         )}
         {vaccines.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-slate-500 dark:text-[#828ca5] uppercase mb-1.5">Vacinas</h4>
+            <h4 className="text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase mb-1.5">Vacinas</h4>
             {vaccines.map((v, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#141722] rounded-md mb-1.5">
+              <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#18181b] rounded-md mb-1.5">
                 <span className="text-sm text-slate-700 dark:text-gray-200 flex-1">{v.name}</span>
-                <span className="text-xs text-slate-500 dark:text-[#828ca5]">{v.dose}</span>
+                <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">{v.dose}</span>
               </div>
             ))}
           </div>
@@ -423,7 +423,7 @@ function FormattedContentView({ content }: { content: string }) {
   // HTML content
   return (
     <div
-      className="p-4 text-sm text-slate-700 dark:text-[#a0a8be] leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+      className="p-4 text-sm text-slate-700 dark:text-[#d4d4d8] leading-relaxed prose prose-sm dark:prose-invert max-w-none"
       dangerouslySetInnerHTML={{ __html: content }}
     />
   );
@@ -575,18 +575,18 @@ export function ModelTemplateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-[#0d0f15] rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-[#0a0a0c] rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-[#252a3a]">
+        <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-[#2e2e33]">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${saveMode ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
               {saveMode ? <Save className="w-4 h-4 text-blue-600 dark:text-blue-400" /> : <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">
                 {saveMode ? 'Salvar Modelo' : 'Modelos Salvos'}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-[#828ca5]">
+              <p className="text-xs text-slate-500 dark:text-[#a1a1aa]">
                 {saveMode ? 'Preencha o nome e revise o conteudo antes de salvar' : 'Selecione um modelo para usar'}
               </p>
             </div>
@@ -595,7 +595,7 @@ export function ModelTemplateModal({
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:hover:bg-[#2a2d36] rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-slate-500 dark:text-[#828ca5]" />
+            <X className="w-5 h-5 text-slate-500 dark:text-[#a1a1aa]" />
           </button>
         </div>
 
@@ -605,7 +605,7 @@ export function ModelTemplateModal({
             <div className="space-y-4">
               {/* Title Input */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1.5">
+                <label className="block text-sm font-medium text-slate-700 dark:text-[#d4d4d8] mb-1.5">
                   Nome do Modelo
                 </label>
                 <input
@@ -614,28 +614,28 @@ export function ModelTemplateModal({
                   onChange={(e) => setSaveTitle(e.target.value)}
                   placeholder="Ex: Conduta padrao para IVAS"
                   autoFocus
-                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
                 />
               </div>
 
               {/* Content Editor - different rendering based on content type */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be]">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-[#d4d4d8]">
                     {contentType === 'exams' ? 'Exames do Modelo' : contentType === 'prescription' ? 'Itens da Prescricao' : 'Conteudo do Modelo'}
                   </label>
-                  <span className="text-xs text-slate-400 dark:text-[#565d73] flex items-center gap-1">
+                  <span className="text-xs text-slate-400 dark:text-[#71717a] flex items-center gap-1">
                     <Edit3 className="w-3 h-3" />
                     Editavel
                   </span>
                 </div>
 
                 {contentType === 'exams' ? (
-                  <div className="border border-slate-200 dark:border-[#252a3a] rounded-lg p-4 bg-slate-50 dark:bg-[#141722]">
+                  <div className="border border-slate-200 dark:border-[#2e2e33] rounded-lg p-4 bg-slate-50 dark:bg-[#18181b]">
                     <ExamsEditor items={editableExams} onChange={setEditableExams} />
                   </div>
                 ) : contentType === 'prescription' ? (
-                  <div className="border border-slate-200 dark:border-[#252a3a] rounded-lg p-4 bg-slate-50 dark:bg-[#141722] max-h-[350px] overflow-y-auto custom-scrollbar">
+                  <div className="border border-slate-200 dark:border-[#2e2e33] rounded-lg p-4 bg-slate-50 dark:bg-[#18181b] max-h-[350px] overflow-y-auto custom-scrollbar">
                     <PrescriptionEditor data={editablePrescription} onChange={setEditablePrescription} />
                   </div>
                 ) : (
@@ -645,11 +645,11 @@ export function ModelTemplateModal({
                     suppressContentEditableWarning
                     dangerouslySetInnerHTML={{ __html: editableContent }}
                     onInput={(e) => setEditableContent(e.currentTarget.innerHTML)}
-                    className="w-full min-h-[200px] max-h-[350px] overflow-y-auto px-4 py-3 border border-slate-200 dark:border-[#252a3a] rounded-lg bg-slate-50 dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all text-sm leading-relaxed custom-scrollbar prose prose-sm dark:prose-invert max-w-none"
+                    className="w-full min-h-[200px] max-h-[350px] overflow-y-auto px-4 py-3 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-slate-50 dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all text-sm leading-relaxed custom-scrollbar prose prose-sm dark:prose-invert max-w-none"
                   />
                 )}
 
-                <p className="mt-1.5 text-xs text-slate-400 dark:text-[#565d73]">
+                <p className="mt-1.5 text-xs text-slate-400 dark:text-[#71717a]">
                   O conteudo acima foi preenchido a partir do que voce ja digitou na tela. Edite conforme necessario antes de salvar.
                 </p>
               </div>
@@ -663,8 +663,8 @@ export function ModelTemplateModal({
               >
                 &larr; Voltar para lista
               </button>
-              <div className="border border-slate-200 dark:border-[#252a3a] rounded-lg overflow-hidden">
-                <div className="bg-slate-50 dark:bg-[#141722] px-4 py-3 border-b border-slate-200 dark:border-[#252a3a]">
+              <div className="border border-slate-200 dark:border-[#2e2e33] rounded-lg overflow-hidden">
+                <div className="bg-slate-50 dark:bg-[#18181b] px-4 py-3 border-b border-slate-200 dark:border-[#2e2e33]">
                   <h3 className="font-semibold text-slate-800 dark:text-gray-200">{previewTemplate.title}</h3>
                 </div>
                 <div className="p-4">
@@ -701,15 +701,15 @@ export function ModelTemplateModal({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar modelos..."
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
 
               {/* Templates List */}
               {isLoading ? (
-                <div className="text-center py-8 text-slate-500 dark:text-[#828ca5]">Carregando...</div>
+                <div className="text-center py-8 text-slate-500 dark:text-[#a1a1aa]">Carregando...</div>
               ) : filteredTemplates.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 dark:text-[#828ca5]">
+                <div className="text-center py-12 text-slate-500 dark:text-[#a1a1aa]">
                   <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
                   <p>{searchTerm ? 'Nenhum modelo encontrado.' : 'Nenhum modelo salvo ainda.'}</p>
                 </div>
@@ -718,14 +718,14 @@ export function ModelTemplateModal({
                   {filteredTemplates.map((template) => (
                     <div
                       key={template.id}
-                      className="group flex items-start gap-3 p-4 border border-slate-200 dark:border-[#252a3a] rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-800 transition-all cursor-pointer"
+                      className="group flex items-start gap-3 p-4 border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-800 transition-all cursor-pointer"
                       onClick={() => setPreviewTemplate(template)}
                     >
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-slate-800 dark:text-gray-200 mb-1">
                           {template.title}
                         </div>
-                        <div className="text-sm text-slate-500 dark:text-[#828ca5] line-clamp-2">
+                        <div className="text-sm text-slate-500 dark:text-[#a1a1aa] line-clamp-2">
                           {formatContentPreview(template.content)}
                         </div>
                       </div>
@@ -749,7 +749,7 @@ export function ModelTemplateModal({
                           className="p-1.5 hover:bg-slate-100 dark:hover:bg-[#2a2d36] rounded-md transition-colors"
                           title="Visualizar"
                         >
-                          <Eye className="w-4 h-4 text-slate-500 dark:text-[#828ca5]" />
+                          <Eye className="w-4 h-4 text-slate-500 dark:text-[#a1a1aa]" />
                         </button>
                         <button
                           onClick={(e) => {
@@ -772,7 +772,7 @@ export function ModelTemplateModal({
 
         {/* Footer */}
         {saveMode ? (
-          <div className="p-5 border-t border-slate-200 dark:border-[#252a3a] flex items-center gap-3">
+          <div className="p-5 border-t border-slate-200 dark:border-[#2e2e33] flex items-center gap-3">
             <button
               onClick={handleSave}
               disabled={isSaving}
@@ -791,13 +791,13 @@ export function ModelTemplateModal({
                   setEditableContent('');
                 }
               }}
-              className="px-4 py-2.5 bg-slate-100 dark:bg-[#141722] hover:bg-slate-200 dark:hover:bg-[#353842] text-slate-700 dark:text-gray-200 font-medium rounded-lg transition-colors"
+              className="px-4 py-2.5 bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-[#353842] text-slate-700 dark:text-gray-200 font-medium rounded-lg transition-colors"
             >
               Cancelar
             </button>
           </div>
         ) : !previewTemplate && (
-          <div className="p-5 border-t border-slate-200 dark:border-[#252a3a]">
+          <div className="p-5 border-t border-slate-200 dark:border-[#2e2e33]">
             <button
               onClick={() => {
                 setSaveMode(true);
@@ -811,7 +811,7 @@ export function ModelTemplateModal({
                   setEditableContent(currentContent || '');
                 }
               }}
-              className="w-full px-4 py-2.5 bg-slate-100 dark:bg-[#141722] hover:bg-slate-200 dark:hover:bg-[#353842] text-slate-700 dark:text-gray-200 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-[#353842] text-slate-700 dark:text-gray-200 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
               Salvar Novo Modelo

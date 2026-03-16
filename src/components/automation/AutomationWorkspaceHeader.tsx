@@ -14,8 +14,8 @@ export default function AutomationWorkspaceHeader({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h2 className="text-xl font-black text-slate-800 dark:text-[#e8ecf4]">{title}</h2>
-        <p className="text-sm text-slate-500 dark:text-[#828ca5] mt-1 max-w-2xl">{description}</p>
+        <h2 className="text-xl font-black text-slate-800 dark:text-[#fafafa]">{title}</h2>
+        <p className="text-sm text-slate-500 dark:text-[#a1a1aa] mt-1 max-w-2xl">{description}</p>
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
