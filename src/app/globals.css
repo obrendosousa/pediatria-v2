@@ -44,30 +44,45 @@
     --chat-wallpaper-opacity: 0.13;
   }
 
-  /* --- TEMA ESCURO: "NOITE SUAVE" --- */
+  /* --- TEMA ESCURO: "OBSIDIAN" — Deep Navy Premium --- */
   .dark {
-    --background: 30 32 40;
-    --foreground: 220 220 230;
+    --background: 10 12 18;        /* #0a0c12 — Deep navy-black */
+    --foreground: 232 236 244;     /* #e8ecf4 — Crisp white-blue */
 
-    --card: 38 40 50;
+    --card: 16 19 28;             /* #10131c — Surface panels */
     --card-foreground: 226 232 240;
-    --border: 45 48 60;
+    --border: 30 35 52;           /* #1e2334 — Subtle navy borders */
 
-    --primary: 240 160 180;      /* Rosa Quartz */
-    --primary-foreground: 40 20 30;
+    --primary: 99 179 237;        /* #63b3ed — Calm sky blue */
+    --primary-foreground: 10 12 18;
 
-    --secondary: 160 210 200;    /* Menta Gelada */
-    --secondary-foreground: 20 50 45;
+    --secondary: 110 231 183;     /* #6ee7b7 — Emerald mint */
+    --secondary-foreground: 10 30 25;
 
-    --accent: 60 62 75;
-    --accent-foreground: 230 230 240;
+    --accent: 35 40 58;           /* #23283a — Elevated surface */
+    --accent-foreground: 226 232 240;
 
-    --muted: 35 37 45;
-    --muted-foreground: 140 145 160;
+    --muted: 22 26 38;            /* #161a26 — Recessed areas */
+    --muted-foreground: 130 140 165; /* #828ca5 — Readable muted */
 
-    --success: 130 200 150;
-    --warning: 230 200 120;
-    --destructive: 230 120 120;
+    --success: 52 211 153;        /* #34d399 */
+    --warning: 251 191 36;        /* #fbbf24 */
+    --destructive: 248 113 113;   /* #f87171 */
+
+    /* --- Chat Module Vars (Dark Mode) --- */
+    --chat-surface: #10131c;
+    --chat-surface-hover: #1a1e2e;
+    --chat-bg: #080a10;
+    --chat-accent: #00a884;
+    --chat-accent-hover: #06cf9c;
+    --chat-accent-secondary: #34d399;
+    --chat-bubble-sent: #0c3b2e;
+    --chat-bubble-sent-dark: #0c3b2e;
+    --chat-text-primary: #e8ecf4;
+    --chat-text-muted: #6b7694;
+    --chat-text-secondary: #8b95b0;
+    --chat-wallpaper-stroke: #1e2334;
+    --chat-wallpaper-opacity: 0.04;
   }
 
   /* --- Módulo Atendimento: Overrides teal --- */
@@ -85,6 +100,23 @@
     --chat-text-secondary: #5E8683;
     --chat-wallpaper-stroke: #5E8683;
     --chat-wallpaper-opacity: 0.08;
+  }
+
+  /* --- Módulo Atendimento: Dark Mode (Obsidian + Teal) --- */
+  .dark .module-atendimento {
+    --chat-surface: #0e1519;
+    --chat-surface-hover: #152028;
+    --chat-bg: #080c10;
+    --chat-accent: #14b8a6;
+    --chat-accent-hover: #2dd4bf;
+    --chat-accent-secondary: #34d399;
+    --chat-bubble-sent: #0a3530;
+    --chat-bubble-sent-dark: #0a3530;
+    --chat-text-primary: #e0f2f1;
+    --chat-text-muted: #5e8683;
+    --chat-text-secondary: #80aaa5;
+    --chat-wallpaper-stroke: #1a302e;
+    --chat-wallpaper-opacity: 0.04;
   }
   
   body {
@@ -114,7 +146,7 @@
 
 /* Painel de Vidro (Funciona no Dark Mode também) */
 .glass-panel {
-  @apply bg-white/70 dark:bg-[rgb(var(--card))]/70 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-sm;
+  @apply bg-white/70 dark:bg-[rgb(var(--card))]/80 backdrop-blur-xl border border-white/20 dark:border-white/[0.06] shadow-sm dark:shadow-black/20;
 }
 
 /* Botão "Gummy" (Parece uma bala de goma ao clicar) */
@@ -207,6 +239,30 @@
   from {
     opacity: 0;
     transform: scale(0.92) translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Animação bouncy para popup de reação rápida (pill) */
+@keyframes reactionPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animação suave para picker de emojis expandido */
+@keyframes emojiExpandIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(8px);
   }
   to {
     opacity: 1;

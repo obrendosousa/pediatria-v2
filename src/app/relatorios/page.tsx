@@ -118,7 +118,7 @@ export default function RelatoriosPage() {
     return (
         <div className="flex flex-col h-screen bg-[#f8fafc] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300">
             {/* Header */}
-            <div className="bg-white dark:bg-[#1e2028] px-8 py-8 border-b border-slate-200 dark:border-gray-800 flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center shrink-0 transition-colors relative overflow-hidden">
+            <div className="bg-white dark:bg-[#0d0f15] px-8 py-8 border-b border-slate-200 dark:border-[#1e2334] flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center shrink-0 transition-colors relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 
                 <div className="z-10">
@@ -127,10 +127,10 @@ export default function RelatoriosPage() {
                             <Sparkles className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-slate-800 dark:text-gray-100 flex items-center gap-2">
+                            <h1 className="text-2xl font-black text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
                                 Relatórios Gerenciais da IA
                             </h1>
-                            <p className="text-sm text-slate-500 dark:text-gray-400 font-medium mt-1">
+                            <p className="text-sm text-slate-500 dark:text-[#828ca5] font-medium mt-1">
                                 Acesse as análises detalhadas geradas pela Clara sobre o desempenho da clínica.
                             </p>
                         </div>
@@ -145,7 +145,7 @@ export default function RelatoriosPage() {
                             placeholder="Buscar por ID ou título..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-[#252833] border border-slate-200 dark:border-gray-700 rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-[#252833] border border-slate-200 dark:border-[#252a3a] rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
                 </div>
@@ -157,14 +157,14 @@ export default function RelatoriosPage() {
                 {/* Filters Toolbar */}
                 <div className="px-8 pt-6 pb-2 z-10">
                     <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-gray-400 mr-2 shrink-0">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-[#828ca5] mr-2 shrink-0">
                             <Filter className="w-4 h-4" /> Filtros:
                         </div>
                         <button
                             onClick={() => setTypeFilter('all')}
                             className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold transition-all shrink-0 ${typeFilter === 'all'
                                 ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900'
-                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#1e2028] dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#0d0f15] dark:border-[#252a3a] dark:text-[#a0a8be] dark:hover:bg-white/5'
                                 }`}
                         >
                             Todos
@@ -175,7 +175,7 @@ export default function RelatoriosPage() {
                                 onClick={() => setTypeFilter(type)}
                                 className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold transition-all shrink-0 ${typeFilter === type
                                     ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#1e2028] dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5'
+                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#0d0f15] dark:border-[#252a3a] dark:text-[#a0a8be] dark:hover:bg-white/5'
                                     }`}
                             >
                                 {getReportTypeLabel(type)}
@@ -196,14 +196,14 @@ export default function RelatoriosPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 {filteredReports.map((report) => (
                                     <Link href={`/relatorios/${report.id}`} key={report.id} className="group outline-none">
-                                        <div className="bg-white dark:bg-[#1e2028] border border-slate-200/80 dark:border-gray-700/80 rounded-3xl p-6 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:shadow-black/50 hover:border-indigo-200 dark:hover:border-indigo-800/50 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full relative overflow-hidden">
+                                        <div className="bg-white dark:bg-[#0d0f15] border border-slate-200/80 dark:border-[#252a3a]/80 rounded-3xl p-6 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:shadow-black/50 hover:border-indigo-200 dark:hover:border-indigo-800/50 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full relative overflow-hidden">
 
                                             <div className="flex justify-between items-start mb-4">
-                                                <div className="w-12 h-12 bg-slate-50 dark:bg-[#252833] rounded-2xl flex items-center justify-center border border-slate-100 dark:border-gray-800 group-hover:scale-110 transition-transform">
+                                                <div className="w-12 h-12 bg-slate-50 dark:bg-[#252833] rounded-2xl flex items-center justify-center border border-slate-100 dark:border-[#1e2334] group-hover:scale-110 transition-transform">
                                                     {getReportIcon(report.tipo)}
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold text-slate-400 bg-slate-50 dark:bg-[#252833] dark:text-gray-500 px-2 py-1 rounded-md">
+                                                    <span className="text-xs font-bold text-slate-400 bg-slate-50 dark:bg-[#252833] dark:text-[#565d73] px-2 py-1 rounded-md">
                                                         ID {report.id}
                                                     </span>
                                                     <button
@@ -216,16 +216,16 @@ export default function RelatoriosPage() {
                                                 </div>
                                             </div>
 
-                                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-2 line-clamp-2 min-h-[56px]">
+                                            <h3 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] mb-2 line-clamp-2 min-h-[56px]">
                                                 {report.titulo || `Relatório #${report.id}`}
                                             </h3>
 
-                                            <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 dark:border-gray-800/50">
+                                            <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 dark:border-[#1e2334]/50">
                                                 <div className="flex flex-col gap-2">
                                                     <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md border w-fit ${getReportTypeColor(report.tipo)}`}>
                                                         {getReportTypeLabel(report.tipo)}
                                                     </span>
-                                                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-gray-400">
+                                                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-[#828ca5]">
                                                         <Clock className="w-3.5 h-3.5" />
                                                         {format(new Date(report.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
                                                     </div>
@@ -240,12 +240,12 @@ export default function RelatoriosPage() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 border-dashed rounded-[2rem] text-center mt-8">
+                            <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] border-dashed rounded-[2rem] text-center mt-8">
                                 <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl flex items-center justify-center mb-6">
                                     <FileSearch className="w-10 h-10 text-indigo-500 opacity-60" />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-800 dark:text-gray-100 mb-2">Nenhum relatório encontrado</h3>
-                                <p className="text-slate-500 dark:text-gray-400 max-w-sm mb-6 text-sm leading-relaxed">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4] mb-2">Nenhum relatório encontrado</h3>
+                                <p className="text-slate-500 dark:text-[#828ca5] max-w-sm mb-6 text-sm leading-relaxed">
                                     {searchTerm || typeFilter !== 'all'
                                         ? "Não encontramos nenhum relatório com os filtros e busca atuais. Tente limpar os filtros."
                                         : "A IA Clara ainda não gerou nenhum relatório de análise no sistema."}

@@ -46,7 +46,7 @@ function RadioSimNao({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-2">
+      <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-2">
         {label}
       </label>
       <div className="flex gap-4">
@@ -57,7 +57,7 @@ function RadioSimNao({
             value="sim"
             className="w-4 h-4 text-blue-600 focus:ring-blue-500"
           />
-          <span className="text-sm text-slate-700 dark:text-gray-300">Sim</span>
+          <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Sim</span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <input
@@ -66,7 +66,7 @@ function RadioSimNao({
             value="não"
             className="w-4 h-4 text-blue-600 focus:ring-blue-500"
           />
-          <span className="text-sm text-slate-700 dark:text-gray-300">Não</span>
+          <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Não</span>
         </label>
       </div>
     </div>
@@ -172,7 +172,7 @@ export function FoodHistory({ patientId, patientData, onRefresh, appointmentId }
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="text-center text-slate-500 dark:text-gray-400">Carregando...</div>
+        <div className="text-center text-slate-500 dark:text-[#828ca5]">Carregando...</div>
       </div>
     );
   }
@@ -181,48 +181,48 @@ export function FoodHistory({ patientId, patientData, onRefresh, appointmentId }
     <div className="p-4 pb-20">
       {/* Header */}
       <div className="mb-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100">HISTÓRICO ALIMENTAR</h1>
-        <span className="text-xs text-slate-600 dark:text-gray-400 uppercase">{currentDate}</span>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">HISTÓRICO ALIMENTAR</h1>
+        <span className="text-xs text-slate-600 dark:text-[#828ca5] uppercase">{currentDate}</span>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
 
         {/* Seção: Amamentação e Introdução Alimentar */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-3">Amamentação e Introdução Alimentar</h2>
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mb-3">Amamentação e Introdução Alimentar</h2>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               LEITE MATERNO / ATÉ QUE IDADE EXCLUSIVO?
             </label>
             <input
               type="text"
               {...register('leite_materno_exclusivo')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Ex: Exclusivo até 6 meses..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               FÓRMULA INFANTIL / QUAL / COMO DILUIU?
             </label>
             <input
               type="text"
               {...register('formula_infantil')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Ex: NAN 1, 1 medida para 30ml..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               INTRODUÇÃO ALIMENTAR / QUE IDADE?
             </label>
             <input
               type="text"
               {...register('idade_introducao_alimentar')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Ex: 6 meses..."
             />
           </div>
@@ -253,8 +253,8 @@ export function FoodHistory({ patientId, patientData, onRefresh, appointmentId }
         </div>
 
         {/* Seção: Maior Dificuldade (Rich Text) */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-2">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mb-2">
             QUAL MAIOR DIFICULDADE / INTRODUÇÃO ALIMENTAR?
           </h2>
           <RichTextEditor
@@ -265,17 +265,17 @@ export function FoodHistory({ patientId, patientData, onRefresh, appointmentId }
         </div>
 
         {/* Seção: Aceitação de Alimentos */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-3">Aceitação de Alimentos</h2>
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mb-3">Aceitação de Alimentos</h2>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               MINGAL INDUSTRIALIZADOS?
             </label>
             <input
               type="text"
               {...register('mingau_industrializado')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Ex: Mucilon, Nestum..."
             />
           </div>
@@ -312,8 +312,8 @@ export function FoodHistory({ patientId, patientData, onRefresh, appointmentId }
         </div>
 
         {/* Seção: Refeições Diárias (Rich Text) */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-2">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mb-2">
             CAFÉ, ALMOÇO, LANCHE E JANTA?
           </h2>
           <RichTextEditor
@@ -324,48 +324,48 @@ export function FoodHistory({ patientId, patientData, onRefresh, appointmentId }
         </div>
 
         {/* Seção: Detalhes Complementares */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-3">Detalhes Complementares</h2>
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mb-3">Detalhes Complementares</h2>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               ALGUM ALIMENTO QUE NÃO ACEITA?
             </label>
             <input
               type="text"
               {...register('alimento_nao_aceita')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Ex: Tomate, brócolis..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               TEXTURA DA COMIDA, QUANTIDADE?
             </label>
             <input
               type="text"
               {...register('textura_quantidade')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Ex: Amassado, aprox. 150ml por refeição..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               LOCAL DA COMIDA?
             </label>
             <input
               type="text"
               {...register('local_comida')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Ex: Cadeirão, no colo, mesa da família..."
             />
           </div>
         </div>
 
         {/* Botão Salvar */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-gray-700 -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#252a3a] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

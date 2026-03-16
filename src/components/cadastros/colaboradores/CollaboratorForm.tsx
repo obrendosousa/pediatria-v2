@@ -83,9 +83,9 @@ interface CollaboratorFormProps {
 
 // --- Helpers ---
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-xl bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 const selectClass = `${inputClass} appearance-none cursor-pointer`;
-const labelClass = 'text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 ml-1 block uppercase tracking-wider';
+const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 ml-1 block uppercase tracking-wider';
 
 function RequiredBadge() {
   return (
@@ -199,7 +199,7 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e2028]">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
         <button
           onClick={() => router.push('/atendimento/cadastros/colaboradores')}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -207,11 +207,11 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
           <ArrowLeft className="w-5 h-5 text-slate-500" />
         </button>
         <div>
-          <h1 className="text-lg font-bold text-slate-800 dark:text-gray-100 flex items-center gap-2">
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
             <User className="w-5 h-5 text-teal-600" />
             {title}
           </h1>
-          <p className="text-xs text-slate-400 dark:text-gray-500">{subtitle}</p>
+          <p className="text-xs text-slate-400 dark:text-[#565d73]">{subtitle}</p>
         </div>
       </div>
 
@@ -220,8 +220,8 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* ─── Seção 1: Informações Básicas ─── */}
-          <section className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
               <User className="w-4 h-4 text-teal-500" />
               Informações Básicas
             </h2>
@@ -302,7 +302,7 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 2: Endereço e Localização ─── */}
-          <section className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6">
+          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6">
             <AddressCepLookup
               value={form.address}
               onChange={(addr) => update('address', addr)}
@@ -310,8 +310,8 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 3: Informações de Contato ─── */}
-          <section className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
               <Phone className="w-4 h-4 text-teal-500" />
               Informações de Contato
             </h2>
@@ -363,8 +363,8 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 4: Informações Profissionais ─── */}
-          <section className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-teal-500" />
               Informações Profissionais
             </h2>
@@ -433,8 +433,8 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 5: Informações Complementares ─── */}
-          <section className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
               <FileText className="w-4 h-4 text-teal-500" />
               Informações Complementares
             </h2>
@@ -446,10 +446,10 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
                 onDragOver={e => e.preventDefault()}
                 onDrop={handleFilesDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-200 dark:border-gray-700 rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors"
+                className="border-2 border-dashed border-slate-200 dark:border-[#252a3a] rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors"
               >
                 <Upload className="w-8 h-8 text-slate-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-slate-400 dark:text-gray-500">
+                <p className="text-sm text-slate-400 dark:text-[#565d73]">
                   Arraste arquivos aqui ou <span className="text-teal-600 dark:text-teal-400 font-semibold">clique para selecionar</span>
                 </p>
                 <input
@@ -464,8 +464,8 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
               {form.attachments.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {form.attachments.map((file, i) => (
-                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-[#15171e] rounded-lg border border-slate-200 dark:border-gray-700">
-                      <span className="text-sm text-slate-600 dark:text-gray-300 truncate">{file.name}</span>
+                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-[#15171e] rounded-lg border border-slate-200 dark:border-[#252a3a]">
+                      <span className="text-sm text-slate-600 dark:text-[#a0a8be] truncate">{file.name}</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); removeFile(i); }}
                         className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/10 text-red-400 hover:text-red-600 transition-colors"
@@ -492,7 +492,7 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Checkbox: Enviar informações ─── */}
-          <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -509,10 +509,10 @@ export default function CollaboratorForm({ initialData, onSubmit, title, subtitl
       </div>
 
       {/* Footer fixo */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e2028] flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15] flex items-center justify-end gap-3">
         <button
           onClick={() => router.push('/atendimento/cadastros/colaboradores')}
-          className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+          className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
         >
           Cancelar
         </button>

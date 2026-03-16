@@ -36,7 +36,7 @@ const STATUS_COLORS: Record<string, string> = {
   unmarked: 'bg-slate-100 dark:bg-slate-900/20 text-slate-700 dark:text-slate-300',
   not_attended: 'bg-rose-100 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300',
   rescheduled: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300',
-  blocked: 'bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300'
+  blocked: 'bg-gray-100 dark:bg-[#0d0f15]/20 text-gray-700 dark:text-[#a0a8be]'
 };
 
 const STATUS_OPTIONS = [
@@ -379,7 +379,7 @@ export default function GerenciarAgendamentosPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#16171c] transition-colors">
       {/* Header */}
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#1e2028] border-b border-slate-100 dark:border-gray-800 shadow-sm">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0d0f15] border-b border-slate-100 dark:border-[#1e2334] shadow-sm">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/atendimento/agenda')} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 transition-colors">
             <ArrowLeft className="w-5 h-5" />
@@ -388,14 +388,14 @@ export default function GerenciarAgendamentosPage() {
             <Calendar className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-800 dark:text-gray-100 leading-none">Gerenciar Agendamentos</h1>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Atendimento Geral</p>
+            <h1 className="text-base font-bold text-slate-800 dark:text-[#e8ecf4] leading-none">Gerenciar Agendamentos</h1>
+            <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-0.5">Atendimento Geral</p>
           </div>
         </div>
         <button
           onClick={handleExportPdf}
           disabled={appointments.length === 0}
-          className="flex items-center gap-2 bg-slate-100 dark:bg-[#2a2d36] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-gray-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-40"
+          className="flex items-center gap-2 bg-slate-100 dark:bg-[#141722] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-gray-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-40"
         >
           <Download className="w-4 h-4" /> Exportar PDF
         </button>
@@ -403,7 +403,7 @@ export default function GerenciarAgendamentosPage() {
 
       {/* Filtros */}
       <div className="px-6 py-4">
-        <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 p-4 shadow-sm">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#1e2334] p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
             <Filter className="w-4 h-4 text-teal-500" />
             <span className="text-sm font-bold text-slate-700 dark:text-gray-200">Filtros</span>
@@ -411,7 +411,7 @@ export default function GerenciarAgendamentosPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {/* Paciente */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Paciente</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Paciente</label>
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <input
@@ -419,18 +419,18 @@ export default function GerenciarAgendamentosPage() {
                   value={patientSearch}
                   onChange={e => setPatientSearch(e.target.value)}
                   placeholder="Buscar por nome..."
-                  className="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400 placeholder:text-slate-400"
+                  className="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400 placeholder:text-slate-400"
                 />
               </div>
             </div>
 
             {/* Profissional */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Profissional</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Profissional</label>
               <select
                 value={doctorId ?? ''}
                 onChange={e => setDoctorId(e.target.value ? Number(e.target.value) : null)}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
               >
                 <option value="">Todos</option>
                 {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -439,11 +439,11 @@ export default function GerenciarAgendamentosPage() {
 
             {/* Status Multi-Select */}
             <div ref={statusDropdownRef} className="relative">
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Status</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Status</label>
               <button
                 type="button"
                 onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400 text-left flex items-center justify-between"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400 text-left flex items-center justify-between"
               >
                 <span className="truncate">
                   {statusFilter.length === 0
@@ -456,11 +456,11 @@ export default function GerenciarAgendamentosPage() {
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               </button>
               {statusDropdownOpen && (
-                <div className="absolute z-50 mt-1 w-full bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                <div className="absolute z-50 mt-1 w-full bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg shadow-lg max-h-56 overflow-y-auto">
                   <button
                     type="button"
                     onClick={() => setStatusFilter([])}
-                    className="w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 dark:hover:bg-white/5 text-teal-600 dark:text-teal-400 font-bold border-b border-slate-100 dark:border-gray-800"
+                    className="w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 dark:hover:bg-white/5 text-teal-600 dark:text-teal-400 font-bold border-b border-slate-100 dark:border-[#1e2334]"
                   >
                     Limpar seleção
                   </button>
@@ -481,11 +481,11 @@ export default function GerenciarAgendamentosPage() {
 
             {/* Procedimento */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Procedimento</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Procedimento</label>
               <select
                 value={procedureFilter}
                 onChange={e => setProcedureFilter(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
               >
                 <option value="">Todos</option>
                 {procedures.map(p => <option key={p.code} value={p.code}>{p.code} — {p.name}</option>)}
@@ -494,23 +494,23 @@ export default function GerenciarAgendamentosPage() {
 
             {/* De */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">De</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">De</label>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={e => setDateFrom(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
 
             {/* Até */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Até</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Até</label>
               <input
                 type="date"
                 value={dateTo}
                 onChange={e => setDateTo(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
           </div>
@@ -518,7 +518,7 @@ export default function GerenciarAgendamentosPage() {
           <div className="flex items-center justify-between mt-4">
             <button
               onClick={() => { setPatientSearch(''); setDoctorId(null); setStatusFilter([]); setProcedureFilter(''); setDateFrom(''); setDateTo(''); }}
-              className="text-xs text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200 font-medium flex items-center gap-1"
+              className="text-xs text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-200 font-medium flex items-center gap-1"
             >
               <X className="w-3.5 h-3.5" /> Limpar filtros
             </button>
@@ -534,19 +534,19 @@ export default function GerenciarAgendamentosPage() {
 
       {/* Tabela */}
       <div className="px-6 pb-6">
-        <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#1e2334] shadow-sm overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
-              <span className="ml-2 text-sm text-slate-500 dark:text-gray-400">Buscando agendamentos...</span>
+              <span className="ml-2 text-sm text-slate-500 dark:text-[#828ca5]">Buscando agendamentos...</span>
             </div>
           ) : !hasSearched ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-gray-500">
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-[#565d73]">
               <Search className="w-10 h-10 mb-3 opacity-40" />
               <p className="text-sm font-medium">Utilize os filtros acima e clique em Pesquisar</p>
             </div>
           ) : appointments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-gray-500">
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-[#565d73]">
               <Calendar className="w-10 h-10 mb-3 opacity-40" />
               <p className="text-sm font-medium">Nenhum agendamento encontrado</p>
               <p className="text-xs mt-1">Tente ajustar os filtros</p>
@@ -556,13 +556,13 @@ export default function GerenciarAgendamentosPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-[#16171c]">
+                    <tr className="border-b border-slate-100 dark:border-[#1e2334] bg-slate-50 dark:bg-[#16171c]">
                       <SortableHeader label="Paciente" field="patient_name" current={sortField} dir={sortDir} onSort={handleSort} />
-                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Descrição</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider">Descrição</th>
                       <SortableHeader label="Profissional" field="doctor_name" current={sortField} dir={sortDir} onSort={handleSort} />
                       <SortableHeader label="Status" field="status" current={sortField} dir={sortDir} onSort={handleSort} />
                       <SortableHeader label="Data" field="date" current={sortField} dir={sortDir} onSort={handleSort} />
-                      <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Opções</th>
+                      <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider">Opções</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
@@ -571,27 +571,27 @@ export default function GerenciarAgendamentosPage() {
                         <td className="px-4 py-3">
                           <p className="text-sm font-medium text-slate-800 dark:text-gray-200 truncate max-w-[200px]">{appt.patient_name || '—'}</p>
                           {appt.patient_phone && (
-                            <p className="text-[11px] text-slate-400 dark:text-gray-500">{appt.patient_phone}</p>
+                            <p className="text-[11px] text-slate-400 dark:text-[#565d73]">{appt.patient_phone}</p>
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <p className="text-xs text-slate-600 dark:text-gray-300 truncate max-w-[220px]">
+                          <p className="text-xs text-slate-600 dark:text-[#a0a8be] truncate max-w-[220px]">
                             {appt.description || appt.procedures?.join(', ') || appt.type || '—'}
                           </p>
                           {appt.appointment_subtype && (
-                            <p className="text-[11px] text-slate-400 dark:text-gray-500">{appt.appointment_subtype}</p>
+                            <p className="text-[11px] text-slate-400 dark:text-[#565d73]">{appt.appointment_subtype}</p>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-700 dark:text-gray-300">{appt.doctor_name || '—'}</td>
+                        <td className="px-4 py-3 text-xs text-slate-700 dark:text-[#a0a8be]">{appt.doctor_name || '—'}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${STATUS_COLORS[appt.status] || 'bg-slate-100 text-slate-600'}`}>
                             {STATUS_LABELS[appt.status] || appt.status}
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <p className="text-xs font-medium text-slate-700 dark:text-gray-300">{formatDate(appt.date)}</p>
+                          <p className="text-xs font-medium text-slate-700 dark:text-[#a0a8be]">{formatDate(appt.date)}</p>
                           {appt.time && (
-                            <p className="text-[11px] text-slate-400 dark:text-gray-500">
+                            <p className="text-[11px] text-slate-400 dark:text-[#565d73]">
                               {appt.time.slice(0, 5)}{appt.end_time ? ` — ${appt.end_time.slice(0, 5)}` : ''}
                             </p>
                           )}
@@ -620,7 +620,7 @@ export default function GerenciarAgendamentosPage() {
                             </button>
 
                             {openMenuId === appt.id && (
-                              <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
+                              <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg shadow-lg z-50 py-1">
                                 <button
                                   onClick={() => { setOpenMenuId(null); handleClone(appt); }}
                                   className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/5"
@@ -646,15 +646,15 @@ export default function GerenciarAgendamentosPage() {
               </div>
 
               {/* Rodapé: total + paginação */}
-              <div className="px-4 py-3 border-t border-slate-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <span className="text-xs text-slate-500 dark:text-gray-400">
+              <div className="px-4 py-3 border-t border-slate-100 dark:border-[#1e2334] flex flex-col sm:flex-row items-center justify-between gap-3">
+                <span className="text-xs text-slate-500 dark:text-[#828ca5]">
                   Foram encontrados um total de <strong className="text-slate-700 dark:text-gray-200">{totalCount}</strong> registros.
                 </span>
 
                 <div className="flex items-center gap-4">
                   {/* Itens por página */}
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-500 dark:text-gray-400">Por página:</span>
+                    <span className="text-[11px] text-slate-500 dark:text-[#828ca5]">Por página:</span>
                     {PAGE_SIZES.map(s => (
                       <button
                         key={s}
@@ -675,7 +675,7 @@ export default function GerenciarAgendamentosPage() {
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-xs text-slate-600 dark:text-gray-300 font-medium min-w-[80px] text-center">
+                    <span className="text-xs text-slate-600 dark:text-[#a0a8be] font-medium min-w-[80px] text-center">
                       {page + 1} de {totalPages || 1}
                     </span>
                     <button
@@ -715,7 +715,7 @@ function SortableHeader({ label, field, current, dir, onSort }: {
   return (
     <th
       onClick={() => onSort(field)}
-      className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-gray-200 select-none"
+      className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-gray-200 select-none"
     >
       <span className="inline-flex items-center gap-1">
         {label}

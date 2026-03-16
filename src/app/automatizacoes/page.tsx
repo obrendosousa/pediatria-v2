@@ -131,7 +131,7 @@ export default function AutomationsPage() {
   return (
     <div className="flex flex-col h-screen bg-[#f8fafc] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300">
       {/* Header */}
-      <div className="bg-white dark:bg-[#1e2028] px-8 py-8 border-b border-slate-200 dark:border-gray-800 flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center shrink-0 transition-colors relative overflow-hidden">
+      <div className="bg-white dark:bg-[#0d0f15] px-8 py-8 border-b border-slate-200 dark:border-[#1e2334] flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center shrink-0 transition-colors relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-rose-500/5 to-orange-400/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
         <div className="z-10">
@@ -140,10 +140,10 @@ export default function AutomationsPage() {
               <Zap className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-slate-800 dark:text-gray-100 flex items-center gap-2">
+              <h1 className="text-2xl font-black text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
                 Automações de Mensagens
               </h1>
-              <p className="text-sm text-slate-500 dark:text-gray-400 font-medium mt-1">
+              <p className="text-sm text-slate-500 dark:text-[#828ca5] font-medium mt-1">
                 Configure jornadas automáticas para reengajar seus pacientes.
               </p>
             </div>
@@ -151,8 +151,8 @@ export default function AutomationsPage() {
         </div>
 
         <div className="flex items-center gap-4 text-sm font-semibold z-10">
-          <div className="px-5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#252833] border border-slate-200 dark:border-gray-700 shadow-sm">
-            <span className="text-slate-500 dark:text-gray-400 mr-3">Ativas</span>
+          <div className="px-5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#252833] border border-slate-200 dark:border-[#252a3a] shadow-sm">
+            <span className="text-slate-500 dark:text-[#828ca5] mr-3">Ativas</span>
             <span className="text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md">
               {milestoneAutomations.filter((a) => a.active).length +
                 (appointmentAutomation?.active ? 1 : 0) +
@@ -165,7 +165,7 @@ export default function AutomationsPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Tabs */}
         <div className="px-8 pt-6 pb-2 z-10">
-          <div className="flex flex-col sm:flex-row gap-2 p-1.5 bg-slate-200/50 dark:bg-[#1a1d24] rounded-2xl lg:w-fit border border-slate-200/50 dark:border-gray-800">
+          <div className="flex flex-col sm:flex-row gap-2 p-1.5 bg-slate-200/50 dark:bg-[#1a1d24] rounded-2xl lg:w-fit border border-slate-200/50 dark:border-[#1e2334]">
             {tabs.map(tab => {
               const isActive = activeTab === tab.id;
               return (
@@ -174,7 +174,7 @@ export default function AutomationsPage() {
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
                   className={`flex items-center justify-center gap-2 py-3 px-6 rounded-xl text-sm font-bold transition-all duration-300 ${isActive
                     ? 'bg-white dark:bg-[#252833] text-slate-800 dark:text-white shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10'
-                    : 'text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-white/5'
+                    : 'text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-white/5'
                     }`}
                 >
                   <tab.icon className={`w-4 h-4 ${isActive ? 'text-rose-500' : 'opacity-70'}`} />
@@ -196,13 +196,13 @@ export default function AutomationsPage() {
 
               {activeTab === 'milestones' && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 bg-white dark:bg-[#1e2028] p-6 rounded-3xl border border-slate-200 dark:border-gray-700 shadow-sm">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 bg-white dark:bg-[#0d0f15] p-6 rounded-3xl border border-slate-200 dark:border-[#252a3a] shadow-sm">
                     <div className="max-w-2xl">
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-xs font-bold mb-3">
                         <TrendingUp className="w-3.5 h-3.5" /> JORNADA DE PACIENTE
                       </div>
-                      <h2 className="text-xl font-black text-slate-800 dark:text-gray-100 mb-2">Marcos de Idade</h2>
-                      <p className="text-sm text-slate-500 dark:text-gray-400 leading-relaxed">
+                      <h2 className="text-xl font-black text-slate-800 dark:text-[#e8ecf4] mb-2">Marcos de Idade</h2>
+                      <p className="text-sm text-slate-500 dark:text-[#828ca5] leading-relaxed">
                         Acompanhe o crescimento dos bebês e envie mensagens acolhedoras mês a mês.
                         O disparo ocorre automaticamente quando a criança completa a idade estipulada.
                       </p>
@@ -229,12 +229,12 @@ export default function AutomationsPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 border-dashed rounded-[2rem] text-center">
+                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] border-dashed rounded-[2rem] text-center">
                       <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-3xl flex items-center justify-center mb-6 -rotate-6">
                         <TrendingUp className="w-10 h-10 text-rose-500" />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-gray-100 mb-3">Nenhuma automação configurada</h3>
-                      <p className="text-slate-500 dark:text-gray-400 max-w-sm mb-8 text-sm leading-relaxed">Comece criando uma mensagem especial para quando o bebê completar 1 mês de vida para dar início a jornada.</p>
+                      <h3 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4] mb-3">Nenhuma automação configurada</h3>
+                      <p className="text-slate-500 dark:text-[#828ca5] max-w-sm mb-8 text-sm leading-relaxed">Comece criando uma mensagem especial para quando o bebê completar 1 mês de vida para dar início a jornada.</p>
                       <button
                         onClick={handleCreateMilestone}
                         className="px-8 py-3.5 bg-slate-800 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold hover:bg-slate-700 dark:hover:bg-gray-100 transition-colors shadow-lg shadow-slate-200 dark:shadow-none"
@@ -252,8 +252,8 @@ export default function AutomationsPage() {
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold mb-4">
                       <Calendar className="w-3.5 h-3.5" /> PRÉ-CONSULTA
                     </div>
-                    <h2 className="text-2xl font-black text-slate-800 dark:text-gray-100 mb-3">Lembretes de Consulta</h2>
-                    <p className="text-slate-500 dark:text-gray-400 mx-auto max-w-xl text-sm leading-relaxed">
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-[#e8ecf4] mb-3">Lembretes de Consulta</h2>
+                    <p className="text-slate-500 dark:text-[#828ca5] mx-auto max-w-xl text-sm leading-relaxed">
                       Evite faltas e confirme presenças enviando uma mensagem no dia anterior ao agendamento de forma 100% automática.
                     </p>
                   </div>
@@ -266,12 +266,12 @@ export default function AutomationsPage() {
                       onToggle={() => handleToggle(appointmentAutomation)}
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 border-dashed rounded-[2rem] text-center">
+                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] border-dashed rounded-[2rem] text-center">
                       <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-3xl flex items-center justify-center mb-6">
                         <Calendar className="w-10 h-10 text-blue-500" />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-gray-100 mb-3">Nenhum lembrete configurado</h3>
-                      <p className="text-slate-500 dark:text-gray-400 max-w-sm mb-8 text-sm leading-relaxed">Mantenha sua agenda cheia avisando os pacientes sobre as consultas que terão no dia seguinte.</p>
+                      <h3 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4] mb-3">Nenhum lembrete configurado</h3>
+                      <p className="text-slate-500 dark:text-[#828ca5] max-w-sm mb-8 text-sm leading-relaxed">Mantenha sua agenda cheia avisando os pacientes sobre as consultas que terão no dia seguinte.</p>
                       <button
                         onClick={handleCreateAppointmentReminder}
                         className="flex items-center gap-2 px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-200 dark:shadow-none hover:scale-105 active:scale-95"
@@ -289,8 +289,8 @@ export default function AutomationsPage() {
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold mb-4">
                       <RotateCcw className="w-3.5 h-3.5" /> PÓS-CONSULTA
                     </div>
-                    <h2 className="text-2xl font-black text-slate-800 dark:text-gray-100 mb-3">Lembretes de Retorno</h2>
-                    <p className="text-slate-500 dark:text-gray-400 mx-auto max-w-xl text-sm leading-relaxed">
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-[#e8ecf4] mb-3">Lembretes de Retorno</h2>
+                    <p className="text-slate-500 dark:text-[#828ca5] mx-auto max-w-xl text-sm leading-relaxed">
                       Garanta que os pacientes não esqueçam as consultas de revisão e acompanhamento que já estão marcadas para os próximos dias.
                     </p>
                   </div>
@@ -303,12 +303,12 @@ export default function AutomationsPage() {
                       onToggle={() => handleToggle(returnAutomation)}
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 border-dashed rounded-[2rem] text-center">
+                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] border-dashed rounded-[2rem] text-center">
                       <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mb-6">
                         <RotateCcw className="w-10 h-10 text-emerald-500" />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-800 dark:text-gray-100 mb-3">Nenhum lembrete configurado</h3>
-                      <p className="text-slate-500 dark:text-gray-400 max-w-sm mb-8 text-sm leading-relaxed">Avisa os pacientes sobre seus retornos já agendados de forma automática no dia anterior ao retorno.</p>
+                      <h3 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4] mb-3">Nenhum lembrete configurado</h3>
+                      <p className="text-slate-500 dark:text-[#828ca5] max-w-sm mb-8 text-sm leading-relaxed">Avisa os pacientes sobre seus retornos já agendados de forma automática no dia anterior ao retorno.</p>
                       <button
                         onClick={handleCreateReturnReminder}
                         className="flex items-center gap-2 px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-200 dark:shadow-none hover:scale-105 active:scale-95"

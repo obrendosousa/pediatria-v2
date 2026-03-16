@@ -1,11 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element, react-hooks/set-state-in-effect */
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Message } from '@/types';
 import { Check, CheckCheck, Trash2, BookmarkPlus, ChevronDown, Copy, User, Reply, Pencil, Loader2, FileText, Download, CheckCircle2, Play, Smile, Plus, Forward, Bot, Mic, ImageIcon, Video, FileIcon } from 'lucide-react';
 import AudioMessage from './AudioMessage';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
-import EmojiPicker, { Emoji, EmojiStyle, Theme } from 'emoji-picker-react';
+import dynamic from 'next/dynamic';
+import { Emoji, EmojiStyle, Theme } from 'emoji-picker-react';
+const EmojiPicker = dynamic(() => import('emoji-picker-react').then(mod => mod.default), {
+  ssr: false,
+  loading: () => <div className="w-[300px] h-[350px] bg-[var(--chat-surface)] rounded-xl animate-pulse" />,
+});
 import FormattedMessage from '@/components/ui/FormattedMessage';
 import ClaraMarkdownMessage from '@/components/chat/ClaraMarkdownMessage';
 
@@ -24,12 +29,44 @@ interface MessageBubbleProps {
   onReact?: (msg: Message, emoji: string) => void;
   onPreviewImage: (url: string) => void;
   onPreviewVideo: (url: string) => void;
+  onSaveSticker?: (url: string) => void;
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (msg: Message) => void;
   onStartSelection?: (msg: Message) => void;
   animate?: boolean;
   isAIChat?: boolean;
+}
+
+function emojiToUnified(emoji: string): string {
+  return [...emoji]
+    .map((char) => char.codePointAt(0)?.toString(16))
+    .filter(Boolean)
+    .join('-');
+}
+
+const DEFAULT_QUICK_REACTIONS = ['\u{1F44D}', '\u{2764}\u{FE0F}', '\u{1F602}', '\u{1F64F}'];
+const QUICK_REACTIONS_KEY = 'recentReactionEmojis';
+
+function getQuickReactions(): string[] {
+  if (typeof window === 'undefined') return DEFAULT_QUICK_REACTIONS;
+  try {
+    const stored = localStorage.getItem(QUICK_REACTIONS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length >= 4) return parsed.slice(0, 4);
+    }
+  } catch { /* ignore */ }
+  return DEFAULT_QUICK_REACTIONS;
+}
+
+function saveRecentReaction(emoji: string) {
+  const current = getQuickReactions();
+  const filtered = current.filter((e) => e !== emoji);
+  const updated = [emoji, ...filtered].slice(0, 4);
+  try {
+    localStorage.setItem(QUICK_REACTIONS_KEY, JSON.stringify(updated));
+  } catch { /* ignore */ }
 }
 
 function formatDocSize(bytes: number): string {
@@ -144,7 +181,7 @@ function AdaptiveImageMessage({
   );
 }
 
-export default function MessageBubble({
+function MessageBubble({
   message,
   isMe,
   chatId,
@@ -159,6 +196,7 @@ export default function MessageBubble({
   onReact,
   onPreviewImage,
   onPreviewVideo,
+  onSaveSticker,
   isSelectionMode = false,
   isSelected = false,
   onToggleSelect,
@@ -278,7 +316,9 @@ export default function MessageBubble({
       setShowReactionPopup(false);
       setShowEmojiPicker(false);
     };
-    const handleScroll = () => {
+    const handleScroll = (e: Event) => {
+      const reactionEl = document.querySelector('[data-reaction-popup]');
+      if (reactionEl?.contains(e.target as Node)) return;
       setShowMenu(false);
       setShowReactionPopup(false);
       setShowEmojiPicker(false);
@@ -302,6 +342,7 @@ export default function MessageBubble({
   }, [showMenu, showReactionPopup]);
 
   const handlePickReaction = (emoji: string) => {
+    saveRecentReaction(emoji);
     onReact?.(message, emoji);
     setShowReactionPopup(false);
     setShowEmojiPicker(false);
@@ -401,7 +442,7 @@ export default function MessageBubble({
       );
     }
 
-    const isPlanModeCard = text.includes('📋 *Plano gerado.*') && isAIChat && !isMe;
+    const isPlanModeCard = text.includes('\u{1F4CB} *Plano gerado.*') && isAIChat && !isMe;
 
     if (isPlanModeCard) {
       return (
@@ -410,7 +451,7 @@ export default function MessageBubble({
           <div className="mt-3 flex gap-2 w-full">
             <button
               onClick={() => {
-                const planText = text.replace(/📋 \*Plano gerado\.\*|Clique em 'Executar' na aba abaixo para iniciar\./gi, '').trim();
+                const planText = text.replace(/\u{1F4CB} \*Plano gerado\.\*|Clique em 'Executar' na aba abaixo para iniciar\./giu, '').trim();
                 window.dispatchEvent(new CustomEvent('clara:execute_plan', { detail: planText }));
               }}
               className="flex-1 bg-[var(--chat-accent-secondary)] hover:opacity-90 text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors flex items-center justify-center gap-1.5"
@@ -546,7 +587,7 @@ export default function MessageBubble({
           ? { bg: 'bg-emerald-500', lightBg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-500', label: 'Planilha' }
           : isWord
             ? { bg: 'bg-blue-500', lightBg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-500', label: 'Word' }
-            : { bg: 'bg-gray-500', lightBg: 'bg-gray-50 dark:bg-gray-800', text: 'text-gray-500', label: 'Documento' };
+            : { bg: 'bg-gray-500', lightBg: 'bg-gray-50 dark:bg-[#141722]', text: 'text-gray-500', label: 'Documento' };
 
       return (
         <div className="pt-1 w-[240px] sm:w-[260px]">
@@ -573,16 +614,16 @@ export default function MessageBubble({
             </div>
 
             {/* Rodapé com nome e tamanho */}
-            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/60 dark:bg-[#1e2028]">
+            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/60 dark:bg-[#0d0f15]">
               <div className={`w-8 h-8 rounded-full ${docStyle.lightBg} flex items-center justify-center shrink-0`}>
                 <FileText size={15} className={docStyle.text} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold truncate text-gray-800 dark:text-gray-100 leading-tight">
+                <p className="text-[12px] font-semibold truncate text-gray-800 dark:text-[#e8ecf4] leading-tight">
                   {fileName}
                 </p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
-                  {docStyle.label}{fileSize ? ` • ${fileSize}` : ''} • Toque para abrir
+                <p className="text-[10px] text-gray-500 dark:text-[#828ca5] mt-0.5">
+                  {docStyle.label}{fileSize ? ` \u2022 ${fileSize}` : ''} \u2022 Toque para abrir
                 </p>
               </div>
               <Download size={14} className="text-gray-400 shrink-0" />
@@ -607,7 +648,7 @@ export default function MessageBubble({
           </div>
           <div className="flex-1 flex flex-col gap-1">
             <div className="h-[6px] rounded-full bg-gray-300 dark:bg-gray-600 w-full" />
-            <span className="text-[11px] text-gray-400 dark:text-gray-500">Áudio indisponível</span>
+            <span className="text-[11px] text-gray-400 dark:text-[#565d73]">Áudio indisponível</span>
           </div>
         </div>
       );
@@ -623,9 +664,9 @@ export default function MessageBubble({
 
     if (message.message_type === 'image') {
       return (
-        <div className="w-[240px] sm:w-[260px] aspect-[4/3] rounded-[inherit] bg-gray-200 dark:bg-gray-700 flex flex-col items-center justify-center gap-2">
-          <ImageIcon size={32} className="text-gray-400 dark:text-gray-500" />
-          <span className="text-[11px] text-gray-400 dark:text-gray-500">Imagem indisponível</span>
+        <div className="w-[240px] sm:w-[260px] aspect-[4/3] rounded-[inherit] bg-gray-200 dark:bg-[#1e2334] flex flex-col items-center justify-center gap-2">
+          <ImageIcon size={32} className="text-gray-400 dark:text-[#565d73]" />
+          <span className="text-[11px] text-gray-400 dark:text-[#565d73]">Imagem indisponível</span>
         </div>
       );
     }
@@ -646,9 +687,9 @@ export default function MessageBubble({
             <div className="w-full h-[80px] bg-gray-500 flex items-center justify-center">
               <FileIcon size={28} className="text-white/70" />
             </div>
-            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/60 dark:bg-[#1e2028]">
+            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/60 dark:bg-[#0d0f15]">
               <FileText size={15} className="text-gray-400 shrink-0" />
-              <span className="text-[12px] text-gray-500 dark:text-gray-400 truncate">
+              <span className="text-[12px] text-gray-500 dark:text-[#828ca5] truncate">
                 Documento indisponível
               </span>
             </div>
@@ -691,7 +732,7 @@ export default function MessageBubble({
               </div>
             ) : (
               <div
-                className="w-[30px] h-[30px] rounded-full overflow-hidden border border-gray-100 dark:border-gray-700 flex items-center justify-center"
+                className="w-[30px] h-[30px] rounded-full overflow-hidden border border-gray-100 dark:border-[#252a3a] flex items-center justify-center"
                 style={!chatPhoto ? { backgroundColor: getAvatarColorHex(chatId) } : {}}
               >
                 {chatPhoto && !imgError ? (
@@ -723,7 +764,7 @@ export default function MessageBubble({
         {/* Conteúdo */}
         <div className="min-w-0 overflow-hidden break-words">
           {message.tool_data?.forwarded === true && !isMe && (
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+            <p className="text-[11px] text-gray-500 dark:text-[#828ca5] mb-1 flex items-center gap-1">
               <Forward size={12} /> Encaminhada
             </p>
           )}
@@ -734,17 +775,17 @@ export default function MessageBubble({
                   ? 'Você'
                   : (replyData?.sender === 'CUSTOMER' || replyData?.sender === 'contact') ? (replyData?.sender_name || 'Contato') : replyData?.sender || 'Contato'}
               </p>
-              <p className="text-[12px] text-gray-600 dark:text-gray-300 truncate">
+              <p className="text-[12px] text-gray-600 dark:text-[#a0a8be] truncate">
                 {replyData?.message_type === 'audio' || replyData?.message_type === 'voice'
-                  ? '🎵 Áudio'
+                  ? '\u{1F3B5} Áudio'
                   : replyData?.message_type === 'image'
-                    ? '📷 Foto'
+                    ? '\u{1F4F7} Foto'
                     : replyData?.message_type === 'video'
-                      ? '🎬 Vídeo'
+                      ? '\u{1F3AC} Vídeo'
                       : replyData?.message_type === 'sticker'
-                        ? '💟 Figurinha'
+                        ? '\u{1F49F} Figurinha'
                         : replyData?.message_type === 'document'
-                          ? '📄 Documento'
+                          ? '\u{1F4C4} Documento'
                           : replyData?.message_text || 'Mensagem'}
               </p>
             </div>
@@ -760,7 +801,7 @@ export default function MessageBubble({
                     : 'border-black/10 bg-black/5 text-[#3b4a54] dark:text-[#c7d1d8]'
                     }`}
                 >
-                  <span>{reaction.emoji}</span>
+                  <Emoji unified={emojiToUnified(reaction.emoji)} emojiStyle={EmojiStyle.APPLE} size={14} />
                   <span>{reaction.count}</span>
                 </span>
               ))}
@@ -801,7 +842,7 @@ export default function MessageBubble({
               setShowReactionPopup(!showReactionPopup);
               setShowEmojiPicker(false);
             }}
-            className={`absolute top-0 ${isMe ? '-left-8' : '-right-8'} p-1.5 rounded-full bg-white/95 dark:bg-[#202c33] border border-gray-200 dark:border-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-150 z-20 shadow-sm`}
+            className={`absolute top-0 ${isMe ? '-left-8' : '-right-8'} p-1.5 rounded-full bg-white/95 dark:bg-[var(--chat-surface)] border border-gray-200 dark:border-white/5 opacity-0 group-hover:opacity-100 transition-all duration-150 z-20 shadow-sm cursor-pointer hover:bg-[var(--chat-accent)]/10`}
             title="Reagir"
             aria-label="Reagir"
           >
@@ -809,20 +850,8 @@ export default function MessageBubble({
           </button>
         )}
 
-        {/* Botão de Encaminhar - aparece no hover */}
-        {!isRevoked && !isSelectionMode && onForward && (
-          <button
-            onClick={() => onForward(message)}
-            className={`absolute top-8 ${isMe ? '-left-8' : '-right-8'} p-1.5 rounded-full bg-white/95 dark:bg-[#202c33] border border-gray-200 dark:border-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-150 z-20 shadow-sm`}
-            title="Encaminhar"
-            aria-label="Encaminhar"
-          >
-            <Forward size={14} className="text-[#54656f] dark:text-[#aebac1]" />
-          </button>
-        )}
-
         {/* Botão de Menu - oculto para mensagens apagadas */}
-        {!isSticker && !isRevoked && !isSelectionMode && !isVideoMessage && !isImageMessage && (
+        {!isRevoked && !isSelectionMode && (
           <button
             ref={buttonRef}
             onClick={() => {
@@ -830,60 +859,74 @@ export default function MessageBubble({
               setShowEmojiPicker(false);
               setShowMenu(!showMenu);
             }}
-            className={`absolute top-0 right-0 p-1 m-0.5 rounded-full bg-gradient-to-l from-[rgba(255,255,255,0.95)] via-[rgba(255,255,255,0.8)] to-transparent dark:from-[#202c33] opacity-0 group-hover:opacity-100 transition-all duration-150 z-20 ${showMenu ? 'opacity-100' : ''}`}
+            className={`absolute ${isSticker ? 'top-0 right-0 backdrop-blur-md bg-white/20 dark:bg-white/10 border-white/20 dark:border-white/10 shadow-lg' : '-top-3 right-1 bg-white/95 dark:bg-[var(--chat-surface)] border-gray-200/60 dark:border-white/5 shadow-sm'} p-1 rounded-full border opacity-0 group-hover:opacity-100 transition-all duration-200 z-20 cursor-pointer hover:bg-[var(--chat-accent)]/10 ${showMenu ? 'opacity-100' : ''}`}
             style={{
               transform: showMenu ? 'scale(1.1)' : 'scale(1)',
-              transition: 'opacity 0.15s ease-out, transform 0.15s ease-out'
+              transition: 'opacity 0.2s ease-out, transform 0.2s ease-out'
             }}
           >
-            <ChevronDown size={18} className="text-[#54656f] dark:text-[#aebac1] drop-shadow-sm" />
+            <ChevronDown size={16} className="text-[var(--chat-text-secondary)]" />
           </button>
         )}
 
-        {/* Popup de reação estilo WhatsApp */}
-        {showReactionPopup && createPortal(
+        {/* Popup de reação rápida (pill) */}
+        {showReactionPopup && !showEmojiPicker && createPortal(
           <div
             data-reaction-popup
-            className="fixed z-[10000] bg-white dark:bg-[#2a2d36] border border-gray-100 dark:border-gray-700 shadow-[0_4px_12px_rgba(0,0,0,0.15)] rounded-full p-1.5"
+            className="fixed z-[10000] bg-white dark:bg-[var(--chat-surface)] border border-gray-100 dark:border-[#252a3a] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-full"
             style={{
               top: reactionPosition.top,
               left: reactionPosition.left,
-              borderRadius: showEmojiPicker ? 12 : 999,
+              animation: 'reactionPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+              opacity: 0,
             }}
           >
-            {!showEmojiPicker ? (
-              <div className="flex items-center gap-1">
-                {['👍', '❤️', '😂', '😮', '🙏'].map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handlePickReaction(emoji)}
-                    className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-lg"
-                    title={`Reagir com ${emoji}`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+            <div className="flex items-center gap-1 p-1.5">
+              {getQuickReactions().map((emoji) => (
                 <button
-                  onClick={() => setShowEmojiPicker(true)}
-                  className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-[#54656f] dark:text-[#aebac1] flex items-center justify-center"
-                  title="Mais emojis"
+                  key={emoji}
+                  onClick={() => handlePickReaction(emoji)}
+                  className="h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer transition-all duration-150 hover:scale-125 active:scale-95 flex items-center justify-center"
+                  title={`Reagir com ${emoji}`}
                 >
-                  <Plus size={14} />
+                  <Emoji unified={emojiToUnified(emoji)} emojiStyle={EmojiStyle.APPLE} size={22} />
                 </button>
-              </div>
-            ) : (
-              <EmojiPicker
-                onEmojiClick={(emojiData: any) => handlePickReaction(String(emojiData?.emoji || ''))}
-                autoFocusSearch={true}
-                theme={Theme.AUTO}
-                emojiStyle={EmojiStyle.APPLE}
-                searchDisabled={false}
-                width={320}
-                height={360}
-                previewConfig={{ showPreview: false }}
-                lazyLoadEmojis={true}
-              />
-            )}
+              ))}
+              <button
+                onClick={() => setShowEmojiPicker(true)}
+                className="h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-[var(--chat-text-secondary)] flex items-center justify-center cursor-pointer transition-all duration-150 hover:scale-110"
+                title="Mais emojis"
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Picker de emojis completo (separado) */}
+        {showReactionPopup && showEmojiPicker && createPortal(
+          <div
+            data-reaction-popup
+            className="fixed z-[10000] bg-white dark:bg-[var(--chat-surface)] border border-gray-100 dark:border-[#252a3a] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden"
+            style={{
+              top: reactionPosition.top,
+              left: reactionPosition.left,
+              animation: 'emojiExpandIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+              opacity: 0,
+            }}
+          >
+            <EmojiPicker
+              onEmojiClick={(emojiData: any) => handlePickReaction(String(emojiData?.emoji || ''))}
+              autoFocusSearch={true}
+              theme={Theme.AUTO}
+              emojiStyle={EmojiStyle.APPLE}
+              searchDisabled={false}
+              width={Math.min(320, typeof window !== 'undefined' ? window.innerWidth - 32 : 320)}
+              height={380}
+              previewConfig={{ showPreview: false }}
+              lazyLoadEmojis={true}
+            />
           </div>,
           document.body
         )}
@@ -892,7 +935,7 @@ export default function MessageBubble({
         {showMenu && createPortal(
           <div
             data-message-menu
-            className={`fixed bg-white dark:bg-[#2a2d36] py-2 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.15)] z-[9999] min-w-[160px] border border-gray-100 dark:border-gray-700 ${menuPosition.openUp ? 'origin-bottom-right' : 'origin-top-right'}`}
+            className={`fixed bg-white dark:bg-[var(--chat-surface)] py-2 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-[9999] min-w-[160px] border border-gray-100 dark:border-white/5 ${menuPosition.openUp ? 'origin-bottom-right' : 'origin-top-right'}`}
             style={{
               top: menuPosition.top,
               left: menuPosition.left,
@@ -902,42 +945,54 @@ export default function MessageBubble({
               willChange: 'opacity, transform'
             } as React.CSSProperties}
           >
-            <button
-              onClick={() => { navigator.clipboard.writeText(message.message_text || ''); setShowMenu(false); }}
-              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
-            >
-              <Copy size={16} /> Copiar
-            </button>
-            <button
-              onClick={() => { onSaveMacro(toMacroPayload()); setShowMenu(false); }}
-              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
-            >
-              <BookmarkPlus size={16} /> Ad. Respostas Rápidas
-            </button>
+            {isSticker && message.media_url && onSaveSticker && (
+              <button
+                onClick={() => { onSaveSticker(message.media_url!); setShowMenu(false); }}
+                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/[0.03] text-[14px] text-[var(--chat-text-primary)] flex items-center gap-3 cursor-pointer transition-colors duration-150"
+              >
+                <BookmarkPlus size={16} /> Salvar Figurinha
+              </button>
+            )}
+            {!isSticker && (
+              <>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(message.message_text || ''); setShowMenu(false); }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/[0.03] text-[14px] text-[var(--chat-text-primary)] flex items-center gap-3 cursor-pointer transition-colors duration-150"
+                >
+                  <Copy size={16} /> Copiar
+                </button>
+                <button
+                  onClick={() => { onSaveMacro(toMacroPayload()); setShowMenu(false); }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/[0.03] text-[14px] text-[var(--chat-text-primary)] flex items-center gap-3 cursor-pointer transition-colors duration-150"
+                >
+                  <BookmarkPlus size={16} /> Ad. Respostas Rápidas
+                </button>
+              </>
+            )}
             <button
               onClick={() => { onReply(message); setShowMenu(false); }}
-              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/[0.03] text-[14px] text-[var(--chat-text-primary)] flex items-center gap-3 cursor-pointer transition-colors duration-150"
             >
               <Reply size={16} /> Responder
             </button>
             {onForward && message.message_type !== 'revoked' && (
               <button
                 onClick={() => { onForward(message); setShowMenu(false); }}
-                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/[0.03] text-[14px] text-[var(--chat-text-primary)] flex items-center gap-3 cursor-pointer transition-colors duration-150"
               >
                 <Forward size={16} /> Encaminhar
               </button>
             )}
             <button
               onClick={() => { onStartSelection?.(message); setShowMenu(false); }}
-              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/[0.03] text-[14px] text-[var(--chat-text-primary)] flex items-center gap-3 cursor-pointer transition-colors duration-150"
             >
               <CheckCircle2 size={16} /> Selecionar mensagens
             </button>
             {canEdit && (
               <button
                 onClick={() => { onEdit(message); setShowMenu(false); }}
-                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[14px] text-[#3b4a54] dark:text-gray-200 flex items-center gap-3"
+                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/[0.03] text-[14px] text-[var(--chat-text-primary)] flex items-center gap-3 cursor-pointer transition-colors duration-150"
               >
                 <Pencil size={16} /> Editar
               </button>
@@ -945,14 +1000,14 @@ export default function MessageBubble({
             {isMe && (
               <button
                 onClick={() => onDelete(message, true)}
-                className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-[14px] text-red-500 flex items-center gap-3"
+                className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-[14px] text-red-500 flex items-center gap-3 cursor-pointer transition-colors duration-150"
               >
                 <Trash2 size={16} /> Apagar p/ todos
               </button>
             )}
             <button
               onClick={() => onDelete(message, false)}
-              className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-[14px] text-red-500 flex items-center gap-3"
+              className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-[14px] text-red-500 flex items-center gap-3 cursor-pointer transition-colors duration-150"
             >
               <Trash2 size={16} /> Apagar p/ mim
             </button>
@@ -965,3 +1020,17 @@ export default function MessageBubble({
     </div>
   );
 }
+
+export default React.memo(MessageBubble, (prev, next) => {
+  return (
+    prev.message.id === next.message.id &&
+    prev.message.message_text === next.message.message_text &&
+    prev.message.message_type === next.message.message_type &&
+    prev.message.status === next.message.status &&
+    prev.isSelected === next.isSelected &&
+    prev.isSelectionMode === next.isSelectionMode &&
+    prev.sequencePosition === next.sequencePosition &&
+    prev.showAvatar === next.showAvatar &&
+    JSON.stringify((prev.message as any).reactions) === JSON.stringify((next.message as any).reactions)
+  );
+});

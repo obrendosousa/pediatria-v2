@@ -250,15 +250,15 @@ export default function PrintDocumentsModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-[#1e2028] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+      <div className="bg-white dark:bg-[#0d0f15] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
         {/* Header */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 px-6 py-4 border-b border-slate-200 dark:border-gray-700 flex justify-between items-center">
+        <div className="bg-blue-50 dark:bg-blue-900/20 px-6 py-4 border-b border-slate-200 dark:border-[#252a3a] flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-black text-slate-800 dark:text-gray-100 flex items-center gap-2">
+            <h2 className="text-lg font-black text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
               Documentos da Consulta
             </h2>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{patientName}</p>
+            <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-0.5">{patientName}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-lg transition-colors">
             <X className="w-5 h-5 text-slate-500" />
@@ -275,8 +275,8 @@ export default function PrintDocumentsModal({
           ) : totalDocs === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <FileCheck className="w-12 h-12 text-slate-300 dark:text-gray-600 mb-3" />
-              <p className="text-sm text-slate-500 dark:text-gray-400">Nenhum documento gerado nesta consulta.</p>
-              <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">Receitas, exames e atestados aparecem aqui.</p>
+              <p className="text-sm text-slate-500 dark:text-[#828ca5]">Nenhum documento gerado nesta consulta.</p>
+              <p className="text-xs text-slate-400 dark:text-[#565d73] mt-1">Receitas, exames e atestados aparecem aqui.</p>
             </div>
           ) : (
             <>
@@ -298,7 +298,7 @@ export default function PrintDocumentsModal({
 
                 return (
                   <div key={presc.id || idx}>
-                    <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       <FileText className="w-3.5 h-3.5" />
                       {prescLabel}
                     </h3>
@@ -306,12 +306,12 @@ export default function PrintDocumentsModal({
                       {activeTypes.map(({ type, label, count, icon, iconColor, btnClass, btnDisabledClass }) => {
                         const dlKey = `presc-${presc.id || idx}-${type}`;
                         return (
-                          <div key={type} className="flex items-center justify-between bg-slate-50 dark:bg-[#2a2d36] rounded-lg border border-slate-200 dark:border-gray-700 p-3">
+                          <div key={type} className="flex items-center justify-between bg-slate-50 dark:bg-[#141722] rounded-lg border border-slate-200 dark:border-[#252a3a] p-3">
                             <div className="flex items-center gap-2 min-w-0 flex-1 mr-3">
                               <span className={iconColor}>{icon}</span>
                               <div>
                                 <p className="text-sm font-bold text-slate-700 dark:text-gray-200">{label}</p>
-                                <p className="text-xs text-slate-500 dark:text-gray-400">{count} ite{count > 1 ? 'ns' : 'm'}</p>
+                                <p className="text-xs text-slate-500 dark:text-[#828ca5]">{count} ite{count > 1 ? 'ns' : 'm'}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
@@ -344,7 +344,7 @@ export default function PrintDocumentsModal({
               {/* Exam Requests */}
               {examRequests.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <Microscope className="w-3.5 h-3.5" />
                     Solicitacoes de Exames ({examRequests.length})
                   </h3>
@@ -353,7 +353,7 @@ export default function PrintDocumentsModal({
                       const examsCount = (req.exams || []).filter((e: any) => e.name || e.code).length;
                       const dlKey = `exam-${req.id || idx}`;
                       return (
-                        <div key={req.id || idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#2a2d36] rounded-lg border border-slate-200 dark:border-gray-700 p-3">
+                        <div key={req.id || idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#141722] rounded-lg border border-slate-200 dark:border-[#252a3a] p-3">
                           <div className="min-w-0 flex-1 mr-3">
                             <p className="text-sm font-bold text-slate-700 dark:text-gray-200">
                               {req.model_name || `Solicitacao ${idx + 1}`}
@@ -361,7 +361,7 @@ export default function PrintDocumentsModal({
                                 {req.request_type || 'PARTICULAR'}
                               </span>
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-gray-400">
+                            <p className="text-xs text-slate-500 dark:text-[#828ca5]">
                               {examsCount} exame{examsCount !== 1 ? 's' : ''}
                               {req.clinical_indication ? ` • ${req.clinical_indication.substring(0, 40)}...` : ''}
                             </p>
@@ -395,7 +395,7 @@ export default function PrintDocumentsModal({
               {/* Documents / Certificates */}
               {documents.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5" />
                     Atestados e Documentos ({documents.length})
                   </h3>
@@ -403,12 +403,12 @@ export default function PrintDocumentsModal({
                     {documents.map((doc, idx) => {
                       const dlKey = `doc-${doc.id || idx}`;
                       return (
-                        <div key={doc.id || idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#2a2d36] rounded-lg border border-slate-200 dark:border-gray-700 p-3">
+                        <div key={doc.id || idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#141722] rounded-lg border border-slate-200 dark:border-[#252a3a] p-3">
                           <div className="min-w-0 flex-1 mr-3">
                             <p className="text-sm font-bold text-slate-700 dark:text-gray-200">
                               {doc.type || 'Documento'}
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-gray-400">
+                            <p className="text-xs text-slate-500 dark:text-[#828ca5]">
                               {doc.document_date
                                 ? format(new Date(doc.document_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })
                                 : ''}
@@ -444,10 +444,10 @@ export default function PrintDocumentsModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 bg-slate-50 dark:bg-[#2a2d36] border-t border-slate-200 dark:border-gray-700 flex justify-end">
+        <div className="px-6 py-3 bg-slate-50 dark:bg-[#141722] border-t border-slate-200 dark:border-[#252a3a] flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
+            className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-[#828ca5] hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
           >
             Fechar
           </button>

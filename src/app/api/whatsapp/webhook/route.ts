@@ -41,6 +41,13 @@ function extractTextFromAnyMessage(messageLike: unknown): string | null {
     m.extendedTextMessage?.text,
     m.imageMessage?.caption,
     m.videoMessage?.caption,
+    // Button/Interactive response messages (WhatsApp buttons, lists)
+    m.buttonsResponseMessage?.selectedButtonId,
+    m.buttonsResponseMessage?.selectedDisplayText,
+    m.templateButtonReplyMessage?.selectedId,
+    m.templateButtonReplyMessage?.selectedDisplayText,
+    m.listResponseMessage?.singleSelectReply?.selectedRowId,
+    m.listResponseMessage?.title,
     editedMessage?.conversation,
     editedMessage?.text,
     editedMessage?.extendedTextMessage?.text,
@@ -396,9 +403,14 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
 
     if (!remoteJid) continue;
 
-    // --- NOVO FILTRO: IGNORAR STATUS/STORIES ---
+    // --- FILTRO: IGNORAR STATUS/STORIES ---
     if (remoteJid === "status@broadcast") {
       console.log(`[WEBHOOK] Ignorando status/stories (status@broadcast)`);
+      continue;
+    }
+
+    // --- FILTRO: IGNORAR MENSAGENS DE GRUPO ---
+    if (remoteJid.endsWith("@g.us")) {
       continue;
     }
 
@@ -547,6 +559,15 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
     }
     if (isHistorySetEvent) {
       return NextResponse.json({ status: "ignored", reason: "history_restore_disabled" });
+    }
+
+    // Ignorar eventos de chats e contatos (não precisamos processar)
+    const isChatsEvent = ["CHATS_SET", "CHATS_UPSERT", "CHATS_UPDATE"].includes(eventUpper) ||
+      ["chats.set", "chats.upsert", "chats.update"].includes(event);
+    const isContactsEvent = ["CONTACTS_UPSERT", "CONTACTS_UPDATE"].includes(eventUpper) ||
+      ["contacts.upsert", "contacts.update"].includes(event);
+    if (isChatsEvent || isContactsEvent) {
+      return NextResponse.json({ status: "ignored", reason: "chats_or_contacts_event_passive" });
     }
 
     const rawMessages = normalizeMessagesFromWebhook(body);

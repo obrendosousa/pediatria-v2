@@ -270,9 +270,9 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
       />
 
       {/* ── Painel esquerdo: lista de documentos ─────────────────────────── */}
-      <div className="w-72 flex-shrink-0 border-r border-slate-200 dark:border-gray-700 flex flex-col">
+      <div className="w-72 flex-shrink-0 border-r border-slate-200 dark:border-[#252a3a] flex flex-col">
         {/* Cabeçalho */}
-        <div className="p-4 border-b border-slate-200 dark:border-gray-700 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-200 dark:border-[#252a3a] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-500" />
             <span className="font-semibold text-slate-700 dark:text-gray-200 text-sm">Documentos</span>
@@ -289,13 +289,13 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
         {/* Lista */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {isLoading ? (
-            <div className="p-6 text-center text-slate-400 dark:text-gray-500 text-sm">
+            <div className="p-6 text-center text-slate-400 dark:text-[#565d73] text-sm">
               Carregando...
             </div>
           ) : documents.length === 0 ? (
             <div className="p-6 text-center">
               <FileText className="w-10 h-10 text-slate-300 dark:text-gray-600 mx-auto mb-2" />
-              <p className="text-sm text-slate-400 dark:text-gray-500">Nenhum documento</p>
+              <p className="text-sm text-slate-400 dark:text-[#565d73]">Nenhum documento</p>
               <p className="text-xs text-slate-300 dark:text-gray-600 mt-1">
                 Clique em &ldquo;Novo&rdquo; para criar
               </p>
@@ -319,7 +319,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                         <p className="text-sm font-medium text-slate-700 dark:text-gray-200 truncate">
                           {doc.type}
                         </p>
-                        <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">
+                        <p className="text-xs text-slate-400 dark:text-[#565d73] mt-0.5">
                           {formatRelativeDate(doc.created_at || '')}
                         </p>
                       </div>
@@ -338,17 +338,17 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
         {isEditing ? (
           <>
             {/* Toolbar do editor */}
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-gray-700 flex items-center justify-between gap-4 flex-wrap">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-[#252a3a] flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-3 flex-wrap">
                 {/* Tipo do documento */}
                 <div className="flex items-center gap-2">
-                  <label className="text-xs font-medium text-slate-500 dark:text-gray-400 whitespace-nowrap">
+                  <label className="text-xs font-medium text-slate-500 dark:text-[#828ca5] whitespace-nowrap">
                     Tipo:
                   </label>
                   <select
                     value={docType}
                     onChange={(e) => setDocType(e.target.value)}
-                    className="text-sm border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg px-3 py-1.5 bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   >
                     {DOCUMENT_TYPES.map((t) => (
                       <option key={t} value={t}>{t}</option>
@@ -363,7 +363,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                     type="date"
                     value={docDate}
                     onChange={(e) => setDocDate(e.target.value)}
-                    className="text-sm border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg px-3 py-1.5 bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
 
@@ -371,7 +371,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                 <button
                   type="button"
                   onClick={() => setRequiresSignature((v) => !v)}
-                  className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-[#a0a8be] hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
                   {requiresSignature ? (
                     <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -398,7 +398,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                 <button
                   type="button"
                   onClick={() => setModelModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-[#a0a8be] border border-slate-200 dark:border-[#252a3a] rounded-lg hover:bg-slate-50 dark:hover:bg-[#1e2334] transition-colors"
                 >
                   <BookOpen className="w-4 h-4" />
                   Modelos
@@ -407,7 +407,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-[#a0a8be] border border-slate-200 dark:border-[#252a3a] rounded-lg hover:bg-slate-50 dark:hover:bg-[#1e2334] transition-colors"
                 >
                   <Printer className="w-4 h-4" />
                   Imprimir
@@ -416,7 +416,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-[#828ca5] hover:bg-slate-100 dark:hover:bg-[#1e2334] rounded-lg transition-colors"
                 >
                   Cancelar
                 </button>
@@ -467,7 +467,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
             <h3 className="text-lg font-semibold text-slate-700 dark:text-gray-200 mb-2">
               Documentos e Atestados
             </h3>
-            <p className="text-sm text-slate-400 dark:text-gray-500 max-w-xs mb-6">
+            <p className="text-sm text-slate-400 dark:text-[#565d73] max-w-xs mb-6">
               Crie atestados, declarações, laudos e outros documentos médicos para este paciente.
             </p>
             <button

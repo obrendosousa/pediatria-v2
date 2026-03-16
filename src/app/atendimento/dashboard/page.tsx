@@ -56,7 +56,7 @@ const STATUS_COLORS: Record<string, string> = {
   finished: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300',
   late: 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300',
   no_show: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300',
-  cancelled: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+  cancelled: 'bg-gray-100 text-gray-500 dark:bg-[#141722] dark:text-[#828ca5]',
 };
 
 const PIE_COLORS = ['#0891B2', '#7C3AED', '#059669', '#D97706', '#E11D48', '#6366F1', '#14B8A6', '#F59E0B', '#EC4899'];
@@ -130,8 +130,8 @@ function CollapsibleWidget({ title, icon, children, defaultOpen = true }: {
   if (!isVisible) return null;
 
   return (
-    <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-gray-800">
+    <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-[#1e2334]">
         <div className="flex items-center gap-2">
           <span className="text-teal-600 dark:text-teal-400">{icon}</span>
           <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">{title}</h3>
@@ -160,7 +160,7 @@ function CollapsibleWidget({ title, icon, children, defaultOpen = true }: {
 function CustomBarTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 shadow-lg">
+    <div className="bg-white dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-lg px-3 py-2 shadow-lg">
       <p className="text-xs font-bold text-slate-700 dark:text-gray-200">{label}</p>
       <p className="text-xs text-teal-600 dark:text-teal-400">{payload[0].value} atendimento{payload[0].value !== 1 ? 's' : ''}</p>
     </div>
@@ -327,20 +327,20 @@ export default function AtendimentoDashboardPage() {
     return (
       <div className="h-full overflow-y-auto bg-slate-50 dark:bg-[#15171e]">
         <div className="max-w-[1440px] mx-auto px-6 py-8 space-y-6">
-          <div className="h-8 w-72 bg-slate-200 dark:bg-gray-800 rounded-lg animate-pulse" />
-          <div className="h-12 w-full bg-slate-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+          <div className="h-8 w-72 bg-slate-200 dark:bg-[#141722] rounded-lg animate-pulse" />
+          <div className="h-12 w-full bg-slate-200 dark:bg-[#141722] rounded-lg animate-pulse" />
           <div className="grid grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 bg-slate-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+              <div key={i} className="h-28 bg-slate-200 dark:bg-[#141722] rounded-2xl animate-pulse" />
             ))}
           </div>
           <div className="grid grid-cols-12 gap-6">
             <div className="col-span-8 space-y-4">
-              <div className="h-72 bg-slate-200 dark:bg-gray-800 rounded-xl animate-pulse" />
-              <div className="h-56 bg-slate-200 dark:bg-gray-800 rounded-xl animate-pulse" />
+              <div className="h-72 bg-slate-200 dark:bg-[#141722] rounded-xl animate-pulse" />
+              <div className="h-56 bg-slate-200 dark:bg-[#141722] rounded-xl animate-pulse" />
             </div>
             <div className="col-span-4">
-              <div className="h-96 bg-slate-200 dark:bg-gray-800 rounded-xl animate-pulse" />
+              <div className="h-96 bg-slate-200 dark:bg-[#141722] rounded-xl animate-pulse" />
             </div>
           </div>
         </div>
@@ -356,19 +356,19 @@ export default function AtendimentoDashboardPage() {
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-8 rounded-full bg-gradient-to-b from-teal-500 to-cyan-600" />
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100">Dashboard</h1>
-            <p className="text-xs text-slate-400 dark:text-gray-500">Visão geral do Atendimento</p>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-[#e8ecf4]">Dashboard</h1>
+            <p className="text-xs text-slate-400 dark:text-[#565d73]">Visão geral do Atendimento</p>
           </div>
         </div>
 
         {/* ─── Filtros ─── */}
-        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 px-5 py-3">
+        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] px-5 py-3">
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Período</label>
             <select
               value={period}
               onChange={e => setPeriod(e.target.value as Period)}
-              className="px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"
+              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"
             >
               {PERIOD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -379,7 +379,7 @@ export default function AtendimentoDashboardPage() {
             <select
               value={doctorId ?? ''}
               onChange={e => setDoctorId(e.target.value ? Number(e.target.value) : null)}
-              className="px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer min-w-[180px]"
+              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer min-w-[180px]"
             >
               <option value="">Todos</option>
               {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -465,7 +465,7 @@ export default function AtendimentoDashboardPage() {
                     {pieData.map((item, i) => (
                       <div key={item.name} className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                        <span className="text-xs text-slate-600 dark:text-gray-300 flex-1">{item.name}</span>
+                        <span className="text-xs text-slate-600 dark:text-[#a0a8be] flex-1">{item.name}</span>
                         <span className="text-xs font-bold text-slate-700 dark:text-gray-200">{item.value}</span>
                       </div>
                     ))}
@@ -481,9 +481,9 @@ export default function AtendimentoDashboardPage() {
               {proceduresData.length > 0 ? (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-gray-800">
-                      <th className="text-left py-2 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">Procedimento</th>
-                      <th className="text-right py-2 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">Qtd</th>
+                    <tr className="border-b border-slate-100 dark:border-[#1e2334]">
+                      <th className="text-left py-2 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Procedimento</th>
+                      <th className="text-right py-2 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Qtd</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-gray-800">
@@ -505,9 +505,9 @@ export default function AtendimentoDashboardPage() {
               {birthdays.length > 0 ? (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-gray-800">
-                      <th className="text-left py-2 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">Paciente</th>
-                      <th className="text-right py-2 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">Data</th>
+                    <tr className="border-b border-slate-100 dark:border-[#1e2334]">
+                      <th className="text-left py-2 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Paciente</th>
+                      <th className="text-right py-2 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Data</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-gray-800">
@@ -519,7 +519,7 @@ export default function AtendimentoDashboardPage() {
                             <Cake className="w-3.5 h-3.5 text-pink-400" />
                             {p.full_name}
                           </td>
-                          <td className="py-2 text-right text-slate-500 dark:text-gray-400">{d}/{m}</td>
+                          <td className="py-2 text-right text-slate-500 dark:text-[#828ca5]">{d}/{m}</td>
                         </tr>
                       );
                     })}
@@ -533,8 +533,8 @@ export default function AtendimentoDashboardPage() {
 
           {/* ─── Coluna Lateral: Pacientes do dia ─── */}
           <div className="col-span-12 lg:col-span-4">
-            <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 sticky top-6">
-              <div className="px-5 py-3 border-b border-slate-100 dark:border-gray-800 flex items-center gap-2">
+            <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] sticky top-6">
+              <div className="px-5 py-3 border-b border-slate-100 dark:border-[#1e2334] flex items-center gap-2">
                 <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">Pacientes do dia</h3>
                 <span className="ml-auto text-xs font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-2 py-0.5 rounded-full">
@@ -556,7 +556,7 @@ export default function AtendimentoDashboardPage() {
                           <p className="text-sm font-medium text-slate-700 dark:text-gray-200 truncate">
                             {a.patient_name || 'Paciente'}
                           </p>
-                          <p className="text-xs text-slate-400 dark:text-gray-500 flex items-center gap-1">
+                          <p className="text-xs text-slate-400 dark:text-[#565d73] flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {formatTime(a.time)}
                           </p>
@@ -570,7 +570,7 @@ export default function AtendimentoDashboardPage() {
                 ) : (
                   <div className="text-center py-12">
                     <CalendarDays className="w-10 h-10 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
-                    <p className="text-sm text-slate-400 dark:text-gray-500">Não há agendamentos no dia!</p>
+                    <p className="text-sm text-slate-400 dark:text-[#565d73]">Não há agendamentos no dia!</p>
                   </div>
                 )}
               </div>

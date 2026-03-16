@@ -5,19 +5,19 @@ import { Clock } from 'lucide-react';
 
 export default function AguardandoAprovacaoPage() {
   return (
-    <div className="rounded-2xl border border-pink-100 dark:border-gray-700 bg-white dark:bg-[#262832] p-8 shadow-xl text-center">
+    <div className="rounded-2xl border border-pink-100 dark:border-[#252a3a] bg-white dark:bg-[#141722] p-8 shadow-xl text-center">
       <div className="flex justify-center mb-6">
         <div className="w-14 h-14 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
           <Clock className="w-7 h-7 text-amber-600 dark:text-amber-400" />
         </div>
       </div>
-      <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100 mb-2">
+      <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4] mb-2">
         Conta em análise
       </h1>
-      <p className="text-sm text-slate-500 dark:text-gray-400 mb-6">
+      <p className="text-sm text-slate-500 dark:text-[#828ca5] mb-6">
         Sua conta foi criada e está aguardando aprovação pela administração. Você receberá acesso ao painel assim que for aprovada.
       </p>
-      <p className="text-xs text-slate-400 dark:text-gray-500 mb-6">
+      <p className="text-xs text-slate-400 dark:text-[#565d73] mb-6">
         Em caso de dúvidas, entre em contato com a clínica.
       </p>
       <div className="flex justify-center gap-2">

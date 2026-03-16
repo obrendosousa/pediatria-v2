@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { fetchAndUpdateProfilePicture } from '@/ai/ingestion/services';
@@ -335,7 +336,12 @@ export async function POST(req: Request) {
       } catch (e) { /* Erro não crítico */ }
     };
 
-    if (type === 'audio' && mediaUrl) {
+    if (type === 'sticker' && mediaUrl) {
+      await setPresence('composing');
+      endpoint = '/message/sendSticker/{instance}';
+      apiBody = { number: phone, sticker: mediaUrl };
+    }
+    else if (type === 'audio' && mediaUrl) {
       await setPresence('recording');
       endpoint = '/message/sendWhatsAppAudio/{instance}';
       apiBody = { number: phone, audio: mediaUrl, delay: 1000, encoding: true };
@@ -370,6 +376,10 @@ export async function POST(req: Request) {
 
     if (!ok) {
       console.error('[API] Erro Evolution:', responseData);
+      // Marca a mensagem como failed no banco para o frontend saber
+      if (dbMessageId) {
+        await supabase.from('chat_messages').update({ status: 'failed' }).eq('id', dbMessageId);
+      }
       return NextResponse.json({ error: 'Falha ao enviar mensagem', details: responseData }, { status: status || 502 });
     }
 
@@ -444,6 +454,7 @@ export async function POST(req: Request) {
     }
 
     let memoryContent = message;
+    if (type === 'sticker') memoryContent = `[FIGURINHA ENVIADA] URL: ${mediaUrl}`;
     if (type === 'audio') memoryContent = `[ÁUDIO ENVIADO] URL: ${mediaUrl}`;
     if (type === 'image') memoryContent = `[IMAGEM ENVIADA] ${message || ''} URL: ${mediaUrl}`;
     if (type === 'video') memoryContent = `[VÍDEO ENVIADO] ${message || ''} URL: ${mediaUrl}`;

@@ -68,7 +68,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 };
 
 function StatusBadge({ value }: { value: string }) {
-  const cfg = STATUS_STYLES[value] ?? { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-gray-400', label: value.toUpperCase() };
+  const cfg = STATUS_STYLES[value] ?? { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-[#828ca5]', label: value.toUpperCase() };
   return (
     <span className={`px-2 py-0.5 text-xs font-bold rounded ${cfg.bg} ${cfg.text}`}>
       {cfg.label}
@@ -82,7 +82,7 @@ function SkeletonRows({ columns, rows }: { columns: number; rows: number }) {
   return (
     <>
       {Array.from({ length: rows }).map((_, r) => (
-        <tr key={r} className="border-b border-slate-100 dark:border-gray-800">
+        <tr key={r} className="border-b border-slate-100 dark:border-[#1e2334]">
           {Array.from({ length: columns }).map((_, c) => (
             <td key={c} className="px-4 py-3">
               <div className="h-4 bg-slate-200 dark:bg-gray-700 rounded animate-pulse" style={{ width: `${55 + Math.random() * 35}%` }} />
@@ -194,7 +194,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
   return (
     <div className="flex flex-col h-full">
       {/* Barra de busca + pageSize */}
-      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-gray-800">
+      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#1e2334]">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -202,7 +202,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
             value={search}
             onChange={e => handleSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
           />
         </div>
 
@@ -210,7 +210,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
           <select
             value={pageSize}
             onChange={e => handlePageSizeChange(Number(e.target.value))}
-            className="px-2 py-1.5 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-600 dark:text-[#a0a8be] focus:outline-none focus:ring-2 focus:ring-teal-400"
           >
             <option value={10}>10 / página</option>
             <option value={25}>25 / página</option>
@@ -222,17 +222,17 @@ export default function DataTable<T extends { id: string; status?: string }>({
       {/* Tabela */}
       <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
         {loading ? (
-          <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#2a2d36] border-b border-slate-200 dark:border-gray-700">
+                <tr className="bg-slate-50 dark:bg-[#141722] border-b border-slate-200 dark:border-[#252a3a]">
                   {columns.map(col => (
-                    <th key={col.key} className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">
+                    <th key={col.key} className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">
                       {col.label}
                     </th>
                   ))}
                   {(hasActions || hasMenuActions) && (
-                    <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase text-right">Opções</th>
+                    <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase text-right">Opções</th>
                   )}
                 </tr>
               </thead>
@@ -244,20 +244,20 @@ export default function DataTable<T extends { id: string; status?: string }>({
         ) : data.length === 0 ? (
           <div className="text-center py-16">
             {emptyIcon || <Inbox className="w-12 h-12 text-slate-300 dark:text-gray-600 mx-auto mb-3" />}
-            <p className="text-sm text-slate-400 dark:text-gray-500">
+            <p className="text-sm text-slate-400 dark:text-[#565d73]">
               {search ? `Nenhum resultado para "${search}".` : emptyMessage}
             </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#2a2d36] border-b border-slate-200 dark:border-gray-700">
+                <tr className="bg-slate-50 dark:bg-[#141722] border-b border-slate-200 dark:border-[#252a3a]">
                   {columns.map(col => (
                     <th
                       key={col.key}
                       onClick={() => col.sortable && handleSort(col.key)}
-                      className={`px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase ${
+                      className={`px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase ${
                         col.sortable ? 'cursor-pointer select-none hover:text-teal-600 dark:hover:text-teal-400 transition-colors' : ''
                       }`}
                     >
@@ -276,7 +276,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
                     </th>
                   ))}
                   {(hasActions || hasMenuActions) && (
-                    <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase text-right">Opções</th>
+                    <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase text-right">Opções</th>
                   )}
                 </tr>
               </thead>
@@ -337,13 +337,13 @@ export default function DataTable<T extends { id: string; status?: string }>({
 
       {/* Paginação */}
       {pagination && totalPages > 1 && (
-        <div className="px-6 py-3 border-t border-slate-200 dark:border-gray-700 flex items-center justify-between text-xs text-slate-500 dark:text-gray-400">
+        <div className="px-6 py-3 border-t border-slate-200 dark:border-[#252a3a] flex items-center justify-between text-xs text-slate-500 dark:text-[#828ca5]">
           <span>Mostrando {showingFrom} até {showingTo} de {total}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => onPageChange?.(Math.max(0, page - 1), pageSize)}
               disabled={page === 0}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-gray-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#252a3a] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
               Anterior
             </button>
@@ -358,7 +358,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
                   className={`px-3 py-1.5 rounded-lg border transition-colors ${
                     page === pageNum
                       ? 'bg-teal-600 text-white border-teal-600'
-                      : 'border-slate-200 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-white/5'
+                      : 'border-slate-200 dark:border-[#252a3a] hover:bg-slate-50 dark:hover:bg-white/5'
                   }`}
                 >
                   {pageNum + 1}
@@ -368,7 +368,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
             <button
               onClick={() => onPageChange?.(Math.min(totalPages - 1, page + 1), pageSize)}
               disabled={page >= totalPages - 1}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-gray-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#252a3a] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
               Próximo
             </button>
@@ -380,7 +380,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
       {menuOpenId !== null && menuPosition && (
         <div
           ref={dropdownRef}
-          className="fixed z-50 w-44 bg-white dark:bg-[#2a2d36] rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 py-1 animate-in fade-in-0 zoom-in-95"
+          className="fixed z-50 w-44 bg-white dark:bg-[#141722] rounded-xl shadow-xl border border-slate-200 dark:border-[#252a3a] py-1 animate-in fade-in-0 zoom-in-95"
           style={{ top: menuPosition.top, left: menuPosition.left }}
         >
           {(() => {

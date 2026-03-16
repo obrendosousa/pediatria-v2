@@ -88,8 +88,8 @@ export default function NewChatModal({ isOpen, onClose, onStartChat }: NewChatMo
       <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-xl shadow-2xl overflow-hidden flex flex-col">
         
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2d36]">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+        <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-[#252a3a] bg-gray-50 dark:bg-[#141722]">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-[#e8ecf4] flex items-center gap-2">
             <MessageSquarePlus className="text-green-600 dark:text-green-500" size={20}/>
             Nova Conversa
           </h2>
@@ -104,7 +104,7 @@ export default function NewChatModal({ isOpen, onClose, onStartChat }: NewChatMo
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-[#a0a8be] mb-2">
               Número do WhatsApp
             </label>
             <div className="relative">
@@ -117,7 +117,7 @@ export default function NewChatModal({ isOpen, onClose, onStartChat }: NewChatMo
                 className="w-full px-4 py-3 bg-white dark:bg-[#111b21] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-white placeholder-gray-400 font-mono"
               />
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <p className="text-xs text-gray-500 dark:text-[#828ca5] mt-2">
               Digite o número completo com DDI e DDD (apenas números).
             </p>
             {error && (

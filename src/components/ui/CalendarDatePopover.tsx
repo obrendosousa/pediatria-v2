@@ -61,39 +61,39 @@ export default function CalendarDatePopover({ value, onChange, label }: Calendar
 
   return (
     <div ref={containerRef} className="relative">
-      <label className="mb-1 block text-xs font-semibold text-slate-500 dark:text-gray-400">{label}</label>
+      <label className="mb-1 block text-xs font-semibold text-slate-500 dark:text-[#828ca5]">{label}</label>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex min-w-[148px] items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-[#111b21] dark:text-gray-200 dark:hover:bg-white/5"
+        className="inline-flex min-w-[148px] items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-[#252a3a] dark:bg-[#111b21] dark:text-gray-200 dark:hover:bg-white/5"
       >
         <span>{format(selectedDate, 'dd/MM/yyyy', { locale: ptBR })}</span>
-        <CalendarDays className="h-4 w-4 text-slate-500 dark:text-gray-400" />
+        <CalendarDays className="h-4 w-4 text-slate-500 dark:text-[#828ca5]" />
       </button>
 
       {open ? (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-30 w-[290px] rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-gray-700 dark:bg-[#111b21]">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-30 w-[290px] rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-[#252a3a] dark:bg-[#111b21]">
           <div className="mb-3 flex items-center justify-between">
             <button
               type="button"
               onClick={() => setDisplayMonth((prev) => addMonths(prev, -1))}
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 dark:text-gray-400 dark:hover:bg-white/5"
+              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 dark:text-[#828ca5] dark:hover:bg-white/5"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <p className="text-sm font-bold text-slate-800 dark:text-gray-100">
+            <p className="text-sm font-bold text-slate-800 dark:text-[#e8ecf4]">
               {format(displayMonth, "MMMM 'de' yyyy", { locale: ptBR })}
             </p>
             <button
               type="button"
               onClick={() => setDisplayMonth((prev) => addMonths(prev, 1))}
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 dark:text-gray-400 dark:hover:bg-white/5"
+              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 dark:text-[#828ca5] dark:hover:bg-white/5"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-slate-400 dark:text-gray-500">
+          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-slate-400 dark:text-[#565d73]">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'].map((day) => (
               <span key={day}>{day}</span>
             ))}
@@ -136,7 +136,7 @@ export default function CalendarDatePopover({ value, onChange, label }: Calendar
               onChange(format(now, 'yyyy-MM-dd'));
               setDisplayMonth(startOfMonth(now));
             }}
-            className="mt-3 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5"
+            className="mt-3 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-[#252a3a] dark:text-[#a0a8be] dark:hover:bg-white/5"
           >
             Ir para hoje
           </button>

@@ -341,7 +341,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         tool_data: enrichedMetadata
       }).select().single();
 
-      await fetch('/api/whatsapp/send', {
+      const sendRes = await fetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -354,6 +354,13 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           options: enrichedMetadata
         }),
       });
+      if (!sendRes.ok) {
+        console.error('[ChatWindow] Erro ao enviar mídia:', sendRes.status);
+        toast.error(`Falha ao enviar ${evolutionMediaType === 'audio' ? 'áudio' : evolutionMediaType === 'image' ? 'imagem' : 'arquivo'} via WhatsApp.`);
+        if (dbMsg?.id) {
+          await supabase.from('chat_messages').update({ status: 'failed' }).eq('id', dbMsg.id);
+        }
+      }
 
       if (isNewChat) {
         const { data: updatedMsgs } = await supabase.from('chat_messages').select('*').eq('chat_id', realChatId).order('created_at', { ascending: true });
@@ -574,21 +581,99 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
     handleSendFile(blob, '', 'audio', { duration });
   }, [handleSendFile]);
 
-  // Preview antes de enviar (drag-and-drop, colar, ou clique no clipe)
-  const [filePreview, setFilePreview] = useState<File | null>(null);
+  // Preview antes de enviar (suporta múltiplos arquivos)
+  const [previewFiles, setPreviewFiles] = useState<File[]>([]);
 
-  const handleFileDropped = useCallback((file: File) => {
-    setFilePreview(file);
+  const handleFileDropped = useCallback((files: File[]) => {
+    setPreviewFiles((prev) => [...prev, ...files]);
   }, []);
 
-  const handleConfirmFileSend = useCallback((file: File, caption: string) => {
-    setFilePreview(null);
-    handleSendFile(file, caption);
+  const handleConfirmFileSend = useCallback(async (items: Array<{ file: File; caption: string }>) => {
+    setPreviewFiles([]);
+    for (const item of items) {
+      await handleSendFile(item.file, item.caption);
+    }
   }, [handleSendFile]);
 
   const handleSendMedia = useCallback((file: File) => {
-    setFilePreview(file);
+    setPreviewFiles((prev) => [...prev, file]);
   }, []);
+
+  // Eventos do FilePreviewModal para add/update files
+  useEffect(() => {
+    const handleAdd = (e: Event) => {
+      const newFiles = (e as CustomEvent<File[]>).detail;
+      if (newFiles?.length) setPreviewFiles((prev) => [...prev, ...newFiles]);
+    };
+    const handleUpdate = (e: Event) => {
+      const remaining = (e as CustomEvent<File[]>).detail;
+      if (remaining) setPreviewFiles(remaining);
+    };
+    window.addEventListener('filepreview:add', handleAdd);
+    window.addEventListener('filepreview:update', handleUpdate);
+    return () => {
+      window.removeEventListener('filepreview:add', handleAdd);
+      window.removeEventListener('filepreview:update', handleUpdate);
+    };
+  }, []);
+
+  // --- STICKERS ---
+  const handleSaveSticker = useCallback(async (url: string) => {
+    try {
+      const { error } = await supabase
+        .from('saved_stickers')
+        .upsert({ url }, { onConflict: 'url' });
+      if (error) throw error;
+      toast.success('Figurinha salva!');
+    } catch (e) {
+      console.error('Erro ao salvar figurinha:', e);
+      toast.error('Erro ao salvar figurinha.');
+    }
+  }, [toast]);
+
+  const handleSendSticker = useCallback(async (stickerUrl: string) => {
+    if (!chat) return;
+    const tempId = `temp_sticker_${Date.now()}`;
+    const optimisticMsg = {
+      id: tempId,
+      message_text: 'Figurinha',
+      message_type: 'sticker',
+      media_url: stickerUrl,
+      created_at: new Date().toISOString(),
+      sender: 'HUMAN_AGENT',
+      status: 'sending',
+    };
+    setPendingMessages(prev => [...prev, optimisticMsg]);
+    try {
+      const { data: dbMsg } = await supabase.from('chat_messages').insert({
+        chat_id: chat.id,
+        phone: chat.phone,
+        message_text: 'Figurinha',
+        message_type: 'sticker',
+        media_url: stickerUrl,
+        sender: 'HUMAN_AGENT',
+        status: 'sent',
+      }).select().single();
+
+      const sendRes = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: chat.id, phone: chat.phone,
+          message: 'Figurinha', type: 'sticker',
+          mediaUrl: stickerUrl, dbMessageId: dbMsg?.id,
+        }),
+      });
+      if (!sendRes.ok) {
+        toast.error('Falha ao enviar figurinha.');
+        if (dbMsg?.id) await supabase.from('chat_messages').update({ status: 'failed' }).eq('id', dbMsg.id);
+      }
+      setTimeout(() => setPendingMessages(prev => prev.filter(m => m.id !== tempId)), 500);
+    } catch (err: any) {
+      console.error('[Erro] Falha no envio de figurinha:', err);
+      setPendingMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'error', errorDetail: err.message } : m));
+    }
+  }, [chat, toast]);
 
   const handleOpenMacroModal = useCallback((m?: any) => {
     setEditingItem(m || null);
@@ -849,9 +934,9 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
         mediaType={previewMedia?.type || 'image'}
       />
       <FilePreviewModal
-        file={filePreview}
+        files={previewFiles}
         onSend={handleConfirmFileSend}
-        onClose={() => setFilePreview(null)}
+        onClose={() => setPreviewFiles([])}
       />
       <AppointmentModal
         isOpen={isAppointmentModalOpen}
@@ -883,6 +968,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           onReact={reactToMessage}
           onPreviewImage={(src) => setPreviewMedia({ src, type: 'image' })}
           onPreviewVideo={(src) => setPreviewMedia({ src, type: 'video' })}
+          onSaveSticker={handleSaveSticker}
         />
 
         <ChatInput
@@ -898,6 +984,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           hasSuggestion={!!aiDraftText}
           isLoadingAISuggestion={isLoadingAISuggestion}
           onRequestAISuggestion={handleRequestAISuggestion}
+          onSendSticker={handleSendSticker}
         />
 
         {/* Toast de sugestão da Clara (20s, depois minimiza) */}

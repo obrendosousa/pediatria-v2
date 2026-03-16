@@ -25,10 +25,10 @@ export default function WeekView({
           const isToday = day.toDateString() === new Date().toDateString();
 
           return (
-            <div key={dateStr} className={`flex flex-col h-full transition-colors ${isToday ? 'bg-rose-50/10 dark:bg-rose-900/5' : 'bg-white dark:bg-[#1e2028]'}`}>
-              <div className={`text-center p-3 border-b ${isToday ? 'border-rose-200 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10' : 'border-slate-100 dark:border-gray-800'}`}>
-                <span className={`text-[10px] font-extrabold uppercase block mb-1 tracking-wider ${isToday ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-gray-500'}`}>{day.toLocaleDateString('pt-BR', { weekday: 'short' })}</span>
-                <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-lg font-bold ${isToday ? 'bg-rose-600 text-white shadow-md' : 'text-slate-700 dark:text-gray-400'}`}>{day.getDate()}</div>
+            <div key={dateStr} className={`flex flex-col h-full transition-colors ${isToday ? 'bg-rose-50/10 dark:bg-rose-900/5' : 'bg-white dark:bg-[#0d0f15]'}`}>
+              <div className={`text-center p-3 border-b ${isToday ? 'border-rose-200 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10' : 'border-slate-100 dark:border-[#1e2334]'}`}>
+                <span className={`text-[10px] font-extrabold uppercase block mb-1 tracking-wider ${isToday ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-[#565d73]'}`}>{day.toLocaleDateString('pt-BR', { weekday: 'short' })}</span>
+                <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-lg font-bold ${isToday ? 'bg-rose-600 text-white shadow-md' : 'text-slate-700 dark:text-[#828ca5]'}`}>{day.getDate()}</div>
               </div>
               <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
                 {dayApps.map(app => {
@@ -58,19 +58,19 @@ export default function WeekView({
                         }`}
                     >
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-gray-400 bg-slate-50 dark:bg-black/20 px-1 rounded">{time}</span>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-[#828ca5] bg-slate-50 dark:bg-black/20 px-1 rounded">{time}</span>
                         {isBlocked && <Ban className="w-3 h-3 text-red-400"/>}
                       </div>
                       <p className={`text-xs font-bold leading-tight truncate ${colors.text}`}>
                         {isBlocked ? 'Bloqueio' : (app.patient_name || 'Agendado')}
                       </p>
                       {!isBlocked && app.patient_phone && (
-                        <p className="text-[10px] text-slate-500 dark:text-gray-400 truncate mt-0.5">
+                        <p className="text-[10px] text-slate-500 dark:text-[#828ca5] truncate mt-0.5">
                           {app.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
                         </p>
                       )}
                       {total > 0 && (
-                        <div className="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-200/50 dark:border-gray-700/50">
+                        <div className="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-200/50 dark:border-[#252a3a]/50">
                           {remaining <= 0 ? (
                             <span className="inline-flex w-fit items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-bold">
                               <DollarSign size={10}/> Pago
@@ -85,7 +85,7 @@ export default function WeekView({
                     </div>
                   );
                 })}
-                <button onClick={() => openNewSlotModal(dateStr)} className="w-full py-2 border border-dashed border-slate-200 dark:border-gray-700 rounded-lg text-slate-300 dark:text-gray-600 hover:text-rose-500 dark:hover:text-rose-400 hover:border-rose-300 dark:hover:border-rose-500/50 transition-all flex items-center justify-center"><Plus className="w-4 h-4" /></button>
+                <button onClick={() => openNewSlotModal(dateStr)} className="w-full py-2 border border-dashed border-slate-200 dark:border-[#252a3a] rounded-lg text-slate-300 dark:text-gray-600 hover:text-rose-500 dark:hover:text-rose-400 hover:border-rose-300 dark:hover:border-rose-500/50 transition-all flex items-center justify-center"><Plus className="w-4 h-4" /></button>
               </div>
             </div>
           );

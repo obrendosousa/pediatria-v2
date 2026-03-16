@@ -37,16 +37,16 @@ function LoginForm() {
   };
 
   return (
-    <div className="rounded-2xl border border-pink-100 dark:border-gray-700 bg-white dark:bg-[#262832] p-8 shadow-xl">
+    <div className="rounded-2xl border border-pink-100 dark:border-[#252a3a] bg-white dark:bg-[#141722] p-8 shadow-xl">
       <div className="flex justify-center mb-6">
         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center">
           <Heart className="w-7 h-7 text-white" />
         </div>
       </div>
-      <h1 className="text-xl font-bold text-center text-slate-800 dark:text-gray-100 mb-2">
+      <h1 className="text-xl font-bold text-center text-slate-800 dark:text-[#e8ecf4] mb-2">
         Entrar no painel
       </h1>
-      <p className="text-sm text-slate-500 dark:text-gray-400 text-center mb-6">
+      <p className="text-sm text-slate-500 dark:text-[#828ca5] text-center mb-6">
         Centro Médico Aliança – Pediatria Integrada
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -56,7 +56,7 @@ function LoginForm() {
           </div>
         )}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
             E-mail
           </label>
           <input
@@ -65,12 +65,12 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-xl border border-pink-200 dark:border-gray-600 bg-white dark:bg-[#1e2028] px-4 py-2.5 text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none transition"
+            className="w-full rounded-xl border border-pink-200 dark:border-gray-600 bg-white dark:bg-[#0d0f15] px-4 py-2.5 text-slate-800 dark:text-[#e8ecf4] focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none transition"
             placeholder="seu@email.com"
           />
         </div>
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">
+          <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
             Senha
           </label>
           <input
@@ -79,7 +79,7 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full rounded-xl border border-pink-200 dark:border-gray-600 bg-white dark:bg-[#1e2028] px-4 py-2.5 text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none transition"
+            className="w-full rounded-xl border border-pink-200 dark:border-gray-600 bg-white dark:bg-[#0d0f15] px-4 py-2.5 text-slate-800 dark:text-[#e8ecf4] focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none transition"
             placeholder="••••••••"
           />
         </div>
@@ -99,7 +99,7 @@ function LoginForm() {
           {loading ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
-      <p className="mt-6 text-center text-sm text-slate-500 dark:text-gray-400">
+      <p className="mt-6 text-center text-sm text-slate-500 dark:text-[#828ca5]">
         Ainda não tem conta?{' '}
         <Link href="/signup" className="text-pink-600 dark:text-pink-400 font-medium hover:underline">
           Cadastre-se
@@ -111,7 +111,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="rounded-2xl border border-pink-100 dark:border-gray-700 bg-white dark:bg-[#262832] p-8 shadow-xl animate-pulse h-80" />}>
+    <Suspense fallback={<div className="rounded-2xl border border-pink-100 dark:border-[#252a3a] bg-white dark:bg-[#141722] p-8 shadow-xl animate-pulse h-80" />}>
       <LoginForm />
     </Suspense>
   );

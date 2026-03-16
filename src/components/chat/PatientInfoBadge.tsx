@@ -92,16 +92,16 @@ export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientIn
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-gray-800 bg-slate-50/50 dark:bg-[#181a20]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#1e2334] bg-slate-50/50 dark:bg-[#181a20]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                   <User className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-800 dark:text-gray-100">
+                  <h3 className="font-bold text-slate-800 dark:text-[#e8ecf4]">
                     {patient?.name || 'Carregando...'}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-gray-400">Informações do Paciente</p>
+                  <p className="text-xs text-slate-500 dark:text-[#828ca5]">Informações do Paciente</p>
                 </div>
               </div>
               <button
@@ -123,23 +123,23 @@ export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientIn
                   {/* Informações Básicas */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase">Nome</label>
-                      <p className="text-sm font-semibold text-slate-800 dark:text-gray-100 mt-1">
+                      <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase">Nome</label>
+                      <p className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mt-1">
                         {patient.name}
                       </p>
                     </div>
                     {patient.birth_date && (
                       <div>
-                        <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase">Data de Nascimento</label>
-                        <p className="text-sm font-semibold text-slate-800 dark:text-gray-100 mt-1">
+                        <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase">Data de Nascimento</label>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mt-1">
                           {new Date(patient.birth_date).toLocaleDateString('pt-BR')}
                         </p>
                       </div>
                     )}
                     {patient.phone && (
                       <div>
-                        <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase">Telefone Principal</label>
-                        <p className="text-sm font-semibold text-slate-800 dark:text-gray-100 mt-1">
+                        <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase">Telefone Principal</label>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mt-1">
                           {patient.phone}
                         </p>
                       </div>
@@ -149,7 +149,7 @@ export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientIn
                   {/* Números Vinculados */}
                   {phones.length > 0 && (
                     <div>
-                      <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 block">
+                      <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 block">
                         Números de Contato ({phones.length})
                       </label>
                       <div className="space-y-2">
@@ -165,7 +165,7 @@ export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientIn
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <Phone className="w-4 h-4 text-slate-400" />
-                                <span className="font-medium text-slate-800 dark:text-gray-100">
+                                <span className="font-medium text-slate-800 dark:text-[#e8ecf4]">
                                   {phone.phone_formatted || phone.phone}
                                 </span>
                                 {phone.is_primary && (
@@ -184,7 +184,7 @@ export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientIn
                   {/* Appointments Recentes */}
                   {appointments.length > 0 && (
                     <div>
-                      <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 block">
+                      <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 block">
                         Agendamentos Recentes ({appointments.length})
                       </label>
                       <div className="space-y-2">
@@ -197,11 +197,11 @@ export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientIn
                               <div className="flex items-center gap-3">
                                 <Calendar className="w-4 h-4 text-slate-400" />
                                 <div>
-                                  <p className="text-sm font-semibold text-slate-800 dark:text-gray-100">
+                                  <p className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4]">
                                     {new Date(apt.start_time).toLocaleDateString('pt-BR')} às {new Date(apt.start_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                   {apt.doctor_name && (
-                                    <p className="text-xs text-slate-500 dark:text-gray-400">
+                                    <p className="text-xs text-slate-500 dark:text-[#828ca5]">
                                       {apt.doctor_name}
                                     </p>
                                   )}
@@ -226,17 +226,17 @@ export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientIn
                   )}
                 </div>
               ) : (
-                <div className="text-center py-12 text-slate-500 dark:text-gray-400">
+                <div className="text-center py-12 text-slate-500 dark:text-[#828ca5]">
                   Erro ao carregar dados do paciente
                 </div>
               )}
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-slate-200 dark:border-gray-800 bg-slate-50/50 dark:bg-[#181a20] flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-[#1e2334] bg-slate-50/50 dark:bg-[#181a20] flex justify-end gap-3">
               <button
                 onClick={() => setIsOpen(false)}
-                className="px-4 py-2 text-slate-600 dark:text-gray-300 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+                className="px-4 py-2 text-slate-600 dark:text-[#a0a8be] font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
               >
                 Fechar
               </button>

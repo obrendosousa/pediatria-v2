@@ -302,20 +302,20 @@ export default function FinancialDashboardPage() {
     <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#0b141a] relative overflow-hidden transition-colors duration-300">
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-rose-100/40 dark:bg-rose-900/10 rounded-full blur-[100px] pointer-events-none -translate-y-1/2 translate-x-1/3 transition-colors"></div>
 
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#1e2028] border-b border-slate-100 dark:border-gray-800 shadow-sm z-20 transition-colors">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0d0f15] border-b border-slate-100 dark:border-[#1e2334] shadow-sm z-20 transition-colors">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
             <PieChartIcon className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-800 dark:text-gray-100 leading-none">Gestão Financeira</h1>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Pediatria: faturamento, lucro e fechamento</p>
+            <h1 className="text-base font-bold text-slate-800 dark:text-[#e8ecf4] leading-none">Gestão Financeira</h1>
+            <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-0.5">Pediatria: faturamento, lucro e fechamento</p>
           </div>
         </div>
         <button
           type="button"
           onClick={() => fetchFinancials()}
-          className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/5 flex items-center gap-1.5"
+          className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#252a3a] text-xs font-bold text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/5 flex items-center gap-1.5"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Atualizar
@@ -324,7 +324,7 @@ export default function FinancialDashboardPage() {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8 z-10">
         <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-2 bg-white dark:bg-[#1e2028] rounded-xl border border-slate-100 dark:border-gray-800 p-1">
+          <div className="flex items-center gap-2 bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-100 dark:border-[#1e2334] p-1">
             {([
               { key: 'overview', label: 'Visão geral' },
               { key: 'closure', label: 'Fechamento de caixa' }
@@ -333,7 +333,7 @@ export default function FinancialDashboardPage() {
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-3 py-2 rounded-lg text-xs font-bold ${activeTab === tab.key ? 'bg-rose-500 text-white' : 'text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10'}`}
+                className={`px-3 py-2 rounded-lg text-xs font-bold ${activeTab === tab.key ? 'bg-rose-500 text-white' : 'text-slate-600 dark:text-[#a0a8be] hover:bg-slate-100 dark:hover:bg-white/10'}`}
               >
                 {tab.label}
               </button>
@@ -350,7 +350,7 @@ export default function FinancialDashboardPage() {
                 key={option.key}
                 type="button"
                 onClick={() => setPreset(option.key)}
-                className={`px-3 py-2 rounded-lg text-xs font-bold border ${preset === option.key ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 border-slate-200 dark:border-gray-700'}`}
+                className={`px-3 py-2 rounded-lg text-xs font-bold border ${preset === option.key ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 border-slate-200 dark:border-[#252a3a]'}`}
               >
                 {option.label}
               </button>
@@ -359,20 +359,20 @@ export default function FinancialDashboardPage() {
         </div>
 
         {preset === 'custom' && (
-          <div className="mb-6 bg-white dark:bg-[#1e2028] rounded-xl border border-slate-100 dark:border-gray-800 p-4 flex items-center gap-3">
+          <div className="mb-6 bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-100 dark:border-[#1e2334] p-4 flex items-center gap-3">
             <CalendarRange className="w-4 h-4 text-slate-500" />
             <input
               type="date"
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-[#2a2d36] text-sm"
+              className="px-3 py-2 rounded-lg border border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#141722] text-sm"
             />
             <span className="text-sm text-slate-500">até</span>
             <input
               type="date"
               value={customEnd}
               onChange={(e) => setCustomEnd(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-[#2a2d36] text-sm"
+              className="px-3 py-2 rounded-lg border border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#141722] text-sm"
             />
           </div>
         )}
@@ -397,7 +397,7 @@ export default function FinancialDashboardPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-6 mb-6">
-              <div className="col-span-2 bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 p-4 h-[320px]">
+              <div className="col-span-2 bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] p-4 h-[320px]">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 mb-3">Faturamento por período</h3>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={overview.charts.revenueByDay}>
@@ -409,7 +409,7 @@ export default function FinancialDashboardPage() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 p-4 h-[320px]">
+              <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] p-4 h-[320px]">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 mb-3">Origem da receita</h3>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={overview.charts.revenueByOrigin}>
@@ -424,7 +424,7 @@ export default function FinancialDashboardPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-6 mb-6">
-              <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 p-4 h-[320px]">
+              <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] p-4 h-[320px]">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 mb-3">Formas de pagamento</h3>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -437,14 +437,14 @@ export default function FinancialDashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 p-4">
+              <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] p-4">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 mb-3">Top pacientes (curva A)</h3>
                 <div className="space-y-2">
                   {overview.bestClients.length === 0 && (
                     <p className="text-sm text-slate-500">Sem dados no período selecionado.</p>
                   )}
                   {overview.bestClients.map((client, index) => (
-                    <div key={`${client.name}-${index}`} className="flex items-center justify-between rounded-lg border border-slate-100 dark:border-gray-700 px-3 py-2">
+                    <div key={`${client.name}-${index}`} className="flex items-center justify-between rounded-lg border border-slate-100 dark:border-[#252a3a] px-3 py-2">
                       <div className="text-sm font-semibold text-slate-700 dark:text-gray-200">{client.name}</div>
                       <div className="text-sm font-bold text-emerald-600">R$ {client.total.toFixed(2)}</div>
                     </div>
@@ -457,11 +457,11 @@ export default function FinancialDashboardPage() {
 
         {activeTab === 'closure' && closure && (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 p-4">
+            <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200">Fechamento de caixa</h3>
-                  <p className="text-xs text-slate-500 dark:text-gray-400">
+                  <p className="text-xs text-slate-500 dark:text-[#828ca5]">
                     Período: {closure.startDate} até {closure.endDate}
                   </p>
                 </div>
@@ -489,10 +489,10 @@ export default function FinancialDashboardPage() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 overflow-hidden">
+            <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 dark:bg-[#2a2d36]">
+                  <thead className="bg-slate-50 dark:bg-[#141722]">
                     <tr>
                       <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Data/Hora</th>
                       <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Paciente</th>
@@ -514,7 +514,7 @@ export default function FinancialDashboardPage() {
                       </tr>
                     )}
                     {closure.logs.map((log) => (
-                      <tr key={log.id} className="border-t border-slate-100 dark:border-gray-800">
+                      <tr key={log.id} className="border-t border-slate-100 dark:border-[#1e2334]">
                         <td className="px-4 py-3">{new Date(log.occurred_at).toLocaleString('pt-BR')}</td>
                         <td className="px-4 py-3">{log.patient_name}</td>
                         <td className="px-4 py-3">{financialTypeLabel(log.attendance_type)}</td>
@@ -530,7 +530,7 @@ export default function FinancialDashboardPage() {
                             <button
                               type="button"
                               onClick={() => openEditModal(log)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/10"
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:border-[#252a3a] dark:text-[#a0a8be] dark:hover:bg-white/10"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                               Editar
@@ -548,7 +548,7 @@ export default function FinancialDashboardPage() {
       </div>
       {editingLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-[#1e2028]">
+          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-[#252a3a] dark:bg-[#0d0f15]">
             <h3 className="mb-4 text-sm font-bold text-slate-700 dark:text-gray-200">Editar lançamento financeiro</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -557,7 +557,7 @@ export default function FinancialDashboardPage() {
                   type="datetime-local"
                   value={editForm.occurredAt}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, occurredAt: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#2a2d36]"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252a3a] dark:bg-[#141722]"
                 />
               </div>
               <div>
@@ -568,7 +568,7 @@ export default function FinancialDashboardPage() {
                   min="0.01"
                   value={editForm.amount}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, amount: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#2a2d36]"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252a3a] dark:bg-[#141722]"
                 />
               </div>
               <div className="col-span-2">
@@ -581,7 +581,7 @@ export default function FinancialDashboardPage() {
                       origin: e.target.value as 'atendimento' | 'loja'
                     }))
                   }
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#2a2d36]"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252a3a] dark:bg-[#141722]"
                 >
                   <option value="atendimento">Atendimento</option>
                   <option value="loja">Loja</option>
@@ -595,7 +595,7 @@ export default function FinancialDashboardPage() {
                   min="0"
                   value={editForm.pix}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, pix: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#2a2d36]"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252a3a] dark:bg-[#141722]"
                 />
               </div>
               <div>
@@ -606,7 +606,7 @@ export default function FinancialDashboardPage() {
                   min="0"
                   value={editForm.cash}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, cash: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#2a2d36]"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252a3a] dark:bg-[#141722]"
                 />
               </div>
               <div>
@@ -617,7 +617,7 @@ export default function FinancialDashboardPage() {
                   min="0"
                   value={editForm.credit_card}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, credit_card: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#2a2d36]"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252a3a] dark:bg-[#141722]"
                 />
               </div>
               <div>
@@ -628,7 +628,7 @@ export default function FinancialDashboardPage() {
                   min="0"
                   value={editForm.debit_card}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, debit_card: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#2a2d36]"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252a3a] dark:bg-[#141722]"
                 />
               </div>
               <div className="col-span-2">
@@ -637,7 +637,7 @@ export default function FinancialDashboardPage() {
                   type="text"
                   value={editForm.notes}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, notes: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#2a2d36]"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252a3a] dark:bg-[#141722]"
                 />
               </div>
               <div className="col-span-2">
@@ -646,7 +646,7 @@ export default function FinancialDashboardPage() {
                   type="password"
                   value={editForm.password}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, password: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#2a2d36]"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252a3a] dark:bg-[#141722]"
                 />
               </div>
             </div>
@@ -654,7 +654,7 @@ export default function FinancialDashboardPage() {
               <button
                 type="button"
                 onClick={() => setEditingLog(null)}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 dark:border-gray-700 dark:text-gray-300"
+                className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 dark:border-[#252a3a] dark:text-[#a0a8be]"
               >
                 Cancelar
               </button>
@@ -684,23 +684,23 @@ function KpiCard({
   value: number;
 }) {
   return (
-    <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 p-4">
+    <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="p-2 rounded-lg text-rose-600 bg-rose-50 dark:bg-rose-900/20">
           <Icon className="w-4 h-4" />
         </span>
       </div>
-      <p className="text-[11px] uppercase font-bold text-slate-500 dark:text-gray-400">{label}</p>
-      <p className="text-xl font-black text-slate-800 dark:text-gray-100">R$ {value.toFixed(2)}</p>
+      <p className="text-[11px] uppercase font-bold text-slate-500 dark:text-[#828ca5]">{label}</p>
+      <p className="text-xl font-black text-slate-800 dark:text-[#e8ecf4]">R$ {value.toFixed(2)}</p>
     </div>
   );
 }
 
 function SummaryValue({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-slate-100 dark:border-gray-700 bg-slate-50 dark:bg-slate-800 p-3">
-      <p className="text-[11px] uppercase font-bold text-slate-500 dark:text-gray-400">{label}</p>
-      <p className="text-lg font-black text-slate-800 dark:text-gray-100">R$ {value.toFixed(2)}</p>
+    <div className="rounded-xl border border-slate-100 dark:border-[#252a3a] bg-slate-50 dark:bg-slate-800 p-3">
+      <p className="text-[11px] uppercase font-bold text-slate-500 dark:text-[#828ca5]">{label}</p>
+      <p className="text-lg font-black text-slate-800 dark:text-[#e8ecf4]">R$ {value.toFixed(2)}</p>
     </div>
   );
 }

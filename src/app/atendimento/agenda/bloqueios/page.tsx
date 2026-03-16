@@ -184,7 +184,7 @@ export default function BloqueiosPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#16171c] transition-colors">
       {/* Header */}
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#1e2028] border-b border-slate-100 dark:border-gray-800 shadow-sm">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0d0f15] border-b border-slate-100 dark:border-[#1e2334] shadow-sm">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/atendimento/agenda')} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 transition-colors">
             <ArrowLeft className="w-5 h-5" />
@@ -193,15 +193,15 @@ export default function BloqueiosPage() {
             <Ban className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-800 dark:text-gray-100 leading-none">Bloqueios de Agenda</h1>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Atendimento Geral</p>
+            <h1 className="text-base font-bold text-slate-800 dark:text-[#e8ecf4] leading-none">Bloqueios de Agenda</h1>
+            <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-0.5">Atendimento Geral</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setConfirmBatchDelete(true)}
             disabled={selected.size === 0}
-            className="flex items-center gap-2 bg-slate-100 dark:bg-[#2a2d36] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-gray-400 px-3 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-40"
+            className="flex items-center gap-2 bg-slate-100 dark:bg-[#141722] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-[#828ca5] px-3 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-40"
           >
             <Trash2 className="w-3.5 h-3.5" /> Cancelar Bloqueios ({selected.size})
           </button>
@@ -216,46 +216,46 @@ export default function BloqueiosPage() {
 
       {/* Filtros */}
       <div className="px-6 py-4">
-        <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 p-4 shadow-sm">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#1e2334] p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
             <Filter className="w-4 h-4 text-teal-500" />
             <span className="text-sm font-bold text-slate-700 dark:text-gray-200">Filtros</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Profissional</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Profissional</label>
               <select
                 value={doctorFilter ?? ''}
                 onChange={e => { setDoctorFilter(e.target.value ? Number(e.target.value) : null); setPage(0); }}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
               >
                 <option value="">Todos</option>
                 {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">De</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">De</label>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={e => { setDateFrom(e.target.value); setPage(0); }}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Até</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Até</label>
               <input
                 type="date"
                 value={dateTo}
                 onChange={e => { setDateTo(e.target.value); setPage(0); }}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
             </div>
           </div>
           {(doctorFilter || dateFrom || dateTo) && (
             <button
               onClick={() => { setDoctorFilter(null); setDateFrom(''); setDateTo(''); setPage(0); }}
-              className="mt-3 text-xs text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200 font-medium flex items-center gap-1"
+              className="mt-3 text-xs text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-200 font-medium flex items-center gap-1"
             >
               <X className="w-3.5 h-3.5" /> Limpar filtros
             </button>
@@ -265,14 +265,14 @@ export default function BloqueiosPage() {
 
       {/* Tabela */}
       <div className="px-6 pb-6">
-        <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#1e2334] shadow-sm overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
-              <span className="ml-2 text-sm text-slate-500 dark:text-gray-400">Buscando bloqueios...</span>
+              <span className="ml-2 text-sm text-slate-500 dark:text-[#828ca5]">Buscando bloqueios...</span>
             </div>
           ) : blocks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-gray-500">
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-[#565d73]">
               <Ban className="w-10 h-10 mb-3 opacity-40" />
               <p className="text-sm font-medium">Nenhum bloqueio cadastrado</p>
               <p className="text-xs mt-1">Clique em &quot;Adicionar&quot; para criar um bloqueio</p>
@@ -282,7 +282,7 @@ export default function BloqueiosPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-[#16171c]">
+                    <tr className="border-b border-slate-100 dark:border-[#1e2334] bg-slate-50 dark:bg-[#16171c]">
                       <th className="px-4 py-3 w-[40px]">
                         <input
                           type="checkbox"
@@ -291,14 +291,14 @@ export default function BloqueiosPage() {
                           className="rounded border-slate-300 text-teal-500 focus:ring-teal-400"
                         />
                       </th>
-                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider w-[60px]">ID</th>
-                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Profissional</th>
-                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Título</th>
-                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Data Inicial</th>
-                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Data Final</th>
-                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Horário</th>
-                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Recorrência</th>
-                      <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider w-[80px]">Opções</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider w-[60px]">ID</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider">Profissional</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider">Título</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider">Data Inicial</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider">Data Final</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider">Horário</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider">Recorrência</th>
+                      <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider w-[80px]">Opções</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
@@ -313,20 +313,20 @@ export default function BloqueiosPage() {
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-xs font-mono text-slate-400 dark:text-gray-500">#{block.id}</span>
+                          <span className="text-xs font-mono text-slate-400 dark:text-[#565d73]">#{block.id}</span>
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-700 dark:text-gray-300">{block.doctor_name || 'Todos'}</td>
+                        <td className="px-4 py-3 text-xs text-slate-700 dark:text-[#a0a8be]">{block.doctor_name || 'Todos'}</td>
                         <td className="px-4 py-3">
                           <p className="text-sm font-medium text-slate-800 dark:text-gray-200 truncate max-w-[200px]">{block.title}</p>
-                          {block.notes && <p className="text-[11px] text-slate-400 dark:text-gray-500 truncate max-w-[200px]">{block.notes}</p>}
+                          {block.notes && <p className="text-[11px] text-slate-400 dark:text-[#565d73] truncate max-w-[200px]">{block.notes}</p>}
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-700 dark:text-gray-300">{formatDate(block.start_date)}</td>
-                        <td className="px-4 py-3 text-xs text-slate-700 dark:text-gray-300">{formatDate(block.end_date)}</td>
+                        <td className="px-4 py-3 text-xs text-slate-700 dark:text-[#a0a8be]">{formatDate(block.start_date)}</td>
+                        <td className="px-4 py-3 text-xs text-slate-700 dark:text-[#a0a8be]">{formatDate(block.end_date)}</td>
                         <td className="px-4 py-3">
                           {block.all_day ? (
-                            <span className="text-xs text-slate-500 dark:text-gray-400 italic">Dia inteiro</span>
+                            <span className="text-xs text-slate-500 dark:text-[#828ca5] italic">Dia inteiro</span>
                           ) : (
-                            <span className="text-xs text-slate-700 dark:text-gray-300">
+                            <span className="text-xs text-slate-700 dark:text-[#a0a8be]">
                               {block.start_time?.slice(0, 5) || '—'} — {block.end_time?.slice(0, 5) || '—'}
                             </span>
                           )}
@@ -352,13 +352,13 @@ export default function BloqueiosPage() {
               </div>
 
               {/* Rodapé: total + paginação */}
-              <div className="px-4 py-3 border-t border-slate-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <span className="text-xs text-slate-500 dark:text-gray-400">
+              <div className="px-4 py-3 border-t border-slate-100 dark:border-[#1e2334] flex flex-col sm:flex-row items-center justify-between gap-3">
+                <span className="text-xs text-slate-500 dark:text-[#828ca5]">
                   Total de <strong className="text-slate-700 dark:text-gray-200">{totalCount}</strong> bloqueio(s).
                 </span>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-500 dark:text-gray-400">Por página:</span>
+                    <span className="text-[11px] text-slate-500 dark:text-[#828ca5]">Por página:</span>
                     {PAGE_SIZES.map(s => (
                       <button
                         key={s}
@@ -373,7 +373,7 @@ export default function BloqueiosPage() {
                     <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md text-slate-400 disabled:opacity-30 transition-colors">
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-xs text-slate-600 dark:text-gray-300 font-medium min-w-[80px] text-center">{page + 1} de {totalPages || 1}</span>
+                    <span className="text-xs text-slate-600 dark:text-[#a0a8be] font-medium min-w-[80px] text-center">{page + 1} de {totalPages || 1}</span>
                     <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-md text-slate-400 disabled:opacity-30 transition-colors">
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -475,14 +475,14 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-200 dark:border-gray-800 shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+      <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-200 dark:border-[#1e2334] shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-gray-800 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-[#1e2334] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-lg">
               <Ban className="w-5 h-5" />
             </div>
-            <h2 className="text-base font-bold text-slate-800 dark:text-gray-100">Adicionar Bloqueio</h2>
+            <h2 className="text-base font-bold text-slate-800 dark:text-[#e8ecf4]">Adicionar Bloqueio</h2>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 transition-colors">
             <X className="w-5 h-5" />
@@ -491,16 +491,16 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
 
         {/* Tipo */}
         <div className="px-6 pt-4">
-          <div className="flex bg-slate-100 dark:bg-[#2a2d36] p-1 rounded-lg">
+          <div className="flex bg-slate-100 dark:bg-[#141722] p-1 rounded-lg">
             <button
               onClick={() => setBlockType('simple')}
-              className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${blockType === 'simple' ? 'bg-white dark:bg-gray-600 shadow text-slate-800 dark:text-white' : 'text-slate-400 dark:text-gray-500'}`}
+              className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${blockType === 'simple' ? 'bg-white dark:bg-gray-600 shadow text-slate-800 dark:text-white' : 'text-slate-400 dark:text-[#565d73]'}`}
             >
               Simples
             </button>
             <button
               onClick={() => setBlockType('recurring')}
-              className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${blockType === 'recurring' ? 'bg-white dark:bg-gray-600 shadow text-slate-800 dark:text-white' : 'text-slate-400 dark:text-gray-500'}`}
+              className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${blockType === 'recurring' ? 'bg-white dark:bg-gray-600 shadow text-slate-800 dark:text-white' : 'text-slate-400 dark:text-[#565d73]'}`}
             >
               Recorrente
             </button>
@@ -511,11 +511,11 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
         <div className="px-6 py-4 space-y-4">
           {/* Profissional */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Profissional *</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Profissional *</label>
             <select
               value={form.doctor_id}
               onChange={e => setForm(prev => ({ ...prev, doctor_id: e.target.value }))}
-              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
             >
               <option value="">Todos os profissionais</option>
               {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -524,34 +524,34 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
 
           {/* Descrição */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Descrição *</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Descrição *</label>
             <input
               type="text"
               value={form.title}
               onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Ex: Feriado, Reunião, Férias..."
-              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400 placeholder:text-slate-400"
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400 placeholder:text-slate-400"
             />
           </div>
 
           {/* Datas */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Início *</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Início *</label>
               <input
                 type="date"
                 value={form.start_date}
                 onChange={e => setForm(prev => ({ ...prev, start_date: e.target.value }))}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Término *</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Término *</label>
               <input
                 type="date"
                 value={form.end_date}
                 onChange={e => setForm(prev => ({ ...prev, end_date: e.target.value }))}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
               />
             </div>
           </div>
@@ -571,26 +571,26 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
           {!form.all_day && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Horário Inicial *</label>
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Horário Inicial *</label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="time"
                     value={form.start_time}
                     onChange={e => setForm(prev => ({ ...prev, start_time: e.target.value }))}
-                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Horário Final *</label>
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Horário Final *</label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="time"
                     value={form.end_time}
                     onChange={e => setForm(prev => ({ ...prev, end_time: e.target.value }))}
-                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
                   />
                 </div>
               </div>
@@ -600,11 +600,11 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
           {/* Recorrência (só no modo recorrente) */}
           {blockType === 'recurring' && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Recorrência</label>
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Recorrência</label>
               <select
                 value={form.recurrence}
                 onChange={e => setForm(prev => ({ ...prev, recurrence: e.target.value }))}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400"
               >
                 <option value="daily">Diário</option>
                 <option value="weekly">Semanal</option>
@@ -615,20 +615,20 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
 
           {/* Observações */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Observações</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Observações</label>
             <textarea
               value={form.notes}
               onChange={e => setForm(prev => ({ ...prev, notes: e.target.value }))}
               rows={3}
               placeholder="Notas adicionais..."
-              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400 placeholder:text-slate-400 resize-none"
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400 placeholder:text-slate-400 resize-none"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-gray-800 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-sm font-bold transition-colors">
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-[#1e2334] flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-gray-500 dark:text-[#828ca5] hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-sm font-bold transition-colors">
             Cancelar
           </button>
           <button

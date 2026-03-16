@@ -116,12 +116,12 @@ export function RichTextEditor({
   const btnClass = 'p-1.5 hover:bg-slate-200 dark:hover:bg-[#353842] rounded transition-colors';
 
   return (
-    <div className={`border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1e2028] ${className}`}>
+    <div className={`border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#0d0f15] ${className}`}>
       {/* Toolbar */}
       {showToolbar && !readOnly && (
-        <div className="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-[#2a2d36] rounded-t-lg flex-wrap">
+        <div className="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-[#252a3a] bg-slate-50 dark:bg-[#141722] rounded-t-lg flex-wrap">
           <select
-            className="px-2 py-1 text-xs border border-slate-200 dark:border-gray-700 rounded bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 mr-1 cursor-pointer"
+            className="px-2 py-1 text-xs border border-slate-200 dark:border-[#252a3a] rounded bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 mr-1 cursor-pointer"
             defaultValue="normal"
             onChange={handleHeadingChange}
           >
@@ -134,43 +134,43 @@ export function RichTextEditor({
           <div className="w-px h-4 bg-slate-300 dark:bg-gray-600 mx-1" />
 
           <button type="button" onClick={() => execCmd('bold')} className={btnClass} title="Negrito">
-            <Bold className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <Bold className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
           <button type="button" onClick={() => execCmd('italic')} className={btnClass} title="Itálico">
-            <Italic className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <Italic className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
           <button type="button" onClick={() => execCmd('underline')} className={btnClass} title="Sublinhado">
-            <Underline className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <Underline className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
 
           <div className="w-px h-4 bg-slate-300 dark:bg-gray-600 mx-1" />
 
           <button type="button" onClick={() => execCmd('justifyLeft')} className={btnClass} title="Alinhar à esquerda">
-            <AlignLeft className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <AlignLeft className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
           <button type="button" onClick={() => execCmd('justifyCenter')} className={btnClass} title="Centralizar">
-            <AlignCenter className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <AlignCenter className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
           <button type="button" onClick={() => execCmd('justifyRight')} className={btnClass} title="Alinhar à direita">
-            <AlignRight className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <AlignRight className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
 
           <div className="w-px h-4 bg-slate-300 dark:bg-gray-600 mx-1" />
 
           <button type="button" onClick={() => execCmd('insertUnorderedList')} className={btnClass} title="Lista com marcadores">
-            <List className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <List className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
           <button type="button" onClick={() => execCmd('insertOrderedList')} className={btnClass} title="Lista numerada">
-            <ListOrdered className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <ListOrdered className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
 
           <div className="w-px h-4 bg-slate-300 dark:bg-gray-600 mx-1" />
 
           <button type="button" onClick={insertTable} className={btnClass} title="Inserir tabela">
-            <Table className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <Table className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
           <button type="button" onClick={insertImage} className={btnClass} title="Inserir imagem">
-            <ImageIcon className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <ImageIcon className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
 
           <div className="flex-1" />
@@ -179,13 +179,13 @@ export function RichTextEditor({
             type="button" onClick={handleUndo} disabled={historyIndex <= 0}
             className={`${btnClass} disabled:opacity-50 disabled:cursor-not-allowed`} title="Desfazer"
           >
-            <Undo2 className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <Undo2 className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
           <button
             type="button" onClick={handleRedo} disabled={historyIndex >= history.length - 1}
             className={`${btnClass} disabled:opacity-50 disabled:cursor-not-allowed`} title="Refazer"
           >
-            <Redo2 className="w-4 h-4 text-slate-600 dark:text-gray-400" />
+            <Redo2 className="w-4 h-4 text-slate-600 dark:text-[#828ca5]" />
           </button>
         </div>
       )}
@@ -211,7 +211,7 @@ export function RichTextEditor({
 
       {/* Footer com botões de modelo */}
       {(onSaveModel || onUseModel) && (
-        <div className="flex justify-end gap-2 p-3 border-t border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-[#2a2d36] rounded-b-lg">
+        <div className="flex justify-end gap-2 p-3 border-t border-slate-200 dark:border-[#252a3a] bg-slate-50 dark:bg-[#141722] rounded-b-lg">
           {onSaveModel && (
             <button
               type="button" onClick={onSaveModel}

@@ -72,7 +72,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
             onUpdate={handleUpdate}
         />
 
-        <div className="bg-[var(--chat-surface)] dark:bg-[#202c33] px-4 py-2.5 border-l border-gray-300 dark:border-gray-700 flex items-center justify-between z-10 shadow-sm transition-colors duration-300">
+        <div className="bg-[var(--chat-surface)] dark:bg-[#202c33] px-4 py-2.5 border-l border-gray-300 dark:border-[#252a3a] flex items-center justify-between z-10 shadow-sm transition-colors duration-300">
             <div className="flex items-center gap-3">
                 {isAIChat ? (
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm border border-indigo-400/30">
@@ -101,12 +101,12 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                 )}
                 
                 <div>
-                <h2 className="font-medium text-gray-800 dark:text-gray-100 flex items-center gap-1.5">
+                <h2 className="font-medium text-gray-800 dark:text-[#e8ecf4] flex items-center gap-1.5">
                   {isAIChat && <Sparkles size={16} className="text-indigo-500" />}
                   {/* NOME ATUALIZADO PARA CLARA AQUI */}
                   {isAIChat ? '🤖 Clara' : (chat?.contact_name || chat?.phone)}
                 </h2>
-                <p className="text-[12px] text-gray-500 dark:text-gray-400">
+                <p className="text-[12px] text-gray-500 dark:text-[#828ca5]">
                   {loadingMsgs ? 'Carregando...' : (isAIChat ? 'Inteligência Artificial Interna' : chat?.phone)}
                 </p>
                 {!isAIChat && isUnsavedContact && (
@@ -153,18 +153,18 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                 {!isAIChat && (
                   <div className="relative">
                       <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer" aria-label="Menu">
-                          <MoreVertical size={20} className="text-gray-600 dark:text-gray-300" />
+                          <MoreVertical size={20} className="text-gray-600 dark:text-[#a0a8be]" />
                       </button>
                   
                       {isMenuOpen && (
-                          <div className="absolute right-0 top-10 bg-white dark:bg-[#2a2d36] shadow-xl rounded-lg border border-gray-100 dark:border-gray-700 py-1 w-48 z-50 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
+                          <div className="absolute right-0 top-10 bg-white dark:bg-[#141722] shadow-xl rounded-lg border border-gray-100 dark:border-[#252a3a] py-1 w-48 z-50 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
                               <button
                                   onClick={() => setIsEditModalOpen(true)}
                                   className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 text-sm flex gap-2 items-center transition-colors cursor-pointer"
                               >
                                   <UserCog size={16}/> Editar Contato
                               </button>
-                              <div className="h-[1px] bg-gray-100 dark:bg-gray-700 my-1"/>
+                              <div className="h-[1px] bg-gray-100 dark:bg-[#1e2334] my-1"/>
                               <button
                                   onClick={handleClearChatClick}
                                   className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-red-600 dark:text-red-400 text-sm flex gap-2 items-center transition-colors cursor-pointer"

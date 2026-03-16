@@ -238,7 +238,7 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
 
   return (
     <>
-      <div className="w-[320px] min-w-[260px] md:w-[380px] lg:w-[400px] shrink-0 flex flex-col border-r border-[#CCFBF1] dark:border-gray-800 bg-white dark:bg-[#1e2028] h-full relative z-10 transition-colors duration-300">
+      <div className="w-[320px] min-w-[260px] md:w-[380px] lg:w-[400px] shrink-0 flex flex-col border-r border-[#CCFBF1] dark:border-[#1e2334] bg-white dark:bg-[#0d0f15] h-full relative z-10 transition-colors duration-300">
 
         {/* --- MODAIS --- */}
         <TagsManager
@@ -291,18 +291,18 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
 
         {/* 1. MODO ARQUIVADOS */}
         {isViewingArchived ? (
-          <div className="flex flex-col animate-in fade-in duration-200 bg-[#F0FDFA] dark:bg-[#2a2d36]">
-            <div className="h-[60px] flex items-center px-4 gap-4 border-b border-gray-200/50 dark:border-gray-700">
+          <div className="flex flex-col animate-in fade-in duration-200 bg-[#F0FDFA] dark:bg-[#141722]">
+            <div className="h-[60px] flex items-center px-4 gap-4 border-b border-gray-200/50 dark:border-[#252a3a]">
               <button
                 onClick={() => setIsViewingArchived(false)}
-                className="hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors -ml-2 text-[#5E8683] dark:text-gray-300"
+                className="hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors -ml-2 text-[#5E8683] dark:text-[#a0a8be]"
               >
                 <ArrowLeft size={20} />
               </button>
-              <h2 className="text-[19px] font-medium text-[#134E4A] dark:text-gray-100">Arquivadas</h2>
+              <h2 className="text-[19px] font-medium text-[#134E4A] dark:text-[#e8ecf4]">Arquivadas</h2>
             </div>
-            <div className="py-4 px-8 text-center bg-gray-50/50 dark:bg-transparent border-b border-gray-100 dark:border-gray-800">
-              <p className="text-[13px] text-[#5E8683] dark:text-gray-400 leading-relaxed">
+            <div className="py-4 px-8 text-center bg-gray-50/50 dark:bg-transparent border-b border-gray-100 dark:border-[#1e2334]">
+              <p className="text-[13px] text-[#5E8683] dark:text-[#828ca5] leading-relaxed">
                 Todas as suas conversas arquivadas estão aqui.
               </p>
             </div>
@@ -316,7 +316,7 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
               <button onClick={toggleSelectionMode} className="p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-full text-blue-900/70 dark:text-gray-200">
                 <X size={20} />
               </button>
-              <span className="font-bold text-blue-900/90 dark:text-gray-100 text-sm">
+              <span className="font-bold text-blue-900/90 dark:text-[#e8ecf4] text-sm">
                 {selectedChatIds.length} selecionados
               </span>
             </div>
@@ -333,7 +333,7 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
           /* 4. MODO PADRÃO */
         ) : (
           <>
-            <div className="h-[60px] bg-[#F0FDFA] dark:bg-[#2a2d36] flex items-center justify-between px-4 shrink-0 border-b border-gray-200/60 dark:border-gray-700">
+            <div className="h-[60px] bg-[#F0FDFA] dark:bg-[#141722] flex items-center justify-between px-4 shrink-0 border-b border-gray-200/60 dark:border-[#252a3a]">
               <div
                 className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ring-2 ring-transparent hover:ring-teal-200 dark:hover:ring-teal-700"
                 style={!myProfilePic || myProfilePicError ? { backgroundColor: getAvatarColorHex(0) } : {}}
@@ -355,7 +355,7 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
                   />
                 )}
               </div>
-              <div className="flex gap-1 text-[#5E8683] dark:text-gray-300">
+              <div className="flex gap-1 text-[#5E8683] dark:text-[#a0a8be]">
                 <button
                   onClick={() => setIsNewChatModalOpen(true)}
                   className="hover:bg-teal-100/60 dark:hover:bg-white/10 rounded-lg p-2 transition-colors cursor-pointer"
@@ -388,15 +388,15 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
                   </button>
 
                   {isHeaderMenuOpen && (
-                    <div className="absolute right-0 top-12 w-56 bg-white dark:bg-[#2a2d36] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.12)] py-1.5 z-[60] border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200 origin-top-right transition-all">
+                    <div className="absolute right-0 top-12 w-56 bg-white dark:bg-[#141722] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.12)] py-1.5 z-[60] border border-gray-100 dark:border-[#252a3a] animate-in fade-in zoom-in-95 duration-200 origin-top-right transition-all">
                       <button
                         onClick={() => { setIsTagsManagerOpen(true); setIsHeaderMenuOpen(false); }}
                         className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-3 text-[14px] text-[#134E4A] dark:text-gray-200 cursor-pointer transition-colors"
                       >
-                        <Tag size={16} className="text-[#5E8683] dark:text-gray-400" /> Gerenciar Etiquetas
+                        <Tag size={16} className="text-[#5E8683] dark:text-[#828ca5]" /> Gerenciar Etiquetas
                       </button>
                       <button className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-3 text-[14px] text-[#134E4A] dark:text-gray-200 cursor-pointer transition-colors">
-                        <Settings size={16} className="text-[#5E8683] dark:text-gray-400" /> Configurações
+                        <Settings size={16} className="text-[#5E8683] dark:text-[#828ca5]" /> Configurações
                       </button>
                     </div>
                   )}
@@ -404,9 +404,9 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
               </div>
             </div>
 
-            <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1e2028] relative transition-colors duration-300">
-              <div className="bg-[#F0FDFA] dark:bg-[#2a2d36] rounded-lg flex items-center px-3.5 py-1.5 h-[36px] transition-colors duration-300 focus-within:ring-2 focus-within:ring-teal-300/50 dark:focus-within:ring-teal-700/50">
-                <Search size={16} className="text-[#5E8683] dark:text-gray-400 mr-3 shrink-0" />
+            <div className="px-3 py-2 border-b border-gray-100 dark:border-[#1e2334] bg-white dark:bg-[#0d0f15] relative transition-colors duration-300">
+              <div className="bg-[#F0FDFA] dark:bg-[#141722] rounded-lg flex items-center px-3.5 py-1.5 h-[36px] transition-colors duration-300 focus-within:ring-2 focus-within:ring-teal-300/50 dark:focus-within:ring-teal-700/50">
+                <Search size={16} className="text-[#5E8683] dark:text-[#828ca5] mr-3 shrink-0" />
                 <input
                   type="text"
                   placeholder="Pesquisar conversas..."
@@ -415,12 +415,12 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 {searchTerm && (
-                  <button onClick={() => setSearchTerm('')} className="text-[#5E8683] dark:text-gray-400 hover:text-[#134E4A] dark:hover:text-gray-200 p-0.5 cursor-pointer transition-colors">
+                  <button onClick={() => setSearchTerm('')} className="text-[#5E8683] dark:text-[#828ca5] hover:text-[#134E4A] dark:hover:text-gray-200 p-0.5 cursor-pointer transition-colors">
                     <X size={14} />
                   </button>
                 )}
               </div>
-              <button className="absolute right-5 top-1/2 -translate-y-1/2 text-[#5E8683] dark:text-gray-400 hover:text-[#134E4A] dark:hover:text-gray-200 cursor-pointer transition-colors" aria-label="Filtrar">
+              <button className="absolute right-5 top-1/2 -translate-y-1/2 text-[#5E8683] dark:text-[#828ca5] hover:text-[#134E4A] dark:hover:text-gray-200 cursor-pointer transition-colors" aria-label="Filtrar">
                 <Filter size={16} />
               </button>
             </div>
@@ -428,13 +428,13 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
         )}
 
         {/* --- LISTAGEM --- */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin hover:scrollbar-thumb-gray-300 dark:hover:scrollbar-thumb-gray-600 bg-white dark:bg-[#1e2028] transition-colors duration-300">
+        <div className="flex-1 overflow-y-auto scrollbar-thin hover:scrollbar-thumb-gray-300 dark:hover:scrollbar-thumb-gray-600 bg-white dark:bg-[#0d0f15] transition-colors duration-300">
 
           {/* BOTÕES DE NAVEGAÇÃO SUPERIORES */}
           {!isViewingArchived && !isSelectionMode && !searchTerm && (
             <div
               onClick={() => setIsViewingArchived(true)}
-              className="flex items-center px-4 py-2.5 cursor-pointer hover:bg-teal-50/50 dark:hover:bg-white/5 text-[#134E4A] dark:text-gray-200 border-b border-gray-100 dark:border-gray-800 transition-colors duration-200"
+              className="flex items-center px-4 py-2.5 cursor-pointer hover:bg-teal-50/50 dark:hover:bg-white/5 text-[#134E4A] dark:text-gray-200 border-b border-gray-100 dark:border-[#1e2334] transition-colors duration-200"
             >
               <div className="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center">
                 <Archive size={16} className="text-[#0891B2] dark:text-teal-400" />
@@ -481,11 +481,11 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
                   )}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <p className="text-sm font-medium text-gray-500 dark:text-[#828ca5]">
                     {isViewingArchived ? 'Nenhuma conversa arquivada' : searchTerm ? 'Nenhum resultado' : 'Nenhuma conversa'}
                   </p>
                   {searchTerm && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Tente outro termo de busca</p>
+                    <p className="text-xs text-gray-400 dark:text-[#565d73] mt-1">Tente outro termo de busca</p>
                   )}
                 </div>
               </div>

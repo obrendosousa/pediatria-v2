@@ -2,9 +2,11 @@
 
 import { useState, useCallback } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
+import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const supabase = createSchemaClient('atendimento');
+const pubSupabase = createClient();
 
 export type MedicalCertificate = {
   id: number;
@@ -59,7 +61,7 @@ export function useCertificates(patientId: number) {
   }, [patientId]);
 
   const fetchDoctors = useCallback(async () => {
-    const { data } = await supabase
+    const { data } = await pubSupabase
       .from('doctors')
       .select('id, name')
       .eq('active', true)
@@ -72,12 +74,24 @@ export function useCertificates(patientId: number) {
   }, []);
 
   const fetchTemplates = useCallback(async () => {
-    const { data } = await supabase
+    const { data: legacy } = await supabase
       .from('clinical_templates')
       .select('id, title, content')
       .eq('template_type', 'atestado')
       .order('title');
-    if (data) setTemplates(data as CertificateTemplate[]);
+
+    const { data: cadastros } = await supabase
+      .from('certificate_templates')
+      .select('id, name, content')
+      .order('name');
+
+    const list: CertificateTemplate[] = (legacy as CertificateTemplate[]) || [];
+    if (cadastros) {
+      for (const t of cadastros) {
+        list.push({ id: -(list.length + 5000), title: (t as { name: string }).name, content: t.content });
+      }
+    }
+    setTemplates(list);
   }, []);
 
   const create = useCallback(async (input: CertificateInput) => {

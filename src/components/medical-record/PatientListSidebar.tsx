@@ -36,15 +36,15 @@ export function PatientListSidebar({
   );
 
   return (
-    <div className="w-80 h-full flex flex-col bg-white dark:bg-[#1e2028] border-r border-slate-200 dark:border-gray-800 transition-colors z-20">
+    <div className="w-80 h-full flex flex-col bg-white dark:bg-[#0d0f15] border-r border-slate-200 dark:border-[#1e2334] transition-colors z-20">
       
       {/* --- HEADER DA SIDEBAR --- */}
-      <div className="p-5 border-b border-slate-100 dark:border-gray-800">
+      <div className="p-5 border-b border-slate-100 dark:border-[#1e2334]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-gray-100 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
             <User className="w-5 h-5 text-rose-500" /> Pacientes
           </h2>
-          <span className="text-xs font-bold text-slate-400 dark:text-gray-500 bg-slate-100 dark:bg-[#2a2d36] px-2 py-1 rounded-md">
+          <span className="text-xs font-bold text-slate-400 dark:text-[#565d73] bg-slate-100 dark:bg-[#141722] px-2 py-1 rounded-md">
             {filtered.length}
           </span>
         </div>
@@ -53,7 +53,7 @@ export function PatientListSidebar({
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 group-focus-within:text-rose-500 transition-colors" />
           <input
             placeholder="Buscar nome ou telefone..."
-            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 dark:focus:ring-rose-900/20 transition-all placeholder:text-slate-400"
+            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 dark:focus:ring-rose-900/20 transition-all placeholder:text-slate-400"
             value={searchTerm}
             onChange={e => onSearchChange(e.target.value)}
           />
@@ -68,7 +68,7 @@ export function PatientListSidebar({
             Carregando...
           </div>
         ) : filtered.length === 0 ? (
-           <div className="p-8 text-center text-slate-400 dark:text-gray-500 text-sm italic">
+           <div className="p-8 text-center text-slate-400 dark:text-[#565d73] text-sm italic">
              Nenhum paciente encontrado.
            </div>
         ) : (
@@ -94,7 +94,7 @@ export function PatientListSidebar({
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors shrink-0 ${
                   isSelected 
                     ? 'bg-rose-500 text-white' 
-                    : 'bg-slate-100 dark:bg-[#2a2d36] text-slate-500 dark:text-gray-400 group-hover:bg-white dark:group-hover:bg-[#1e2028] group-hover:text-rose-500'
+                    : 'bg-slate-100 dark:bg-[#141722] text-slate-500 dark:text-[#828ca5] group-hover:bg-white dark:group-hover:bg-[#1e2028] group-hover:text-rose-500'
                 }`}>
                   {patient.name.substring(0, 2).toUpperCase()}
                 </div>
@@ -102,11 +102,11 @@ export function PatientListSidebar({
                 {/* Dados */}
                 <div className="min-w-0 flex-1">
                   <p className={`text-sm font-bold truncate ${
-                    isSelected ? 'text-rose-900 dark:text-rose-300' : 'text-slate-700 dark:text-gray-300'
+                    isSelected ? 'text-rose-900 dark:text-rose-300' : 'text-slate-700 dark:text-[#a0a8be]'
                   }`}>
                     {patient.name}
                   </p>
-                  <p className="text-xs text-slate-400 dark:text-gray-500 truncate flex items-center gap-1">
+                  <p className="text-xs text-slate-400 dark:text-[#565d73] truncate flex items-center gap-1">
                     {patient.phone || 'Sem telefone'}
                   </p>
                 </div>
@@ -120,7 +120,7 @@ export function PatientListSidebar({
       </div>
 
       {/* --- FOOTER (AÇÃO) --- */}
-      <div className="p-4 border-t border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-[#2a2d36]">
+      <div className="p-4 border-t border-slate-100 dark:border-[#1e2334] bg-slate-50 dark:bg-[#141722]">
         <button 
           onClick={onNewPatient}
           className="w-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white py-3 rounded-xl font-bold text-sm shadow-md shadow-rose-200 dark:shadow-none transition-all flex items-center justify-center gap-2"

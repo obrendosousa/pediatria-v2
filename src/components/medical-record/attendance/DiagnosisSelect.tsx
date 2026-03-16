@@ -139,7 +139,7 @@ export function DiagnosisSelect({
               }
             }}
             placeholder="Comece a digitar..."
-            className="w-full px-4 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full px-4 py-2.5 border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           />
           {searchTerm && (
             <button
@@ -173,9 +173,9 @@ export function DiagnosisSelect({
 
       {/* Dropdown de resultados */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg max-h-64 overflow-y-auto custom-scrollbar">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg shadow-lg max-h-64 overflow-y-auto custom-scrollbar">
           {isLoading ? (
-            <div className="p-4 text-center text-slate-500 dark:text-gray-400">
+            <div className="p-4 text-center text-slate-500 dark:text-[#828ca5]">
               Buscando...
             </div>
           ) : options.length > 0 ? (
@@ -184,22 +184,22 @@ export function DiagnosisSelect({
                 key={`${option.code}-${index}`}
                 type="button"
                 onClick={() => handleSelect(option)}
-                className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-gray-800 last:border-b-0"
+                className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-[#1e2334] last:border-b-0"
               >
-                <div className="font-medium text-slate-900 dark:text-gray-100">
+                <div className="font-medium text-slate-900 dark:text-[#e8ecf4]">
                   {option.code}
                 </div>
-                <div className="text-sm text-slate-600 dark:text-gray-400 mt-0.5">
+                <div className="text-sm text-slate-600 dark:text-[#828ca5] mt-0.5">
                   {option.description}
                 </div>
               </button>
             ))
           ) : (
             <div className="p-4">
-              <div className="text-center text-slate-600 dark:text-gray-400 mb-2">
+              <div className="text-center text-slate-600 dark:text-[#828ca5] mb-2">
                 Nenhum resultado encontrado
               </div>
-              <div className="text-xs text-slate-500 dark:text-gray-500 text-center">
+              <div className="text-xs text-slate-500 dark:text-[#565d73] text-center">
                 {debouncedSearchTerm.length < 1 
                   ? 'Digite pelo menos 1 caractere para buscar'
                   : 'Nenhum resultado encontrado. Tente buscar por código (ex: A00) ou descrição (ex: gastroenterite)'}

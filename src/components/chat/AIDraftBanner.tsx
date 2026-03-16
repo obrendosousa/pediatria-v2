@@ -136,7 +136,7 @@ export default function AIDraftBanner({ draftText, draftReason, onApprove, onDis
         <div className="flex-1" />
 
         {isEditing && (
-          <span className="text-[10px] text-gray-400 dark:text-gray-500 mr-1 hidden sm:inline">
+          <span className="text-[10px] text-gray-400 dark:text-[#565d73] mr-1 hidden sm:inline">
             ⌘+Enter para enviar
           </span>
         )}

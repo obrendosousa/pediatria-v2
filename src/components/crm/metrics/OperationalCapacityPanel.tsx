@@ -8,11 +8,11 @@ type OperationalCapacityPanelProps = {
 
 export default function OperationalCapacityPanel({ metrics }: OperationalCapacityPanelProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#1e2028]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1e2334] dark:bg-[#0d0f15]">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-bold text-slate-800 dark:text-gray-100">Capacidade e respostas em aberto</h3>
-          <p className="text-xs text-slate-500 dark:text-gray-400">Vazão diária estimada, conversas sem resposta e pressão operacional.</p>
+          <h3 className="text-sm font-bold text-slate-800 dark:text-[#e8ecf4]">Capacidade e respostas em aberto</h3>
+          <p className="text-xs text-slate-500 dark:text-[#828ca5]">Vazão diária estimada, conversas sem resposta e pressão operacional.</p>
         </div>
         <InfoHelpButton
           title="Capacidade e respostas em aberto"
@@ -21,16 +21,16 @@ export default function OperationalCapacityPanel({ metrics }: OperationalCapacit
       </div>
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl bg-slate-50 p-3 dark:bg-[#111b21]">
-          <p className="text-xs text-slate-500 dark:text-gray-400">Vazão média</p>
-          <p className="text-lg font-bold text-slate-800 dark:text-gray-100">{metrics.throughputDaily} / dia</p>
+          <p className="text-xs text-slate-500 dark:text-[#828ca5]">Vazão média</p>
+          <p className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">{metrics.throughputDaily} / dia</p>
         </div>
         <div className="rounded-xl bg-slate-50 p-3 dark:bg-[#111b21]">
-          <p className="text-xs text-slate-500 dark:text-gray-400">Conversas sem resposta</p>
-          <p className="text-lg font-bold text-slate-800 dark:text-gray-100">{metrics.pendingResponseCount}</p>
+          <p className="text-xs text-slate-500 dark:text-[#828ca5]">Conversas sem resposta</p>
+          <p className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">{metrics.pendingResponseCount}</p>
         </div>
         <div className="rounded-xl bg-slate-50 p-3 dark:bg-[#111b21]">
-          <p className="text-xs text-slate-500 dark:text-gray-400">Sem resposta &gt;24h</p>
-          <p className="text-lg font-bold text-slate-800 dark:text-gray-100">{metrics.pendingResponseOver24hCount}</p>
+          <p className="text-xs text-slate-500 dark:text-[#828ca5]">Sem resposta &gt;24h</p>
+          <p className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">{metrics.pendingResponseOver24hCount}</p>
         </div>
       </div>
       <div className="h-64 w-full">

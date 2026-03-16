@@ -32,8 +32,8 @@ interface EmergencyFormData {
 }
 
 const inputClass =
-  'w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all';
-const labelClass = 'block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1';
+  'w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all';
+const labelClass = 'block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1';
 
 function RadioSimNao({
   label,
@@ -50,11 +50,11 @@ function RadioSimNao({
       <div className="flex gap-4">
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="radio" {...register(name)} value="sim" className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
-          <span className="text-sm text-slate-700 dark:text-gray-300">Sim</span>
+          <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Sim</span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="radio" {...register(name)} value="não" className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
-          <span className="text-sm text-slate-700 dark:text-gray-300">Não</span>
+          <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Não</span>
         </label>
       </div>
     </div>
@@ -81,9 +81,9 @@ function RichBlock({
   placeholder?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100">{title}</h2>
+        <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4]">{title}</h2>
         <div className="flex gap-2">
           <button type="button" onClick={() => onUseModel(modelType)}
             className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
@@ -201,21 +201,21 @@ export function EmergencyConsultation({ patientId, patientData, onRefresh, appoi
   };
 
   if (isLoading) {
-    return <div className="p-6"><div className="text-center text-slate-500 dark:text-gray-400">Carregando...</div></div>;
+    return <div className="p-6"><div className="text-center text-slate-500 dark:text-[#828ca5]">Carregando...</div></div>;
   }
 
   return (
     <div className="p-4 pb-20">
       {/* Header */}
       <div className="mb-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100">CONSULTA DE EMERGÊNCIA</h1>
-        <span className="text-xs text-slate-600 dark:text-gray-400 uppercase">{currentDate}</span>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">CONSULTA DE EMERGÊNCIA</h1>
+        <span className="text-xs text-slate-600 dark:text-[#828ca5] uppercase">{currentDate}</span>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
 
         {/* Campos de texto iniciais */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
           {[
             { name: 'acompanhantes' as const, label: 'ACOMPANHANTES?' },
             { name: 'alergias' as const, label: 'ALERGIAS?' },
@@ -256,7 +256,7 @@ export function EmergencyConsultation({ patientId, patientData, onRefresh, appoi
         />
 
         {/* Radios e campos complementares */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
           <RadioSimNao label="JÁ TEVE ESSE QUADRO ANTES?" name="ja_teve_quadro" register={register} />
           <RadioSimNao label="RONCA? CORIZA SEMPRE? TOSSE NOITE? MUDA COM FATOR AMBIENTAL?" name="ronca_coriza_tosse" register={register} />
           <RadioSimNao label="ALIMENTAÇÃO/MINGAL/INDUSTRIALIZADOS" name="alimentacao_mingal" register={register} />
@@ -275,7 +275,7 @@ export function EmergencyConsultation({ patientId, patientData, onRefresh, appoi
         />
 
         {/* Campos finais */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
           <div>
             <label className={labelClass}>QUAL MARCA DOS PRODUTOS QUE USA NO BANHO?</label>
             <input type="text" {...register('marca_produtos_banho')} className={inputClass} />
@@ -295,7 +295,7 @@ export function EmergencyConsultation({ patientId, patientData, onRefresh, appoi
         </div>
 
         {/* Botão Salvar */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-gray-700 -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#252a3a] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

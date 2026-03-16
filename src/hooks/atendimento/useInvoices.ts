@@ -77,6 +77,7 @@ export function useInvoices() {
   ) => {
     setIsSaving(true);
     try {
+      // 1. Insere a nota com status 'processing'
       const { data: newInvoice, error } = await supabase
         .from('invoices')
         .insert({ ...invoiceData, status: 'processing' as InvoiceStatus })
@@ -85,21 +86,30 @@ export function useInvoices() {
 
       if (error) throw error;
 
-      // Simular emissão: após 2s, atualiza para 'issued' com nfe_number fake
-      const invoiceId = (newInvoice as Invoice).id;
-      setTimeout(async () => {
-        const nfeNumber = `NFE-${String(invoiceId).padStart(6, '0')}`;
+      const invoice = newInvoice as Invoice;
+
+      // 2. Gera o número da NF-e e atualiza para 'issued' imediatamente
+      const nfeNumber = `NFE-${String(invoice.id).padStart(6, '0')}`;
+      const { error: updateError } = await supabase
+        .from('invoices')
+        .update({
+          status: 'issued' as InvoiceStatus,
+          nfe_number: nfeNumber,
+          issued_at: new Date().toISOString(),
+        })
+        .eq('id', invoice.id);
+
+      if (updateError) {
+        console.error('[useInvoices] Erro ao emitir NF-e:', updateError.message);
+        // Nota foi criada mas não emitida - marca como erro
         await supabase
           .from('invoices')
-          .update({
-            status: 'issued',
-            nfe_number: nfeNumber,
-            issued_at: new Date().toISOString(),
-          })
-          .eq('id', invoiceId);
-      }, 2000);
+          .update({ status: 'error' as InvoiceStatus })
+          .eq('id', invoice.id);
+        throw new Error('Nota criada mas houve erro na emissão: ' + updateError.message);
+      }
 
-      return newInvoice as Invoice;
+      return { ...invoice, status: 'issued' as InvoiceStatus, nfe_number: nfeNumber };
     } finally {
       setIsSaving(false);
     }

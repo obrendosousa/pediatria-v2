@@ -10,7 +10,7 @@ export function Certificates({ patientId }: AttendanceScreenProps) {
         <Award className="w-12 h-12 text-purple-400 dark:text-purple-300" />
       </div>
       <h2 className="text-lg font-bold text-slate-700 dark:text-gray-200">Atestados</h2>
-      <p className="text-sm text-slate-400 dark:text-gray-500 mt-2 max-w-sm">
+      <p className="text-sm text-slate-400 dark:text-[#565d73] mt-2 max-w-sm">
         Emissão de atestados médicos do paciente #{patientId}. Em breve.
       </p>
     </div>

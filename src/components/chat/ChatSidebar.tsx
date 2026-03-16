@@ -132,21 +132,21 @@ export default function ChatSidebar({
                   className={`relative w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer transition-all duration-200
                     ${isActive
                         ? `${colorClass} text-white shadow-md`
-                        : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-600 dark:hover:text-gray-300'
+                        : 'text-gray-400 dark:text-[#565d73] hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-600 dark:hover:text-gray-300'
                     }`}
               >
                   <Icon size={18} className={spin ? 'animate-spin' : ''}/>
 
                   {/* Badge de Contagem */}
                   {count > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#1e2028]">
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#0d0f15]">
                           {count}
                       </span>
                   )}
               </button>
 
               {/* Tooltip Lateral */}
-              <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-gray-900 dark:bg-gray-700 text-white text-[11px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+              <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-gray-900 dark:bg-[#1e2334] text-white text-[11px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                   {label}
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-l-gray-900 dark:border-l-gray-700"/>
               </div>
@@ -155,16 +155,16 @@ export default function ChatSidebar({
   };
 
   return (
-      <div className="flex h-full bg-white dark:bg-[#1e2028] border-l border-gray-200 dark:border-gray-800 shadow-xl z-30 transition-all duration-300 overflow-hidden">
+      <div className="flex h-full bg-white dark:bg-[#0d0f15] border-l border-gray-200 dark:border-[#1e2334] shadow-xl z-30 transition-all duration-300 overflow-hidden">
         
         {/* --- PAINEL EXPANSÍVEL (CONTEÚDO) --- */}
-        <div className={`flex flex-col bg-gray-50/50 dark:bg-[#111b21] transition-all duration-300 ease-in-out border-r border-gray-100 dark:border-gray-800 overflow-hidden ${activeTab ? 'w-[calc(100vw-58px)] sm:w-[360px] opacity-100' : 'w-0 opacity-0'}`}>
+        <div className={`flex flex-col bg-gray-50/50 dark:bg-[#111b21] transition-all duration-300 ease-in-out border-r border-gray-100 dark:border-[#1e2334] overflow-hidden ${activeTab ? 'w-[calc(100vw-58px)] sm:w-[360px] opacity-100' : 'w-0 opacity-0'}`}>
             
             {activeTab && (
                 <div className="flex flex-col h-full w-full"> 
                     
                     {/* Header do Painel */}
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#202c33] flex justify-between items-center shrink-0 transition-colors">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-[#252a3a] bg-white dark:bg-[#202c33] flex justify-between items-center shrink-0 transition-colors">
                         <div className="flex items-center gap-2.5">
                           {activeTab === 'text' && <div className="p-1.5 rounded-lg bg-[var(--chat-accent)]/10"><FileText size={16} className="text-[var(--chat-accent)]"/></div>}
                           {activeTab === 'audio' && <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/20"><Mic size={16} className="text-purple-500"/></div>}
@@ -175,7 +175,7 @@ export default function ChatSidebar({
                           {activeTab === 'executions' && <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-900/20"><Orbit size={16} className="text-cyan-500"/></div>}
                           {activeTab === 'copiloto' && <div className="p-1.5 rounded-lg bg-violet-50 dark:bg-violet-900/20"><BotMessageSquare size={16} className="text-violet-500"/></div>}
                           <div>
-                            <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-[13px]">
+                            <h3 className="font-semibold text-gray-800 dark:text-[#e8ecf4] text-[13px]">
                                 {activeTab === 'text' && 'Mensagens Rápidas'}
                                 {activeTab === 'audio' && 'Biblioteca de Áudio'}
                                 {activeTab === 'image' && 'Mídia e Arquivos'}
@@ -185,7 +185,7 @@ export default function ChatSidebar({
                                 {activeTab === 'executions' && 'Centro de Execução'}
                                 {activeTab === 'copiloto' && 'Copiloto IA'}
                             </h3>
-                            <p className="text-[10px] text-gray-400 dark:text-gray-500">Ctrl/Cmd+K para abrir</p>
+                            <p className="text-[10px] text-gray-400 dark:text-[#565d73]">Ctrl/Cmd+K para abrir</p>
                           </div>
                         </div>
                         <button onClick={() => setActiveTab(null)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer">
@@ -195,14 +195,14 @@ export default function ChatSidebar({
 
                     {/* Barra de Busca */}
                     {activeTab !== 'schedule' && activeTab !== 'executions' && activeTab !== 'copiloto' && (
-                        <div className="px-4 py-3 bg-white dark:bg-[#202c33] border-b border-gray-100 dark:border-gray-700 transition-colors">
+                        <div className="px-4 py-3 bg-white dark:bg-[#202c33] border-b border-gray-100 dark:border-[#252a3a] transition-colors">
                             <div className="relative group">
                                 <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4 group-focus-within:text-[var(--chat-accent)] transition-colors" />
                                 <input 
                                     value={searchTerm} 
                                     onChange={e => setSearchTerm(e.target.value)} 
                                     placeholder="Pesquisar..." 
-                                    className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-[#2a2d36] border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 focus:outline-none focus:border-[var(--chat-accent)] focus:bg-white dark:focus:bg-[#2a2d36] transition-all" 
+                                    className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-[#141722] border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 focus:outline-none focus:border-[var(--chat-accent)] focus:bg-white dark:focus:bg-[#2a2d36] transition-all" 
                                 />
                             </div>
                         </div>
@@ -227,8 +227,8 @@ export default function ChatSidebar({
                                         <div className="w-14 h-14 bg-cyan-50 dark:bg-cyan-900/20 rounded-2xl flex items-center justify-center mb-3">
                                             <Orbit size={26} className="text-cyan-500 dark:text-cyan-400" />
                                         </div>
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Nenhuma execução ativa</p>
-                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-center max-w-[220px]">Envios de funis e macros aparecem aqui em tempo real.</p>
+                                        <p className="text-sm font-medium text-gray-600 dark:text-[#a0a8be]">Nenhuma execução ativa</p>
+                                        <p className="text-xs text-gray-400 dark:text-[#565d73] mt-1 text-center max-w-[220px]">Envios de funis e macros aparecem aqui em tempo real.</p>
                                     </div>
                                 ) : (
                                     executions.map((exec) => (
@@ -295,7 +295,7 @@ export default function ChatSidebar({
                                 return sameType && (!searchTerm || m.title.toLowerCase().includes(searchTerm.toLowerCase()));
                             })
                             .map(macro => (
-                                <div key={macro.id} className="bg-white dark:bg-[#2a2d36] rounded-xl border border-gray-200 dark:border-gray-700 p-3 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-all group cursor-pointer" onClick={() => toggleExpand(macro.id)}>
+                                <div key={macro.id} className="bg-white dark:bg-[#141722] rounded-xl border border-gray-200 dark:border-[#252a3a] p-3 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-all group cursor-pointer" onClick={() => toggleExpand(macro.id)}>
                                     {(() => {
                                       const isMacroSending = isProcessingMacro && processingActionId === `macro:${macro.id}`;
                                       return (
@@ -311,8 +311,8 @@ export default function ChatSidebar({
                                                   : <ImageIcon size={15}/>}
                                             </div>
                                             <div className="flex flex-col truncate">
-                                                <span className="font-semibold text-[13px] text-gray-700 dark:text-gray-100 truncate">{macro.title}</span>
-                                                <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1"><Clock size={9}/> {macro.simulation_delay || 3}s</span>
+                                                <span className="font-semibold text-[13px] text-gray-700 dark:text-[#e8ecf4] truncate">{macro.title}</span>
+                                                <span className="text-[10px] text-gray-400 dark:text-[#565d73] flex items-center gap-1"><Clock size={9}/> {macro.simulation_delay || 3}s</span>
                                             </div>
                                         </div>
                                         <div className="flex gap-1">
@@ -332,10 +332,10 @@ export default function ChatSidebar({
                                     })()}
                                     
                                     {expandedItemId === macro.id && (
-                                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 animate-in slide-in-from-top-1">
+                                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-[#252a3a] animate-in slide-in-from-top-1">
                                             <div className="mb-3">
                                                 {activeTab === 'text' ? (
-                                                    <p className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-[#202c33] p-2 rounded-lg border border-gray-100 dark:border-gray-600 leading-relaxed">
+                                                    <p className="text-xs text-gray-600 dark:text-[#a0a8be] bg-gray-50 dark:bg-[#202c33] p-2 rounded-lg border border-gray-100 dark:border-gray-600 leading-relaxed">
                                                         {macro.content}
                                                     </p>
                                                 ) : activeTab === 'audio' ? (
@@ -373,12 +373,12 @@ export default function ChatSidebar({
                                 <div className="w-14 h-14 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center mb-3">
                                   <Scroll size={24} className="text-orange-400 dark:text-orange-300" />
                                 </div>
-                                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Nenhum script encontrado</p>
-                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-center max-w-[220px]">Crie um script para usar como playbook de atendimento.</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-[#a0a8be]">Nenhum script encontrado</p>
+                                <p className="text-xs text-gray-400 dark:text-[#565d73] mt-1 text-center max-w-[220px]">Crie um script para usar como playbook de atendimento.</p>
                               </div>
                             ) : (
                               <>
-                                <div className="bg-white dark:bg-[#2a2d36] rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+                                <div className="bg-white dark:bg-[#141722] rounded-xl border border-gray-200 dark:border-[#252a3a] p-3">
                                   <div className="flex items-center gap-2 mb-2">
                                     <span className="text-[10px] font-bold uppercase tracking-wide text-gray-500">Script ativo</span>
                                   </div>
@@ -396,7 +396,7 @@ export default function ChatSidebar({
                                   <div className="mt-3 flex gap-2">
                                     <button
                                       onClick={() => selectedScript && onOpenSequenceModal(selectedScript, 'script')}
-                                      className="flex-1 bg-white dark:bg-[#202c33] border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-300 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                                      className="flex-1 bg-white dark:bg-[#202c33] border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-[#a0a8be] text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
                                     >
                                       <Edit2 size={12} /> Editar
                                     </button>
@@ -410,10 +410,10 @@ export default function ChatSidebar({
                                 </div>
 
                                 {selectedScript && (
-                                  <div className="bg-white dark:bg-[#2a2d36] rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+                                  <div className="bg-white dark:bg-[#141722] rounded-xl border border-gray-200 dark:border-[#252a3a] p-3">
                                     <div className="mb-3">
-                                      <h4 className="font-bold text-sm text-gray-700 dark:text-gray-100">{selectedScript.title}</h4>
-                                      <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                      <h4 className="font-bold text-sm text-gray-700 dark:text-[#e8ecf4]">{selectedScript.title}</h4>
+                                      <p className="text-[10px] text-gray-500 dark:text-[#828ca5]">
                                         Preview completo com envio manual por etapa.
                                       </p>
                                     </div>
@@ -440,7 +440,7 @@ export default function ChatSidebar({
                                         return (
                                           <div
                                             key={`${selectedScript.id}-${idx}`}
-                                            className="bg-gray-50 dark:bg-[#202c33] p-2.5 rounded-lg border border-gray-100 dark:border-gray-700"
+                                            className="bg-gray-50 dark:bg-[#202c33] p-2.5 rounded-lg border border-gray-100 dark:border-[#252a3a]"
                                           >
                                             <div className="flex items-start gap-2.5">
                                               <div className="w-5 h-5 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
@@ -452,18 +452,18 @@ export default function ChatSidebar({
                                                     {step.type}
                                                   </span>
                                                   {typeof step.delay === 'number' && step.delay > 0 && (
-                                                    <span className="text-[9px] text-gray-500 dark:text-gray-400">
+                                                    <span className="text-[9px] text-gray-500 dark:text-[#828ca5]">
                                                       +{step.delay}s
                                                     </span>
                                                   )}
                                                 </div>
-                                                <p className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words">
+                                                <p className="text-xs text-gray-600 dark:text-[#a0a8be] whitespace-pre-wrap break-words">
                                                   {preview}
                                                 </p>
                                                 {isFunnelStep && Array.isArray(step.funnel_steps) && step.funnel_steps.length > 0 && (
                                                   <div className="mt-1.5 space-y-1">
                                                     {step.funnel_steps.slice(0, 3).map((nested: any, nestedIdx: number) => (
-                                                      <p key={nestedIdx} className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                                                      <p key={nestedIdx} className="text-[11px] text-gray-500 dark:text-[#828ca5] truncate">
                                                         {nestedIdx + 1}. {nested.type === 'text' ? (nested.content || 'Texto') : `[${nested.type}]`}
                                                       </p>
                                                     ))}
@@ -478,7 +478,7 @@ export default function ChatSidebar({
                                               <button
                                                 onClick={() => !isWaitStep && onRunScriptStep(step, selectedScript.title)}
                                                 disabled={isProcessingMacro || isWaitStep}
-                                                className="text-[10px] bg-white dark:bg-[#1e2028] border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-700 px-2.5 py-1.5 rounded shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="text-[10px] bg-white dark:bg-[#0d0f15] border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-[#a0a8be] hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-700 px-2.5 py-1.5 rounded shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                               >
                                                 {isProcessingMacro && processingActionId === `script:${selectedScript.title}:${step?.title || step?.type || 'step'}`
                                                   ? <span className="inline-flex items-center gap-1"><Loader2 size={10} className="animate-spin"/> Enviando</span>
@@ -500,19 +500,19 @@ export default function ChatSidebar({
                         {activeTab === 'funnels' && (
                             funnels.filter(f => (f as any).type === 'funnel' || !(f as any).type)
                             .map(funnel => (
-                                <div key={funnel.id} className="bg-white dark:bg-[#2a2d36] rounded-xl border border-gray-200 dark:border-gray-700 p-3 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-all group">
+                                <div key={funnel.id} className="bg-white dark:bg-[#141722] rounded-xl border border-gray-200 dark:border-[#252a3a] p-3 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-all group">
                                     <div className="flex justify-between items-center mb-2.5">
                                         <div className="flex items-center gap-2.5">
                                             <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 dark:text-indigo-300 rounded-lg"><Workflow size={16}/></div>
                                             <div>
-                                                <h3 className="font-semibold text-[13px] text-gray-800 dark:text-gray-100">{funnel.title}</h3>
-                                                <p className="text-[10px] text-gray-400 dark:text-gray-500">{(funnel.steps as any[]).length} passos automáticos</p>
+                                                <h3 className="font-semibold text-[13px] text-gray-800 dark:text-[#e8ecf4]">{funnel.title}</h3>
+                                                <p className="text-[10px] text-gray-400 dark:text-[#565d73]">{(funnel.steps as any[]).length} passos automáticos</p>
                                             </div>
                                         </div>
                                         <button onClick={() => onDelete(funnel.id, 'funnels')} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer" aria-label="Excluir"><Trash2 size={13}/></button>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => onOpenSequenceModal(funnel, 'funnel')} className="flex-1 bg-white dark:bg-[#202c33] text-gray-600 dark:text-gray-300 text-[11px] font-semibold py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                                        <button onClick={() => onOpenSequenceModal(funnel, 'funnel')} className="flex-1 bg-white dark:bg-[#202c33] text-gray-600 dark:text-[#a0a8be] text-[11px] font-semibold py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
                                             <Edit2 size={11}/> Editar
                                         </button>
                                         <button onClick={() => onRunFunnel(funnel)} disabled={isProcessingMacro} className="flex-1 bg-indigo-600 text-white text-[11px] font-semibold py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-200/50 dark:shadow-none transition-colors cursor-pointer active:scale-95">
@@ -537,20 +537,20 @@ export default function ChatSidebar({
                                             <div className="w-14 h-14 bg-cyan-50 dark:bg-cyan-900/20 rounded-2xl flex items-center justify-center mb-3">
                                                 <CalendarClock size={24} className="text-cyan-400 dark:text-cyan-300" />
                                             </div>
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Nenhum agendamento</p>
-                                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-center max-w-[220px]">Agende mensagens para envio automático.</p>
+                                            <p className="text-sm font-medium text-gray-600 dark:text-[#a0a8be]">Nenhum agendamento</p>
+                                            <p className="text-xs text-gray-400 dark:text-[#565d73] mt-1 text-center max-w-[220px]">Agende mensagens para envio automático.</p>
                                         </div>
                                     ) : scheduledMessages.map(sched => (
-                                        <div key={sched.id} className="bg-white dark:bg-[#2a2d36] p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-all relative overflow-hidden group">
+                                        <div key={sched.id} className="bg-white dark:bg-[#141722] p-3 rounded-xl border border-gray-200 dark:border-[#252a3a] hover:shadow-sm transition-all relative overflow-hidden group">
                                             <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--chat-accent)]"/>
                                             <div className="flex justify-between items-start mb-1.5 pl-2">
-                                                <span className="font-semibold text-gray-700 dark:text-gray-100 text-[12px] truncate max-w-[200px]">{sched.title || 'Agendamento'}</span>
+                                                <span className="font-semibold text-gray-700 dark:text-[#e8ecf4] text-[12px] truncate max-w-[200px]">{sched.title || 'Agendamento'}</span>
                                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
                                                     <button onClick={() => onEditSchedule(sched)} className="text-gray-300 hover:text-cyan-500 transition-colors cursor-pointer" aria-label="Editar"><Edit2 size={13}/></button>
                                                     <button onClick={() => onCancelSchedule(sched.id)} className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer" aria-label="Cancelar"><Trash2 size={13}/></button>
                                                 </div>
                                             </div>
-                                            <div className="pl-2 flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400 mb-2">
+                                            <div className="pl-2 flex items-center gap-2 text-[10px] text-gray-500 dark:text-[#828ca5] mb-2">
                                                 <CalendarClock size={11}/>
                                                 <span className="font-medium bg-gray-50 dark:bg-white/5 px-1.5 py-0.5 rounded text-[10px]">{new Date(sched.scheduled_for).toLocaleDateString('pt-BR')} às {new Date(sched.scheduled_for).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
                                             </div>
@@ -569,7 +569,7 @@ export default function ChatSidebar({
 
                     {/* Footer do Painel (Botão Criar para templates) */}
                     {['text', 'audio', 'image', 'script', 'funnels'].includes(activeTab ?? '') && (
-                        <div className="p-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-[#202c33] shrink-0 transition-colors">
+                        <div className="p-3 border-t border-gray-100 dark:border-[#1e2334] bg-white dark:bg-[#202c33] shrink-0 transition-colors">
                             <button
                                 onClick={() => {
                                     if(activeTab === 'script' || activeTab === 'funnels') {
@@ -588,7 +588,7 @@ export default function ChatSidebar({
         </div>
 
         {/* --- ÍCONES LATERAIS (NAVBAR) --- */}
-        <div className="w-[52px] sm:w-[58px] flex flex-col items-center py-3 sm:py-4 gap-1.5 bg-white dark:bg-[#1e2028] z-40 border-l border-gray-100 dark:border-gray-800 transition-colors">
+        <div className="w-[52px] sm:w-[58px] flex flex-col items-center py-3 sm:py-4 gap-1.5 bg-white dark:bg-[#0d0f15] z-40 border-l border-gray-100 dark:border-[#1e2334] transition-colors">
 
             {/* Toggle */}
             <button
@@ -610,7 +610,7 @@ export default function ChatSidebar({
                 count: executions.length,
             })}
 
-            <div className="w-6 h-px bg-gray-100 dark:bg-gray-700 my-1"/>
+            <div className="w-6 h-px bg-gray-100 dark:bg-[#1e2334] my-1"/>
 
             {/* Grupo: Conteúdo */}
             <span className="text-[8px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600 mb-0.5">Envio</span>
@@ -618,7 +618,7 @@ export default function ChatSidebar({
             {renderSidebarIcon({ id:"audio", icon:Mic, label:"Áudios", colorClass:"bg-purple-600" })}
             {renderSidebarIcon({ id:"image", icon:ImageIcon, label:"Mídia", colorClass:"bg-emerald-600" })}
 
-            <div className="w-6 h-px bg-gray-100 dark:bg-gray-700 my-1"/>
+            <div className="w-6 h-px bg-gray-100 dark:bg-[#1e2334] my-1"/>
 
             {/* Grupo: Automação */}
             <span className="text-[8px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600 mb-0.5">Auto</span>
@@ -640,11 +640,11 @@ export default function ChatSidebar({
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm animate-pulse">
                     <Bot size={14} className="text-white" />
                   </div>
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#1e2028]">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#0d0f15]">
                     {claraSuggestionCount}
                   </span>
                 </button>
-                <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-gray-900 dark:bg-gray-700 text-white text-[11px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-gray-900 dark:bg-[#1e2334] text-white text-[11px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                   Sugestões da Clara
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-l-gray-900 dark:border-l-gray-700"/>
                 </div>

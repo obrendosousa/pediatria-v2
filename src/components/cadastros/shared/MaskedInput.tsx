@@ -97,7 +97,7 @@ export default function MaskedInput({
   return (
     <div className={className}>
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">
+        <label htmlFor={inputId} className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
           {label}
           {required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
@@ -111,10 +111,10 @@ export default function MaskedInput({
         onChange={handleChange}
         disabled={disabled}
         placeholder={placeholder ?? config.placeholder}
-        className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 transition-colors ${
+        className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 transition-colors ${
           error
             ? 'border-red-300 dark:border-red-700 focus:ring-red-400'
-            : 'border-slate-200 dark:border-gray-700 focus:ring-teal-400'
+            : 'border-slate-200 dark:border-[#252a3a] focus:ring-teal-400'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
       />
       {error && (

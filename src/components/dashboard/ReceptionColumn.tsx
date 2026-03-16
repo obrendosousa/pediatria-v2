@@ -49,7 +49,7 @@ export default function ReceptionColumn({
 }: ReceptionColumnProps) {
   const isSelectMode = selectedAppointmentId !== undefined && onSelectAppointment != null;
   return (
-    <div className={`flex flex-col overflow-hidden transition-colors bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 shadow-sm ${isSelectMode ? 'min-w-0' : 'flex-1 min-w-[240px]'}`}>
+    <div className={`flex flex-col overflow-hidden transition-colors bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#1e2334] shadow-sm ${isSelectMode ? 'min-w-0' : 'flex-1 min-w-[240px]'}`}>
       {/* Header compacto */}
       <div className={`p-3 border-b ${color.border} ${color.headerBg} flex justify-between items-center`}>
         <h3 className={`font-semibold text-sm ${color.text} flex items-center gap-2`}>

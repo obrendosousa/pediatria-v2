@@ -75,6 +75,7 @@ export interface ProfessionalFormData {
   restrict_schedule: boolean;
   attachments: File[];
   notes: string;
+  create_login: boolean;
 }
 
 const EMPTY_FORM: ProfessionalFormData = {
@@ -88,6 +89,7 @@ const EMPTY_FORM: ProfessionalFormData = {
   is_admin: false, restrict_prices: false, has_schedule: false, restrict_schedule: false,
   attachments: [],
   notes: '',
+  create_login: false,
 };
 
 interface ProfessionalFormProps {
@@ -95,13 +97,14 @@ interface ProfessionalFormProps {
   onSubmit: (data: ProfessionalFormData) => Promise<void>;
   title: string;
   subtitle: string;
+  showCreateLogin?: boolean;
 }
 
 // --- Helpers ---
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-xl bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 const selectClass = `${inputClass} appearance-none cursor-pointer`;
-const labelClass = 'text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 ml-1 block uppercase tracking-wider';
+const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 ml-1 block uppercase tracking-wider';
 
 function RequiredBadge() {
   return (
@@ -144,12 +147,13 @@ function professionalToForm(p: Professional): ProfessionalFormData {
     restrict_schedule: p.restrict_schedule,
     attachments: [],
     notes: p.notes || '',
+    create_login: false,
   };
 }
 
 // --- Componente ---
 
-export default function ProfessionalForm({ initialData, onSubmit, title, subtitle }: ProfessionalFormProps) {
+export default function ProfessionalForm({ initialData, onSubmit, title, subtitle, showCreateLogin }: ProfessionalFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
@@ -182,6 +186,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
     if (!form.registration_type) errs.registration_type = 'Tipo de registro é obrigatório.';
     if (!form.registration_number.trim()) errs.registration_number = 'Registro profissional é obrigatório.';
     if (!form.schedule_access) errs.schedule_access = 'Listagem dos agendamentos é obrigatório.';
+    if (form.create_login && !form.email.trim()) errs.email = 'E-mail é obrigatório para criar login.';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -224,7 +229,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e2028]">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
         <button
           onClick={() => router.push('/atendimento/cadastros/profissionais')}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -232,11 +237,11 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           <ArrowLeft className="w-5 h-5 text-slate-500" />
         </button>
         <div>
-          <h1 className="text-lg font-bold text-slate-800 dark:text-gray-100 flex items-center gap-2">
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
             <Briefcase className="w-5 h-5 text-teal-600" />
             {title}
           </h1>
-          <p className="text-xs text-slate-400 dark:text-gray-500">{subtitle}</p>
+          <p className="text-xs text-slate-400 dark:text-[#565d73]">{subtitle}</p>
         </div>
       </div>
 
@@ -245,8 +250,8 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* ─── Seção 1: Informações Básicas ─── */}
-          <section className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
               <User className="w-4 h-4 text-teal-500" />
               Informações Básicas
             </h2>
@@ -327,7 +332,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 2: Endereço e Localização ─── */}
-          <section className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6">
+          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6">
             <AddressCepLookup
               value={form.address}
               onChange={(addr) => update('address', addr)}
@@ -335,8 +340,8 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 3: Informações de Contato ─── */}
-          <section className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
               <Phone className="w-4 h-4 text-teal-500" />
               Informações de Contato
             </h2>
@@ -388,8 +393,8 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 4: Informações Profissionais ─── */}
-          <section className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
+          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-teal-500" />
               Informações Profissionais
             </h2>
@@ -401,7 +406,25 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                 <div className="relative">
                   <select
                     value={form.professional_type}
-                    onChange={e => update('professional_type', e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      update('professional_type', val);
+                      // Auto-marcar "Possui agenda" para tipos que normalmente atendem
+                      const typesWithSchedule = ['Médico(a)', 'Odontólogo', 'Nutricionista', 'Psicólogo', 'Fisioterapeuta', 'Fonoaudiólogo'];
+                      if (typesWithSchedule.includes(val) && !form.has_schedule) {
+                        update('has_schedule', true);
+                      }
+                      // Auto-sugerir tipo de registro
+                      const typeToRegistration: Record<string, string> = {
+                        'Médico(a)': 'CRM', 'Enfermeiro(a)': 'COREN', 'Farmacêutico': 'CRF',
+                        'Fisioterapeuta': 'CREFITO', 'Fonoaudiólogo': 'CREFONO/CRFa',
+                        'Nutricionista': 'CRN', 'Odontólogo': 'CRO', 'Psicólogo': 'CRP',
+                        'Biomédico': 'CRBM',
+                      };
+                      if (typeToRegistration[val] && !form.registration_type) {
+                        update('registration_type', typeToRegistration[val]);
+                      }
+                    }}
                     className={`${selectClass} ${errors.professional_type ? 'border-red-300 dark:border-red-700' : ''}`}
                   >
                     <option value="">Selecione</option>
@@ -516,42 +539,90 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
 
               {/* Checkboxes */}
               <div className="col-span-12">
-                <div className="flex flex-wrap gap-6 mt-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
+                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#1e2334] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <input
                       type="checkbox"
                       checked={form.restrict_prices}
                       onChange={e => update('restrict_prices', e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                      className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 mt-0.5"
                     />
-                    <span className="text-sm text-slate-700 dark:text-gray-200">Restringir preços</span>
+                    <div>
+                      <span className="text-sm font-medium text-slate-700 dark:text-gray-200 block">Restringir preços</span>
+                      <span className="text-[10px] text-slate-400 dark:text-[#565d73]">Impede este profissional de alterar valores de procedimentos</span>
+                    </div>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#1e2334] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <input
                       type="checkbox"
                       checked={form.has_schedule}
                       onChange={e => update('has_schedule', e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                      className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 mt-0.5"
                     />
-                    <span className="text-sm text-slate-700 dark:text-gray-200">Possui agenda</span>
+                    <div>
+                      <span className="text-sm font-medium text-slate-700 dark:text-gray-200 block">Possui agenda</span>
+                      <span className="text-[10px] text-slate-400 dark:text-[#565d73]">Habilita este profissional para receber agendamentos de pacientes</span>
+                    </div>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#1e2334] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <input
                       type="checkbox"
                       checked={form.restrict_schedule}
                       onChange={e => update('restrict_schedule', e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                      className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 mt-0.5"
                     />
-                    <span className="text-sm text-slate-700 dark:text-gray-200">Restringir agenda</span>
+                    <div>
+                      <span className="text-sm font-medium text-slate-700 dark:text-gray-200 block">Restringir agenda</span>
+                      <span className="text-[10px] text-slate-400 dark:text-[#565d73]">Só permite visualizar seus próprios agendamentos, não os de outros profissionais</span>
+                    </div>
                   </label>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* ─── Seção 5: Informações Complementares ─── */}
-          <section className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-6 space-y-5">
-            <h2 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-2">
+          {/* ─── Seção 5: Acesso ao Sistema ─── */}
+          {showCreateLogin && (
+            <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-4">
+              <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
+                <User className="w-4 h-4 text-teal-500" />
+                Acesso ao Sistema
+              </h2>
+
+              <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-slate-100 dark:border-[#1e2334] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                <div className="pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => update('create_login', !form.create_login)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      form.create_login ? 'bg-teal-600' : 'bg-slate-300 dark:bg-gray-600'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform shadow-sm ${
+                      form.create_login ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-slate-700 dark:text-gray-200 block">
+                    Criar login de acesso
+                  </span>
+                  <span className="text-xs text-slate-400 dark:text-[#565d73] block mt-0.5">
+                    Um login será criado automaticamente com o e-mail do profissional. A senha temporária será exibida após o cadastro para que você possa compartilhar com o profissional.
+                  </span>
+                  {form.create_login && !form.email.trim() && (
+                    <span className="text-xs text-amber-500 mt-1 block">
+                      Preencha o e-mail do profissional para criar o login.
+                    </span>
+                  )}
+                </div>
+              </label>
+            </section>
+          )}
+
+          {/* ─── Seção 6: Informações Complementares ─── */}
+          <section className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide flex items-center gap-2">
               <FileText className="w-4 h-4 text-teal-500" />
               Informações Complementares
             </h2>
@@ -563,10 +634,10 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                 onDragOver={e => e.preventDefault()}
                 onDrop={handleFilesDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-200 dark:border-gray-700 rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors"
+                className="border-2 border-dashed border-slate-200 dark:border-[#252a3a] rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors"
               >
                 <Upload className="w-8 h-8 text-slate-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-slate-400 dark:text-gray-500">
+                <p className="text-sm text-slate-400 dark:text-[#565d73]">
                   Arraste arquivos aqui ou <span className="text-teal-600 dark:text-teal-400 font-semibold">clique para selecionar</span>
                 </p>
                 <input
@@ -581,8 +652,8 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
               {form.attachments.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {form.attachments.map((file, i) => (
-                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-[#15171e] rounded-lg border border-slate-200 dark:border-gray-700">
-                      <span className="text-sm text-slate-600 dark:text-gray-300 truncate">{file.name}</span>
+                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-[#15171e] rounded-lg border border-slate-200 dark:border-[#252a3a]">
+                      <span className="text-sm text-slate-600 dark:text-[#a0a8be] truncate">{file.name}</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); removeFile(i); }}
                         className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/10 text-red-400 hover:text-red-600 transition-colors"
@@ -611,10 +682,10 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
       </div>
 
       {/* Footer fixo */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e2028] flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15] flex items-center justify-end gap-3">
         <button
           onClick={() => router.push('/atendimento/cadastros/profissionais')}
-          className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+          className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
         >
           Cancelar
         </button>

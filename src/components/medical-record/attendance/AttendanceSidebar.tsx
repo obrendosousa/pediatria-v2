@@ -90,13 +90,13 @@ export function AttendanceSidebar({
     children.some(c => c.key === activeTab);
 
   return (
-    <div className="w-64 shrink-0 bg-white dark:bg-[#1e2028] border-r border-slate-200 dark:border-gray-800 flex flex-col h-full">
+    <div className="w-64 shrink-0 bg-white dark:bg-[#0d0f15] border-r border-slate-200 dark:border-[#1e2334] flex flex-col h-full">
 
       {/* Timer de consulta no topo */}
       {isConsultationActive && (
-        <div className="p-4 border-b border-slate-200 dark:border-gray-800">
+        <div className="p-4 border-b border-slate-200 dark:border-[#1e2334]">
           <div className="flex flex-col items-center py-2">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-[#565d73] uppercase tracking-wider mb-1">
               Duração
             </span>
             <div className="text-xl font-black font-mono text-slate-700 dark:text-gray-200">
@@ -114,7 +114,7 @@ export function AttendanceSidebar({
             if (entry.type === 'section') {
               return (
                 <div key={`section-${idx}`} className="pt-4 pb-1 px-3 first:pt-2">
-                  <span className="text-[10px] font-extrabold text-slate-400 dark:text-gray-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-extrabold text-slate-400 dark:text-[#565d73] uppercase tracking-wider">
                     {entry.label}
                   </span>
                 </div>
@@ -135,7 +135,7 @@ export function AttendanceSidebar({
                       flex items-center gap-3
                       ${isChildActive(entry.children)
                         ? 'text-blue-600 dark:text-blue-400 font-medium'
-                        : 'text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-[#2a2d36] hover:text-slate-800 dark:hover:text-gray-200'
+                        : 'text-slate-600 dark:text-[#828ca5] hover:bg-slate-50 dark:hover:bg-[#2a2d36] hover:text-slate-800 dark:hover:text-gray-200'
                       }
                     `}
                   >
@@ -144,7 +144,7 @@ export function AttendanceSidebar({
                     <Chevron className="w-3.5 h-3.5 shrink-0" />
                   </button>
                   {isOpen && (
-                    <div className="ml-4 pl-3 border-l border-slate-100 dark:border-gray-700 space-y-0.5 mt-0.5">
+                    <div className="ml-4 pl-3 border-l border-slate-100 dark:border-[#252a3a] space-y-0.5 mt-0.5">
                       {entry.children.map(child => {
                         const isActive = activeTab === child.key;
                         const ChildIcon = child.icon;
@@ -157,7 +157,7 @@ export function AttendanceSidebar({
                               flex items-center gap-3
                               ${isActive
                                 ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                                : 'text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-[#2a2d36] hover:text-slate-800 dark:hover:text-gray-200'
+                                : 'text-slate-600 dark:text-[#828ca5] hover:bg-slate-50 dark:hover:bg-[#2a2d36] hover:text-slate-800 dark:hover:text-gray-200'
                               }
                             `}
                           >
@@ -184,7 +184,7 @@ export function AttendanceSidebar({
                   flex items-center gap-3
                   ${isActive
                     ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                    : 'text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-[#2a2d36] hover:text-slate-800 dark:hover:text-gray-200'
+                    : 'text-slate-600 dark:text-[#828ca5] hover:bg-slate-50 dark:hover:bg-[#2a2d36] hover:text-slate-800 dark:hover:text-gray-200'
                   }
                 `}
               >
@@ -198,7 +198,7 @@ export function AttendanceSidebar({
 
       {/* Botão Finalizar atendimento no final */}
       {isConsultationActive && (
-        <div className="p-4 border-t border-slate-200 dark:border-gray-800">
+        <div className="p-4 border-t border-slate-200 dark:border-[#1e2334]">
           <button
             onClick={onFinishConsultation}
             className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"

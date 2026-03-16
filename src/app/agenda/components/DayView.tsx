@@ -32,7 +32,7 @@ function AppointmentCard({ app, setSelectedAppointment }: { app: Appointment; se
             {isBlocked ? 'Bloqueio' : (app.patient_name || 'Agendado')}
           </p>
           {!isBlocked && (
-            <p className="text-xs text-slate-500 dark:text-gray-400">
+            <p className="text-xs text-slate-500 dark:text-[#828ca5]">
               {app.patient_phone ? app.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : 'S/ telefone'}
             </p>
           )}
@@ -51,7 +51,7 @@ function AppointmentCard({ app, setSelectedAppointment }: { app: Appointment; se
           )}
         </div>
       )}
-      {app.notes && <div className="text-[10px] text-slate-400 dark:text-gray-500 bg-white/50 dark:bg-black/20 px-2 py-1 rounded border border-slate-100/50 dark:border-gray-700 flex items-center gap-1"><FileText className="w-3 h-3"/></div>}
+      {app.notes && <div className="text-[10px] text-slate-400 dark:text-[#565d73] bg-white/50 dark:bg-black/20 px-2 py-1 rounded border border-slate-100/50 dark:border-[#252a3a] flex items-center gap-1"><FileText className="w-3 h-3"/></div>}
     </div>
   );
 }
@@ -94,14 +94,14 @@ export default function DayView({
 
             <div className="w-14 pt-2.5 text-right">
               <span className={`text-xs font-bold ${
-                isCurrent ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-gray-500'
+                isCurrent ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-[#565d73]'
               }`}>
                 {time}
               </span>
             </div>
             <div className="flex-1 min-h-[50px] relative">
               <div className={`absolute top-3.5 left-0 w-full h-px ${
-                isCurrent ? 'bg-rose-200 dark:bg-rose-900/30' : 'bg-slate-50 dark:bg-gray-800'
+                isCurrent ? 'bg-rose-200 dark:bg-rose-900/30' : 'bg-slate-50 dark:bg-[#141722]'
               }`}></div>
               {apps.length > 0 ? (
                 <div className="flex flex-col gap-2">

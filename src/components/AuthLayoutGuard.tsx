@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SidebarProvider } from '@/contexts/SidebarContext';
 import Navigation from '@/components/Navigation';
@@ -12,12 +12,17 @@ const AUTH_PATHS = ['/login', '/signup', '/recuperar-senha', '/aguardando-aprova
 export default function AuthLayoutGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, profile, loading } = useAuth();
+  const { user, profile, modules, loading } = useAuth();
 
   const lastRedirectRef = useRef<string | null>(null);
-  const [canRedirectToLogin, setCanRedirectToLogin] = useState(false);
+  const loginTimerFiredRef = useRef(false);
 
   const isAuthPath = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
+
+  // Determine if the user is a doctor (only atendimento module with doctor role)
+  const isDoctor = modules.length > 0 &&
+    modules.every(m => m.role === 'doctor') &&
+    profile?.doctor_id != null;
 
   const replaceOnce = useCallback((targetPath: string) => {
     if (!pathname || pathname === targetPath) return;
@@ -31,12 +36,13 @@ export default function AuthLayoutGuard({ children }: { children: React.ReactNod
     lastRedirectRef.current = null;
   }, [pathname]);
 
+  // Delayed redirect to login (avoids flash before session loads)
   useEffect(() => {
     if (loading || user) {
-      setCanRedirectToLogin(false);
+      loginTimerFiredRef.current = false;
       return;
     }
-    const timer = window.setTimeout(() => setCanRedirectToLogin(true), 150);
+    const timer = window.setTimeout(() => { loginTimerFiredRef.current = true; }, 150);
     return () => window.clearTimeout(timer);
   }, [loading, user]);
 
@@ -45,26 +51,37 @@ export default function AuthLayoutGuard({ children }: { children: React.ReactNod
     if (!pathname) return;
 
     if (!isAuthPath) {
-      if (!user && canRedirectToLogin) {
+      if (!user && loginTimerFiredRef.current) {
         replaceOnce('/login');
         return;
       }
       if (user && profile?.status === 'pending') {
         replaceOnce('/aguardando-aprovacao');
+        return;
+      }
+      // Doctor redirect: send to /atendimento/doctor if they access non-allowed paths
+      if (user && isDoctor && !pathname.startsWith('/atendimento/')) {
+        replaceOnce('/atendimento/doctor');
+        return;
       }
     } else {
       if (user && pathname === '/login') {
-        replaceOnce('/dashboard');
+        // Redirect based on user type
+        if (isDoctor) {
+          replaceOnce('/atendimento/doctor');
+        } else {
+          replaceOnce('/dashboard');
+        }
       }
     }
-  }, [user, profile, loading, isAuthPath, pathname, replaceOnce, canRedirectToLogin]);
+  }, [user, profile, modules, loading, isAuthPath, pathname, replaceOnce, isDoctor]);
 
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[rgb(var(--background))]">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
-          <p className="text-sm text-slate-500 dark:text-gray-400">Carregando...</p>
+          <p className="text-sm text-slate-500 dark:text-[#828ca5]">Carregando...</p>
         </div>
       </div>
     );

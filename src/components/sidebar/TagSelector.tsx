@@ -51,18 +51,18 @@ export default function TagSelector({ isOpen, onClose, chat, allTags, onSaveTags
        onClick={handleBackdropClick}
      >
        <div 
-         className="bg-white dark:bg-[#202c33] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] w-full max-w-[min(288px,90vw)] overflow-hidden border border-gray-100 dark:border-gray-700 animate-in zoom-in-95 duration-200" 
+         className="bg-white dark:bg-[#202c33] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] w-full max-w-[min(288px,90vw)] overflow-hidden border border-gray-100 dark:border-[#252a3a] animate-in zoom-in-95 duration-200" 
          onClick={e => e.stopPropagation()}
        >
-         <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2d36] flex justify-between items-center">
+         <div className="p-4 border-b border-gray-100 dark:border-[#252a3a] bg-gray-50 dark:bg-[#141722] flex justify-between items-center">
             <div className="min-w-0 flex-1">
-               <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block">Etiquetas de</span>
-               <span className="font-bold text-gray-800 dark:text-gray-100 truncate block">
+               <span className="text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase block">Etiquetas de</span>
+               <span className="font-bold text-gray-800 dark:text-[#e8ecf4] truncate block">
                  {chat.contact_name || chat.phone}
                </span>
             </div>
             <button onClick={handleClose} className="ml-2 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors shrink-0">
-              <X size={18} className="text-gray-500 dark:text-gray-400"/>
+              <X size={18} className="text-gray-500 dark:text-[#828ca5]"/>
             </button>
          </div>
          <div className="max-h-[min(300px,50vh)] overflow-y-auto p-2">
@@ -82,7 +82,7 @@ export default function TagSelector({ isOpen, onClose, chat, allTags, onSaveTags
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 shrink-0
                       ${isSelected 
                         ? 'bg-[#00a884] border-[#00a884] scale-105' 
-                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1e2028]'}`}
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d0f15]'}`}
                   >
                     {isSelected && <Check size={12} className="text-white stroke-[3] animate-in zoom-in-50 duration-150" />}
                   </div>
@@ -91,7 +91,7 @@ export default function TagSelector({ isOpen, onClose, chat, allTags, onSaveTags
                       className="w-3 h-3 rounded-full shrink-0" 
                       style={{ backgroundColor: tag.color || '#9ca3af' }}
                     />
-                    <span className={`text-sm truncate ${isSelected ? 'font-bold text-[#00a884] dark:text-[#34d399]' : 'text-gray-700 dark:text-gray-300'}`}>
+                    <span className={`text-sm truncate ${isSelected ? 'font-bold text-[#00a884] dark:text-[#34d399]' : 'text-gray-700 dark:text-[#a0a8be]'}`}>
                       {tag.name}
                     </span>
                   </div>
@@ -99,7 +99,7 @@ export default function TagSelector({ isOpen, onClose, chat, allTags, onSaveTags
               );
             })}
             {allTags.length === 0 && (
-              <div className="p-6 text-xs text-gray-400 dark:text-gray-500 text-center">
+              <div className="p-6 text-xs text-gray-400 dark:text-[#565d73] text-center">
                 Nenhuma etiqueta disponível.
               </div>
             )}

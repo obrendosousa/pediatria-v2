@@ -53,7 +53,7 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
   if (format && control) {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider ml-1 block">
+        <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider ml-1 block">
           {label}
         </label>
         <div className="relative">
@@ -79,8 +79,8 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
                   autoFocus={autoFocus}
                   onChange={handleChange}
                   className={`
-                    w-full ${icon ? 'pl-9' : 'pl-3'} pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg 
-                    bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 
+                    w-full ${icon ? 'pl-9' : 'pl-3'} pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg 
+                    bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 
                     focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 
                     transition-all ${className}
                     ${error ? 'border-red-300 dark:border-red-700' : ''}
@@ -100,7 +100,7 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
   
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider ml-1 block">
+      <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider ml-1 block">
         {label}
       </label>
       <div className="relative">
@@ -111,8 +111,8 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
           placeholder={placeholder}
           autoFocus={autoFocus}
           className={`
-            w-full ${icon ? 'pl-9' : 'pl-3'} pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg 
-            bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 
+            w-full ${icon ? 'pl-9' : 'pl-3'} pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg 
+            bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 
             focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 
             transition-all ${className}
             ${error ? 'border-red-300 dark:border-red-700' : ''}
@@ -127,14 +127,14 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
 function ModernSelect({ label, register, name, children, error }: any) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider ml-1 block">
+      <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider ml-1 block">
         {label}
       </label>
       <select
         {...register(name)}
         className={`
-          w-full pl-3 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg 
-          bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 
+          w-full pl-3 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg 
+          bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 
           focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 
           transition-all
           ${error ? 'border-red-300 dark:border-red-700' : ''}
@@ -160,7 +160,7 @@ function Switch({ register, name, colorClass = 'bg-blue-500' }: any) {
       />
       <div className={`
         w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-300 
-        dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-700 
+        dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-[#1e2334] 
         peer-checked:after:translate-x-full peer-checked:after:border-white 
         after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
         after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 
@@ -394,17 +394,17 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
   };
 
   return (
-    <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 overflow-hidden">
+    <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#1e2334] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-gray-800 bg-slate-50/50 dark:bg-[#181a20]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#1e2334] bg-slate-50/50 dark:bg-[#181a20]">
         <div>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-gray-100 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
               <User className="w-4 h-4" />
             </div>
             Cadastrar Paciente
           </h2>
-          <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5 ml-9">
+          <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-0.5 ml-9">
             Complete os dados para iniciar o prontuário
           </p>
         </div>
@@ -418,19 +418,19 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-56 bg-slate-50/50 dark:bg-[#181a20] border-r border-slate-200 dark:border-gray-800 flex flex-col py-4 px-3 gap-2">
+        <aside className="w-56 bg-slate-50/50 dark:bg-[#181a20] border-r border-slate-200 dark:border-[#1e2334] flex flex-col py-4 px-3 gap-2">
           <button
             onClick={() => setActiveTab('personal')}
             className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-3 ${
               activeTab === 'personal'
                 ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                : 'text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/5'
+                : 'text-slate-600 dark:text-[#828ca5] hover:bg-slate-100 dark:hover:bg-white/5'
             }`}
           >
             <User className="w-4 h-4" />
             <div className="flex-1">
               <div className="text-sm font-semibold">Dados Pessoais</div>
-              <div className="text-[10px] text-slate-500 dark:text-gray-500">Identificação</div>
+              <div className="text-[10px] text-slate-500 dark:text-[#565d73]">Identificação</div>
             </div>
           </button>
           <button
@@ -438,13 +438,13 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
             className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-3 ${
               activeTab === 'extra'
                 ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                : 'text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/5'
+                : 'text-slate-600 dark:text-[#828ca5] hover:bg-slate-100 dark:hover:bg-white/5'
             }`}
           >
             <Plus className="w-4 h-4" />
             <div className="flex-1">
               <div className="text-sm font-semibold">Complementares</div>
-              <div className="text-[10px] text-slate-500 dark:text-gray-500">Família</div>
+              <div className="text-[10px] text-slate-500 dark:text-[#565d73]">Família</div>
             </div>
           </button>
           <button
@@ -452,19 +452,19 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
             className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-3 ${
               activeTab === 'insurance'
                 ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                : 'text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/5'
+                : 'text-slate-600 dark:text-[#828ca5] hover:bg-slate-100 dark:hover:bg-white/5'
             }`}
           >
             <Shield className="w-4 h-4" />
             <div className="flex-1">
               <div className="text-sm font-semibold">Convênios</div>
-              <div className="text-[10px] text-slate-500 dark:text-gray-500">Planos</div>
+              <div className="text-[10px] text-slate-500 dark:text-[#565d73]">Planos</div>
             </div>
           </button>
         </aside>
 
         {/* Main Form */}
-        <main className="flex-1 overflow-y-auto bg-white dark:bg-[#1e2028]">
+        <main className="flex-1 overflow-y-auto bg-white dark:bg-[#0d0f15]">
           <form onSubmit={handleSubmit(onSubmit)} className="p-6 max-w-4xl mx-auto pb-24">
             {activeTab === 'personal' && (
               <div className="space-y-6">
@@ -518,14 +518,14 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                         />
                       </div>
                       <div className="col-span-12 md:col-span-7">
-                        <label className="text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 block ml-1 uppercase">Sexo Biológico *</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 block ml-1 uppercase">Sexo Biológico *</label>
                         <div className="flex gap-0 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                           <button
                             type="button"
                             onClick={() => setValue('biological_sex', 'M')}
                             className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                               watchBiologicalSex === 'M' 
-                                ? 'bg-white text-blue-600 shadow-sm dark:bg-[#2a2d36] dark:text-blue-400' 
+                                ? 'bg-white text-blue-600 shadow-sm dark:bg-[#141722] dark:text-blue-400' 
                                 : 'text-slate-500 dark:text-slate-400'
                             }`}
                           >
@@ -536,7 +536,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                             onClick={() => setValue('biological_sex', 'F')}
                             className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                               watchBiologicalSex === 'F' 
-                                ? 'bg-white text-pink-600 shadow-sm dark:bg-[#2a2d36] dark:text-pink-400' 
+                                ? 'bg-white text-pink-600 shadow-sm dark:bg-[#141722] dark:text-pink-400' 
                                 : 'text-slate-500 dark:text-slate-400'
                             }`}
                           >
@@ -574,7 +574,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
 
                   <div className="col-span-12 flex items-center gap-3">
                     <Switch register={register} name="use_gender_identity" />
-                    <span className="text-sm text-slate-600 dark:text-gray-300">Incluir Identidade de Gênero?</span>
+                    <span className="text-sm text-slate-600 dark:text-[#a0a8be]">Incluir Identidade de Gênero?</span>
                   </div>
 
                   {watchUseGenderIdentity && (
@@ -713,7 +713,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                   <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-blue-500" />
-                      <h3 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase">Núcleo Familiar</h3>
+                      <h3 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase">Núcleo Familiar</h3>
                     </div>
                     <button 
                       type="button" 
@@ -816,7 +816,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
             )}
 
             {/* Footer */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 border-t border-slate-200 dark:border-gray-800 bg-white/90 dark:bg-[#1e2028]/95 backdrop-blur z-30 flex justify-between items-center">
+            <div className="fixed bottom-0 left-0 right-0 p-4 border-t border-slate-200 dark:border-[#1e2334] bg-white/90 dark:bg-[#0d0f15]/95 backdrop-blur z-30 flex justify-between items-center">
               <div className="text-xs text-slate-400 pl-4">
                 <span className="text-rose-500 font-bold">*</span> Campos obrigatórios
               </div>
@@ -824,7 +824,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                 <button 
                   type="button"
                   onClick={onCancel} 
-                  className="px-6 py-2.5 text-slate-600 dark:text-gray-300 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+                  className="px-6 py-2.5 text-slate-600 dark:text-[#a0a8be] font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>

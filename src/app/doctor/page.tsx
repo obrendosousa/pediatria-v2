@@ -418,17 +418,17 @@ export default function DoctorPage() {
     return (
       <div className="h-full flex bg-[#f8fafc] dark:bg-[#0b141a] relative overflow-hidden">
         {/* Lista Lateral - mantém visível */}
-        <div className="w-80 bg-white dark:bg-[#1e2028] border-r border-slate-200 dark:border-gray-800 flex flex-col overflow-hidden">
+        <div className="w-80 bg-white dark:bg-[#0d0f15] border-r border-slate-200 dark:border-[#1e2334] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="p-4 border-b border-slate-200 dark:border-gray-800">
+          <div className="p-4 border-b border-slate-200 dark:border-[#1e2334]">
             <div className="flex items-center gap-2 mb-3">
               <Stethoscope className="w-5 h-5 text-rose-500" />
-              <h2 className="font-bold text-lg text-slate-800 dark:text-gray-100">
+              <h2 className="font-bold text-lg text-slate-800 dark:text-[#e8ecf4]">
                 Painel Médico
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-slate-500 dark:text-gray-400" />
+              <Calendar className="w-4 h-4 text-slate-500 dark:text-[#828ca5]" />
               <input 
                 type="text"
                 value={displayDate}
@@ -444,7 +444,7 @@ export default function DoctorPage() {
           <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
             {scheduled.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-2">
+                <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-2">
                   <Clock className="w-3 h-3" />
                   Agendados ({scheduled.length})
                 </h3>
@@ -455,14 +455,14 @@ export default function DoctorPage() {
                       className="p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10"
                     >
                       <div className="flex items-start justify-between mb-1">
-                        <h4 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">
+                        <h4 className="font-semibold text-sm text-slate-800 dark:text-[#e8ecf4] truncate">
                           {apt.patient_name || 'Sem nome'}
                         </h4>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded ${getStatusBadge(apt.status || '')}`}>
                           {getStatusLabel(apt.status || '')}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                         <Clock className="w-3 h-3" />
                         <span>{formatTime(apt.start_time)}</span>
                         {apt.doctor_name && (
@@ -479,7 +479,7 @@ export default function DoctorPage() {
             )}
             {called.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-2">
+                <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-2">
                   <UserCheck className="w-3 h-3" />
                   Chamados ({called.length})
                 </h3>
@@ -490,14 +490,14 @@ export default function DoctorPage() {
                       className="p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10"
                     >
                       <div className="flex items-start justify-between mb-1">
-                        <h4 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">
+                        <h4 className="font-semibold text-sm text-slate-800 dark:text-[#e8ecf4] truncate">
                           {apt.patient_name || 'Sem nome'}
                         </h4>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded ${getStatusBadge(apt.status || '')}`}>
                           {getStatusLabel(apt.status || '')}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                         <Clock className="w-3 h-3" />
                         <span>{formatTime(apt.start_time)}</span>
                         {apt.doctor_name && (
@@ -514,7 +514,7 @@ export default function DoctorPage() {
             )}
             {waiting.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-2">
+                <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-2">
                   <User className="w-3 h-3" />
                   Na Fila ({waiting.length})
                 </h3>
@@ -529,11 +529,11 @@ export default function DoctorPage() {
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                             index === 0 
                               ? 'bg-rose-500 text-white' 
-                              : 'bg-slate-200 dark:bg-gray-600 text-slate-600 dark:text-gray-300'
+                              : 'bg-slate-200 dark:bg-gray-600 text-slate-600 dark:text-[#a0a8be]'
                           }`}>
                             {index + 1}º
                           </span>
-                          <h4 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">
+                          <h4 className="font-semibold text-sm text-slate-800 dark:text-[#e8ecf4] truncate">
                             {apt.patient_name || 'Sem nome'}
                           </h4>
                         </div>
@@ -541,7 +541,7 @@ export default function DoctorPage() {
                           {getStatusLabel(apt.status || '')}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                         <Clock className="w-3 h-3" />
                         <span>{formatTime(apt.start_time)}</span>
                         {apt.doctor_name && (
@@ -558,7 +558,7 @@ export default function DoctorPage() {
             )}
             {inService.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-2">
+                <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-2">
                   <Stethoscope className="w-3 h-3" />
                   Em Atendimento ({inService.length})
                 </h3>
@@ -569,14 +569,14 @@ export default function DoctorPage() {
                       className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10"
                     >
                       <div className="flex items-start justify-between mb-1">
-                        <h4 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">
+                        <h4 className="font-semibold text-sm text-slate-800 dark:text-[#e8ecf4] truncate">
                           {apt.patient_name || 'Sem nome'}
                         </h4>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded ${getStatusBadge(apt.status || '')}`}>
                           {getStatusLabel(apt.status || '')}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                         <Clock className="w-3 h-3" />
                         <span>{formatTime(apt.start_time)}</span>
                         {apt.doctor_name && (
@@ -593,7 +593,7 @@ export default function DoctorPage() {
             )}
             {finished.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-2">
+                <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-2">
                   <UserCheck className="w-3 h-3" />
                   Concluídos ({finished.length})
                 </h3>
@@ -604,14 +604,14 @@ export default function DoctorPage() {
                       className="p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/20 opacity-90"
                     >
                       <div className="flex items-start justify-between mb-1">
-                        <h4 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">
+                        <h4 className="font-semibold text-sm text-slate-800 dark:text-[#e8ecf4] truncate">
                           {apt.patient_name || 'Sem nome'}
                         </h4>
                         <span className={`text-[10px] px-1.5 py-0.5 rounded ${getStatusBadge(apt.status || '')}`}>
                           {getStatusLabel(apt.status || '')}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                         <Clock className="w-3 h-3" />
                         <span>{formatTime(apt.start_time)}</span>
                         {apt.doctor_name && (
@@ -648,10 +648,10 @@ export default function DoctorPage() {
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center max-w-sm">
                 <Users className="w-12 h-12 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
-                <p className="text-slate-600 dark:text-gray-400 font-medium">
+                <p className="text-slate-600 dark:text-[#828ca5] font-medium">
                   O paciente em atendimento será exibido aqui quando a recepção clicar em &quot;Entrar&quot;.
                 </p>
-                <p className="text-sm text-slate-500 dark:text-gray-500 mt-1">
+                <p className="text-sm text-slate-500 dark:text-[#565d73] mt-1">
                   Use a lista ao lado para acompanhar a fila do dia.
                 </p>
               </div>
@@ -681,7 +681,7 @@ export default function DoctorPage() {
       <div className="h-full flex items-center justify-center bg-[#f8fafc] dark:bg-[#0b141a]">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-rose-500 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-gray-400">Criando cadastro do paciente...</p>
+          <p className="text-slate-600 dark:text-[#828ca5]">Criando cadastro do paciente...</p>
         </div>
       </div>
     );
@@ -701,7 +701,7 @@ export default function DoctorPage() {
       <div className="h-full flex items-center justify-center bg-[#f8fafc] dark:bg-[#0b141a]">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-rose-500 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-gray-400">Carregando...</p>
+          <p className="text-slate-600 dark:text-[#828ca5]">Carregando...</p>
         </div>
       </div>
     );
@@ -710,17 +710,17 @@ export default function DoctorPage() {
   return (
     <div className="h-full flex bg-[#f8fafc] dark:bg-[#0b141a] relative overflow-hidden">
       {/* Lista Lateral */}
-      <div className="w-80 bg-white dark:bg-[#1e2028] border-r border-slate-200 dark:border-gray-800 flex flex-col overflow-hidden">
+      <div className="w-80 bg-white dark:bg-[#0d0f15] border-r border-slate-200 dark:border-[#1e2334] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-slate-200 dark:border-gray-800">
+        <div className="p-4 border-b border-slate-200 dark:border-[#1e2334]">
           <div className="flex items-center gap-2 mb-3">
             <Stethoscope className="w-5 h-5 text-rose-500" />
-            <h2 className="font-bold text-lg text-slate-800 dark:text-gray-100">
+            <h2 className="font-bold text-lg text-slate-800 dark:text-[#e8ecf4]">
               Painel Médico
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-slate-500 dark:text-gray-400" />
+            <Calendar className="w-4 h-4 text-slate-500 dark:text-[#828ca5]" />
             <input 
               type="text"
               value={displayDate}
@@ -738,7 +738,7 @@ export default function DoctorPage() {
           {/* Agendados */}
           {scheduled.length > 0 && (
             <div className="mb-4">
-              <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-2">
+              <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-2">
                 <Clock className="w-3 h-3" />
                 Agendados ({scheduled.length})
               </h3>
@@ -749,14 +749,14 @@ export default function DoctorPage() {
                     className="p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100/50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
                   >
                     <div className="flex items-start justify-between mb-1">
-                      <h4 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">
+                      <h4 className="font-semibold text-sm text-slate-800 dark:text-[#e8ecf4] truncate">
                         {apt.patient_name || 'Sem nome'}
                       </h4>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded ${getStatusBadge(apt.status || '')}`}>
                         {getStatusLabel(apt.status || '')}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                       <Clock className="w-3 h-3" />
                       <span>{formatTime(apt.start_time)}</span>
                       {apt.doctor_name && (
@@ -767,7 +767,7 @@ export default function DoctorPage() {
                       )}
                     </div>
                     {apt.patient_phone && (
-                      <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                      <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                         <Phone className="w-3 h-3" />
                         <span>{apt.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}</span>
                       </div>
@@ -781,7 +781,7 @@ export default function DoctorPage() {
           {/* Chamados */}
           {called.length > 0 && (
             <div className="mb-4">
-              <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-2">
+              <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-2">
                 <UserCheck className="w-3 h-3" />
                 Chamados ({called.length})
               </h3>
@@ -792,14 +792,14 @@ export default function DoctorPage() {
                     className="p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors cursor-pointer"
                   >
                     <div className="flex items-start justify-between mb-1">
-                      <h4 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">
+                      <h4 className="font-semibold text-sm text-slate-800 dark:text-[#e8ecf4] truncate">
                         {apt.patient_name || 'Sem nome'}
                       </h4>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded ${getStatusBadge(apt.status || '')}`}>
                         {getStatusLabel(apt.status || '')}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                       <Clock className="w-3 h-3" />
                       <span>{formatTime(apt.start_time)}</span>
                       {apt.doctor_name && (
@@ -810,7 +810,7 @@ export default function DoctorPage() {
                       )}
                     </div>
                     {apt.patient_phone && (
-                      <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                      <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                         <Phone className="w-3 h-3" />
                         <span>{apt.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}</span>
                       </div>
@@ -824,7 +824,7 @@ export default function DoctorPage() {
           {/* Na Fila */}
           {waiting.length > 0 && (
             <div className="mb-4">
-              <h3 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-2">
+              <h3 className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 flex items-center gap-2">
                 <User className="w-3 h-3" />
                 Na Fila ({waiting.length})
               </h3>
@@ -839,11 +839,11 @@ export default function DoctorPage() {
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                           index === 0 
                             ? 'bg-rose-500 text-white' 
-                            : 'bg-slate-200 dark:bg-gray-600 text-slate-600 dark:text-gray-300'
+                            : 'bg-slate-200 dark:bg-gray-600 text-slate-600 dark:text-[#a0a8be]'
                         }`}>
                           {index + 1}º
                         </span>
-                        <h4 className="font-semibold text-sm text-slate-800 dark:text-gray-100 truncate">
+                        <h4 className="font-semibold text-sm text-slate-800 dark:text-[#e8ecf4] truncate">
                           {apt.patient_name || 'Sem nome'}
                         </h4>
                       </div>
@@ -851,7 +851,7 @@ export default function DoctorPage() {
                         {getStatusLabel(apt.status || '')}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                       <Clock className="w-3 h-3" />
                       <span>{formatTime(apt.start_time)}</span>
                       {apt.doctor_name && (
@@ -862,7 +862,7 @@ export default function DoctorPage() {
                       )}
                     </div>
                     {apt.patient_phone && (
-                      <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-gray-400 mt-1">
+                      <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-[#828ca5] mt-1">
                         <Phone className="w-3 h-3" />
                         <span>{apt.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}</span>
                       </div>
@@ -877,10 +877,10 @@ export default function DoctorPage() {
           {scheduled.length === 0 && called.length === 0 && waiting.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Users className="w-12 h-12 text-slate-300 dark:text-gray-600 mb-3" />
-              <p className="text-sm text-slate-500 dark:text-gray-400 font-medium">
+              <p className="text-sm text-slate-500 dark:text-[#828ca5] font-medium">
                 Nenhum paciente agendado
               </p>
-              <p className="text-xs text-slate-400 dark:text-gray-500 mt-1">
+              <p className="text-xs text-slate-400 dark:text-[#565d73] mt-1">
                 Os pacientes aparecerão aqui quando forem agendados
               </p>
             </div>
@@ -892,10 +892,10 @@ export default function DoctorPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center max-w-md">
           <Stethoscope className="w-20 h-20 text-rose-500/50 mx-auto mb-6" />
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-gray-100 mb-2">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-[#e8ecf4] mb-2">
             Aguardando Prontuário
           </h2>
-          <p className="text-slate-600 dark:text-gray-400">
+          <p className="text-slate-600 dark:text-[#828ca5]">
             Quando um paciente for colocado em atendimento, o prontuário aparecerá automaticamente aqui.
           </p>
           {waiting.length > 0 && (

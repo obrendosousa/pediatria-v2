@@ -89,7 +89,7 @@ export function ClinicalDocumentEditor({
         <button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors">
           <ArrowLeft className="w-5 h-5 text-slate-500" />
         </button>
-        <h2 className="text-lg font-bold text-slate-800 dark:text-gray-100">
+        <h2 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">
           {mode === 'create' ? createLabel : editLabel}
         </h2>
       </div>
@@ -98,13 +98,13 @@ export function ClinicalDocumentEditor({
       <div className="flex items-end gap-6 flex-wrap">
         {showTitle && onTitleChange && (
           <div className="flex-1 min-w-[200px]">
-            <label className="text-xs font-bold text-slate-600 dark:text-gray-400 mb-1 block">Título</label>
+            <label className="text-xs font-bold text-slate-600 dark:text-[#828ca5] mb-1 block">Título</label>
             <input
               type="text"
               value={title}
               onChange={e => onTitleChange(e.target.value)}
               placeholder={titlePlaceholder}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         )}
@@ -112,7 +112,7 @@ export function ClinicalDocumentEditor({
         <button
           type="button"
           onClick={() => onDigitalSignatureChange(!digitalSignature)}
-          className="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
+          className="flex items-center gap-2 text-sm text-slate-600 dark:text-[#828ca5] hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
         >
           {digitalSignature
             ? <ToggleRight className="w-6 h-6 text-blue-500" />
@@ -124,7 +124,7 @@ export function ClinicalDocumentEditor({
         <button
           type="button"
           onClick={() => onShowDateChange(!showDate)}
-          className="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
+          className="flex items-center gap-2 text-sm text-slate-600 dark:text-[#828ca5] hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
         >
           {showDate
             ? <ToggleRight className="w-6 h-6 text-blue-500" />
@@ -135,12 +135,12 @@ export function ClinicalDocumentEditor({
 
         {showDate && (
           <div>
-            <label className="text-xs font-bold text-slate-600 dark:text-gray-400 mb-1 block">{dateLabel}</label>
+            <label className="text-xs font-bold text-slate-600 dark:text-[#828ca5] mb-1 block">{dateLabel}</label>
             <input
               type="date"
               value={date}
               onChange={e => onDateChange(e.target.value)}
-              className="px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         )}
@@ -149,7 +149,7 @@ export function ClinicalDocumentEditor({
       {/* Editor + Painel de modelos */}
       <div className="flex gap-4">
         <div className="flex-1 min-w-0">
-          <label className="text-xs font-bold text-slate-600 dark:text-gray-400 mb-1 block">Conteúdo</label>
+          <label className="text-xs font-bold text-slate-600 dark:text-[#828ca5] mb-1 block">Conteúdo</label>
           <RichTextEditor
             value={content}
             onChange={onContentChange}
@@ -177,7 +177,7 @@ export function ClinicalDocumentEditor({
         </button>
         <button
           onClick={onBack}
-          className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-gray-400 bg-slate-100 dark:bg-[#2a2d36] hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+          className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-[#828ca5] bg-slate-100 dark:bg-[#141722] hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
         >
           CANCELAR
         </button>
@@ -195,12 +195,12 @@ function DocumentTemplatePanel({ templates, onSelect, title }: {
 }) {
   if (templates.length === 0) {
     return (
-      <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-gray-700 p-4">
+      <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#252a3a] p-4">
         <div className="flex items-center gap-2 mb-3">
           <BookOpen className="w-4 h-4 text-slate-400" />
-          <h3 className="text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">{title}</h3>
+          <h3 className="text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">{title}</h3>
         </div>
-        <p className="text-xs text-slate-400 dark:text-gray-500 text-center py-6">
+        <p className="text-xs text-slate-400 dark:text-[#565d73] text-center py-6">
           Nenhum modelo cadastrado.
         </p>
       </div>
@@ -208,23 +208,23 @@ function DocumentTemplatePanel({ templates, onSelect, title }: {
   }
 
   return (
-    <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-gray-700 p-4 overflow-y-auto max-h-[500px]">
+    <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#252a3a] p-4 overflow-y-auto max-h-[500px]">
       <div className="flex items-center gap-2 mb-3">
         <BookOpen className="w-4 h-4 text-slate-400" />
-        <h3 className="text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">{title}</h3>
+        <h3 className="text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">{title}</h3>
       </div>
       <div className="space-y-2">
         {templates.map(tmpl => (
           <button
             key={tmpl.id}
             onClick={() => onSelect(tmpl)}
-            className="w-full text-left p-3 rounded-lg bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all group"
+            className="w-full text-left p-3 rounded-lg bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all group"
           >
             <p className="text-xs font-bold text-slate-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
               {tmpl.title}
             </p>
             {tmpl.content && (
-              <p className="text-[10px] text-slate-400 dark:text-gray-500 mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: tmpl.content.replace(/<[^>]*>/g, ' ').slice(0, 80) }} />
+              <p className="text-[10px] text-slate-400 dark:text-[#565d73] mt-1 line-clamp-2" dangerouslySetInnerHTML={{ __html: tmpl.content.replace(/<[^>]*>/g, ' ').slice(0, 80) }} />
             )}
           </button>
         ))}

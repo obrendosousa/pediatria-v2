@@ -384,20 +384,20 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
       
       {/* CARD DO MODAL */}
       <div className={`
-        bg-white dark:bg-[#1e2028] w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1)
+        bg-white dark:bg-[#0d0f15] w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1)
         ${showModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}
       `}>
         
         {/* HEADER */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-gray-800 bg-white/80 dark:bg-[#1e2028]/90 backdrop-blur-md z-20">
+        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-[#1e2334] bg-white/80 dark:bg-[#0d0f15]/90 backdrop-blur-md z-20">
           <div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100 flex items-center gap-2.5">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <User className="w-5 h-5" />
               </div>
               {patientId ? 'Editar Paciente' : 'Novo Paciente'}
             </h2>
-            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5 ml-11">
+            <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-0.5 ml-11">
               {patientId 
                 ? 'Atualize os dados do paciente abaixo' 
                 : 'Preencha os dados para iniciar o prontuário'
@@ -415,7 +415,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
         <div className="flex flex-1 overflow-hidden">
           
           {/* SIDEBAR */}
-          <aside className="w-64 bg-slate-50/50 dark:bg-[#181a20] border-r border-slate-200/60 dark:border-gray-800 flex flex-col py-6 px-4 gap-2">
+          <aside className="w-64 bg-slate-50/50 dark:bg-[#181a20] border-r border-slate-200/60 dark:border-[#1e2334] flex flex-col py-6 px-4 gap-2">
             <NavButton 
               active={activeTab === 'personal'} 
               onClick={() => setActiveTab('personal')} 
@@ -440,7 +440,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
           </aside>
 
           {/* MAIN FORM */}
-          <main className="flex-1 overflow-y-auto bg-white dark:bg-[#1e2028] relative scroll-smooth">
+          <main className="flex-1 overflow-y-auto bg-white dark:bg-[#0d0f15] relative scroll-smooth">
             <form 
               id="patient-form" 
               onSubmit={handleSubmit(onSubmit, handleInvalidSubmit)} 
@@ -509,7 +509,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
                               />
                             </div>
                             <div className="col-span-12 md:col-span-7">
-                                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 block ml-1 uppercase tracking-wider">
+                                <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 block ml-1 uppercase tracking-wider">
                                   <span>Sexo Biológico</span>
                                   <span className="ml-2 inline-block text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 align-middle">
                                     Obrigatório
@@ -519,14 +519,14 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
                                   <button
                                     type="button"
                                     onClick={() => setValue('biological_sex', 'M')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchBiologicalSex === 'M' ? 'bg-white text-blue-600 shadow-sm dark:bg-[#2a2d36] dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchBiologicalSex === 'M' ? 'bg-white text-blue-600 shadow-sm dark:bg-[#141722] dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                                   >
                                     Masculino
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => setValue('biological_sex', 'F')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchBiologicalSex === 'F' ? 'bg-white text-pink-600 shadow-sm dark:bg-[#2a2d36] dark:text-pink-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchBiologicalSex === 'F' ? 'bg-white text-pink-600 shadow-sm dark:bg-[#141722] dark:text-pink-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                                   >
                                     Feminino
                                   </button>
@@ -569,7 +569,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
                       <div className="col-span-12 flex flex-wrap gap-4 items-end">
                          <div className="flex items-center gap-3 py-2">
                             <Switch register={register} name="use_gender_identity" />
-                            <span className="text-sm text-slate-600 dark:text-gray-300">Incluir Identidade de Gênero?</span>
+                            <span className="text-sm text-slate-600 dark:text-[#a0a8be]">Incluir Identidade de Gênero?</span>
                          </div>
                          {watchUseGenderIdentity && (
                             <div className="flex-1 min-w-[200px] animate-in fade-in slide-in-from-left-2">
@@ -678,7 +678,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
                       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                          <div className="flex items-center gap-2">
                            <Users className="w-4 h-4 text-blue-500" />
-                           <h3 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">Núcleo Familiar</h3>
+                           <h3 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide">Núcleo Familiar</h3>
                          </div>
                          <button 
                            type="button" 
@@ -810,7 +810,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
         </div>
 
         {/* --- FOOTER FLUTUANTE --- */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100 dark:border-gray-800 bg-white/90 dark:bg-[#1e2028]/95 backdrop-blur z-30 flex justify-between items-center">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100 dark:border-[#1e2334] bg-white/90 dark:bg-[#0d0f15]/95 backdrop-blur z-30 flex justify-between items-center">
            <div className="text-xs text-slate-400 pl-4 hidden md:block">
              <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 mr-1 align-middle">Obrigatório</span>
              Destaque visual aplicado nos campos obrigatórios
@@ -818,7 +818,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
            <div className="flex gap-3 w-full md:w-auto justify-end px-4 md:px-0">
               <button 
                 onClick={onClose} 
-                className="px-6 py-2.5 text-slate-600 dark:text-gray-300 font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+                className="px-6 py-2.5 text-slate-600 dark:text-[#a0a8be] font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
               >
                 Cancelar
               </button>
@@ -890,7 +890,7 @@ interface ModernInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 const ModernInput = ({ label, register, name, error, icon, className = "", requiredField = false, ...props }: ModernInputProps) => (
   <div className="w-full group">
     {label && (
-      <label className="text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400">
+      <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400">
         <span>{label}</span>
         {requiredField && (
           <span className="ml-2 inline-block text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 align-middle">
@@ -924,7 +924,7 @@ const ModernInput = ({ label, register, name, error, icon, className = "", requi
 // 3. Select Moderno
 const ModernSelect = ({ label, register, name, children, ...props }: any) => (
   <div className="w-full group">
-    {label && <label className="text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-blue-600">{label}</label>}
+    {label && <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-blue-600">{label}</label>}
     <div className="relative">
        <select
           {...register(name)}
@@ -950,7 +950,7 @@ const ModernSelect = ({ label, register, name, children, ...props }: any) => (
 const SectionHeader = ({ icon: Icon, title }: any) => (
   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
     <Icon className="w-4 h-4 text-blue-500" />
-    <h3 className="text-sm font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wide">
+    <h3 className="text-sm font-bold text-slate-700 dark:text-[#a0a8be] uppercase tracking-wide">
       {title}
     </h3>
   </div>

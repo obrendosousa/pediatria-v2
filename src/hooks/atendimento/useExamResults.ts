@@ -2,9 +2,11 @@
 
 import { useState, useCallback } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
+import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const supabase = createSchemaClient('atendimento');
+const pubSupabase = createClient();
 
 export type ExamResult = {
   id: number;
@@ -45,7 +47,7 @@ export function useExamResults(patientId: number) {
   }, [patientId]);
 
   const fetchDoctors = useCallback(async () => {
-    const { data } = await supabase
+    const { data } = await pubSupabase
       .from('doctors')
       .select('id, name')
       .eq('active', true)

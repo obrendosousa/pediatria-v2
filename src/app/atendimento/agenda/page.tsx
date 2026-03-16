@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
+import { createClient } from '@/lib/supabase/client';
 import { getTimeSlots } from '@/app/agenda/utils/agendaUtils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -13,6 +14,7 @@ import NewAppointmentModal from '@/components/atendimento/agenda/NewAppointmentM
 import AtendimentoDetailModal from '@/components/atendimento/agenda/AtendimentoDetailModal';
 
 const supabase = createSchemaClient('atendimento');
+const supabasePublic = createClient();
 
 type AtendimentoAppointment = {
   id: number;
@@ -53,6 +55,7 @@ function mapAppointment(row: Record<string, unknown>): AtendimentoAppointment {
     time: row.time as string | null,
     patient_id: row.patient_id as number | null,
     doctor_id: row.doctor_id as number | null,
+    doctor_name: (row.doctor_name as string) || undefined,
     type: row.type as string | null,
     status: row.status as string,
     notes: row.notes as string | null,
@@ -62,6 +65,8 @@ function mapAppointment(row: Record<string, unknown>): AtendimentoAppointment {
     patient_name: patient?.full_name || null,
     patient_phone: patient?.phone || null,
     patient_sex: (patient?.sex as 'M' | 'F') || null,
+    total_amount: row.total_amount as number | undefined,
+    amount_paid: row.amount_paid as number | undefined,
   };
 }
 
@@ -147,11 +152,28 @@ export default function AtendimentoAgendaPage() {
   // Derivar doctor_id efetivo sem useEffect (evita cascading render)
   const effectiveDoctorId = (!authLoading && profile?.doctor_id) ? profile.doctor_id : doctorId;
 
-  // Carregar médicos (tabela public.doctors via cross-schema)
+  // Carregar médicos (doctors + professionals com agenda)
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('doctors').select('id, name').eq('active', true).order('name');
-      if (data) setDoctors(data);
+      // 1. Carregar doctors existentes (tabela public.doctors)
+      const { data: doctorsData } = await supabasePublic.from('doctors').select('id, name, professional_id').eq('active', true).order('name');
+      const list: Array<{ id: number; name: string }> = doctorsData || [];
+
+      // 2. Carregar profissionais com agenda que ainda não estão linkados
+      const linkedIds = new Set((doctorsData || []).map((d: Record<string, unknown>) => d.professional_id).filter(Boolean));
+      const { data: profsData } = await supabase.from('professionals').select('id, name').eq('has_schedule', true).eq('status', 'active');
+
+      if (profsData) {
+        for (const prof of profsData) {
+          if (!linkedIds.has(prof.id)) {
+            // Profissional com agenda mas sem doctor vinculado — mostrar na lista
+            // Usa hash numérico negativo para não colidir com doctors.id (bigint)
+            list.push({ id: -(list.length + 1000), name: prof.name });
+          }
+        }
+      }
+
+      setDoctors(list);
     })();
   }, []);
 
@@ -319,7 +341,7 @@ export default function AtendimentoAgendaPage() {
       />
 
       <div className="flex-1 overflow-hidden flex p-6 gap-6">
-        <div className="flex-1 bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col transition-colors">
+        <div className="flex-1 bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] shadow-sm overflow-hidden flex flex-col transition-colors">
           {viewMode === 'day' ? (
             <AtendimentoDayView
               timeSlots={timeSlots}

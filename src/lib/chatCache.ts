@@ -1,86 +1,40 @@
 /**
  * Cache no navegador para chats e mensagens.
- * Usa localStorage com TTL (time-to-live); entradas expiradas são removidas na leitura/escrita.
+ * Usa MemoryCacheStore in-memory com LRU e auto-GC,
+ * com persistência opcional em localStorage para dados críticos.
  */
 
-const PREFIX = 'chat_cache_';
+import { MemoryCacheStore } from './cache/MemoryCacheStore';
 
-interface CacheEntry<T> {
-  data: T;
-  expiresAt: number;
-}
+const cache = MemoryCacheStore.getInstance();
 
-function fullKey(key: string): string {
-  return `${PREFIX}${key}`;
-}
+// Chaves que devem persistir em localStorage entre refreshes
+const PERSIST_PREFIXES = ['chats_', 'chat_messages_', 'chats_tags'];
 
-function getAllCacheKeys(): string[] {
-  if (typeof window === 'undefined' || !window.localStorage) return [];
-  const keys: string[] = [];
-  for (let i = 0; i < window.localStorage.length; i++) {
-    const k = window.localStorage.key(i);
-    if (k && k.startsWith(PREFIX)) keys.push(k);
-  }
-  return keys;
+function shouldPersist(key: string): boolean {
+  return PERSIST_PREFIXES.some((p) => key.startsWith(p));
 }
 
 /**
- * Remove entradas do cache que já expiraram (para não encher o localStorage).
+ * Remove entradas expiradas.
+ * No-op — a GC é automática via MemoryCacheStore (a cada 60s).
  */
 export function removeExpiredEntries(): void {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  const now = Date.now();
-  const keys = getAllCacheKeys();
-  keys.forEach((key) => {
-    try {
-      const raw = window.localStorage.getItem(key);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as CacheEntry<unknown>;
-      if (parsed.expiresAt && now > parsed.expiresAt) {
-        window.localStorage.removeItem(key);
-      }
-    } catch {
-      window.localStorage.removeItem(key);
-    }
-  });
+  // Handled automatically by MemoryCacheStore GC
 }
 
 /**
  * Lê do cache. Retorna null se não existir ou estiver expirado.
- * Remove a chave se estiver expirada.
  */
 export function get<T>(key: string): T | null {
-  if (typeof window === 'undefined' || !window.localStorage) return null;
-  const k = fullKey(key);
-  try {
-    const raw = window.localStorage.getItem(k);
-    if (!raw) return null;
-    const entry = JSON.parse(raw) as CacheEntry<T>;
-    if (Date.now() > entry.expiresAt) {
-      window.localStorage.removeItem(k);
-      return null;
-    }
-    return entry.data;
-  } catch {
-    window.localStorage.removeItem(k);
-    return null;
-  }
+  return cache.get<T>(key);
 }
 
 /**
  * Grava no cache com TTL em milissegundos.
- * Chama removeExpiredEntries para limpar entradas antigas.
  */
 export function set<T>(key: string, data: T, ttlMs: number): void {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  const k = fullKey(key);
-  const expiresAt = Date.now() + ttlMs;
-  try {
-    window.localStorage.setItem(k, JSON.stringify({ data, expiresAt } as CacheEntry<T>));
-    removeExpiredEntries();
-  } catch (e) {
-    console.warn('[chatCache] set failed:', e);
-  }
+  cache.set(key, data, ttlMs, shouldPersist(key));
 }
 
 /** TTL em ms: lista de chats (5 min). */
@@ -92,42 +46,39 @@ export const TTL_TAGS_MS = 8 * 60 * 1000;
 /** TTL em ms: mensagens por chat (5 min). */
 export const TTL_MESSAGES_MS = 5 * 60 * 1000;
 
-/** Limite de mensagens por chat no cache para não estourar localStorage. */
+/** Limite de mensagens por chat no cache para não estourar memória. */
 export const MAX_CACHED_MESSAGES_PER_CHAT = 500;
 
-/** Quantidade máxima de entradas de mensagens (chats) a manter no cache; as mais antigas por último acesso são removidas. */
+/** Quantidade máxima de entradas de mensagens (chats) a manter no cache. */
 export const MAX_CACHED_MESSAGE_ENTRIES = 20;
 
 const MESSAGES_KEY_PREFIX = 'chat_messages_';
-const LAST_ACCESS_KEY = 'chat_cache_messages_last_access';
+const LAST_ACCESS_KEY = 'messages_last_access';
 
 interface LastAccessRecord {
   [key: string]: number;
 }
 
 /**
- * Ao salvar mensagens de um chat, registra último acesso e remove entradas de mensagens
+ * Ao salvar mensagens de um chat, registra último acesso e remove entradas
  * além das MAX_CACHED_MESSAGE_ENTRIES mais recentes.
  */
 export function touchMessagesCacheKey(chatId: number | string): void {
-  if (typeof window === 'undefined' || !window.localStorage) return;
   const key = `${MESSAGES_KEY_PREFIX}${chatId}`;
-  try {
-    const raw = window.localStorage.getItem(fullKey(LAST_ACCESS_KEY));
-    const record: LastAccessRecord = raw ? (JSON.parse(raw) as LastAccessRecord) : {};
-    record[key] = Date.now();
-    const entries = Object.entries(record)
-      .filter(([k]) => k.startsWith(MESSAGES_KEY_PREFIX))
-      .sort((a, b) => b[1] - a[1]);
-    if (entries.length > MAX_CACHED_MESSAGE_ENTRIES) {
-      const toRemove = entries.slice(MAX_CACHED_MESSAGE_ENTRIES).map(([k]) => k);
-      toRemove.forEach((k) => {
-        delete record[k];
-        window.localStorage.removeItem(fullKey(k));
-      });
-    }
-    window.localStorage.setItem(fullKey(LAST_ACCESS_KEY), JSON.stringify(record));
-  } catch {
-    // ignore
+  const record = cache.get<LastAccessRecord>(LAST_ACCESS_KEY) || {};
+  record[key] = Date.now();
+
+  const entries = Object.entries(record)
+    .filter(([k]) => k.startsWith(MESSAGES_KEY_PREFIX))
+    .sort((a, b) => b[1] - a[1]);
+
+  if (entries.length > MAX_CACHED_MESSAGE_ENTRIES) {
+    const toRemove = entries.slice(MAX_CACHED_MESSAGE_ENTRIES).map(([k]) => k);
+    toRemove.forEach((k) => {
+      delete record[k];
+      cache.delete(k);
+    });
   }
+
+  cache.set(LAST_ACCESS_KEY, record, 24 * 60 * 60 * 1000); // 24h TTL
 }

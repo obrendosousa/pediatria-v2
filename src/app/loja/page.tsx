@@ -567,16 +567,16 @@ export default function StorePage() {
     <div className="flex flex-col h-screen bg-[#f8fafc] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300">
       
       {/* HEADER DA LOJA */}
-      <div className="bg-white dark:bg-[#1e2028] px-8 py-5 border-b border-slate-200 dark:border-gray-800 flex justify-between items-center shrink-0 transition-colors">
+      <div className="bg-white dark:bg-[#0d0f15] px-8 py-5 border-b border-slate-200 dark:border-[#1e2334] flex justify-between items-center shrink-0 transition-colors">
          <div>
-            <h1 className="text-2xl font-black text-slate-800 dark:text-gray-100 flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-800 dark:text-[#e8ecf4] flex items-center gap-2">
                <Package className="w-6 h-6 text-rose-500" /> Loja & Estoque
             </h1>
-            <p className="text-sm text-slate-400 dark:text-gray-500 font-medium mt-1">Gestão de produtos, vendas e validade.</p>
+            <p className="text-sm text-slate-400 dark:text-[#565d73] font-medium mt-1">Gestão de produtos, vendas e validade.</p>
          </div>
 
          {/* NAVEGAÇÃO ENTRE ABAS */}
-         <div className="flex bg-slate-100 dark:bg-[#2a2d36] p-1 rounded-xl transition-colors">
+         <div className="flex bg-slate-100 dark:bg-[#141722] p-1 rounded-xl transition-colors">
             {[
                { id: 'dash', label: 'Dashboard', icon: LayoutGrid },
                { id: 'pos', label: 'Checkout', icon: ShoppingCart },
@@ -588,8 +588,8 @@ export default function StorePage() {
                   onClick={() => handleTabChange(tab.id as 'dash' | 'pos' | 'catalog' | 'cash')}
                   className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
                      activeTab === tab.id 
-                     ? 'bg-white dark:bg-[#1e2028] text-rose-600 dark:text-rose-400 shadow-sm' 
-                     : 'text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                     ? 'bg-white dark:bg-[#0d0f15] text-rose-600 dark:text-rose-400 shadow-sm' 
+                     : 'text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-200 hover:bg-slate-200/50 dark:hover:bg-white/5'
                   }`}
                >
                   <tab.icon className="w-4 h-4" /> {tab.label}
@@ -608,7 +608,7 @@ export default function StorePage() {
                {loadingMetrics ? (
                   <div className="grid grid-cols-4 gap-6 mb-8">
                      {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="bg-white dark:bg-[#1e2028] p-5 rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm animate-pulse">
+                        <div key={i} className="bg-white dark:bg-[#0d0f15] p-5 rounded-2xl border border-slate-100 dark:border-[#1e2334] shadow-sm animate-pulse">
                            <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded"></div>
                         </div>
                      ))}
@@ -622,24 +622,24 @@ export default function StorePage() {
                   </div>
                )}
 
-               <div className="bg-white dark:bg-[#1e2028] p-4 rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm mb-6">
+               <div className="bg-white dark:bg-[#0d0f15] p-4 rounded-2xl border border-slate-100 dark:border-[#1e2334] shadow-sm mb-6">
                   <div className="flex items-center gap-2 mb-3">
                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
                     <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200">Operações e Segurança</h3>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    <button onClick={() => handleTabChange('pos')} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">Abrir checkout</button>
-                    <button onClick={() => setShowScanner(true)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">Scanner mobile</button>
-                    <button onClick={() => handleTabChange('cash')} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">Fechar caixa loja</button>
-                    <button onClick={exportOperationalReport} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">Exportar logs</button>
-                    <button onClick={() => handleTabChange('catalog')} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">Auditoria catálogo</button>
+                    <button onClick={() => handleTabChange('pos')} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-[#252a3a] text-xs font-bold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-50 dark:hover:bg-white/5">Abrir checkout</button>
+                    <button onClick={() => setShowScanner(true)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-[#252a3a] text-xs font-bold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-50 dark:hover:bg-white/5">Scanner mobile</button>
+                    <button onClick={() => handleTabChange('cash')} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-[#252a3a] text-xs font-bold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-50 dark:hover:bg-white/5">Fechar caixa loja</button>
+                    <button onClick={exportOperationalReport} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-[#252a3a] text-xs font-bold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-50 dark:hover:bg-white/5">Exportar logs</button>
+                    <button onClick={() => handleTabChange('catalog')} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-[#252a3a] text-xs font-bold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-50 dark:hover:bg-white/5">Auditoria catálogo</button>
                   </div>
                </div>
 
                <div className="grid grid-cols-3 gap-6">
                   {/* Gráfico de Vendas */}
-                  <div className="col-span-2 bg-white dark:bg-[#1e2028] p-6 rounded-3xl border border-slate-100 dark:border-gray-800 shadow-sm h-[400px] flex flex-col transition-colors">
-                     <h3 className="font-bold text-slate-800 dark:text-gray-100 mb-6">Desempenho de Vendas (7 dias)</h3>
+                  <div className="col-span-2 bg-white dark:bg-[#0d0f15] p-6 rounded-3xl border border-slate-100 dark:border-[#1e2334] shadow-sm h-[400px] flex flex-col transition-colors">
+                     <h3 className="font-bold text-slate-800 dark:text-[#e8ecf4] mb-6">Desempenho de Vendas (7 dias)</h3>
                      <div className="flex-1">
                         {loadingMetrics ? (
                            <div className="h-full flex items-center justify-center">
@@ -666,7 +666,7 @@ export default function StorePage() {
                   </div>
 
                   {/* Lista de Vencimento (FEFO) - Mockup */}
-                  <div className="bg-white dark:bg-[#1e2028] p-6 rounded-3xl border border-slate-100 dark:border-gray-800 shadow-sm flex flex-col transition-colors">
+                  <div className="bg-white dark:bg-[#0d0f15] p-6 rounded-3xl border border-slate-100 dark:border-[#1e2334] shadow-sm flex flex-col transition-colors">
                      <h3 className="font-bold text-rose-600 dark:text-rose-400 mb-4 flex items-center gap-2"><AlertTriangle className="w-5 h-5"/> Vencendo em Breve</h3>
                      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3">
                         {loadingMetrics ? (
@@ -680,13 +680,13 @@ export default function StorePage() {
                                     <p className="font-bold text-sm text-slate-700 dark:text-gray-200">{item.name}</p>
                                     <p className="text-xs text-rose-500 dark:text-rose-400 font-bold">Vence: {format(new Date(item.expiration_date), 'dd/MM/yyyy')}</p>
                                  </div>
-                                 <div className="bg-white dark:bg-[#1e2028] px-3 py-1 rounded-lg text-xs font-bold text-slate-600 dark:text-gray-300 shadow-sm">
+                                 <div className="bg-white dark:bg-[#0d0f15] px-3 py-1 rounded-lg text-xs font-bold text-slate-600 dark:text-[#a0a8be] shadow-sm">
                                     {item.quantity} un
                                  </div>
                               </div>
                            ))
                         ) : (
-                           <div className="text-center text-slate-400 dark:text-gray-500 text-sm py-8">
+                           <div className="text-center text-slate-400 dark:text-[#565d73] text-sm py-8">
                               Nenhum produto vencendo nos próximos 30 dias
                            </div>
                         )}
@@ -695,14 +695,14 @@ export default function StorePage() {
                         <button
                            type="button"
                            onClick={() => router.push('/financeiro')}
-                           className="w-full py-2 text-xs font-bold text-slate-500 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors border border-slate-200 dark:border-gray-700 rounded-lg"
+                           className="w-full py-2 text-xs font-bold text-slate-500 dark:text-[#828ca5] hover:text-rose-500 dark:hover:text-rose-400 transition-colors border border-slate-200 dark:border-[#252a3a] rounded-lg"
                         >
                            Visão financeira
                         </button>
                         <button
                            type="button"
                            onClick={exportOperationalReport}
-                           className="w-full py-2 text-xs font-bold text-slate-500 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors border border-slate-200 dark:border-gray-700 rounded-lg"
+                           className="w-full py-2 text-xs font-bold text-slate-500 dark:text-[#828ca5] hover:text-rose-500 dark:hover:text-rose-400 transition-colors border border-slate-200 dark:border-[#252a3a] rounded-lg"
                         >
                            Exportar logs
                         </button>
@@ -716,12 +716,12 @@ export default function StorePage() {
          {activeTab === 'pos' && (
             <div className="h-full flex">
                {/* Esquerda: Catálogo Visual */}
-               <div className="flex-1 flex flex-col p-6 pr-3 border-r border-slate-200 dark:border-gray-800">
+               <div className="flex-1 flex flex-col p-6 pr-3 border-r border-slate-200 dark:border-[#1e2334]">
                   <div className="mb-6 flex gap-3">
                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 w-5 h-5 text-slate-400 dark:text-gray-500" />
+                        <Search className="absolute left-3 top-3 w-5 h-5 text-slate-400 dark:text-[#565d73]" />
                         <input 
-                           className="w-full pl-10 pr-4 py-3 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 dark:focus:ring-rose-900 transition-all shadow-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-600"
+                           className="w-full pl-10 pr-4 py-3 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 dark:focus:ring-rose-900 transition-all shadow-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-600"
                            placeholder="Buscar produto (Nome, SKU)..."
                            value={searchTerm}
                            onChange={e => setSearchTerm(e.target.value)}
@@ -730,7 +730,7 @@ export default function StorePage() {
                      <button
                         type="button"
                         onClick={() => setShowScanner(true)}
-                        className="px-4 py-3 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-xl font-bold text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center gap-2"
+                        className="px-4 py-3 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-xl font-bold text-sm text-slate-700 dark:text-[#a0a8be] hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center gap-2"
                      >
                         <Smartphone className="w-4 h-4 text-rose-500" />
                         Scanner Mobile
@@ -740,18 +740,18 @@ export default function StorePage() {
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
                      <div className="grid grid-cols-3 xl:grid-cols-4 gap-4">
                         {products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
-                           <div key={product.id} onClick={() => addToCart(product)} className="bg-white dark:bg-[#1e2028] p-4 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm hover:border-rose-300 dark:hover:border-rose-700 hover:shadow-md cursor-pointer transition-all group relative overflow-hidden flex flex-col h-[200px]">
-                              <div className="flex-1 bg-slate-50 dark:bg-[#2a2d36] rounded-xl mb-3 flex items-center justify-center relative overflow-hidden">
+                           <div key={product.id} onClick={() => addToCart(product)} className="bg-white dark:bg-[#0d0f15] p-4 rounded-2xl border border-slate-100 dark:border-[#252a3a] shadow-sm hover:border-rose-300 dark:hover:border-rose-700 hover:shadow-md cursor-pointer transition-all group relative overflow-hidden flex flex-col h-[200px]">
+                              <div className="flex-1 bg-slate-50 dark:bg-[#141722] rounded-xl mb-3 flex items-center justify-center relative overflow-hidden">
                                  {product.image_url ? (
                                     <img src={product.image_url} className="w-full h-full object-cover" />
                                  ) : (
                                     <div className="flex flex-col items-center">
                                        <Package className="w-8 h-8 text-slate-300 dark:text-gray-600 mb-1" />
-                                       <span className="text-[10px] text-slate-400 dark:text-gray-500 font-mono">{product.barcode || 'S/ BARCODE'}</span>
+                                       <span className="text-[10px] text-slate-400 dark:text-[#565d73] font-mono">{product.barcode || 'S/ BARCODE'}</span>
                                     </div>
                                  )}
                                  <div className="absolute inset-0 bg-rose-500/10 dark:bg-rose-500/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <Plus className="w-8 h-8 text-rose-600 dark:text-rose-400 bg-white dark:bg-[#1e2028] rounded-full p-1 shadow-sm" />
+                                    <Plus className="w-8 h-8 text-rose-600 dark:text-rose-400 bg-white dark:bg-[#0d0f15] rounded-full p-1 shadow-sm" />
                                  </div>
                               </div>
                               <div>
@@ -776,22 +776,22 @@ export default function StorePage() {
                </div>
 
                {/* Direita: Carrinho */}
-               <div className="w-[420px] bg-white dark:bg-[#1e2028] flex flex-col z-10 shadow-xl border-l border-slate-100 dark:border-gray-800 transition-colors">
+               <div className="w-[420px] bg-white dark:bg-[#0d0f15] flex flex-col z-10 shadow-xl border-l border-slate-100 dark:border-[#1e2334] transition-colors">
                   {/* Cliente */}
-                  <div className="p-6 border-b border-slate-100 dark:border-gray-800">
-                     <label className="block text-xs font-bold text-slate-400 dark:text-gray-500 uppercase mb-2">Vincular Paciente (Opcional)</label>
+                  <div className="p-6 border-b border-slate-100 dark:border-[#1e2334]">
+                     <label className="block text-xs font-bold text-slate-400 dark:text-[#565d73] uppercase mb-2">Vincular Paciente (Opcional)</label>
                      <div className="relative">
-                        <Search className="absolute left-3 top-3.5 w-4 h-4 text-slate-400 dark:text-gray-500" />
+                        <Search className="absolute left-3 top-3.5 w-4 h-4 text-slate-400 dark:text-[#565d73]" />
                         <input
                            type="text"
-                           className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl text-sm font-bold text-slate-700 dark:text-gray-200 focus:outline-none focus:border-rose-400 dark:focus:border-rose-700"
+                           className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl text-sm font-bold text-slate-700 dark:text-gray-200 focus:outline-none focus:border-rose-400 dark:focus:border-rose-700"
                            placeholder="Buscar paciente por nome..."
                            value={patientSearchTerm}
                            onChange={(e) => setPatientSearchTerm(e.target.value)}
                         />
                      </div>
                      {patientSearchTerm && (
-                        <div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#1e2028]">
+                        <div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#0d0f15]">
                            {patients
                               .filter(p => p.name.toLowerCase().includes(patientSearchTerm.toLowerCase()))
                               .slice(0, 10)
@@ -802,7 +802,7 @@ export default function StorePage() {
                                        setSelectedPatient(p.id);
                                        setPatientSearchTerm(p.name);
                                     }}
-                                    className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-100 dark:border-gray-800 last:border-0 ${
+                                    className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-100 dark:border-[#1e2334] last:border-0 ${
                                        (p as any).hasActiveAppointment 
                                           ? 'bg-rose-50 dark:bg-rose-900/20 border-l-4 border-l-rose-500' 
                                           : (p as any).hasRecords
@@ -852,8 +852,8 @@ export default function StorePage() {
                            <p className="text-xs mt-1">Bipe um produto ou clique no catálogo</p>
                         </div>
                      ) : cart.map(item => (
-                        <div key={item.id} className="flex gap-3 bg-white dark:bg-[#2a2d36] p-3 rounded-xl border border-slate-100 dark:border-gray-700 shadow-sm items-center">
-                           <div className="w-10 h-10 bg-slate-50 dark:bg-[#111b21] rounded-lg flex items-center justify-center text-xs font-bold text-slate-400 dark:text-gray-500 shrink-0">
+                        <div key={item.id} className="flex gap-3 bg-white dark:bg-[#141722] p-3 rounded-xl border border-slate-100 dark:border-[#252a3a] shadow-sm items-center">
+                           <div className="w-10 h-10 bg-slate-50 dark:bg-[#111b21] rounded-lg flex items-center justify-center text-xs font-bold text-slate-400 dark:text-[#565d73] shrink-0">
                               {item.quantity}x
                            </div>
                            <div className="flex-1 min-w-0">
@@ -861,8 +861,8 @@ export default function StorePage() {
                               <p className="text-xs text-rose-600 dark:text-rose-400 font-bold">R$ {(item.price_sale * item.quantity).toFixed(2)}</p>
                            </div>
                            <div className="flex items-center gap-1">
-                              <button onClick={() => updateQty(item.id, -1)} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300">-</button>
-                              <button onClick={() => updateQty(item.id, 1)} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300">+</button>
+                              <button onClick={() => updateQty(item.id, -1)} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-400 dark:text-[#565d73] hover:text-slate-600 dark:hover:text-gray-300">-</button>
+                              <button onClick={() => updateQty(item.id, 1)} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-400 dark:text-[#565d73] hover:text-slate-600 dark:hover:text-gray-300">+</button>
                               <button onClick={() => removeFromCart(item.id)} className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-slate-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 ml-1"><Trash2 className="w-4 h-4"/></button>
                            </div>
                         </div>
@@ -870,42 +870,42 @@ export default function StorePage() {
                   </div>
 
                   {/* Totais e Ações */}
-                  <div className="p-6 bg-slate-50 dark:bg-[#111b21] border-t border-slate-200 dark:border-gray-800 transition-colors">
+                  <div className="p-6 bg-slate-50 dark:bg-[#111b21] border-t border-slate-200 dark:border-[#1e2334] transition-colors">
                      <div className="flex justify-between items-center mb-6">
-                        <span className="text-slate-500 dark:text-gray-400 font-bold">Total a Pagar</span>
+                        <span className="text-slate-500 dark:text-[#828ca5] font-bold">Total a Pagar</span>
                         <span className="text-3xl font-black text-rose-600 dark:text-rose-400">R$ {cartTotal.toFixed(2)}</span>
                      </div>
                      
                     {/* Pagamento inline */}
                     <div className="mb-3">
-                      <p className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2">Forma de pagamento</p>
+                      <p className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2">Forma de pagamento</p>
                       <div className="grid grid-cols-2 gap-2 mb-2">
-                        <button onClick={() => setSelectedPaymentMethod('cash')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'cash' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-[#2a2d36] border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300'}`}>Dinheiro</button>
-                        <button onClick={() => setSelectedPaymentMethod('pix')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'pix' ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-800 text-teal-700 dark:text-teal-400' : 'bg-white dark:bg-[#2a2d36] border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300'}`}>Pix</button>
+                        <button onClick={() => setSelectedPaymentMethod('cash')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'cash' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-[#141722] border-slate-200 dark:border-[#252a3a] text-slate-600 dark:text-[#a0a8be]'}`}>Dinheiro</button>
+                        <button onClick={() => setSelectedPaymentMethod('pix')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'pix' ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-800 text-teal-700 dark:text-teal-400' : 'bg-white dark:bg-[#141722] border-slate-200 dark:border-[#252a3a] text-slate-600 dark:text-[#a0a8be]'}`}>Pix</button>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        <button onClick={() => setSelectedPaymentMethod('credit_card')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'credit_card' ? 'bg-slate-100 dark:bg-slate-700 border-slate-400 dark:border-slate-500 text-slate-800 dark:text-white' : 'bg-white dark:bg-[#2a2d36] border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300'}`}>Crédito</button>
-                        <button onClick={() => setSelectedPaymentMethod('debit_card')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'debit_card' ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300' : 'bg-white dark:bg-[#2a2d36] border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300'}`}>Débito</button>
-                        <button onClick={() => setSelectedPaymentMethod('mixed')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'mixed' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400' : 'bg-white dark:bg-[#2a2d36] border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300'}`}>Misto</button>
+                        <button onClick={() => setSelectedPaymentMethod('credit_card')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'credit_card' ? 'bg-slate-100 dark:bg-slate-700 border-slate-400 dark:border-slate-500 text-slate-800 dark:text-white' : 'bg-white dark:bg-[#141722] border-slate-200 dark:border-[#252a3a] text-slate-600 dark:text-[#a0a8be]'}`}>Crédito</button>
+                        <button onClick={() => setSelectedPaymentMethod('debit_card')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'debit_card' ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300' : 'bg-white dark:bg-[#141722] border-slate-200 dark:border-[#252a3a] text-slate-600 dark:text-[#a0a8be]'}`}>Débito</button>
+                        <button onClick={() => setSelectedPaymentMethod('mixed')} className={`py-2 rounded-lg font-bold text-xs border ${selectedPaymentMethod === 'mixed' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400' : 'bg-white dark:bg-[#141722] border-slate-200 dark:border-[#252a3a] text-slate-600 dark:text-[#a0a8be]'}`}>Misto</button>
                       </div>
                     </div>
 
                     {selectedPaymentMethod === 'cash' && (
-                        <div className="mb-4 p-4 bg-white dark:bg-[#2a2d36] rounded-xl border border-slate-200 dark:border-gray-700">
-                           <label className="block text-xs font-bold text-slate-500 dark:text-gray-400 mb-2">Valor Recebido</label>
+                        <div className="mb-4 p-4 bg-white dark:bg-[#141722] rounded-xl border border-slate-200 dark:border-[#252a3a]">
+                           <label className="block text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-2">Valor Recebido</label>
                            <input
                               type="number"
                               step="0.01"
                               min={cartTotal}
                               value={cashAmount}
                               onChange={(e) => setCashAmount(e.target.value)}
-                              className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg text-lg font-bold text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                              className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg text-lg font-bold text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
                               placeholder="0.00"
                            />
                            {parseFloat(cashAmount || '0') >= cartTotal && (
-                              <div className="mt-3 pt-3 border-t border-slate-200 dark:border-gray-700">
+                              <div className="mt-3 pt-3 border-t border-slate-200 dark:border-[#252a3a]">
                                  <div className="flex justify-between items-center">
-                                    <span className="text-sm font-bold text-slate-600 dark:text-gray-400">Troco</span>
+                                    <span className="text-sm font-bold text-slate-600 dark:text-[#828ca5]">Troco</span>
                                     <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
                                        R$ {(parseFloat(cashAmount || '0') - cartTotal).toFixed(2)}
                                     </span>
@@ -916,12 +916,12 @@ export default function StorePage() {
                     )}
 
                     {selectedPaymentMethod === 'mixed' && (
-                      <div className="mb-3 p-3 bg-white dark:bg-[#2a2d36] rounded-xl border border-slate-200 dark:border-gray-700">
+                      <div className="mb-3 p-3 bg-white dark:bg-[#141722] rounded-xl border border-slate-200 dark:border-[#252a3a]">
                         <div className="grid grid-cols-2 gap-2">
-                          <input type="number" step="0.01" min="0" value={mixedAmounts.pix} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, pix: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded text-xs font-bold" placeholder="Pix" />
-                          <input type="number" step="0.01" min="0" value={mixedAmounts.cash} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, cash: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded text-xs font-bold" placeholder="Dinheiro" />
-                          <input type="number" step="0.01" min="0" value={mixedAmounts.credit_card} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, credit_card: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded text-xs font-bold" placeholder="Crédito" />
-                          <input type="number" step="0.01" min="0" value={mixedAmounts.debit_card} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, debit_card: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded text-xs font-bold" placeholder="Débito" />
+                          <input type="number" step="0.01" min="0" value={mixedAmounts.pix} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, pix: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded text-xs font-bold" placeholder="Pix" />
+                          <input type="number" step="0.01" min="0" value={mixedAmounts.cash} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, cash: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded text-xs font-bold" placeholder="Dinheiro" />
+                          <input type="number" step="0.01" min="0" value={mixedAmounts.credit_card} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, credit_card: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded text-xs font-bold" placeholder="Crédito" />
+                          <input type="number" step="0.01" min="0" value={mixedAmounts.debit_card} onChange={(e) => setMixedAmounts((prev) => ({ ...prev, debit_card: e.target.value }))} className="px-2 py-2 bg-slate-50 dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded text-xs font-bold" placeholder="Débito" />
                         </div>
                       </div>
                     )}
@@ -932,7 +932,7 @@ export default function StorePage() {
                           setSelectedPatient(null);
                           setPatientSearchTerm('');
                         }}
-                        className="py-3 bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl font-bold text-slate-600 dark:text-gray-300 text-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
+                        className="py-3 bg-white dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl font-bold text-slate-600 dark:text-[#a0a8be] text-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
                       >
                         Consumidor final
                       </button>
@@ -960,11 +960,11 @@ export default function StorePage() {
          {activeTab === 'catalog' && (
             <div className="h-full p-8 overflow-y-auto custom-scrollbar">
                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100">Gerenciar Produtos</h2>
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">Gerenciar Produtos</h2>
                   <div className="flex gap-3">
                      <button 
                         onClick={fetchData}
-                        className="bg-slate-100 dark:bg-[#2a2d36] text-slate-700 dark:text-gray-300 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-white/10 flex items-center gap-2 transition-all"
+                        className="bg-slate-100 dark:bg-[#141722] text-slate-700 dark:text-[#a0a8be] px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-white/10 flex items-center gap-2 transition-all"
                         title="Atualizar lista"
                      >
                         <RefreshCw className="w-4 h-4" /> Atualizar
@@ -985,17 +985,17 @@ export default function StorePage() {
                   </div>
                </div>
 
-               <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-200 dark:border-gray-800 p-4 mb-4 grid grid-cols-4 gap-3">
+               <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-200 dark:border-[#1e2334] p-4 mb-4 grid grid-cols-4 gap-3">
                   <input
                      value={catalogSearchTerm}
                      onChange={(e) => setCatalogSearchTerm(e.target.value)}
                      placeholder="Buscar por nome ou código"
-                     className="col-span-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 text-sm font-semibold text-slate-700 dark:text-gray-200"
+                     className="col-span-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] text-sm font-semibold text-slate-700 dark:text-gray-200"
                   />
                   <select
                     value={catalogCategoryFilter}
                     onChange={(e) => setCatalogCategoryFilter(e.target.value)}
-                    className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 text-sm font-semibold text-slate-700 dark:text-gray-200"
+                    className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] text-sm font-semibold text-slate-700 dark:text-gray-200"
                   >
                     {catalogCategories.map((category) => (
                       <option key={category} value={category}>
@@ -1006,7 +1006,7 @@ export default function StorePage() {
                   <select
                     value={catalogStockFilter}
                     onChange={(e) => setCatalogStockFilter(e.target.value as 'all' | 'low' | 'critical')}
-                    className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 text-sm font-semibold text-slate-700 dark:text-gray-200"
+                    className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] text-sm font-semibold text-slate-700 dark:text-gray-200"
                   >
                     <option value="all">Todos estoques</option>
                     <option value="low">Estoque baixo (&lt;10)</option>
@@ -1014,16 +1014,16 @@ export default function StorePage() {
                   </select>
                </div>
                
-               <div className="bg-white dark:bg-[#1e2028] rounded-3xl border border-slate-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
+               <div className="bg-white dark:bg-[#0d0f15] rounded-3xl border border-slate-200 dark:border-[#1e2334] shadow-sm overflow-hidden transition-colors">
                   <table className="w-full text-left">
-                     <thead className="bg-slate-50 dark:bg-[#2a2d36] border-b border-slate-100 dark:border-gray-700">
+                     <thead className="bg-slate-50 dark:bg-[#141722] border-b border-slate-100 dark:border-[#252a3a]">
                         <tr>
-                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-gray-400 uppercase">Produto</th>
-                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-gray-400 uppercase">Categoria</th>
-                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-gray-400 uppercase text-right">Custo</th>
-                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-gray-400 uppercase text-right">Venda</th>
-                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-gray-400 uppercase text-center">Estoque</th>
-                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-gray-400 uppercase text-center">Ações</th>
+                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase">Produto</th>
+                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase">Categoria</th>
+                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase text-right">Custo</th>
+                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase text-right">Venda</th>
+                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase text-center">Estoque</th>
+                           <th className="p-4 text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase text-center">Ações</th>
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-slate-50 dark:divide-gray-800">
@@ -1031,19 +1031,19 @@ export default function StorePage() {
                            <tr key={product.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors group">
                               <td className="p-4">
                                  <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-slate-100 dark:bg-[#111b21] rounded-lg flex items-center justify-center text-slate-400 dark:text-gray-500">
+                                    <div className="w-10 h-10 bg-slate-100 dark:bg-[#111b21] rounded-lg flex items-center justify-center text-slate-400 dark:text-[#565d73]">
                                        <Package className="w-5 h-5" />
                                     </div>
                                     <div>
                                        <p className="font-bold text-sm text-slate-700 dark:text-gray-200">{product.name}</p>
-                                       <p className="text-[10px] text-slate-400 dark:text-gray-500 font-mono">{product.barcode || 'Sem EAN'}</p>
+                                       <p className="text-[10px] text-slate-400 dark:text-[#565d73] font-mono">{product.barcode || 'Sem EAN'}</p>
                                     </div>
                                  </div>
                               </td>
                               <td className="p-4">
-                                 <span className="bg-slate-100 dark:bg-[#111b21] text-slate-600 dark:text-gray-400 px-2 py-1 rounded text-xs font-bold capitalize">{product.category || 'Geral'}</span>
+                                 <span className="bg-slate-100 dark:bg-[#111b21] text-slate-600 dark:text-[#828ca5] px-2 py-1 rounded text-xs font-bold capitalize">{product.category || 'Geral'}</span>
                               </td>
-                              <td className="p-4 text-right text-sm text-slate-500 dark:text-gray-400 font-medium">R$ {product.price_cost?.toFixed(2)}</td>
+                              <td className="p-4 text-right text-sm text-slate-500 dark:text-[#828ca5] font-medium">R$ {product.price_cost?.toFixed(2)}</td>
                               <td className="p-4 text-right text-sm font-bold text-slate-700 dark:text-gray-200">R$ {product.price_sale.toFixed(2)}</td>
                               <td className="p-4 text-center">
                                  <span className={`px-2 py-1 rounded text-xs font-bold ${
@@ -1063,7 +1063,7 @@ export default function StorePage() {
                                           // TODO: Implementar impressão de etiqueta
                                           toast.info('Funcionalidade de impressão em desenvolvimento');
                                        }}
-                                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300" 
+                                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-[#565d73] hover:text-slate-600 dark:hover:text-gray-300" 
                                        title="Imprimir Etiqueta"
                                     >
                                        <Barcode className="w-4 h-4"/>
@@ -1073,7 +1073,7 @@ export default function StorePage() {
                                           // TODO: Implementar histórico de movimentações
                                           toast.info('Funcionalidade de histórico em desenvolvimento');
                                        }}
-                                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300" 
+                                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-[#565d73] hover:text-slate-600 dark:hover:text-gray-300" 
                                        title="Histórico"
                                     >
                                        <History className="w-4 h-4"/>
@@ -1084,7 +1084,7 @@ export default function StorePage() {
                                         handleTabChange('pos');
                                         toast.success('Produto enviado para o checkout.');
                                       }}
-                                      className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg text-slate-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400"
+                                      className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg text-slate-400 dark:text-[#565d73] hover:text-emerald-600 dark:hover:text-emerald-400"
                                       title="Enviar ao checkout"
                                     >
                                       <ShoppingCart className="w-4 h-4" />
@@ -1098,7 +1098,7 @@ export default function StorePage() {
                                           setEditingProduct(product);
                                           setShowProductModal(true);
                                        }}
-                                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300" 
+                                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-[#565d73] hover:text-slate-600 dark:hover:text-gray-300" 
                                        title="Editar"
                                     >
                                        <MoreHorizontal className="w-4 h-4"/>
@@ -1118,11 +1118,11 @@ export default function StorePage() {
             <div className="h-full p-8 overflow-y-auto custom-scrollbar">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100">Caixa da Lojinha</h2>
-                  <p className="text-sm text-slate-500 dark:text-gray-400">Fechamento dedicado da operação da loja com reconciliação por método.</p>
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">Caixa da Lojinha</h2>
+                  <p className="text-sm text-slate-500 dark:text-[#828ca5]">Fechamento dedicado da operação da loja com reconciliação por método.</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={fetchStoreCash} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-gray-700 text-sm font-bold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5">
+                  <button onClick={fetchStoreCash} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-[#252a3a] text-sm font-bold text-slate-600 dark:text-[#a0a8be] hover:bg-slate-50 dark:hover:bg-white/5">
                     Atualizar
                   </button>
                   <button
@@ -1136,7 +1136,7 @@ export default function StorePage() {
               </div>
 
               {loadingStoreCash ? (
-                <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 p-8 text-center text-slate-500 dark:text-gray-400">
+                <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] p-8 text-center text-slate-500 dark:text-[#828ca5]">
                   Carregando dados do caixa...
                 </div>
               ) : storeCashData ? (
@@ -1149,17 +1149,17 @@ export default function StorePage() {
                     <MetricCard title="Status" value={storeCashData.isClosed ? 'Fechado' : 'Em aberto'} icon={CheckCircle2} color={storeCashData.isClosed ? 'emerald' : 'rose'} />
                   </div>
 
-                  <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-100 dark:border-gray-800 flex items-center justify-between">
+                  <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-100 dark:border-[#1e2334] flex items-center justify-between">
                       <h3 className="font-bold text-slate-700 dark:text-gray-200">Logs da sessão da loja</h3>
-                      <span className="text-xs font-bold text-slate-500 dark:text-gray-400">{storeCashData.transactions.length} lançamentos</span>
+                      <span className="text-xs font-bold text-slate-500 dark:text-[#828ca5]">{storeCashData.transactions.length} lançamentos</span>
                     </div>
                     <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
                       {storeCashData.transactions.length === 0 ? (
-                        <div className="p-8 text-center text-slate-500 dark:text-gray-400">Sem transações da loja para a data selecionada.</div>
+                        <div className="p-8 text-center text-slate-500 dark:text-[#828ca5]">Sem transações da loja para a data selecionada.</div>
                       ) : (
                         <table className="w-full text-sm">
-                          <thead className="bg-slate-50 dark:bg-[#2a2d36] sticky top-0">
+                          <thead className="bg-slate-50 dark:bg-[#141722] sticky top-0">
                             <tr>
                               <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Horário</th>
                               <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Valor</th>
@@ -1169,10 +1169,10 @@ export default function StorePage() {
                           </thead>
                           <tbody>
                             {storeCashData.transactions.map((transaction) => (
-                              <tr key={transaction.id} className="border-t border-slate-100 dark:border-gray-800">
-                                <td className="px-4 py-3 text-slate-700 dark:text-gray-300">{new Date(transaction.occurred_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
-                                <td className="px-4 py-3 font-bold text-slate-800 dark:text-gray-100">R$ {Number(transaction.amount || 0).toFixed(2)}</td>
-                                <td className="px-4 py-3 text-slate-600 dark:text-gray-400">{transaction.notes || '-'}</td>
+                              <tr key={transaction.id} className="border-t border-slate-100 dark:border-[#1e2334]">
+                                <td className="px-4 py-3 text-slate-700 dark:text-[#a0a8be]">{new Date(transaction.occurred_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
+                                <td className="px-4 py-3 font-bold text-slate-800 dark:text-[#e8ecf4]">R$ {Number(transaction.amount || 0).toFixed(2)}</td>
+                                <td className="px-4 py-3 text-slate-600 dark:text-[#828ca5]">{transaction.notes || '-'}</td>
                                 <td className="px-4 py-3">
                                   <span className={`text-xs font-bold px-2 py-1 rounded ${transaction.notes ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
                                     {storeCashData.isClosed ? 'Conciliado' : 'Em aberto'}
@@ -1187,7 +1187,7 @@ export default function StorePage() {
                   </div>
                 </>
               ) : (
-                <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-100 dark:border-gray-800 p-8 text-center text-slate-500 dark:text-gray-400">
+                <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-100 dark:border-[#1e2334] p-8 text-center text-slate-500 dark:text-[#828ca5]">
                   Não foi possível carregar o caixa da lojinha.
                 </div>
               )}
@@ -1201,23 +1201,23 @@ export default function StorePage() {
               onClick={() => setShowScanner(false)}
            >
               <div
-                 className="bg-white dark:bg-[#1e2028] rounded-3xl shadow-2xl max-w-md w-full p-6"
+                 className="bg-white dark:bg-[#0d0f15] rounded-3xl shadow-2xl max-w-md w-full p-6"
                  onClick={(e) => e.stopPropagation()}
               >
                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-black text-slate-800 dark:text-gray-100">Scanner no celular</h3>
+                    <h3 className="text-lg font-black text-slate-800 dark:text-[#e8ecf4]">Scanner no celular</h3>
                     <button
                        type="button"
                        onClick={() => setShowScanner(false)}
-                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-gray-500"
+                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-[#565d73]"
                     >
                        <X className="w-4 h-4" />
                     </button>
                  </div>
-                 <p className="text-sm text-slate-500 dark:text-gray-400 mb-4">
+                 <p className="text-sm text-slate-500 dark:text-[#828ca5] mb-4">
                     Escaneie para abrir o scanner no celular e enviar produtos em tempo real para o carrinho.
                  </p>
-                 <div className="bg-slate-50 dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-2xl p-4 flex items-center justify-center mb-3">
+                 <div className="bg-slate-50 dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-2xl p-4 flex items-center justify-center mb-3">
                     <QRCodeSVG value={scannerUrl} size={220} includeMargin />
                  </div>
                  <a
@@ -1260,14 +1260,14 @@ function MetricCard({ title, value, icon: Icon, color, trend, subtext }: any) {
       rose: "text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20",
    };
    return (
-      <div className="bg-white dark:bg-[#1e2028] p-5 rounded-2xl border border-slate-100 dark:border-gray-800 shadow-sm flex flex-col transition-colors">
+      <div className="bg-white dark:bg-[#0d0f15] p-5 rounded-2xl border border-slate-100 dark:border-[#1e2334] shadow-sm flex flex-col transition-colors">
          <div className="flex justify-between items-start mb-2">
             <div className={`p-2 rounded-xl ${colors[color]}`}><Icon className="w-5 h-5"/></div>
             {trend && <span className={`text-xs font-bold px-2 py-0.5 rounded ${trend.includes('+') ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'}`}>{trend}</span>}
          </div>
-         <p className="text-slate-400 dark:text-gray-500 text-xs font-bold uppercase tracking-wider">{title}</p>
-         <p className="text-2xl font-black text-slate-800 dark:text-gray-100 mt-1">{value}</p>
-         {subtext && <p className="text-xs text-slate-400 dark:text-gray-500 mt-1 font-medium">{subtext}</p>}
+         <p className="text-slate-400 dark:text-[#565d73] text-xs font-bold uppercase tracking-wider">{title}</p>
+         <p className="text-2xl font-black text-slate-800 dark:text-[#e8ecf4] mt-1">{value}</p>
+         {subtext && <p className="text-xs text-slate-400 dark:text-[#565d73] mt-1 font-medium">{subtext}</p>}
       </div>
    )
 }

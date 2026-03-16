@@ -56,7 +56,7 @@ export function useClinicalTimeline(patientId: number) {
   const [loading, setLoading] = useState(false);
 
   const fetchDoctors = useCallback(async () => {
-    const { data } = await ateSupabase
+    const { data } = await pubSupabase
       .from('doctors')
       .select('id, name')
       .eq('active', true)

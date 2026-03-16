@@ -8,11 +8,11 @@ type ConversionFunnelPanelProps = {
 
 export default function ConversionFunnelPanel({ metrics }: ConversionFunnelPanelProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#1e2028]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1e2334] dark:bg-[#0d0f15]">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-800 dark:text-gray-100">Funil de conversão</h3>
-          <p className="text-xs text-slate-500 dark:text-gray-400">Mostra onde o atendimento perde volume entre conversa e finalização.</p>
+          <h3 className="text-sm font-bold text-slate-800 dark:text-[#e8ecf4]">Funil de conversão</h3>
+          <p className="text-xs text-slate-500 dark:text-[#828ca5]">Mostra onde o atendimento perde volume entre conversa e finalização.</p>
         </div>
         <InfoHelpButton
           title="Funil de conversão"

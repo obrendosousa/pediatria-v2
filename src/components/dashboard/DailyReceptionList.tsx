@@ -125,7 +125,7 @@ export default function DailyReceptionList() {
         );
       case 'finished': 
         return (
-          <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-1 rounded-md text-xs font-bold">
+          <span className="bg-gray-100 dark:bg-[#141722] text-gray-500 dark:text-[#828ca5] px-2 py-1 rounded-md text-xs font-bold">
             Finalizado
           </span>
         );
@@ -159,7 +159,7 @@ export default function DailyReceptionList() {
 
   if (loading) {
     return (
-      <div className="p-10 text-center text-gray-400 dark:text-gray-500">
+      <div className="p-10 text-center text-gray-400 dark:text-[#565d73]">
         <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
         Carregando agenda...
       </div>
@@ -168,20 +168,20 @@ export default function DailyReceptionList() {
 
   return (
     <>
-      <div className="bg-white dark:bg-[#1e2028] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2d36] flex justify-between items-center">
-          <h2 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+      <div className="bg-white dark:bg-[#0d0f15] rounded-xl shadow-sm border border-gray-100 dark:border-[#1e2334] overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-[#252a3a] bg-gray-50 dark:bg-[#141722] flex justify-between items-center">
+          <h2 className="font-bold text-gray-800 dark:text-[#e8ecf4] flex items-center gap-2">
             <Clock className="w-5 h-5 text-pink-600 dark:text-pink-400" />
             Agenda de Hoje ({format(new Date(), "dd 'de' MMMM", { locale: ptBR })})
           </h2>
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="text-sm text-gray-500 dark:text-[#828ca5]">
             {appointments.length} {appointments.length === 1 ? 'paciente' : 'pacientes'}
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-gray-50 dark:bg-[#111b21] text-xs uppercase text-gray-400 dark:text-gray-500 font-bold">
+            <thead className="bg-gray-50 dark:bg-[#111b21] text-xs uppercase text-gray-400 dark:text-[#565d73] font-bold">
               <tr>
                 <th className="p-4">Horário</th>
                 <th className="p-4">Paciente</th>
@@ -204,16 +204,16 @@ export default function DailyReceptionList() {
                     }`}
                   >
                     <td className={`p-4 font-mono text-sm font-bold ${
-                      isPast ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-300'
+                      isPast ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-[#a0a8be]'
                     }`}>
                       {timeStr}
                     </td>
                     <td className="p-4">
-                      <div className="font-bold text-gray-800 dark:text-gray-100">
+                      <div className="font-bold text-gray-800 dark:text-[#e8ecf4]">
                         {apt.patient_name || 'Sem nome'}
                       </div>
                       {apt.patient_phone && (
-                        <div className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
+                        <div className="text-xs text-gray-400 dark:text-[#565d73] flex items-center gap-1 mt-0.5">
                           <button
                             onClick={() => setSelectedPhone(apt.patient_phone || null)}
                             className="hover:text-pink-600 dark:hover:text-pink-400 transition-colors flex items-center gap-1"
@@ -224,7 +224,7 @@ export default function DailyReceptionList() {
                         </div>
                       )}
                     </td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
+                    <td className="p-4 text-sm text-gray-600 dark:text-[#a0a8be]">
                       {apt.doctor_name || 'Não informado'}
                     </td>
                     <td className="p-4">
@@ -288,7 +288,7 @@ export default function DailyReceptionList() {
               })}
               {appointments.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-10 text-center text-gray-400 dark:text-gray-500">
+                  <td colSpan={5} className="p-10 text-center text-gray-400 dark:text-[#565d73]">
                     Nenhum agendamento para hoje.
                   </td>
                 </tr>

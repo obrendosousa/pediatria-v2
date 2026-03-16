@@ -23,7 +23,7 @@ export type Profile = {
 // Módulos que o usuário tem acesso (RBAC multi-módulo)
 export type UserModule = {
   module: 'pediatria' | 'atendimento' | 'financeiro' | 'comercial' | 'ceo';
-  role: 'admin' | 'manager' | 'operator' | 'viewer';
+  role: 'admin' | 'manager' | 'operator' | 'viewer' | 'doctor';
 };
 
 type AuthContextType = {

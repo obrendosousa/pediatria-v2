@@ -8,7 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useSubstances } from '@/hooks/useSubstances';
 import type { Substance } from '@/types/cadastros';
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-gray-700 rounded-xl bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252a3a] rounded-xl bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400';
 
 export default function SubstanciasPage() {
   const { toast } = useToast();
@@ -107,11 +107,11 @@ export default function SubstanciasPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e2028]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
         <div className="flex items-center gap-2">
           <FlaskConical className="w-5 h-5 text-teal-600" />
-          <h1 className="text-lg font-bold text-slate-800 dark:text-gray-100">Substâncias</h1>
-          <span className="text-xs text-slate-400 dark:text-gray-500 ml-1">({totalCount})</span>
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">Substâncias</h1>
+          <span className="text-xs text-slate-400 dark:text-[#565d73] ml-1">({totalCount})</span>
         </div>
         <button
           onClick={openCreate}
@@ -156,7 +156,7 @@ export default function SubstanciasPage() {
         loading={saving}
       >
         <div>
-          <label className="text-xs font-bold text-slate-500 dark:text-gray-400 mb-1.5 ml-1 block uppercase tracking-wider">
+          <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] mb-1.5 ml-1 block uppercase tracking-wider">
             Nome <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 ml-1">Obrigatório</span>
           </label>
           <input

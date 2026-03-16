@@ -8,11 +8,11 @@ type ServiceEfficiencyPanelProps = {
 
 export default function ServiceEfficiencyPanel({ metrics }: ServiceEfficiencyPanelProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#1e2028]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1e2334] dark:bg-[#0d0f15]">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-bold text-slate-800 dark:text-gray-100">Eficiência operacional</h3>
-          <p className="text-xs text-slate-500 dark:text-gray-400">Tempo de fila, atendimento e conversão ao longo do período.</p>
+          <h3 className="text-sm font-bold text-slate-800 dark:text-[#e8ecf4]">Eficiência operacional</h3>
+          <p className="text-xs text-slate-500 dark:text-[#828ca5]">Tempo de fila, atendimento e conversão ao longo do período.</p>
         </div>
         <InfoHelpButton
           title="Eficiência operacional"

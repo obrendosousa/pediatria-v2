@@ -124,7 +124,12 @@ export async function POST(req: Request) {
       } catch { /* Erro não crítico */ }
     };
 
-    if (type === 'audio' && mediaUrl) {
+    if (type === 'sticker' && mediaUrl) {
+      await setPresence('composing');
+      endpoint = '/message/sendSticker/{instance}';
+      apiBody = { number: phone, sticker: mediaUrl };
+    }
+    else if (type === 'audio' && mediaUrl) {
       await setPresence('recording');
       endpoint = '/message/sendWhatsAppAudio/{instance}';
       apiBody = { number: phone, audio: mediaUrl, delay: 1000, encoding: true };

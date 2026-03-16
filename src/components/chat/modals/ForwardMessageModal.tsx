@@ -132,15 +132,15 @@ export default function ForwardMessageModal({
 
   const modalContent = (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#233138] rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col border border-gray-200 dark:border-gray-700">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <div className="bg-white dark:bg-[#233138] rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col border border-gray-200 dark:border-[#252a3a]">
+        <div className="p-4 border-b border-gray-100 dark:border-[#252a3a] flex items-center justify-between shrink-0">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-[#e8ecf4]">
             Encaminhar mensagem
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-[#828ca5]"
             aria-label="Fechar"
           >
             <X size={20} />
@@ -148,8 +148,8 @@ export default function ForwardMessageModal({
         </div>
 
         {message && (
-          <div className="px-4 py-2 bg-gray-50 dark:bg-[#0b141a] border-b border-gray-100 dark:border-gray-700 shrink-0">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Mensagem selecionada</p>
+          <div className="px-4 py-2 bg-gray-50 dark:bg-[#0b141a] border-b border-gray-100 dark:border-[#252a3a] shrink-0">
+            <p className="text-xs text-gray-500 dark:text-[#828ca5] mb-1">Mensagem selecionada</p>
             <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2">
               {message.message_type === 'text'
                 ? (message.message_text || '').trim() || '(sem texto)'
@@ -158,7 +158,7 @@ export default function ForwardMessageModal({
           </div>
         )}
 
-        <div className="p-2 border-b border-gray-100 dark:border-gray-700 shrink-0">
+        <div className="p-2 border-b border-gray-100 dark:border-[#252a3a] shrink-0">
           <div className="relative">
             <Search
               size={18}
@@ -169,7 +169,7 @@ export default function ForwardMessageModal({
               placeholder="Buscar contato..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-[#0b141a] text-gray-900 dark:text-gray-100 placeholder-gray-400 text-sm focus:ring-2 focus:ring-green-500/30 focus:border-green-500 outline-none"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-[#0b141a] text-gray-900 dark:text-[#e8ecf4] placeholder-gray-400 text-sm focus:ring-2 focus:ring-green-500/30 focus:border-green-500 outline-none"
             />
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function ForwardMessageModal({
               <Loader2 size={28} className="animate-spin text-green-500" />
             </div>
           ) : displayChats.length === 0 ? (
-            <div className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+            <div className="py-12 text-center text-sm text-gray-500 dark:text-[#828ca5]">
               Nenhum chat encontrado.
             </div>
           ) : (
@@ -193,7 +193,7 @@ export default function ForwardMessageModal({
                     className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
                       selectedChat?.id === c.id
                         ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
-                        : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-900 dark:text-gray-100'
+                        : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-900 dark:text-[#e8ecf4]'
                     }`}
                   >
                     <div 
@@ -219,7 +219,7 @@ export default function ForwardMessageModal({
                       <p className="font-medium truncate">
                         {c.contact_name || c.phone || `Chat ${c.id}`}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <p className="text-xs text-gray-500 dark:text-[#828ca5] truncate">
                         {c.contact_name && c.phone ? c.phone : c.last_message || ''}
                       </p>
                     </div>
@@ -230,11 +230,11 @@ export default function ForwardMessageModal({
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex gap-2 shrink-0">
+        <div className="p-4 border-t border-gray-100 dark:border-[#252a3a] flex gap-2 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium transition-colors"
+            className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-[#a0a8be] hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium transition-colors"
           >
             Cancelar
           </button>

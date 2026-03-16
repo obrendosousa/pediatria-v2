@@ -2,9 +2,11 @@
 
 import { useState, useCallback } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
+import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const supabase = createSchemaClient('atendimento');
+const pubSupabase = createClient();
 
 export type ClinicalEvolution = {
   id: number;
@@ -56,7 +58,7 @@ export function useEvolutions(patientId: number) {
   }, [patientId]);
 
   const fetchDoctors = useCallback(async () => {
-    const { data } = await supabase
+    const { data } = await pubSupabase
       .from('doctors')
       .select('id, name')
       .eq('active', true)
@@ -69,12 +71,27 @@ export function useEvolutions(patientId: number) {
   }, []);
 
   const fetchTemplates = useCallback(async () => {
-    const { data } = await supabase
+    // Fetch from legacy clinical_templates
+    const { data: legacy } = await supabase
       .from('clinical_templates')
       .select('id, title, content')
       .eq('template_type', 'evolucao')
       .order('title');
-    if (data) setTemplates(data as EvolutionTemplate[]);
+
+    // Also fetch from new cadastros evolution_templates
+    const { data: cadastros } = await supabase
+      .from('evolution_templates')
+      .select('id, name, content')
+      .order('name');
+
+    const list: EvolutionTemplate[] = (legacy as EvolutionTemplate[]) || [];
+    if (cadastros) {
+      for (const t of cadastros) {
+        // Use negative hash to avoid id collision with legacy bigint ids
+        list.push({ id: -(list.length + 5000), title: (t as { name: string }).name, content: t.content });
+      }
+    }
+    setTemplates(list);
   }, []);
 
   const create = useCallback(async (input: EvolutionInput) => {

@@ -108,26 +108,26 @@ export default function DashboardPage() {
             {/* Header skeleton */}
             <div className="flex items-center justify-between">
               <div className="space-y-3">
-                <div className="h-8 w-72 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
-                <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800/60 rounded animate-pulse" />
+                <div className="h-8 w-72 bg-gray-200 dark:bg-[#141722] rounded-lg animate-pulse" />
+                <div className="h-4 w-48 bg-gray-100 dark:bg-[#141722]/60 rounded animate-pulse" />
               </div>
-              <div className="h-10 w-40 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+              <div className="h-10 w-40 bg-gray-200 dark:bg-[#141722] rounded-lg animate-pulse" />
             </div>
             {/* Cards skeleton */}
             <div className="grid grid-cols-4 gap-5">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-[140px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-gray-800/50 animate-pulse" />
+                <div key={i} className="h-[140px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#1e2334]/50 animate-pulse" />
               ))}
             </div>
             <div className="grid grid-cols-4 gap-5">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-[140px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-gray-800/50 animate-pulse" />
+                <div key={i} className="h-[140px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#1e2334]/50 animate-pulse" />
               ))}
             </div>
             {/* Charts skeleton */}
             <div className="grid grid-cols-2 gap-5">
               {[...Array(2)].map((_, i) => (
-                <div key={i} className="h-[320px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-gray-800/50 animate-pulse" />
+                <div key={i} className="h-[320px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#1e2334]/50 animate-pulse" />
               ))}
             </div>
           </div>
@@ -139,12 +139,12 @@ export default function DashboardPage() {
   if (!metrics) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-[#0C1117] min-h-screen">
-        <div className="text-center p-10 bg-white dark:bg-[#161B22] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800/50 max-w-sm">
+        <div className="text-center p-10 bg-white dark:bg-[#161B22] rounded-2xl shadow-sm border border-gray-100 dark:border-[#1e2334]/50 max-w-sm">
           <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center mx-auto mb-5">
             <Activity className="w-7 h-7 text-rose-500" />
           </div>
-          <p className="text-gray-900 dark:text-gray-100 font-semibold text-lg mb-2">Erro ao carregar</p>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Nao foi possivel conectar ao banco de dados.</p>
+          <p className="text-gray-900 dark:text-[#e8ecf4] font-semibold text-lg mb-2">Erro ao carregar</p>
+          <p className="text-gray-500 dark:text-[#828ca5] text-sm mb-6">Nao foi possivel conectar ao banco de dados.</p>
           <button
             onClick={fetchMetrics}
             className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-sm font-medium transition-colors cursor-pointer"
@@ -173,12 +173,12 @@ export default function DashboardPage() {
                   <RefreshCw className="w-4 h-4 text-cyan-500 animate-spin" />
                 )}
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 ml-[18px]">
+              <p className="text-sm text-gray-500 dark:text-[#828ca5] ml-[18px]">
                 Visao geral das operacoes da clinica
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex bg-white dark:bg-[#161B22] rounded-xl border border-gray-200 dark:border-gray-700/50 p-1 shadow-sm">
+              <div className="flex bg-white dark:bg-[#161B22] rounded-xl border border-gray-200 dark:border-[#252a3a]/50 p-1 shadow-sm">
                 {[
                   { value: 7, label: '7d' },
                   { value: 30, label: '30d' },
@@ -190,7 +190,7 @@ export default function DashboardPage() {
                     className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                       period === opt.value
                         ? 'bg-cyan-600 text-white shadow-sm'
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                        : 'text-gray-500 dark:text-[#828ca5] hover:text-gray-700 dark:hover:text-gray-200'
                     }`}
                   >
                     {opt.label}
@@ -297,8 +297,8 @@ export default function DashboardPage() {
                   <div className="flex-1 w-full space-y-3">
                     <LegendRow color={CHART_COLORS.male} label="Masculino" value={metrics.demographics.male.count} pct={metrics.demographics.male.percentage} />
                     <LegendRow color={CHART_COLORS.female} label="Feminino" value={metrics.demographics.female.count} pct={metrics.demographics.female.percentage} />
-                    <div className="pt-3 border-t border-gray-100 dark:border-gray-700/50">
-                      <p className="text-xs text-gray-400 dark:text-gray-500 text-center font-medium">
+                    <div className="pt-3 border-t border-gray-100 dark:border-[#252a3a]/50">
+                      <p className="text-xs text-gray-400 dark:text-[#565d73] text-center font-medium">
                         Total: {metrics.demographics.total} pacientes
                       </p>
                     </div>
@@ -400,17 +400,17 @@ export default function DashboardPage() {
                     {/* Numero central */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <span className="text-3xl font-bold text-gray-900 dark:text-gray-50">{metrics.procedures.total}</span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">total</span>
+                      <span className="text-xs text-gray-400 dark:text-[#565d73] font-medium">total</span>
                     </div>
                   </div>
                   <div className="flex gap-8 mt-4">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS.consultation }} />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Consulta <span className="font-semibold text-gray-900 dark:text-gray-200">{metrics.procedures.consultations.percentage}%</span></span>
+                      <span className="text-sm text-gray-600 dark:text-[#828ca5]">Consulta <span className="font-semibold text-gray-900 dark:text-gray-200">{metrics.procedures.consultations.percentage}%</span></span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS.returnVisit }} />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Retorno <span className="font-semibold text-gray-900 dark:text-gray-200">{metrics.procedures.returns.percentage}%</span></span>
+                      <span className="text-sm text-gray-600 dark:text-[#828ca5]">Retorno <span className="font-semibold text-gray-900 dark:text-gray-200">{metrics.procedures.returns.percentage}%</span></span>
                     </div>
                   </div>
                 </div>
@@ -521,7 +521,7 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
   return (
     <div className="flex items-center gap-2.5 mb-4">
       <div className="text-cyan-600 dark:text-cyan-400">{icon}</div>
-      <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{title}</h2>
+      <h2 className="text-sm font-semibold text-gray-500 dark:text-[#828ca5] uppercase tracking-wider">{title}</h2>
     </div>
   );
 }
@@ -536,7 +536,7 @@ function KPICard({
   trend?: 'up' | 'down';
 }) {
   return (
-    <div className="group relative bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-gray-800/50 p-5 sm:p-6 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/20 transition-all duration-200 cursor-default">
+    <div className="group relative bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#1e2334]/50 p-5 sm:p-6 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/20 transition-all duration-200 cursor-default">
       {/* Barra lateral de acento */}
       <div
         className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full transition-all duration-200 group-hover:top-3 group-hover:bottom-3"
@@ -562,15 +562,15 @@ function KPICard({
       <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-1 tabular-nums tracking-tight">
         {value}
       </p>
-      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</p>
+      <p className="text-xs sm:text-sm text-gray-500 dark:text-[#828ca5] font-medium">{label}</p>
     </div>
   );
 }
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-gray-800/50 p-5 sm:p-6 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/20 transition-all duration-200">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-5">{title}</h3>
+    <div className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#1e2334]/50 p-5 sm:p-6 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/20 transition-all duration-200">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-[#a0a8be] mb-5">{title}</h3>
       {children}
     </div>
   );
@@ -581,11 +581,11 @@ function LegendRow({ color, label, value, pct }: { color: string; label: string;
     <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-[#1C2128]">
       <div className="flex items-center gap-2.5">
         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-        <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">{label}</span>
+        <span className="text-sm text-gray-600 dark:text-[#a0a8be] font-medium">{label}</span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">{value}</span>
-        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{pct}%</span>
+        <span className="text-xs text-gray-400 dark:text-[#565d73] font-medium">{value}</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-[#e8ecf4]">{pct}%</span>
       </div>
     </div>
   );
@@ -594,8 +594,8 @@ function LegendRow({ color, label, value, pct }: { color: string; label: string;
 function CustomTooltip({ active, payload, label, suffix }: { active?: boolean; payload?: Array<{ value: number; color?: string }>; label?: string; suffix?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-[#1C2128] border border-gray-200 dark:border-gray-700/50 rounded-xl px-3.5 py-2.5 shadow-xl shadow-gray-200/30 dark:shadow-black/30">
-      <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-0.5">{label}</p>
+    <div className="bg-white dark:bg-[#1C2128] border border-gray-200 dark:border-[#252a3a]/50 rounded-xl px-3.5 py-2.5 shadow-xl shadow-gray-200/30 dark:shadow-black/30">
+      <p className="text-xs font-semibold text-gray-900 dark:text-[#e8ecf4] mb-0.5">{label}</p>
       <p className="text-sm font-bold" style={{ color: payload[0]?.color || THEME.teal.base }}>
         {payload[0]?.value}{suffix || ''}
       </p>

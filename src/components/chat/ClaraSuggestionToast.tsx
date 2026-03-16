@@ -97,14 +97,14 @@ function ToastCard({ type, text, reason, scheduleDate, onApprove, onExpand, onDi
           {text}
         </p>
         {reason && (
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 italic mt-1.5 leading-relaxed">
+          <p className="text-[10px] text-gray-400 dark:text-[#565d73] italic mt-1.5 leading-relaxed">
             {reason}
           </p>
         )}
       </div>
 
       {/* Ações */}
-      <div className="flex items-center gap-1 px-2.5 pb-2 pt-0.5 border-t border-gray-100 dark:border-gray-700/50">
+      <div className="flex items-center gap-1 px-2.5 pb-2 pt-0.5 border-t border-gray-100 dark:border-[#252a3a]/50">
         <button
           onClick={onExpand}
           disabled={isProcessing}
@@ -335,7 +335,7 @@ export default function ClaraSuggestionToast({
         )}
 
         {/* Barra de countdown */}
-        <div className="h-[3px] bg-gray-200/60 dark:bg-gray-700/60 rounded-full overflow-hidden mx-1">
+        <div className="h-[3px] bg-gray-200/60 dark:bg-[#1e2334]/60 rounded-full overflow-hidden mx-1">
           <div
             ref={barRef}
             className={`h-full rounded-full ${
@@ -350,7 +350,7 @@ export default function ClaraSuggestionToast({
         {/* Indicador de pausa */}
         {isHovered && (
           <div className="text-center">
-            <span className="text-[9px] text-gray-400 dark:text-gray-500">
+            <span className="text-[9px] text-gray-400 dark:text-[#565d73]">
               Pausado enquanto o mouse estiver aqui
             </span>
           </div>

@@ -75,7 +75,7 @@ function ToolbarButton({
       className={`p-1.5 rounded transition-colors ${
         active
           ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300'
-          : 'text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-700 dark:hover:text-gray-200'
+          : 'text-slate-500 dark:text-[#828ca5] hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-700 dark:hover:text-gray-200'
       } disabled:opacity-30 disabled:cursor-not-allowed`}
     >
       {children}
@@ -114,14 +114,14 @@ function ToolbarDropdown({
         type="button"
         onClick={() => setOpen(o => !o)}
         title={label}
-        className="flex items-center gap-0.5 p-1.5 rounded text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-700 dark:hover:text-gray-200 transition-colors"
+        className="flex items-center gap-0.5 p-1.5 rounded text-slate-500 dark:text-[#828ca5] hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-700 dark:hover:text-gray-200 transition-colors"
       >
         {icon}
         <ChevronDown className="w-3 h-3" />
       </button>
       {open && (
         <div
-          className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl py-1 min-w-[160px] animate-in fade-in-0 zoom-in-95"
+          className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl shadow-xl py-1 min-w-[160px] animate-in fade-in-0 zoom-in-95"
           onClick={() => setOpen(false)}
         >
           {children}
@@ -146,6 +146,7 @@ export default function RichTextEditor({
   const colorRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
@@ -241,9 +242,9 @@ export default function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div className={`border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-[#1e2028] ${className}`}>
+    <div className={`border border-slate-200 dark:border-[#252a3a] rounded-xl overflow-hidden bg-white dark:bg-[#0d0f15] ${className}`}>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-[#2a2d36]">
+      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-slate-200 dark:border-[#252a3a] bg-slate-50 dark:bg-[#141722]">
 
         {/* Fonte */}
         <ToolbarDropdown label="Fonte" icon={<Type className="w-4 h-4" />}>
@@ -344,12 +345,12 @@ export default function RichTextEditor({
             type="button"
             onClick={() => setColorPickerOpen(o => !o)}
             title="Cor do texto"
-            className="p-1.5 rounded text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded text-slate-500 dark:text-[#828ca5] hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           >
             <Paintbrush className="w-4 h-4" />
           </button>
           {colorPickerOpen && (
-            <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-[#2a2d36] border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl p-2 grid grid-cols-5 gap-1 animate-in fade-in-0 zoom-in-95">
+            <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-[#141722] border border-slate-200 dark:border-[#252a3a] rounded-xl shadow-xl p-2 grid grid-cols-5 gap-1 animate-in fade-in-0 zoom-in-95">
               {TEXT_COLORS.map(c => (
                 <button
                   key={c}
@@ -363,7 +364,7 @@ export default function RichTextEditor({
               <button
                 type="button"
                 onClick={() => { editor.chain().focus().unsetColor().run(); setColorPickerOpen(false); }}
-                className="col-span-5 mt-1 text-xs text-slate-500 dark:text-gray-400 hover:text-teal-600 py-1"
+                className="col-span-5 mt-1 text-xs text-slate-500 dark:text-[#828ca5] hover:text-teal-600 py-1"
               >
                 Remover cor
               </button>
@@ -457,7 +458,7 @@ export default function RichTextEditor({
                   className="block w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-white/5"
                 >
                   <span className="text-sm font-medium text-teal-600 dark:text-teal-400">{`{${v.key}}`}</span>
-                  <span className="block text-xs text-slate-400 dark:text-gray-500">{v.description ?? v.label}</span>
+                  <span className="block text-xs text-slate-400 dark:text-[#565d73]">{v.description ?? v.label}</span>
                 </button>
               ))}
             </ToolbarDropdown>

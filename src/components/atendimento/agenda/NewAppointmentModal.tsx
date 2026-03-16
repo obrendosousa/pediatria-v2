@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
+import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 import {
   X, Search, User, Calendar, Clock, Stethoscope, FileText, Video,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 
 const supabaseAtendimento = createSchemaClient('atendimento');
+const pubSupabase = createClient();
 
 // ── Tipos ──────────────────────────────────────────────────
 type PatientOption = {
@@ -147,11 +149,23 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
     if (!isOpen) return;
 
     (async () => {
-      const [doctorsRes, templatesRes] = await Promise.all([
-        supabaseAtendimento.from('doctors').select('id, name').eq('active', true).order('name'),
+      const [doctorsRes, profsRes, templatesRes] = await Promise.all([
+        pubSupabase.from('doctors').select('id, name, professional_id').eq('active', true).order('name'),
+        supabaseAtendimento.from('professionals').select('id, name').eq('has_schedule', true).eq('status', 'active').order('name'),
         supabaseAtendimento.from('clinical_templates').select('id, title, category').eq('template_type', 'anamnese').order('title')
       ]);
-      if (doctorsRes.data) setDoctors(doctorsRes.data);
+
+      // Merge doctors + professionals (sem duplicar linkados)
+      const list: DoctorOption[] = doctorsRes.data || [];
+      if (profsRes.data) {
+        const linkedIds = new Set((doctorsRes.data || []).map((d: Record<string, unknown>) => d.professional_id).filter(Boolean));
+        for (const prof of profsRes.data) {
+          if (!linkedIds.has(prof.id)) {
+            list.push({ id: -(list.length + 1000), name: prof.name });
+          }
+        }
+      }
+      setDoctors(list);
       if (templatesRes.data) setAnamnesisTemplates(templatesRes.data);
     })();
 
@@ -308,15 +322,15 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-[#1e2028] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="bg-white dark:bg-[#0d0f15] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2d36] flex justify-between items-center shrink-0">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-[#252a3a] bg-gray-50 dark:bg-[#141722] flex justify-between items-center shrink-0">
+          <h3 className="font-bold text-gray-800 dark:text-[#e8ecf4] flex items-center gap-2">
             <Calendar className="text-teal-600 dark:text-teal-400" size={20}/>
             Novo Agendamento
           </h3>
           <button type="button" onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors">
-            <X size={20} className="text-gray-400 dark:text-gray-500"/>
+            <X size={20} className="text-gray-400 dark:text-[#565d73]"/>
           </button>
         </div>
 
@@ -327,15 +341,15 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
 
             {/* ── Paciente (busca) ── */}
             <div ref={patientRef} className="relative">
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Paciente *</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">Paciente *</label>
               {selectedPatient ? (
                 <div className="flex items-center gap-3 p-3 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800/30 rounded-lg">
                   <div className="w-9 h-9 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 font-bold text-sm">
                     {selectedPatient.full_name.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 dark:text-gray-100 truncate">{selectedPatient.full_name}</p>
-                    <p className="text-xs text-slate-500 dark:text-gray-400">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] truncate">{selectedPatient.full_name}</p>
+                    <p className="text-xs text-slate-500 dark:text-[#828ca5]">
                       {[selectedPatient.phone, selectedPatient.birth_date ? calcAge(selectedPatient.birth_date) : null].filter(Boolean).join(' · ')}
                     </p>
                   </div>
@@ -353,24 +367,24 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                       onChange={e => setPatientSearch(e.target.value)}
                       onFocus={() => patientSearch.trim().length >= 2 && setPatientDropdownOpen(true)}
                       placeholder="Buscar paciente por nome ou telefone..."
-                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all placeholder:text-slate-400"
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all placeholder:text-slate-400"
                     />
                   </div>
                   {patientDropdownOpen && (
-                    <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg custom-scrollbar">
+                    <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg shadow-lg custom-scrollbar">
                       {patientLoading ? (
-                        <div className="p-4 text-center text-sm text-slate-500 dark:text-gray-400">Buscando...</div>
+                        <div className="p-4 text-center text-sm text-slate-500 dark:text-[#828ca5]">Buscando...</div>
                       ) : patientResults.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-slate-500 dark:text-gray-400">Nenhum paciente encontrado.</div>
+                        <div className="p-4 text-center text-sm text-slate-500 dark:text-[#828ca5]">Nenhum paciente encontrado.</div>
                       ) : (
                         patientResults.map(p => (
-                          <button key={p.id} type="button" onClick={() => handleSelectPatient(p)} className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-100 dark:border-gray-800 last:border-0 flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#2a2d36] flex items-center justify-center text-slate-500 dark:text-gray-400 shrink-0">
+                          <button key={p.id} type="button" onClick={() => handleSelectPatient(p)} className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-100 dark:border-[#1e2334] last:border-0 flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#141722] flex items-center justify-center text-slate-500 dark:text-[#828ca5] shrink-0">
                               <User className="w-4 h-4"/>
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="font-medium text-sm text-slate-800 dark:text-gray-200 truncate">{p.full_name}</p>
-                              <p className="text-xs text-slate-500 dark:text-gray-400 truncate">{[p.phone, p.birth_date ? calcAge(p.birth_date) : null].filter(Boolean).join(' · ')}</p>
+                              <p className="text-xs text-slate-500 dark:text-[#828ca5] truncate">{[p.phone, p.birth_date ? calcAge(p.birth_date) : null].filter(Boolean).join(' · ')}</p>
                             </div>
                           </button>
                         ))
@@ -384,7 +398,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
 
             {/* ── Profissional ── */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Profissional *</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">Profissional *</label>
               <Controller
                 name="doctor_id"
                 control={control}
@@ -395,7 +409,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                     <select
                       value={field.value ?? ''}
                       onChange={e => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all appearance-none"
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all appearance-none"
                     >
                       <option value="">Selecione o profissional...</option>
                       {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -409,7 +423,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
             {/* ── Data + Hora Inicial + Hora Final ── */}
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Data *</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">Data *</label>
                 <Controller
                   name="dateDisplay"
                   control={control}
@@ -428,14 +442,14 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                         }}
                         placeholder="DD/MM/AAAA"
                         maxLength={10}
-                        className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                        className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
                       />
                     </div>
                   )}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Hora Inicial *</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">Hora Inicial *</label>
                 <Controller
                   name="time_start"
                   control={control}
@@ -443,20 +457,20 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                   render={({ field }) => (
                     <div className="relative">
                       <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-3"/>
-                      <input type="time" {...field} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"/>
+                      <input type="time" {...field} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"/>
                     </div>
                   )}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Hora Final</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">Hora Final</label>
                 <Controller
                   name="time_end"
                   control={control}
                   render={({ field }) => (
                     <div className="relative">
                       <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-3"/>
-                      <input type="time" {...field} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"/>
+                      <input type="time" {...field} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"/>
                     </div>
                   )}
                 />
@@ -465,7 +479,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
 
             {/* ── Tipo de Agendamento (Radio) ── */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Tipo de Agendamento</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-2">Tipo de Agendamento</label>
               <Controller
                 name="appointment_subtype"
                 control={control}
@@ -482,7 +496,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                         className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border text-sm font-semibold transition-all ${
                           field.value === opt.value
                             ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 shadow-sm'
-                            : 'border-gray-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 hover:border-slate-300'
+                            : 'border-gray-200 dark:border-[#252a3a] text-slate-500 dark:text-[#828ca5] hover:border-slate-300'
                         }`}
                       >
                         <opt.icon size={16}/>
@@ -496,7 +510,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
 
             {/* ── Procedimentos (multi-select com busca) ── */}
             <div ref={procRef} className="relative">
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Procedimentos *</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">Procedimentos *</label>
               {/* Tags dos procedimentos selecionados */}
               {watchedProcedures && watchedProcedures.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
@@ -518,11 +532,11 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                   onChange={e => setProcSearch(e.target.value)}
                   onFocus={() => procSearch.trim().length >= 2 && setProcDropdownOpen(true)}
                   placeholder="Buscar procedimento por codigo ou nome..."
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all placeholder:text-slate-400"
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all placeholder:text-slate-400"
                 />
               </div>
               {procDropdownOpen && (
-                <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg custom-scrollbar">
+                <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg shadow-lg custom-scrollbar">
                   {procLoading ? (
                     <div className="p-4 text-center text-sm text-slate-500">Buscando...</div>
                   ) : procResults.length === 0 ? (
@@ -536,7 +550,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                           type="button"
                           onClick={() => addProcedure(proc)}
                           disabled={isSelected}
-                          className={`w-full text-left px-4 py-2.5 border-b border-slate-100 dark:border-gray-800 last:border-0 flex items-center gap-3 transition-colors ${
+                          className={`w-full text-left px-4 py-2.5 border-b border-slate-100 dark:border-[#1e2334] last:border-0 flex items-center gap-3 transition-colors ${
                             isSelected ? 'bg-teal-50/50 dark:bg-teal-900/10 cursor-default' : 'hover:bg-slate-50 dark:hover:bg-white/5'
                           }`}
                         >
@@ -558,7 +572,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
 
             {/* ── Enviar Anamnese ── */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Enviar Anamnese(s)</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">Enviar Anamnese(s)</label>
               <Controller
                 name="anamnesis_template_id"
                 control={control}
@@ -568,7 +582,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                     <select
                       value={field.value ?? ''}
                       onChange={e => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all appearance-none"
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all appearance-none"
                     >
                       <option value="">Nenhuma anamnese</option>
                       {anamnesisTemplates.map(t => (
@@ -597,7 +611,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                     <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                       field.value
                         ? 'bg-teal-50/50 dark:bg-teal-900/10 border-teal-200 dark:border-teal-800/30'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-slate-300'
+                        : 'border-gray-200 dark:border-[#252a3a] hover:border-slate-300'
                     }`}>
                       <input
                         type="checkbox"
@@ -608,9 +622,9 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                       <div>
                         <div className="flex items-center gap-1.5">
                           <cb.icon size={13} className={field.value ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400'}/>
-                          <span className={`text-xs font-bold ${field.value ? 'text-teal-700 dark:text-teal-300' : 'text-slate-600 dark:text-gray-300'}`}>{cb.label}</span>
+                          <span className={`text-xs font-bold ${field.value ? 'text-teal-700 dark:text-teal-300' : 'text-slate-600 dark:text-[#a0a8be]'}`}>{cb.label}</span>
                         </div>
-                        <p className="text-[10px] text-slate-400 dark:text-gray-500 mt-0.5">{cb.desc}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-[#565d73] mt-0.5">{cb.desc}</p>
                       </div>
                     </label>
                   )}
@@ -620,7 +634,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
 
             {/* ── Descricao ── */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Descricao / Observacoes</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-[#828ca5] uppercase mb-1">Descricao / Observacoes</label>
               <Controller
                 name="description"
                 control={control}
@@ -629,7 +643,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                     {...field}
                     rows={3}
                     placeholder="Observacoes sobre o agendamento..."
-                    className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all resize-none placeholder:text-slate-400"
+                    className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all resize-none placeholder:text-slate-400"
                   />
                 )}
               />
@@ -638,17 +652,17 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
 
           {/* ── Sidebar do paciente ── */}
           {selectedPatient && (
-            <div className="w-64 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2d36]/50 p-5 overflow-y-auto custom-scrollbar shrink-0">
+            <div className="w-64 border-l border-gray-200 dark:border-[#252a3a] bg-gray-50 dark:bg-[#141722]/50 p-5 overflow-y-auto custom-scrollbar shrink-0">
               <div className="flex flex-col items-center text-center mb-5">
                 <div className="w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 font-bold text-xl mb-3">
                   {selectedPatient.full_name.charAt(0)}
                 </div>
-                <h4 className="text-sm font-bold text-slate-800 dark:text-gray-100">{selectedPatient.full_name}</h4>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-[#e8ecf4]">{selectedPatient.full_name}</h4>
                 {selectedPatient.birth_date && (
-                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">{calcAge(selectedPatient.birth_date)}</p>
+                  <p className="text-xs text-slate-500 dark:text-[#828ca5] mt-1">{calcAge(selectedPatient.birth_date)}</p>
                 )}
                 {selectedPatient.phone && (
-                  <p className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-[#828ca5] flex items-center gap-1 mt-1">
                     <Phone size={10}/> {selectedPatient.phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
                   </p>
                 )}
@@ -664,7 +678,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
               </div>
 
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Links Rapidos</p>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-[#565d73] uppercase tracking-wider">Links Rapidos</p>
                 {[
                   { label: 'Prontuario', icon: FileText, href: `/atendimento/prontuario/${selectedPatient.id}` },
                   { label: 'Ver cadastro', icon: User, href: `/atendimento/pacientes/${selectedPatient.id}` },
@@ -675,7 +689,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-white dark:hover:bg-white/5 text-slate-600 dark:text-gray-300 transition-colors group"
+                    className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-white dark:hover:bg-white/5 text-slate-600 dark:text-[#a0a8be] transition-colors group"
                   >
                     <div className="p-1.5 rounded-md bg-teal-50 dark:bg-teal-900/20 text-teal-500 dark:text-teal-400 group-hover:bg-teal-100">
                       <link.icon size={14}/>
@@ -689,12 +703,12 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2d36] flex items-center justify-between shrink-0">
-          <div className="text-xs text-slate-400 dark:text-gray-500">
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-[#252a3a] bg-gray-50 dark:bg-[#141722] flex items-center justify-between shrink-0">
+          <div className="text-xs text-slate-400 dark:text-[#565d73]">
             {watchedSubtype === 'orcamento' && <span className="text-amber-600 dark:text-amber-400 font-semibold">Agendamento tipo orcamento</span>}
           </div>
           <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-sm font-bold transition-colors">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-500 dark:text-[#828ca5] hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-sm font-bold transition-colors">
               Cancelar
             </button>
             <button

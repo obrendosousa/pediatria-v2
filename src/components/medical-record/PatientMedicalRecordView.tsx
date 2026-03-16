@@ -166,7 +166,7 @@ function PatientMedicalRecordViewInner({ patientId, appointmentId, currentDoctor
   if (!patientData) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-50/50 dark:bg-[#0b141a]">
-        <div className="p-10 text-center text-slate-500 dark:text-gray-400">Paciente não encontrado.</div>
+        <div className="p-10 text-center text-slate-500 dark:text-[#828ca5]">Paciente não encontrado.</div>
       </div>
     );
   }
@@ -191,7 +191,7 @@ function PatientMedicalRecordViewInner({ patientId, appointmentId, currentDoctor
       />
 
       {/* Sistema de Abas */}
-      <div className="bg-white dark:bg-[#1e2028] border-b border-slate-200 dark:border-gray-800 px-6">
+      <div className="bg-white dark:bg-[#0d0f15] border-b border-slate-200 dark:border-[#1e2334] px-6">
         <div className="flex gap-1">
           <button
             onClick={() => setActiveView('summary')}
@@ -199,7 +199,7 @@ function PatientMedicalRecordViewInner({ patientId, appointmentId, currentDoctor
               px-4 py-3 font-medium text-sm transition-all duration-200 border-b-2
               ${activeView === 'summary'
                 ? 'border-rose-500 text-rose-600 dark:text-rose-400'
-                : 'border-transparent text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-300'
+                : 'border-transparent text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-300'
               }
             `}
           >
@@ -216,7 +216,7 @@ function PatientMedicalRecordViewInner({ patientId, appointmentId, currentDoctor
                 px-4 py-3 font-medium text-sm transition-all duration-200 border-b-2
                 ${activeView === 'attendance'
                   ? 'border-rose-500 text-rose-600 dark:text-rose-400'
-                  : 'border-transparent text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-300'
+                  : 'border-transparent text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-300'
                 }
               `}
             >
@@ -246,7 +246,7 @@ function PatientMedicalRecordViewInner({ patientId, appointmentId, currentDoctor
               />
             </section>
 
-            <div className="border-t border-slate-200 dark:border-gray-800" />
+            <div className="border-t border-slate-200 dark:border-[#1e2334]" />
 
             <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
               <div className="flex items-center justify-between mb-6 px-1">
@@ -315,18 +315,18 @@ function PatientMedicalRecordViewInner({ patientId, appointmentId, currentDoctor
       {/* Modal de Gerenciamento de Contatos */}
       {isPhonesModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#1e2028] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-[#0d0f15] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-gray-800">
+            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#1e2334]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                   <Phone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100">
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">
                     Números de Contato
                   </h2>
-                  <p className="text-sm text-slate-500 dark:text-gray-400">
+                  <p className="text-sm text-slate-500 dark:text-[#828ca5]">
                     Gerencie os telefones do paciente
                   </p>
                 </div>
@@ -335,7 +335,7 @@ function PatientMedicalRecordViewInner({ patientId, appointmentId, currentDoctor
                 onClick={() => setIsPhonesModalOpen(false)}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-[#2a2d36] rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-slate-500 dark:text-gray-400" />
+                <X className="w-5 h-5 text-slate-500 dark:text-[#828ca5]" />
               </button>
             </div>
 

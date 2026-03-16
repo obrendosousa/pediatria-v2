@@ -146,30 +146,30 @@ export function AIInsights({ metrics }: AIInsightsProps) {
 
   if (isGenerating) {
     return (
-      <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 p-6 shadow-sm">
+      <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#1e2334] p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-4">
           <Sparkles className="w-5 h-5 text-purple-500 animate-pulse" />
-          <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100">IA Pulse</h3>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">IA Pulse</h3>
           <span className="text-xs text-slate-400">Analisando dados...</span>
         </div>
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-slate-200 dark:bg-gray-700 rounded w-3/4"></div>
-          <div className="h-4 bg-slate-200 dark:bg-gray-700 rounded w-1/2"></div>
+          <div className="h-4 bg-slate-200 dark:bg-[#1e2334] rounded w-3/4"></div>
+          <div className="h-4 bg-slate-200 dark:bg-[#1e2334] rounded w-1/2"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-[#1e2028] rounded-2xl border border-slate-200/60 dark:border-gray-800/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
+    <div className="bg-white dark:bg-[#0d0f15] rounded-2xl border border-slate-200/60 dark:border-[#1e2334]/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30">
             <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-gray-100">IA Pulse</h3>
-            <p className="text-xs text-slate-500 dark:text-gray-400">Análise inteligente em tempo real</p>
+            <h3 className="text-lg font-black text-slate-900 dark:text-[#e8ecf4]">IA Pulse</h3>
+            <p className="text-xs text-slate-500 dark:text-[#828ca5]">Análise inteligente em tempo real</p>
           </div>
         </div>
         <span className="text-xs px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full font-bold">
@@ -187,8 +187,8 @@ export function AIInsights({ metrics }: AIInsightsProps) {
             <div className="flex items-start gap-3">
               <div className="mt-0.5">{getIcon(insight.type)}</div>
               <div className="flex-1">
-                <h4 className="font-bold text-slate-800 dark:text-gray-100 mb-1">{insight.title}</h4>
-                <p className="text-sm text-slate-600 dark:text-gray-400 leading-relaxed">{insight.message}</p>
+                <h4 className="font-bold text-slate-800 dark:text-[#e8ecf4] mb-1">{insight.title}</h4>
+                <p className="text-sm text-slate-600 dark:text-[#828ca5] leading-relaxed">{insight.message}</p>
                 {insight.action && (
                   <button
                     onClick={insight.action.onClick}
@@ -206,7 +206,7 @@ export function AIInsights({ metrics }: AIInsightsProps) {
 
       <button
         onClick={generateInsights}
-        className="mt-4 w-full py-2 text-sm font-medium text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        className="mt-4 w-full py-2 text-sm font-medium text-slate-600 dark:text-[#828ca5] hover:text-slate-800 dark:hover:text-gray-200 hover:bg-slate-50 dark:hover:bg-[#141722] rounded-lg transition-colors"
       >
         Atualizar insights
       </button>

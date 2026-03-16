@@ -130,7 +130,7 @@ export function AdolescentConsultation({ patientId, patientData, onRefresh, appo
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="text-center text-slate-500 dark:text-gray-400">Carregando...</div>
+        <div className="text-center text-slate-500 dark:text-[#828ca5]">Carregando...</div>
       </div>
     );
   }
@@ -139,132 +139,132 @@ export function AdolescentConsultation({ patientId, patientData, onRefresh, appo
     <div className="p-4 pb-20">
       {/* Header */}
       <div className="mb-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100">CONSULTA ADOLESCENTE</h1>
-        <span className="text-xs text-slate-600 dark:text-gray-400 uppercase">{currentDate}</span>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">CONSULTA ADOLESCENTE</h1>
+        <span className="text-xs text-slate-600 dark:text-[#828ca5] uppercase">{currentDate}</span>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         {/* Card agrupado: Informações Básicas */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               ACOMPANHANTES
             </label>
             <input
               type="text"
               {...register('companions')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os acompanhantes..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               MORA ONDE
             </label>
             <input
               type="text"
               {...register('lives_where')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite onde mora..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               NATURALIDADE
             </label>
             <input
               type="text"
               {...register('birthplace')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite a naturalidade..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               ESCOLA/TURNO/MOTIVO CONSULTA?
             </label>
             <input
               type="text"
               {...register('school_turn_consultation_reason')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite escola, turno e motivo da consulta..."
             />
           </div>
         </div>
 
         {/* Card agrupado: Antecedentes */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               ANTECEDENTES DOS PAIS
             </label>
             <input
               type="text"
               {...register('parents_antecedents')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os antecedentes dos pais..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               ANTECEDENTES PESSOAIS
             </label>
             <input
               type="text"
               {...register('personal_antecedents')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os antecedentes pessoais..."
             />
           </div>
         </div>
 
         {/* Card agrupado: Saúde */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               ALERGIAS ?
             </label>
             <input
               type="text"
               {...register('allergies')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite as alergias..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               INTERNAÇÕES
             </label>
             <input
               type="text"
               {...register('hospitalizations')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre internações..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               PROBLEMAS DE VISTA? CEFALEIA?
             </label>
             <input
               type="text"
               {...register('vision_headache_problems')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite problemas de vista ou cefaleia..."
             />
           </div>
         </div>
 
         {/* Campo: MOTIVO DE CONSULTA? (Rich Text) */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be]">
               MOTIVO DE CONSULTA?
             </label>
             <div className="flex gap-2">
@@ -295,8 +295,8 @@ export function AdolescentConsultation({ patientId, patientData, onRefresh, appo
         </div>
 
         {/* Campo: SE SENTE ANSIOSO (Radio Group) */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4">
-          <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-2">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-2">
             SE SENTE ANSIOSO
           </label>
           <div className="flex gap-4">
@@ -307,7 +307,7 @@ export function AdolescentConsultation({ patientId, patientData, onRefresh, appo
                 value="sim"
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-slate-700 dark:text-gray-300">Sim</span>
+              <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Sim</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -316,13 +316,13 @@ export function AdolescentConsultation({ patientId, patientData, onRefresh, appo
                 value="não"
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-slate-700 dark:text-gray-300">Não</span>
+              <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Não</span>
             </label>
           </div>
         </div>
 
         {/* Botão Salvar */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-gray-700 -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#252a3a] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

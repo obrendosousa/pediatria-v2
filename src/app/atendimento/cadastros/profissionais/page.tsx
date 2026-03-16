@@ -62,10 +62,10 @@ export default function ProfissionaisPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e2028]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252a3a] bg-white dark:bg-[#0d0f15]">
         <div className="flex items-center gap-2">
           <UserCog className="w-5 h-5 text-teal-600" />
-          <h1 className="text-lg font-bold text-slate-800 dark:text-gray-100">Profissionais</h1>
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">Profissionais</h1>
         </div>
         <button
           onClick={() => router.push('/atendimento/cadastros/profissionais/criar')}

@@ -5,9 +5,29 @@ import { useParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { useProfessionals } from '@/hooks/useProfessionals';
+import { createClient } from '@/lib/supabase/client';
 import ProfessionalForm from '@/components/cadastros/profissionais/ProfessionalForm';
 import type { ProfessionalFormData } from '@/components/cadastros/profissionais/ProfessionalForm';
 import type { Professional } from '@/types/cadastros';
+
+async function uploadAttachments(files: File[]): Promise<{ name: string; url: string }[]> {
+  if (files.length === 0) return [];
+  const supabase = createClient();
+  const results: { name: string; url: string }[] = [];
+
+  for (const file of files) {
+    const ext = file.name.split('.').pop() || 'bin';
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
+    const { error } = await supabase.storage.from('professional-attachments').upload(path, file);
+    if (error) {
+      console.error('Erro ao enviar anexo:', error);
+      continue;
+    }
+    const { data: urlData } = supabase.storage.from('professional-attachments').getPublicUrl(path);
+    results.push({ name: file.name, url: urlData.publicUrl });
+  }
+  return results;
+}
 
 export default function EditarProfissionalPage() {
   const params = useParams();
@@ -35,6 +55,11 @@ export default function EditarProfissionalPage() {
   }, [id, getProfessional, toast, router]);
 
   const handleSubmit = async (form: ProfessionalFormData) => {
+    // Upload new files and merge with existing saved attachments
+    const newUploaded = await uploadAttachments(form.attachments);
+    const existingAttachments = (professional?.attachments as { name: string; url: string }[]) || [];
+    const allAttachments = [...existingAttachments, ...newUploaded];
+
     await updateProfessional(id, {
       name: form.name,
       sex: form.sex || null,
@@ -63,6 +88,7 @@ export default function EditarProfissionalPage() {
       restrict_prices: form.restrict_prices,
       has_schedule: form.has_schedule,
       restrict_schedule: form.restrict_schedule,
+      attachments: allAttachments,
       notes: form.notes || null,
     });
 

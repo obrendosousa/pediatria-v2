@@ -99,20 +99,20 @@ function ExamRow({
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="Digite o nome ou código do exame..."
-            className="w-full pl-3 pr-9 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full pl-3 pr-9 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           />
           <Search className="absolute right-2.5 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
         </div>
 
         {/* Dropdown de resultados */}
         {open && results.length > 0 && (
-          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg shadow-lg max-h-56 overflow-y-auto">
             {results.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onMouseDown={() => handleSelect(item)}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-gray-700/50 last:border-0"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-[#252a3a]/50 last:border-0"
               >
                 <span className="font-mono text-xs text-blue-600 dark:text-blue-400 mr-2">{item.code}</span>
                 <span className="text-slate-700 dark:text-gray-200">{item.name}</span>
@@ -136,7 +136,7 @@ function ExamRow({
         min={1}
         value={exam.quantity}
         onChange={(e) => onUpdate(index, { ...exam, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-        className="w-16 px-2 py-2 text-sm text-center border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+        className="w-16 px-2 py-2 text-sm text-center border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
       />
 
       {/* Deletar linha */}
@@ -181,7 +181,7 @@ function RequestCard({
     onUpdate({ ...draft, exams: [...draft.exams, { code: '', name: '', quantity: 1 }] });
 
   return (
-    <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-4">
+    <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-4">
       {/* Cabeçalho do card */}
       <div className="flex items-center gap-3 flex-wrap">
         {/* Toggle incluir data */}
@@ -195,18 +195,18 @@ function RequestCard({
             <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${draft.include_date ? 'translate-x-5' : 'translate-x-0'
               }`} />
           </button>
-          <span className="text-xs text-slate-600 dark:text-gray-400">Incluir data</span>
+          <span className="text-xs text-slate-600 dark:text-[#828ca5]">Incluir data</span>
         </label>
 
         {/* Data */}
         {draft.include_date && (
           <div className="flex items-center gap-1">
-            <span className="text-xs text-slate-500 dark:text-gray-400 uppercase font-medium">DATA</span>
+            <span className="text-xs text-slate-500 dark:text-[#828ca5] uppercase font-medium">DATA</span>
             <input
               type="date"
               value={draft.request_date}
               onChange={(e) => onUpdate({ ...draft, request_date: e.target.value })}
-              className="px-2 py-1 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="px-2 py-1 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
         )}
@@ -216,14 +216,14 @@ function RequestCard({
           <button
             type="button"
             onClick={() => onOpenModelManager('load')}
-            className="px-3 py-1 text-xs font-semibold rounded bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors"
+            className="px-3 py-1 text-xs font-semibold rounded bg-slate-100 dark:bg-[#1e2334] text-slate-600 dark:text-[#a0a8be] hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors"
           >
             USAR MODELO
           </button>
           <button
             type="button"
             onClick={() => onOpenModelManager('save', JSON.stringify(draft.exams))}
-            className="px-3 py-1 text-xs font-semibold rounded bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors"
+            className="px-3 py-1 text-xs font-semibold rounded bg-slate-100 dark:bg-[#1e2334] text-slate-600 dark:text-[#a0a8be] hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors"
           >
             SALVAR COMO MODELO
           </button>
@@ -238,7 +238,7 @@ function RequestCard({
               onClick={() => onUpdate({ ...draft, request_type: t })}
               className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${draft.request_type === t
                 ? 'bg-blue-600 text-white'
-                : 'bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600'
+                : 'bg-slate-100 dark:bg-[#1e2334] text-slate-600 dark:text-[#a0a8be] hover:bg-slate-200 dark:hover:bg-gray-600'
                 }`}
             >
               {t}
@@ -249,7 +249,7 @@ function RequestCard({
 
       {/* Indicação clínica */}
       <div>
-        <label className="block text-xs font-medium text-slate-500 dark:text-gray-400 mb-1 uppercase">
+        <label className="block text-xs font-medium text-slate-500 dark:text-[#828ca5] mb-1 uppercase">
           Indicação clínica (opcional)
         </label>
         <input
@@ -257,15 +257,15 @@ function RequestCard({
           value={draft.clinical_indication}
           onChange={(e) => onUpdate({ ...draft, clinical_indication: e.target.value })}
           placeholder="aqui eu colocar esse texto"
-          className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+          className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
         />
       </div>
 
       {/* Lista de exames */}
       <div>
         <div className="flex justify-between items-center mb-2">
-          <label className="text-xs font-medium text-slate-500 dark:text-gray-400 uppercase">Exames</label>
-          <span className="text-xs text-slate-400 dark:text-gray-500">Quantidade</span>
+          <label className="text-xs font-medium text-slate-500 dark:text-[#828ca5] uppercase">Exames</label>
+          <span className="text-xs text-slate-400 dark:text-[#565d73]">Quantidade</span>
         </div>
         <div className="space-y-2">
           {draft.exams.map((exam, i) => (
@@ -291,12 +291,12 @@ function RequestCard({
       </div>
 
       {/* Ações do card */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-gray-700/50">
+      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#252a3a]/50">
         <div className="flex gap-2">
           <button
             type="button"
             onClick={onPrint}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-700 rounded-md hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 dark:text-[#a0a8be] border border-slate-200 dark:border-[#252a3a] rounded-md hover:bg-slate-50 dark:hover:bg-[#1e2334] transition-colors"
           >
             <Printer className="w-3.5 h-3.5" />
             IMPRIMIR
@@ -304,7 +304,7 @@ function RequestCard({
           <button
             type="button"
             onClick={() => onOpenModelManager('save', JSON.stringify(draft.exams))}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-700 rounded-md hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 dark:text-[#a0a8be] border border-slate-200 dark:border-[#252a3a] rounded-md hover:bg-slate-50 dark:hover:bg-[#1e2334] transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
             SALVAR COMO MODELO
@@ -880,7 +880,7 @@ export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: 
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="text-center text-slate-500 dark:text-gray-400">Carregando...</div>
+        <div className="text-center text-slate-500 dark:text-[#828ca5]">Carregando...</div>
       </div>
     );
   }
@@ -889,8 +889,8 @@ export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: 
     <div className="p-4 pb-6">
       {/* Header */}
       <div className="mb-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100">Exames e Procedimentos</h1>
-        <span className="text-xs text-slate-600 dark:text-gray-400 uppercase">{currentDate}</span>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">Exames e Procedimentos</h1>
+        <span className="text-xs text-slate-600 dark:text-[#828ca5] uppercase">{currentDate}</span>
       </div>
 
       {/* Sub-abas */}
@@ -900,7 +900,7 @@ export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: 
           className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
             subTab === 'pedidos'
               ? 'bg-blue-600 text-white'
-              : 'bg-slate-100 dark:bg-[#2a2d36] text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-white/10'
+              : 'bg-slate-100 dark:bg-[#141722] text-slate-600 dark:text-[#828ca5] hover:bg-slate-200 dark:hover:bg-white/10'
           }`}
         >
           <ClipboardList className="w-4 h-4" />
@@ -911,7 +911,7 @@ export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: 
           className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
             subTab === 'resultados'
               ? 'bg-blue-600 text-white'
-              : 'bg-slate-100 dark:bg-[#2a2d36] text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-white/10'
+              : 'bg-slate-100 dark:bg-[#141722] text-slate-600 dark:text-[#828ca5] hover:bg-slate-200 dark:hover:bg-white/10'
           }`}
         >
           <FlaskConical className="w-4 h-4" />
@@ -947,9 +947,9 @@ export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: 
           <div key={item.id} className="mb-4">
             {(requests.length > 0 || index > 0) && (
               <div className="flex items-center gap-2 mb-3">
-                <div className="h-px flex-1 bg-slate-200 dark:bg-gray-700" />
-                <span className="text-xs text-slate-400 dark:text-gray-500 uppercase font-medium">Nova Solicitação</span>
-                <div className="h-px flex-1 bg-slate-200 dark:bg-gray-700" />
+                <div className="h-px flex-1 bg-slate-200 dark:bg-[#1e2334]" />
+                <span className="text-xs text-slate-400 dark:text-[#565d73] uppercase font-medium">Nova Solicitação</span>
+                <div className="h-px flex-1 bg-slate-200 dark:bg-[#1e2334]" />
               </div>
             )}
             <RequestCard
@@ -979,7 +979,7 @@ export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: 
               { id: `draft-${Date.now()}-${Math.random()}`, draft: emptyDraft() },
             ])
           }
-          className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-gray-700 rounded-lg text-sm text-slate-500 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-[#252a3a] rounded-lg text-sm text-slate-500 dark:text-[#828ca5] hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" />
           Adicionar Solicitação

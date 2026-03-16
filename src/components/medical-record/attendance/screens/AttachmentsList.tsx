@@ -158,10 +158,10 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
   return (
     <div className="flex flex-col h-full">
       {/* Cabeçalho */}
-      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-gray-700">
+      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#252a3a]">
         <div>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-gray-100">Anexos</h2>
-          <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-[#e8ecf4]">Anexos</h2>
+          <p className="text-xs text-slate-400 dark:text-[#565d73] mt-0.5">
             {files.length} arquivo{files.length !== 1 ? 's' : ''} enviado{files.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -197,7 +197,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
           className={`rounded-xl border-2 border-dashed transition-colors ${
             isDragging
               ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10'
-              : 'border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-[#1e2028] hover:border-blue-400 dark:hover:border-blue-600'
+              : 'border-slate-300 dark:border-[#252a3a] bg-slate-50 dark:bg-[#0d0f15] hover:border-blue-400 dark:hover:border-blue-600'
           }`}
         >
           <input
@@ -210,12 +210,12 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
           />
           <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
-              isDragging ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-slate-200 dark:bg-[#2a2d36]'
+              isDragging ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-slate-200 dark:bg-[#141722]'
             }`}>
               <Upload className={`w-6 h-6 transition-colors ${isDragging ? 'text-blue-500' : 'text-slate-400'}`} />
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-gray-300">Arraste arquivos para cá ou</p>
+              <p className="text-sm text-slate-600 dark:text-[#a0a8be]">Arraste arquivos para cá ou</p>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -224,7 +224,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
                 selecione do computador
               </button>
             </div>
-            <p className="text-xs text-slate-400 dark:text-gray-500">
+            <p className="text-xs text-slate-400 dark:text-[#565d73]">
               Máximo: {MAX_FILE_SIZE_MB} MB por arquivo
             </p>
           </div>
@@ -234,7 +234,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
         {uploadProgresses.length > 0 && (
           <div className="space-y-2">
             {uploadProgresses.map((p, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-[#2a2d36] rounded-lg">
+              <div key={i} className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-[#141722] rounded-lg">
                 {p.error ? (
                   <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                 ) : p.progress === 100 ? (
@@ -242,7 +242,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
                 ) : (
                   <Loader2 className="w-4 h-4 text-blue-500 animate-spin flex-shrink-0" />
                 )}
-                <span className="text-sm text-slate-600 dark:text-gray-300 flex-1 truncate">{p.fileName}</span>
+                <span className="text-sm text-slate-600 dark:text-[#a0a8be] flex-1 truncate">{p.fileName}</span>
                 {p.error && <span className="text-xs text-red-500">{p.error}</span>}
               </div>
             ))}
@@ -252,7 +252,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
         {/* Arquivos pendentes */}
         {pendingFiles.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-slate-600 dark:text-gray-300 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-600 dark:text-[#a0a8be] mb-3 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-400" />
               Aguardando envio ({pendingFiles.length})
             </h3>
@@ -261,7 +261,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
                 <div key={i} className="flex items-center gap-3 px-4 py-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg">
                   <FileTypeIcon fileType={f.type} className="w-4 h-4" />
                   <span className="text-sm text-slate-700 dark:text-gray-200 flex-1 truncate">{f.name}</span>
-                  <span className="text-xs text-slate-400 dark:text-gray-500">{formatFileSize(f.size)}</span>
+                  <span className="text-xs text-slate-400 dark:text-[#565d73]">{formatFileSize(f.size)}</span>
                   <button onClick={() => removePending(i)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/20 rounded transition-colors">
                     <X className="w-3.5 h-3.5 text-red-500" />
                   </button>
@@ -280,27 +280,27 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Buscar por nome do arquivo..."
-              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         )}
 
         {/* Tabela de arquivos */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-12 text-slate-400 dark:text-gray-500 gap-2">
+          <div className="flex items-center justify-center py-12 text-slate-400 dark:text-[#565d73] gap-2">
             <Loader2 className="w-5 h-5 animate-spin" />
             <span className="text-sm">Carregando arquivos...</span>
           </div>
         ) : filteredFiles.length > 0 ? (
-          <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#2a2d36] border-b border-slate-200 dark:border-gray-700">
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">Nome do arquivo</th>
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">Tipo</th>
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">Ext.</th>
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase">Data</th>
-                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-gray-400 uppercase text-right">Opções</th>
+                <tr className="bg-slate-50 dark:bg-[#141722] border-b border-slate-200 dark:border-[#252a3a]">
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Nome do arquivo</th>
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Tipo</th>
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Ext.</th>
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase">Data</th>
+                  <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#828ca5] uppercase text-right">Opções</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
@@ -314,15 +314,15 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-gray-300">
+                    <td className="px-4 py-3 text-slate-600 dark:text-[#a0a8be]">
                       {getFileTypeLabel(file.file_type)}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 text-xs font-bold bg-slate-100 dark:bg-[#2a2d36] text-slate-500 dark:text-gray-400 rounded">
+                      <span className="px-2 py-0.5 text-xs font-bold bg-slate-100 dark:bg-[#141722] text-slate-500 dark:text-[#828ca5] rounded">
                         {getFileExtension(file.file_name)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-gray-300">
+                    <td className="px-4 py-3 text-slate-600 dark:text-[#a0a8be]">
                       {formatDateShort(file.uploaded_at || '')}
                     </td>
                     <td className="px-4 py-3">
@@ -354,13 +354,13 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
         ) : files.length > 0 && searchTerm ? (
           <div className="text-center py-8">
             <Search className="w-10 h-10 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-sm text-slate-400 dark:text-gray-500">Nenhum arquivo encontrado para &quot;{searchTerm}&quot;.</p>
+            <p className="text-sm text-slate-400 dark:text-[#565d73]">Nenhum arquivo encontrado para &quot;{searchTerm}&quot;.</p>
           </div>
         ) : (
           !pendingFiles.length && (
             <div className="text-center py-16">
               <Paperclip className="w-12 h-12 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
-              <p className="text-sm text-slate-400 dark:text-gray-500">Nenhum anexo enviado para este paciente.</p>
+              <p className="text-sm text-slate-400 dark:text-[#565d73]">Nenhum anexo enviado para este paciente.</p>
             </div>
           )
         )}

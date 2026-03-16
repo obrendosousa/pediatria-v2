@@ -2,9 +2,11 @@
 
 import { useState, useCallback } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
+import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const supabase = createSchemaClient('atendimento');
+const pubSupabase = createClient();
 
 export type Anamnese = {
   id: number;
@@ -59,7 +61,7 @@ export function useAnamneses(patientId: number) {
   }, [patientId]);
 
   const fetchDoctors = useCallback(async () => {
-    const { data } = await supabase
+    const { data } = await pubSupabase
       .from('doctors')
       .select('id, name')
       .eq('active', true)
@@ -72,12 +74,25 @@ export function useAnamneses(patientId: number) {
   }, []);
 
   const fetchTemplates = useCallback(async () => {
-    const { data } = await supabase
+    const { data: legacy } = await supabase
       .from('clinical_templates')
       .select('id, title, content')
       .eq('template_type', 'anamnese')
       .order('title');
-    if (data) setTemplates(data as AnamneseTemplate[]);
+
+    // Also fetch from new cadastros anamnesis_templates
+    const { data: cadastros } = await supabase
+      .from('anamnesis_templates')
+      .select('id, title')
+      .order('title');
+
+    const list: AnamneseTemplate[] = (legacy as AnamneseTemplate[]) || [];
+    if (cadastros) {
+      for (const t of cadastros) {
+        list.push({ id: -(list.length + 5000), title: t.title, content: null });
+      }
+    }
+    setTemplates(list);
   }, []);
 
   const create = useCallback(async (input: AnamneseInput) => {

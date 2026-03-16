@@ -69,23 +69,23 @@ export default function ConfirmModal({
       onClick={isLoading ? undefined : onClose}
     >
       <div 
-        className="bg-white dark:bg-[#1e2028] w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-gray-700 overflow-hidden animate-scale-in"
+        className="bg-white dark:bg-[#0d0f15] w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-[#252a3a] overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 dark:border-gray-800 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-100 dark:border-[#1e2334] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-xl ${styles.iconBg}`}>
               <Icon className={`w-5 h-5 ${styles.iconColor}`} />
             </div>
-            <h3 className="font-bold text-lg text-slate-800 dark:text-gray-100">
+            <h3 className="font-bold text-lg text-slate-800 dark:text-[#e8ecf4]">
               {title}
             </h3>
           </div>
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-[#565d73] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <X className="w-4 h-4" />
           </button>
@@ -93,17 +93,17 @@ export default function ConfirmModal({
 
         {/* Content */}
         <div className="p-5">
-          <p className="text-slate-600 dark:text-gray-300 leading-relaxed">
+          <p className="text-slate-600 dark:text-[#a0a8be] leading-relaxed">
             {message}
           </p>
         </div>
 
         {/* Actions */}
-        <div className="p-5 border-t border-slate-100 dark:border-gray-800 flex gap-3">
+        <div className="p-5 border-t border-slate-100 dark:border-[#1e2334] flex gap-3">
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-[#2a2d36] hover:bg-slate-200 dark:hover:bg-[#333640] text-slate-700 dark:text-gray-300 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-[#141722] hover:bg-slate-200 dark:hover:bg-[#333640] text-slate-700 dark:text-[#a0a8be] rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {cancelText}
           </button>

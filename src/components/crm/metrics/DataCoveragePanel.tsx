@@ -17,23 +17,23 @@ function CoverageItem({
   const total = valid + invalid;
   const quality = total > 0 ? (valid / total) * 100 : 0;
   return (
-    <div className="rounded-xl border border-slate-200 p-3 dark:border-gray-800">
-      <p className="text-xs font-semibold text-slate-600 dark:text-gray-300">{title}</p>
-      <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">
+    <div className="rounded-xl border border-slate-200 p-3 dark:border-[#1e2334]">
+      <p className="text-xs font-semibold text-slate-600 dark:text-[#a0a8be]">{title}</p>
+      <p className="mt-1 text-sm text-slate-500 dark:text-[#828ca5]">
         {valid} elegíveis / {invalid} inválidos
       </p>
-      <p className="mt-2 text-lg font-black text-slate-800 dark:text-gray-100">{quality.toFixed(1)}%</p>
+      <p className="mt-2 text-lg font-black text-slate-800 dark:text-[#e8ecf4]">{quality.toFixed(1)}%</p>
     </div>
   );
 }
 
 export default function DataCoveragePanel({ metrics }: DataCoveragePanelProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#1e2028]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1e2334] dark:bg-[#0d0f15]">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-800 dark:text-gray-100">Confiabilidade dos dados</h3>
-          <p className="text-xs text-slate-500 dark:text-gray-400">Ajuda a interpretar os indicadores com segurança.</p>
+          <h3 className="text-sm font-bold text-slate-800 dark:text-[#e8ecf4]">Confiabilidade dos dados</h3>
+          <p className="text-xs text-slate-500 dark:text-[#828ca5]">Ajuda a interpretar os indicadores com segurança.</p>
         </div>
         <InfoHelpButton
           title="Confiabilidade dos dados"

@@ -1,8 +1,17 @@
 'use client';
 
+ 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Paperclip, X, Smile, Trash2, Sparkles, Loader2, Upload } from 'lucide-react';
-import EmojiPicker, { EmojiStyle, Theme } from 'emoji-picker-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { sendButtonVariants } from '@/lib/animations';
+import dynamic from 'next/dynamic';
+import { EmojiStyle, Theme } from 'emoji-picker-react';
+const EmojiPicker = dynamic(() => import('emoji-picker-react').then(mod => mod.default), {
+  ssr: false,
+  loading: () => <div className="w-[350px] h-[400px] bg-[var(--chat-surface)] rounded-xl animate-pulse" />,
+});
+import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 
 interface MessageMetadata {
@@ -22,7 +31,7 @@ interface ChatInputProps {
   onSendMessage: (text: string, type: string, file?: File, metadata?: MessageMetadata) => Promise<void> | void;
   onSendAudio: (blob: Blob, duration: number) => void;
   onSendMedia: (file: File) => void;
-  onFileDropped?: (file: File) => void;
+  onFileDropped?: (files: File[]) => void;
   onTyping: (isTyping: boolean) => void;
   replyTo: ChatMessage | null;
   onCancelReply: () => void;
@@ -33,6 +42,8 @@ interface ChatInputProps {
   hasSuggestion?: boolean;
   isLoadingAISuggestion?: boolean;
   onRequestAISuggestion?: () => void;
+  // Stickers
+  onSendSticker?: (url: string) => void;
 }
 
 export default function ChatInput({
@@ -48,11 +59,17 @@ export default function ChatInput({
   hasSuggestion = false,
   isLoadingAISuggestion = false,
   onRequestAISuggestion,
+  onSendSticker,
 }: ChatInputProps) {
   const { toast } = useToast();
   // --- ESTADOS ---
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [pickerTab, setPickerTab] = useState<'emojis' | 'stickers'>(() => {
+    if (typeof window === 'undefined') return 'emojis';
+    return (localStorage.getItem('pickerTab') as 'emojis' | 'stickers') || 'emojis';
+  });
+  const [savedStickers, setSavedStickers] = useState<Array<{ id: number; url: string }>>([]);
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
 
@@ -67,8 +84,6 @@ export default function ChatInput({
   const pickerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // CORREÇÃO: Ref para manter o valor atualizado da duração dentro do callback do recorder
   const durationRef = useRef(0);
 
   // Fecha o picker se clicar fora dele
@@ -81,6 +96,30 @@ export default function ChatInput({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // --- FIGURINHAS SALVAS (fetch via callback, não setState direto no effect) ---
+  useEffect(() => {
+    if (!showEmojiPicker || pickerTab !== 'stickers') return;
+    let cancelled = false;
+    const supabase = createClient();
+    supabase
+      .from('saved_stickers')
+      .select('id, url')
+      .order('created_at', { ascending: false })
+      .limit(100)
+      .then(({ data, error }) => {
+        if (!cancelled) setSavedStickers(error ? [] : (data || []));
+      });
+    return () => { cancelled = true; };
+  }, [showEmojiPicker, pickerTab]);
+
+  const handleDeleteSavedSticker = async (id: number) => {
+    const supabase = createClient();
+    const { error } = await supabase.from('saved_stickers').delete().eq('id', id);
+    if (!error) {
+      setSavedStickers(prev => prev.filter(s => s.id !== id));
+    }
+  };
 
   // --- LÓGICA DE ÁUDIO ---
   const startRecording = async () => {
@@ -96,7 +135,6 @@ export default function ChatInput({
       recorder.onstop = () => {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
         onSendAudio(audioBlob, durationRef.current);
-
         setRecordingDuration(0);
         durationRef.current = 0;
         stream.getTracks().forEach(track => track.stop());
@@ -105,7 +143,6 @@ export default function ChatInput({
       recorder.start();
       setMediaRecorder(recorder);
       setIsRecording(true);
-
       setRecordingDuration(0);
       durationRef.current = 0;
 
@@ -119,7 +156,7 @@ export default function ChatInput({
 
     } catch (error) {
       console.error('Erro ao acessar microfone:', error);
-      toast.toast.error('Permissão de microfone negada ou dispositivo indisponível.');
+      toast.error('Permissão de microfone negada ou dispositivo indisponível.');
     }
   };
 
@@ -179,37 +216,38 @@ export default function ChatInput({
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Usa o callback de preview se disponível, senão envia direto
+    const selected = Array.from(e.target.files || []);
+    if (selected.length > 0) {
       if (onFileDropped) {
-        onFileDropped(file);
+        onFileDropped(selected);
       } else {
-        onSendMedia(file);
+        selected.forEach((f) => onSendMedia(f));
       }
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // --- COLAR (CTRL+V) — intercepta imagens do clipboard ---
+  // --- COLAR (CTRL+V) — intercepta imagens/vídeos do clipboard (múltiplas) ---
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     const items = e.clipboardData?.items;
     if (!items) return;
 
+    const pastedFiles: File[] = [];
     for (const item of Array.from(items)) {
-      if (item.type.startsWith('image/')) {
-        // Impede a imagem de colar dentro da caixa de texto
-        e.preventDefault();
+      if (item.type.startsWith('image/') || item.type.startsWith('video/')) {
         const file = item.getAsFile();
-        if (file) {
-          if (onFileDropped) {
-            onFileDropped(file);
-          } else {
-            onSendMedia(file);
-          }
-        }
-        return;
+        if (file) pastedFiles.push(file);
       }
+    }
+
+    if (pastedFiles.length > 0) {
+      e.preventDefault();
+      if (onFileDropped) {
+        onFileDropped(pastedFiles);
+      } else {
+        pastedFiles.forEach((f) => onSendMedia(f));
+      }
+      return;
     }
 
     // Para colar texto: intercepta HTML e cola apenas texto puro
@@ -222,7 +260,6 @@ export default function ChatInput({
       }
       return;
     }
-    // Texto simples: deixa o comportamento padrão
   };
 
   const insertHtmlAtCursor = (html: string) => {
@@ -321,12 +358,12 @@ export default function ChatInput({
     setIsDragging(false);
     dragCounterRef.current = 0;
 
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
+    const droppedFiles = Array.from(e.dataTransfer.files || []);
+    if (droppedFiles.length > 0) {
       if (onFileDropped) {
-        onFileDropped(file);
+        onFileDropped(droppedFiles);
       } else {
-        onSendMedia(file);
+        droppedFiles.forEach((f) => onSendMedia(f));
       }
     }
   };
@@ -334,84 +371,164 @@ export default function ChatInput({
   // --- RENDERIZAÇÃO ---
   if (isRecording) {
     return (
-      <div className="h-[62px] px-4 flex items-center gap-4 bg-[var(--chat-surface)] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-2 text-red-500 animate-pulse">
-          <div className="w-3 h-3 rounded-full bg-red-500" />
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="h-[62px] px-4 flex items-center gap-4 bg-[var(--chat-surface)] transition-colors duration-200"
+      >
+        <div className="flex items-center gap-2 text-red-500">
+          <motion.div
+            animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
+            className="w-3 h-3 rounded-full bg-red-500"
+          />
           <span className="font-medium tabular-nums text-lg">{formatTime(recordingDuration)}</span>
         </div>
 
-        <div className="flex-1 text-sm text-gray-500 text-center">
+        <div className="flex-1 text-sm text-[var(--chat-text-muted)] text-center">
           Gravando áudio...
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={cancelRecording}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-gray-500 transition-colors"
+            className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full text-[var(--chat-text-muted)] transition-colors duration-200 cursor-pointer"
             title="Cancelar"
           >
             <Trash2 size={20} />
           </button>
           <button
             onClick={stopRecording}
-            className="p-3 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] rounded-full text-white transition-colors shadow-sm animate-in zoom-in duration-200"
+            className="p-3 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] rounded-full text-white transition-all duration-200 shadow-sm cursor-pointer"
             title="Enviar Áudio"
           >
             <Send size={20} />
           </button>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
     <div
       ref={containerRef}
-      className="flex flex-col bg-[var(--chat-surface)] dark:bg-[#202c33] border-t border-gray-200 dark:border-gray-700 relative z-20"
+      className="flex flex-col bg-[var(--chat-surface)] relative z-20 transition-colors duration-200"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       {/* Overlay de drag-and-drop estilo WhatsApp */}
-      {isDragging && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-sm pointer-events-none"
-          style={{ background: 'color-mix(in srgb, var(--chat-accent) 12%, transparent)', border: '2px dashed var(--chat-accent)' }}>
-          <Upload size={28} className="text-[var(--chat-accent)] mb-2" />
-          <span className="text-[var(--chat-accent)] font-semibold text-sm">Solte para enviar</span>
-        </div>
-      )}
+      <AnimatePresence>
+        {isDragging && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-sm pointer-events-none"
+            style={{ background: 'color-mix(in srgb, var(--chat-accent) 12%, transparent)', border: '2px dashed var(--chat-accent)' }}
+          >
+            <Upload size={28} className="text-[var(--chat-accent)] mb-2" />
+            <span className="text-[var(--chat-accent)] font-semibold text-sm">Solte para enviar</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="min-h-[62px] px-2 py-2 flex items-end gap-2">
 
+        <AnimatePresence>
         {showEmojiPicker && (
-          <div ref={pickerRef} className="absolute bottom-[70px] left-2 z-50 shadow-2xl rounded-2xl animate-in slide-in-from-bottom-2 fade-in duration-200">
-            <EmojiPicker
-              onEmojiClick={onEmojiClick}
-              autoFocusSearch={false}
-              theme={Theme.AUTO}
-              emojiStyle={EmojiStyle.APPLE}
-              searchDisabled={false}
-              width={320}
-              height={400}
-              previewConfig={{ showPreview: false }}
-              lazyLoadEmojis={true}
-            />
-          </div>
+          <motion.div
+            ref={pickerRef}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="absolute bottom-[70px] left-2 right-2 sm:right-auto z-50 shadow-2xl rounded-2xl bg-white dark:bg-[var(--chat-surface)] border border-gray-200 dark:border-[#252a3a] overflow-hidden sm:w-[360px] flex flex-col"
+          >
+            {/* Conteúdo */}
+            <div className="flex-1 min-h-0">
+              {pickerTab === 'emojis' ? (
+                <EmojiPicker
+                  onEmojiClick={onEmojiClick}
+                  autoFocusSearch={false}
+                  theme={Theme.AUTO}
+                  emojiStyle={EmojiStyle.APPLE}
+                  searchDisabled={false}
+                  width="100%"
+                  height={440}
+                  previewConfig={{ showPreview: false }}
+                  lazyLoadEmojis={true}
+                />
+              ) : (
+                <div className="h-[440px] overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                  {savedStickers.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                      <Smile size={32} className="text-[var(--chat-text-muted)] opacity-50 mb-2" />
+                      <p className="text-sm text-[var(--chat-text-muted)]">Nenhuma figurinha salva</p>
+                      <p className="text-xs text-[var(--chat-text-muted)] opacity-70 mt-1">
+                        Passe o mouse sobre uma figurinha recebida e clique na seta para salvar
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-5 gap-2">
+                      {savedStickers.map((sticker) => (
+                        <div key={sticker.id} className="relative group">
+                          <button
+                            onClick={() => { onSendSticker?.(sticker.url); setShowEmojiPicker(false); }}
+                            className="w-full aspect-square rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200 p-1 flex items-center justify-center cursor-pointer"
+                            title="Enviar figurinha"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={sticker.url} alt="Figurinha" className="w-full h-full object-contain" loading="lazy" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteSavedSticker(sticker.id); }}
+                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center shadow-sm cursor-pointer"
+                            title="Remover figurinha"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Tab bar inferior estilo WhatsApp */}
+            <div className="flex items-center border-t border-gray-200 dark:border-[#252a3a] bg-white dark:bg-[var(--chat-surface)]">
+              <button
+                onClick={() => { setPickerTab('emojis'); localStorage.setItem('pickerTab', 'emojis'); }}
+                className={`flex-1 flex items-center justify-center py-2.5 transition-colors duration-200 cursor-pointer relative ${pickerTab === 'emojis' ? 'text-[var(--chat-accent)]' : 'text-[var(--chat-text-muted)] hover:text-[var(--chat-text-primary)]'}`}
+              >
+                <Smile size={22} />
+                {pickerTab === 'emojis' && <span className="absolute bottom-0 left-1/4 right-1/4 h-[3px] rounded-t-full bg-[var(--chat-accent)]" />}
+              </button>
+              <button
+                onClick={() => { setPickerTab('stickers'); localStorage.setItem('pickerTab', 'stickers'); }}
+                className={`flex-1 flex items-center justify-center py-2.5 transition-colors duration-200 cursor-pointer relative ${pickerTab === 'stickers' ? 'text-[var(--chat-accent)]' : 'text-[var(--chat-text-muted)] hover:text-[var(--chat-text-primary)]'}`}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M14 3v4a2 2 0 0 0 2 2h4"/><path d="M8 13h0"/><path d="M16 13h0"/><path d="M10 17c.5.3 1.2.5 2 .5s1.5-.2 2-.5"/></svg>
+                {pickerTab === 'stickers' && <span className="absolute bottom-0 left-1/4 right-1/4 h-[3px] rounded-t-full bg-[var(--chat-accent)]" />}
+              </button>
+            </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         <div className="flex items-center gap-1 pb-2">
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className={`p-2 rounded-full transition-colors ${showEmojiPicker ? 'text-[var(--chat-accent)] bg-[color-mix(in_srgb,var(--chat-accent)_10%,white)]' : 'text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}`}
-            title="Emojis"
+            className={`p-2 rounded-full transition-colors duration-200 cursor-pointer ${showEmojiPicker ? 'text-[var(--chat-accent)] bg-[var(--chat-accent)]/10' : 'text-[var(--chat-text-muted)] hover:bg-gray-200 dark:hover:bg-white/10 hover:text-[var(--chat-accent)]'}`}
+            title="Emojis e Figurinhas"
           >
             <Smile size={24} />
           </button>
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 rounded-full transition-colors"
+            className="p-2 text-[var(--chat-text-muted)] hover:bg-gray-200 dark:hover:bg-white/10 hover:text-[var(--chat-accent)] rounded-full transition-colors duration-200 cursor-pointer"
             title="Anexar arquivo"
           >
             <Paperclip size={24} className="rotate-45" />
@@ -421,20 +538,27 @@ export default function ChatInput({
             ref={fileInputRef}
             onChange={handleFileSelect}
             className="hidden"
+            multiple
             accept="image/*,video/*,application/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar"
           />
         </div>
 
-        <div className="flex-1 bg-white dark:bg-[#2a3942] rounded-lg border border-transparent focus-within:border-[var(--chat-accent)]/50 transition-colors min-h-[42px] relative flex flex-col justify-center my-1">
+        <div className="flex-1 bg-white dark:bg-[var(--chat-surface)] rounded-xl border border-gray-200/60 dark:border-white/5 focus-within:border-[var(--chat-accent)]/30 transition-all duration-200 min-h-[42px] relative flex flex-col justify-center my-1">
+          <AnimatePresence>
           {(replyTo || editingMessage) && (
-            <div className="absolute bottom-full left-0 right-0 bg-[var(--chat-surface)] dark:bg-[#1f2c34] p-2 rounded-t-lg border-l-4 border-[var(--chat-accent)] flex justify-between items-start mb-1 mx-1 shadow-sm opacity-95 animate-in slide-in-from-bottom-2">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute bottom-full left-0 right-0 bg-[var(--chat-surface)] p-2 rounded-t-lg border-l-4 border-[var(--chat-accent)] flex justify-between items-start mb-1 mx-1 shadow-sm opacity-95"
+            >
               <div className="flex-1 min-w-0">
                 {editingMessage ? (
                   <>
                     <span className="text-xs font-bold text-amber-600 dark:text-amber-400 block mb-0.5">
                       Editando mensagem
                     </span>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    <p className="text-xs text-[var(--chat-text-muted)] truncate">
                       {editingMessage.message_text}
                     </p>
                   </>
@@ -445,7 +569,7 @@ export default function ChatInput({
                         ? 'Você'
                         : (replyTo.sender === 'CUSTOMER' || replyTo.sender === 'contact') ? (replyTo.sender_name || 'Contato') : replyTo.sender || 'Contato'}
                     </span>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    <p className="text-xs text-[var(--chat-text-muted)] truncate">
                       {replyTo.message_type === 'audio' || replyTo.message_type === 'voice'
                         ? '🎵 Áudio'
                         : replyTo.message_type === 'image'
@@ -461,11 +585,12 @@ export default function ChatInput({
                   </>
                 ) : null}
               </div>
-              <button onClick={editingMessage ? onCancelEdit : onCancelReply} className="p-1 hover:bg-black/5 rounded">
-                <X size={14} className="text-gray-500" />
+              <button onClick={editingMessage ? onCancelEdit : onCancelReply} className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded cursor-pointer">
+                <X size={14} className="text-[var(--chat-text-muted)]" />
               </button>
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
 
           <style dangerouslySetInnerHTML={{ __html: `
             .custom-input:empty:before {
@@ -484,7 +609,7 @@ export default function ChatInput({
             onPaste={handlePaste}
             role="textbox"
             data-placeholder={editingMessage ? 'Edite sua mensagem' : 'Digite uma mensagem'}
-            className="custom-input w-full px-4 py-3 bg-transparent outline-none max-h-[120px] overflow-y-auto text-[15px] text-[var(--chat-text-primary)] dark:text-[#e9edef] leading-5 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 whitespace-pre-wrap break-words"
+            className="custom-input w-full px-4 py-3 bg-transparent outline-none max-h-[120px] overflow-y-auto text-[15px] text-[var(--chat-text-primary)] leading-5 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 whitespace-pre-wrap break-words"
             style={{ minHeight: '44px' }}
           />
         </div>
@@ -492,38 +617,56 @@ export default function ChatInput({
         <div className="pb-2 pl-1 flex items-center gap-1">
           {/* Botão Copiloto */}
           {onRequestAISuggestion && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               onClick={onRequestAISuggestion}
               disabled={isLoadingAISuggestion}
               title={isLoadingAISuggestion ? 'Gerando sugestão...' : 'Sugerir resposta com IA'}
-              className={`p-2 rounded-full transition-all active:scale-95 ${hasSuggestion
-                ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-800/50'
-                : 'text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-purple-500'
-                } disabled:opacity-40`}
+              className={`p-2 rounded-full transition-all duration-200 cursor-pointer ${hasSuggestion
+                ? 'text-[var(--chat-accent)] bg-[var(--chat-accent)]/15'
+                : 'text-[var(--chat-text-muted)] hover:bg-gray-200 dark:hover:bg-white/10 hover:text-[var(--chat-accent)]'
+                } disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               {isLoadingAISuggestion
                 ? <Loader2 size={18} className="animate-spin" />
                 : <Sparkles size={18} />
               }
-            </button>
+            </motion.button>
           )}
 
+          <AnimatePresence mode="wait">
           {message.trim() ? (
-            <button
+            <motion.button
+              key="send"
+              variants={sendButtonVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.9 }}
               onClick={handleSend}
-              className="p-3 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white rounded-full transition-all shadow-sm active:scale-95 animate-in zoom-in duration-200"
+              className="p-3 bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white rounded-full transition-colors duration-200 shadow-md cursor-pointer"
             >
               <Send size={20} />
-            </button>
+            </motion.button>
           ) : (
-            <button
+            <motion.button
+              key="mic"
+              variants={sendButtonVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.9 }}
               onClick={startRecording}
-              className="p-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-full transition-all active:scale-95"
+              className="p-3 bg-gray-200 dark:bg-white/5 hover:bg-[var(--chat-accent)]/20 text-[var(--chat-text-secondary)] hover:text-[var(--chat-accent)] rounded-full transition-colors duration-200 cursor-pointer"
               title="Gravar Áudio"
             >
               <Mic size={20} />
-            </button>
+            </motion.button>
           )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

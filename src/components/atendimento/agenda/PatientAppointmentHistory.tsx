@@ -33,7 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
   unmarked: 'bg-slate-100 dark:bg-slate-900/20 text-slate-700 dark:text-slate-300',
   not_attended: 'bg-rose-100 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300',
   rescheduled: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300',
-  blocked: 'bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300'
+  blocked: 'bg-gray-100 dark:bg-[#0d0f15]/20 text-gray-700 dark:text-[#a0a8be]'
 };
 
 const STATUS_OPTIONS = [
@@ -275,7 +275,7 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
   return (
     <div className={compact ? '' : 'space-y-4'}>
       {/* Filtros */}
-      <div className={`bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 p-4 shadow-sm ${compact ? 'mx-0' : ''}`}>
+      <div className={`bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#1e2334] p-4 shadow-sm ${compact ? 'mx-0' : ''}`}>
         <div className="flex items-center gap-2 mb-3">
           <Filter className="w-4 h-4 text-teal-500" />
           <span className="text-sm font-bold text-slate-700 dark:text-gray-200">Filtros</span>
@@ -283,11 +283,11 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Profissional */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Profissional</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Profissional</label>
             <select
               value={doctorId ?? ''}
               onChange={e => setDoctorId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+              className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
             >
               <option value="">Todos</option>
               {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -296,11 +296,11 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
 
           {/* Status Multi-Select */}
           <div ref={statusDropdownRef} className="relative">
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Status</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Status</label>
             <button
               type="button"
               onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400 text-left flex items-center justify-between"
+              className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400 text-left flex items-center justify-between"
             >
               <span className="truncate">
                 {statusFilter.length === 0
@@ -313,11 +313,11 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
             {statusDropdownOpen && (
-              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-[#1e2028] border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-[#0d0f15] border border-slate-200 dark:border-[#252a3a] rounded-lg shadow-lg max-h-56 overflow-y-auto">
                 <button
                   type="button"
                   onClick={() => setStatusFilter([])}
-                  className="w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 dark:hover:bg-white/5 text-teal-600 dark:text-teal-400 font-bold border-b border-slate-100 dark:border-gray-800"
+                  className="w-full px-3 py-1.5 text-xs text-left hover:bg-slate-50 dark:hover:bg-white/5 text-teal-600 dark:text-teal-400 font-bold border-b border-slate-100 dark:border-[#1e2334]"
                 >
                   Limpar seleção
                 </button>
@@ -338,23 +338,23 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
 
           {/* De */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">De</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">De</label>
             <input
               type="date"
               value={dateFrom}
               onChange={e => setDateFrom(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+              className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
             />
           </div>
 
           {/* Até */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-gray-400 mb-1">Até</label>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-[#828ca5] mb-1">Até</label>
             <input
               type="date"
               value={dateTo}
               onChange={e => setDateTo(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+              className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
             />
           </div>
         </div>
@@ -362,7 +362,7 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
         <div className="flex items-center justify-between mt-4">
           <button
             onClick={() => { setDoctorId(null); setStatusFilter([]); setDateFrom(''); setDateTo(''); }}
-            className="text-xs text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200 font-medium flex items-center gap-1"
+            className="text-xs text-slate-500 dark:text-[#828ca5] hover:text-slate-700 dark:hover:text-gray-200 font-medium flex items-center gap-1"
           >
             <X className="w-3.5 h-3.5" /> Limpar filtros
           </button>
@@ -376,16 +376,16 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
       </div>
 
       {/* Tabela */}
-      <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#1e2334] shadow-sm overflow-hidden">
         {/* Header da tabela com export */}
-        <div className="px-4 py-3 border-b border-slate-100 dark:border-gray-800 flex items-center justify-between">
-          <span className="text-xs text-slate-500 dark:text-gray-400">
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-[#1e2334] flex items-center justify-between">
+          <span className="text-xs text-slate-500 dark:text-[#828ca5]">
             {loading ? 'Buscando...' : `${totalCount} agendamento${totalCount !== 1 ? 's' : ''} encontrado${totalCount !== 1 ? 's' : ''}`}
           </span>
           <button
             onClick={handleExportPdf}
             disabled={appointments.length === 0}
-            className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 font-medium disabled:opacity-40 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#828ca5] hover:text-teal-600 dark:hover:text-teal-400 font-medium disabled:opacity-40 transition-colors"
           >
             <Download className="w-3.5 h-3.5" /> PDF
           </button>
@@ -394,10 +394,10 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
-            <span className="ml-2 text-sm text-slate-500 dark:text-gray-400">Carregando histórico...</span>
+            <span className="ml-2 text-sm text-slate-500 dark:text-[#828ca5]">Carregando histórico...</span>
           </div>
         ) : appointments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-gray-500">
+          <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-[#565d73]">
             <Calendar className="w-10 h-10 mb-3 opacity-40" />
             <p className="text-sm font-medium">Nenhum agendamento encontrado</p>
             <p className="text-xs mt-1">Este paciente ainda não possui agendamentos{statusFilter.length > 0 || dateFrom || dateTo ? ' com os filtros aplicados' : ''}</p>
@@ -407,27 +407,27 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-[#16171c]">
-                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider w-[60px]">ID</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Agendamento</th>
+                  <tr className="border-b border-slate-100 dark:border-[#1e2334] bg-slate-50 dark:bg-[#16171c]">
+                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider w-[60px]">ID</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider">Agendamento</th>
                     <SortableHeader label="Status" field="status" current={sortField} dir={sortDir} onSort={handleSort} />
                     <SortableHeader label="Profissional" field="doctor_name" current={sortField} dir={sortDir} onSort={handleSort} />
                     <SortableHeader label="Data/Hora" field="date" current={sortField} dir={sortDir} onSort={handleSort} />
-                    <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider w-[80px]">Opções</th>
+                    <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider w-[80px]">Opções</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
                   {appointments.map(appt => (
                     <tr key={appt.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3">
-                        <span className="text-xs font-mono text-slate-400 dark:text-gray-500">#{appt.id}</span>
+                        <span className="text-xs font-mono text-slate-400 dark:text-[#565d73]">#{appt.id}</span>
                       </td>
                       <td className="px-4 py-3">
                         <p className="text-sm font-medium text-slate-800 dark:text-gray-200 truncate max-w-[250px]">
                           {appt.description || appt.procedures?.join(', ') || appt.type || '—'}
                         </p>
                         {appt.appointment_subtype && (
-                          <p className="text-[11px] text-slate-400 dark:text-gray-500">{appt.appointment_subtype}</p>
+                          <p className="text-[11px] text-slate-400 dark:text-[#565d73]">{appt.appointment_subtype}</p>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -435,11 +435,11 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
                           {STATUS_LABELS[appt.status] || appt.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-700 dark:text-gray-300">{appt.doctor_name || '—'}</td>
+                      <td className="px-4 py-3 text-xs text-slate-700 dark:text-[#a0a8be]">{appt.doctor_name || '—'}</td>
                       <td className="px-4 py-3">
-                        <p className="text-xs font-medium text-slate-700 dark:text-gray-300">{formatDate(appt.date)}</p>
+                        <p className="text-xs font-medium text-slate-700 dark:text-[#a0a8be]">{formatDate(appt.date)}</p>
                         {appt.time && (
-                          <p className="text-[11px] text-slate-400 dark:text-gray-500">
+                          <p className="text-[11px] text-slate-400 dark:text-[#565d73]">
                             {appt.time.slice(0, 5)}{appt.end_time ? ` — ${appt.end_time.slice(0, 5)}` : ''}
                           </p>
                         )}
@@ -469,14 +469,14 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
             </div>
 
             {/* Rodapé: total + paginação */}
-            <div className="px-4 py-3 border-t border-slate-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <span className="text-xs text-slate-500 dark:text-gray-400">
+            <div className="px-4 py-3 border-t border-slate-100 dark:border-[#1e2334] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span className="text-xs text-slate-500 dark:text-[#828ca5]">
                 Foram encontrados um total de <strong className="text-slate-700 dark:text-gray-200">{totalCount}</strong> registros.
               </span>
 
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-500 dark:text-gray-400">Por página:</span>
+                  <span className="text-[11px] text-slate-500 dark:text-[#828ca5]">Por página:</span>
                   {PAGE_SIZES.map(s => (
                     <button
                       key={s}
@@ -496,7 +496,7 @@ export default function PatientAppointmentHistory({ patientId, patientName, comp
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <span className="text-xs text-slate-600 dark:text-gray-300 font-medium min-w-[80px] text-center">
+                  <span className="text-xs text-slate-600 dark:text-[#a0a8be] font-medium min-w-[80px] text-center">
                     {page + 1} de {totalPages || 1}
                   </span>
                   <button
@@ -524,7 +524,7 @@ function SortableHeader({ label, field, current, dir, onSort }: {
   return (
     <th
       onClick={() => onSort(field)}
-      className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-gray-200 select-none"
+      className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 dark:text-[#828ca5] uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-gray-200 select-none"
     >
       <span className="inline-flex items-center gap-1">
         {label}

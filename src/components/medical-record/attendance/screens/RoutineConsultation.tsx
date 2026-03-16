@@ -184,7 +184,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="text-center text-slate-500 dark:text-gray-400">Carregando...</div>
+        <div className="text-center text-slate-500 dark:text-[#828ca5]">Carregando...</div>
       </div>
     );
   }
@@ -193,92 +193,92 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
     <div className="p-4 pb-20">
       {/* Header */}
       <div className="mb-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100">CONSULTA DE ROTINA</h1>
-        <span className="text-xs text-slate-600 dark:text-gray-400 uppercase">{currentDate}</span>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4]">CONSULTA DE ROTINA</h1>
+        <span className="text-xs text-slate-600 dark:text-[#828ca5] uppercase">{currentDate}</span>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         {/* Seção: Informações do Paciente/Cuidador */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-3">Informações do Paciente/Cuidador</h2>
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mb-3">Informações do Paciente/Cuidador</h2>
           
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               NOME CUIDADORES E CHAMAR PELO NOME
             </label>
             <input
               type="text"
               {...register('caregivers_name')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite o nome dos cuidadores..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               ACOMPANHANTE/ MORA ONDE
             </label>
             <input
               type="text"
               {...register('companion_location')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite o acompanhante e localização..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               REDE APOIO? NOME BABÁ?
             </label>
             <input
               type="text"
               {...register('support_network')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite a rede de apoio e nome da babá..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               ESTUDA ONDE/ TURNO
             </label>
             <input
               type="text"
               {...register('school_info')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite onde estuda e o turno..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               TEM IRMÃOS? NOME: COMO ELES ESTÃO? TEM DOENÇA?
             </label>
             <input
               type="text"
               {...register('siblings_info')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre irmãos..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               APRESENTOU ALGUMA ALERGIA/ INTERAÇÃO
             </label>
             <input
               type="text"
               {...register('allergies_interactions')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre alergias..."
             />
           </div>
         </div>
 
         {/* Seção: Motivo de Consulta (Rich Text) */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100">MOTIVO DE CONSULTA</h2>
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4]">MOTIVO DE CONSULTA</h2>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -305,48 +305,48 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
         </div>
 
         {/* Seção: Hábitos e Saúde */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-3">Hábitos e Saúde</h2>
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mb-3">Hábitos e Saúde</h2>
           
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               RESPIRA COM A BOCA ABERTA? RONCA A NOITE? RESFRIA COM FREQUÊNCIA?
             </label>
             <input
               type="text"
               {...register('breathing_info')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre respiração..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               FAZ USO DE ALGUMA MEDICAÇÃO?
             </label>
             <input
               type="text"
               {...register('medications')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre medicações..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               AME/FORMULA?
             </label>
             <input
               type="text"
               {...register('breastfeeding_formula')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre amamentação..."
             />
           </div>
 
           {/* Vacinas */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-2">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-2">
               VACINAS EM DIA?
             </label>
             <div className="flex gap-4">
@@ -357,7 +357,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
                   value="sim"
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-700 dark:text-gray-300">Sim</span>
+                <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Sim</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -366,129 +366,129 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
                   value="não"
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-700 dark:text-gray-300">Não</span>
+                <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Não</span>
               </label>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               VACINA ATRASADA QUAL?
             </label>
             <input
               type="text"
               {...register('delayed_vaccine')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite qual vacina está atrasada..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               USA CHUPETA AINDA?
             </label>
             <input
               type="text"
               {...register('uses_pacifier')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre uso de chupeta..."
             />
           </div>
         </div>
 
         {/* Seção: Sistemas */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-3">Sistemas</h2>
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4] mb-3">Sistemas</h2>
           
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               NARIZ/LAVAGEM NASAL
             </label>
             <input
               type="text"
               {...register('nose_wash')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre lavagem nasal..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               PELE E ANEXO? PRODUTOS QUE USA OS MESMO?
             </label>
             <input
               type="text"
               {...register('skin_products')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre pele e produtos..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               BOCA E DENTE/ JÁ FOI AO DENTISTA?
             </label>
             <input
               type="text"
               {...register('dental_info')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre saúde bucal..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               SISTEMA GASTRO-INTESTINAL/ EVACUANDO NORMAL?
             </label>
             <input
               type="text"
               {...register('gastrointestinal')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre sistema gastrointestinal..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               SISTEMA GÊNITO-URINÁRIO/ POMADA?
             </label>
             <input
               type="text"
               {...register('genitourinary')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre sistema geniturinário..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               SISTEMA NERVOSO?
             </label>
             <input
               type="text"
               {...register('nervous_system')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre sistema nervoso..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
               EXPOSIÇÃO DE TELA? QUANTO TEMPO?
             </label>
             <input
               type="text"
               {...register('screen_exposure')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-md bg-white dark:bg-[#1e2028] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-md bg-white dark:bg-[#0d0f15] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre exposição a telas..."
             />
           </div>
         </div>
 
         {/* Seção: Sono (Rich Text) */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4">
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-gray-100">SONO? AGITAÇÃO A NOITE? DORME EM QUE LOCAL?</h2>
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-[#e8ecf4]">SONO? AGITAÇÃO A NOITE? DORME EM QUE LOCAL?</h2>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -515,9 +515,9 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
         </div>
 
         {/* Seção: Marcos e Exames */}
-        <div className="bg-white dark:bg-[#1e2028] rounded-lg border border-slate-200 dark:border-gray-700 p-4 space-y-3">
+        <div className="bg-white dark:bg-[#0d0f15] rounded-lg border border-slate-200 dark:border-[#252a3a] p-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-2">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-2">
               FALA DOS MARCOS DO MÊS E AVISAR O QUE PODE ACONTECER NESSE
             </label>
             <div className="flex gap-4">
@@ -528,7 +528,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
                   value="sim"
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-700 dark:text-gray-300">Sim</span>
+                <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Sim</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -537,14 +537,14 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
                   value="não"
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-700 dark:text-gray-300">Não</span>
+                <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Não</span>
               </label>
             </div>
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-xs font-medium text-slate-700 dark:text-gray-300">
+              <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be]">
                 EXAMES REALIZADOS, RESULTADOS:
               </label>
               <div className="flex gap-2">
@@ -573,7 +573,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-gray-300 mb-2">
+            <label className="block text-xs font-medium text-slate-700 dark:text-[#a0a8be] mb-2">
               IMPRIMIR GUIA DESENVOLVIMENTO-VACINA CERTA-
             </label>
             <div className="flex gap-4">
@@ -584,7 +584,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
                   value="sim"
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-700 dark:text-gray-300">Sim</span>
+                <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Sim</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -593,14 +593,14 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
                   value="não"
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-700 dark:text-gray-300">Não</span>
+                <span className="text-sm text-slate-700 dark:text-[#a0a8be]">Não</span>
               </label>
             </div>
           </div>
         </div>
 
         {/* Botão Salvar */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-gray-700 -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#252a3a] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

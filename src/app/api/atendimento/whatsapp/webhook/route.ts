@@ -32,6 +32,13 @@ function extractTextFromAnyMessage(messageLike: unknown): string | null {
   const candidates = [
     m.conversation, m.text, m.extendedTextMessage?.text,
     m.imageMessage?.caption, m.videoMessage?.caption,
+    // Button/Interactive response messages (WhatsApp buttons, lists)
+    m.buttonsResponseMessage?.selectedButtonId,
+    m.buttonsResponseMessage?.selectedDisplayText,
+    m.templateButtonReplyMessage?.selectedId,
+    m.templateButtonReplyMessage?.selectedDisplayText,
+    m.listResponseMessage?.singleSelectReply?.selectedRowId,
+    m.listResponseMessage?.title,
     editedMessage?.conversation, editedMessage?.text, editedMessage?.extendedTextMessage?.text,
     m.message?.conversation, m.message?.extendedTextMessage?.text,
   ];
@@ -239,6 +246,8 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
 
     const remoteJid = toRemoteJid(keyRaw.remoteJid ?? item.remoteJid ?? item.jid ?? item.from ?? item.sender ?? item.number ?? item.phone);
     if (!remoteJid || remoteJid === 'status@broadcast') continue;
+    // Ignorar mensagens de grupo
+    if (remoteJid.endsWith('@g.us')) continue;
 
     const messageValue = (item.message ?? item.content ?? {}) as unknown;
     const detectedType = detectMessageType(messageValue);
@@ -350,6 +359,15 @@ async function processWebhookBody(body: Record<string, unknown>, requestUrl = ''
       return NextResponse.json({ status: 'ignored', reason: 'history_restore_disabled' });
     }
 
+    // Ignorar eventos de chats e contatos (não precisamos processar)
+    const isChatsEvent = ['CHATS_SET', 'CHATS_UPSERT', 'CHATS_UPDATE'].includes(eventUpper) ||
+      ['chats.set', 'chats.upsert', 'chats.update'].includes(event);
+    const isContactsEvent = ['CONTACTS_UPSERT', 'CONTACTS_UPDATE'].includes(eventUpper) ||
+      ['contacts.upsert', 'contacts.update'].includes(event);
+    if (isChatsEvent || isContactsEvent) {
+      return NextResponse.json({ status: 'ignored', reason: 'chats_or_contacts_event_passive' });
+    }
+
     const rawMessages = normalizeMessagesFromWebhook(body);
     const messages = rawMessages.filter(
       (msg) => !isMessageOlderThan24Hours(msg.messageTimestamp) && !isMessageBeforeIngestionStart(msg.messageTimestamp)
@@ -428,6 +446,7 @@ async function saveMessageInAtendimento(payload: {
   sender: 'HUMAN_AGENT' | 'CUSTOMER'; type: string;
   media_url?: string; wpp_id: string;
   message_timestamp_iso?: string; forwarded?: boolean;
+  quoted_info?: { wpp_id: string; sender: string; sender_name?: string; message_type: string; message_text: string; remote_jid?: string } | null;
 }) {
   const supabase = getSupabase();
   if (payload.type === 'reaction') return;
@@ -436,6 +455,10 @@ async function saveMessageInAtendimento(payload: {
   const createdAt = payload.message_timestamp_iso || new Date().toISOString();
   const isIncoming = payload.sender === 'CUSTOMER';
 
+  const toolData: Record<string, unknown> = {};
+  if (payload.forwarded) toolData.forwarded = true;
+  if (payload.quoted_info) toolData.reply_to = payload.quoted_info;
+
   const insertPayload: Record<string, unknown> = {
     chat_id: payload.chat_id, phone: payload.phone,
     message_text: payload.content, sender: payload.sender,
@@ -443,7 +466,8 @@ async function saveMessageInAtendimento(payload: {
     wpp_id: payload.wpp_id, created_at: createdAt,
   };
   if (status) insertPayload.status = status;
-  if (payload.forwarded) insertPayload.tool_data = { forwarded: true };
+  if (Object.keys(toolData).length > 0) insertPayload.tool_data = toolData;
+  if (payload.quoted_info?.wpp_id) insertPayload.quoted_wpp_id = payload.quoted_info.wpp_id;
 
   const { error } = await supabase.from('chat_messages').insert(insertPayload);
   if (error) {
@@ -544,6 +568,38 @@ async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
       }).catch(() => {});
     }
 
+    // Extrair informações de mensagem citada (reply-to / contextInfo)
+    let quotedInfo: { wpp_id: string; sender: string; sender_name?: string; message_type: string; message_text: string; remote_jid?: string } | null = null;
+    const contextInfo = msg?.extendedTextMessage?.contextInfo ?? msg?.imageMessage?.contextInfo
+      ?? msg?.videoMessage?.contextInfo ?? msg?.audioMessage?.contextInfo ?? msg?.documentMessage?.contextInfo
+      ?? msg?.stickerMessage?.contextInfo ?? msg?.contextInfo;
+    if (contextInfo?.stanzaId) {
+      const quotedMsg = contextInfo.quotedMessage as Record<string, unknown> | undefined;
+      const quotedParticipant = String(contextInfo.participant || contextInfo.remoteJid || '');
+      const quotedPhone = extractPhoneFromRemoteJid(quotedParticipant);
+      const isSenderMe = quotedPhone === phone ? false : true; // se o participant é diferente do contato, foi eu quem enviou
+      let quotedType = 'text';
+      if (quotedMsg?.imageMessage) quotedType = 'image';
+      else if (quotedMsg?.videoMessage) quotedType = 'video';
+      else if (quotedMsg?.audioMessage) quotedType = 'audio';
+      else if (quotedMsg?.stickerMessage) quotedType = 'sticker';
+      else if (quotedMsg?.documentMessage) quotedType = 'document';
+
+      const quotedText = (quotedMsg?.conversation
+        ?? (quotedMsg?.extendedTextMessage as Record<string, unknown> | undefined)?.text
+        ?? (quotedMsg?.imageMessage as Record<string, unknown> | undefined)?.caption
+        ?? (quotedMsg?.videoMessage as Record<string, unknown> | undefined)?.caption
+        ?? '') as string;
+
+      quotedInfo = {
+        wpp_id: String(contextInfo.stanzaId),
+        sender: isSenderMe ? 'HUMAN_AGENT' : 'CUSTOMER',
+        message_type: quotedType,
+        message_text: String(quotedText || ''),
+        remote_jid: String(contextInfo.remoteJid || jid),
+      };
+    }
+
     // Salvar mensagem
     await saveMessageInAtendimento({
       chat_id: chat.id, phone, content,
@@ -552,6 +608,7 @@ async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
       wpp_id: message.key?.id || `atd_${Date.now()}`,
       message_timestamp_iso: toIsoFromTimestamp(message.messageTimestamp),
       forwarded: message.isForwarded === true,
+      quoted_info: quotedInfo,
     });
 
     console.log(`[ATD/Ingest] Mensagem salva: chat=${chat.id} phone=${phone} type=${type}`);

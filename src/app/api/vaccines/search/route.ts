@@ -6,6 +6,14 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+interface VaccineRow {
+  id: number;
+  name: string;
+  commercial_names: string | null;
+  category: string;
+  type: string;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get('q') || '').trim();
@@ -26,9 +34,10 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json(data ?? []);
-  } catch (err: any) {
+    return NextResponse.json((data as VaccineRow[]) ?? []);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('[vaccines search]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

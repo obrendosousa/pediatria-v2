@@ -222,14 +222,14 @@ export default function AudioMessage({
       )}
       
       {/* Botão de Play */}
-      <button onClick={togglePlay} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-black/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" disabled={isLoading}>
+      <button onClick={togglePlay} className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-black/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-[#a0a8be]" disabled={isLoading}>
         {isLoading ? <Loader2 size={18} className="animate-spin" /> : isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
       </button>
 
       {/* Onda Sonora e Tempo - dimensões fixas para evitar oscilação */}
       <div className="flex-1 flex flex-col justify-center min-w-[140px] h-[52px] shrink-0">
           <div ref={containerRef} className="w-full shrink-0" style={{ height: 36, minHeight: 36 }} />
-          <div className="flex justify-between items-center text-[11px] text-gray-500 dark:text-gray-400 font-medium px-0.5 pt-1">
+          <div className="flex justify-between items-center text-[11px] text-gray-500 dark:text-[#828ca5] font-medium px-0.5 pt-1">
               <span>{isPlaying ? currentTime : duration}</span>
           </div>
       </div>

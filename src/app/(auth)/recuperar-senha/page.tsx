@@ -33,16 +33,16 @@ export default function RecuperarSenhaPage() {
 
   if (sent) {
     return (
-      <div className="rounded-2xl border border-pink-100 dark:border-gray-700 bg-white dark:bg-[#262832] p-8 shadow-xl text-center">
+      <div className="rounded-2xl border border-pink-100 dark:border-[#252a3a] bg-white dark:bg-[#141722] p-8 shadow-xl text-center">
         <div className="flex justify-center mb-6">
           <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center">
             <Heart className="w-7 h-7 text-white" />
           </div>
         </div>
-        <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100 mb-2">
+        <h1 className="text-xl font-bold text-slate-800 dark:text-[#e8ecf4] mb-2">
           E-mail enviado
         </h1>
-        <p className="text-sm text-slate-500 dark:text-gray-400 mb-6">
+        <p className="text-sm text-slate-500 dark:text-[#828ca5] mb-6">
           Verifique sua caixa de entrada (e o spam) e use o link para redefinir sua senha.
         </p>
         <Link
@@ -56,16 +56,16 @@ export default function RecuperarSenhaPage() {
   }
 
   return (
-    <div className="rounded-2xl border border-pink-100 dark:border-gray-700 bg-white dark:bg-[#262832] p-8 shadow-xl">
+    <div className="rounded-2xl border border-pink-100 dark:border-[#252a3a] bg-white dark:bg-[#141722] p-8 shadow-xl">
       <div className="flex justify-center mb-6">
         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center">
           <Heart className="w-7 h-7 text-white" />
         </div>
       </div>
-      <h1 className="text-xl font-bold text-center text-slate-800 dark:text-gray-100 mb-2">
+      <h1 className="text-xl font-bold text-center text-slate-800 dark:text-[#e8ecf4] mb-2">
         Recuperar senha
       </h1>
-      <p className="text-sm text-slate-500 dark:text-gray-400 text-center mb-6">
+      <p className="text-sm text-slate-500 dark:text-[#828ca5] text-center mb-6">
         Informe seu e-mail para receber o link de redefinição.
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -75,7 +75,7 @@ export default function RecuperarSenhaPage() {
           </div>
         )}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-[#a0a8be] mb-1">
             E-mail
           </label>
           <input
@@ -84,7 +84,7 @@ export default function RecuperarSenhaPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-xl border border-pink-200 dark:border-gray-600 bg-white dark:bg-[#1e2028] px-4 py-2.5 text-slate-800 dark:text-gray-100 focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none transition"
+            className="w-full rounded-xl border border-pink-200 dark:border-gray-600 bg-white dark:bg-[#0d0f15] px-4 py-2.5 text-slate-800 dark:text-[#e8ecf4] focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none transition"
             placeholder="seu@email.com"
           />
         </div>
@@ -96,7 +96,7 @@ export default function RecuperarSenhaPage() {
           {loading ? 'Enviando...' : 'Enviar link'}
         </button>
       </form>
-      <p className="mt-6 text-center text-sm text-slate-500 dark:text-gray-400">
+      <p className="mt-6 text-center text-sm text-slate-500 dark:text-[#828ca5]">
         <Link href="/login" className="text-pink-600 dark:text-pink-400 font-medium hover:underline">
           Voltar ao login
         </Link>

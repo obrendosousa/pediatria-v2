@@ -227,12 +227,12 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
   // ── Vazio ──────────────────────────────────────────────────
   if (!loading && entries.length === 0) {
     return (
-      <div className="text-center py-16 bg-slate-50 dark:bg-[#1e2028]/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-gray-800">
-        <div className="w-16 h-16 bg-slate-100 dark:bg-[#2a2d36] rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="text-center py-16 bg-slate-50 dark:bg-[#0d0f15]/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-[#1e2334]">
+        <div className="w-16 h-16 bg-slate-100 dark:bg-[#141722] rounded-full flex items-center justify-center mx-auto mb-4">
           <Stethoscope className="w-8 h-8 text-slate-400" />
         </div>
-        <h3 className="text-slate-900 dark:text-gray-100 font-bold mb-1">Nenhum registro clínico</h3>
-        <p className="text-slate-500 dark:text-gray-500 text-sm">O histórico aparecerá aqui conforme registros forem criados.</p>
+        <h3 className="text-slate-900 dark:text-[#e8ecf4] font-bold mb-1">Nenhum registro clínico</h3>
+        <p className="text-slate-500 dark:text-[#565d73] text-sm">O histórico aparecerá aqui conforme registros forem criados.</p>
       </div>
     );
   }
@@ -240,10 +240,10 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
   return (
     <div className="space-y-4">
       {/* ── Barra de Filtros ─────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#1e2028] rounded-xl border border-slate-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-[#0d0f15] rounded-xl border border-slate-200 dark:border-[#252a3a] p-4">
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-gray-300 hover:text-blue-600 transition-colors w-full"
+          className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-[#a0a8be] hover:text-blue-600 transition-colors w-full"
         >
           <Filter className="w-4 h-4" />
           Filtros
@@ -258,11 +258,11 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
             {/* Profissional + Datas */}
             <div className="flex items-end gap-4 flex-wrap">
               <div className="min-w-[200px]">
-                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-1 block">Profissional</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-1 block">Profissional</label>
                 <select
                   value={filterDoctorId ?? ''}
                   onChange={(e) => setFilterDoctorId(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
                   <option value="">Todos</option>
                   {doctors.map((d) => (
@@ -271,26 +271,26 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
                 </select>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-1 block">De</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-1 block">De</label>
                 <input
                   type="date"
                   value={filterDateFrom}
                   onChange={(e) => setFilterDateFrom(e.target.value)}
-                  className="px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-1 block">Até</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-1 block">Até</label>
                 <input
                   type="date"
                   value={filterDateTo}
                   onChange={(e) => setFilterDateTo(e.target.value)}
-                  className="px-3 py-2 text-sm border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#2a2d36] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="px-3 py-2 text-sm border border-slate-200 dark:border-[#252a3a] rounded-lg bg-white dark:bg-[#141722] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
               <button
                 onClick={() => { setFilterDoctorId(null); setFilterTypes([...ALL_TYPES]); setFilterDateFrom(''); setFilterDateTo(''); }}
-                className="px-4 py-2 text-xs font-bold text-slate-500 dark:text-gray-400 bg-slate-100 dark:bg-[#2a2d36] rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+                className="px-4 py-2 text-xs font-bold text-slate-500 dark:text-[#828ca5] bg-slate-100 dark:bg-[#141722] rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
               >
                 LIMPAR
               </button>
@@ -298,7 +298,7 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
 
             {/* Tipos de registro */}
             <div>
-              <label className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-2 block">Tipo de registro</label>
+              <label className="text-xs font-bold text-slate-500 dark:text-[#828ca5] uppercase mb-2 block">Tipo de registro</label>
               <div className="flex flex-wrap gap-2">
                 {ALL_TYPES.map((t) => {
                   const cfg = TYPE_CONFIG[t];
@@ -310,7 +310,7 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
                       className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${
                         active
                           ? `${cfg.bgColor} ${cfg.color} ${cfg.borderColor}`
-                          : 'bg-slate-50 dark:bg-[#2a2d36] text-slate-400 dark:text-gray-500 border-slate-200 dark:border-gray-700 opacity-50'
+                          : 'bg-slate-50 dark:bg-[#141722] text-slate-400 dark:text-[#565d73] border-slate-200 dark:border-[#252a3a] opacity-50'
                       }`}
                     >
                       <cfg.icon className="w-3.5 h-3.5" />
@@ -326,7 +326,7 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
 
       {/* Contador de resultados */}
       <div className="flex items-center justify-between px-1">
-        <span className="text-xs text-slate-400 dark:text-gray-500">
+        <span className="text-xs text-slate-400 dark:text-[#565d73]">
           {filtered.length} registro{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -335,7 +335,7 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
       {filtered.length === 0 ? (
         <div className="text-center py-12">
           <Search className="w-10 h-10 text-slate-300 dark:text-gray-600 mx-auto mb-3" />
-          <p className="text-sm text-slate-400 dark:text-gray-500">Nenhum registro corresponde aos filtros.</p>
+          <p className="text-sm text-slate-400 dark:text-[#565d73]">Nenhum registro corresponde aos filtros.</p>
         </div>
       ) : (
         <div className="space-y-10 relative">
@@ -382,8 +382,8 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
                       {/* Card */}
                       <div
                         onClick={() => toggleExpand(entryKey)}
-                        className={`bg-white dark:bg-[#1e2028] rounded-2xl border-2 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer ${
-                          isExpanded ? cfg.borderColor : 'border-slate-200 dark:border-gray-800'
+                        className={`bg-white dark:bg-[#0d0f15] rounded-2xl border-2 p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer ${
+                          isExpanded ? cfg.borderColor : 'border-slate-200 dark:border-[#1e2334]'
                         }`}
                       >
                         {/* Header do card */}
@@ -399,10 +399,10 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
                                 <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded font-bold">ASSINADO</span>
                               )}
                             </div>
-                            <h4 className="font-bold text-slate-800 dark:text-gray-100 text-sm truncate">
+                            <h4 className="font-bold text-slate-800 dark:text-[#e8ecf4] text-sm truncate">
                               {entry.title}
                             </h4>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-slate-400 dark:text-gray-500">
+                            <div className="flex items-center gap-3 mt-1 text-xs text-slate-400 dark:text-[#565d73]">
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {formatDate(entry.date)}
@@ -440,19 +440,19 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
 
                         {/* Preview (sempre visível) */}
                         {!isExpanded && entry.preview && (
-                          <p className="mt-2 text-xs text-slate-500 dark:text-gray-400 line-clamp-2">{entry.preview}</p>
+                          <p className="mt-2 text-xs text-slate-500 dark:text-[#828ca5] line-clamp-2">{entry.preview}</p>
                         )}
 
                         {/* Conteúdo expandido */}
                         {isExpanded && (
-                          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-gray-800">
+                          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-[#1e2334]">
                             {entry.htmlContent ? (
                               <div
                                 className="prose dark:prose-invert max-w-none text-sm"
                                 dangerouslySetInnerHTML={{ __html: entry.htmlContent }}
                               />
                             ) : (
-                              <p className="text-sm text-slate-600 dark:text-gray-300 whitespace-pre-wrap">{entry.preview}</p>
+                              <p className="text-sm text-slate-600 dark:text-[#a0a8be] whitespace-pre-wrap">{entry.preview}</p>
                             )}
                           </div>
                         )}

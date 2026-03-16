@@ -8,8 +8,8 @@ export interface ModuleTheme {
   gradientTo: string;        // ex: 'to-rose-400'
   activeGradient: string;    // ex: 'bg-gradient-to-r from-pink-500 to-rose-400'
   // Bordas e backgrounds
-  border: string;            // ex: 'border-pink-100 dark:border-gray-800'
-  borderAccent: string;      // ex: 'border-pink-200 dark:border-gray-700'
+  border: string;            // ex: 'border-pink-100 dark:border-[#1e2334]'
+  borderAccent: string;      // ex: 'border-pink-200 dark:border-[#252a3a]'
   bgSubtle: string;          // ex: 'bg-pink-50 dark:bg-pink-900/20'
   bgBlur: string;            // ex: 'bg-pink-100 dark:bg-pink-500'
   hoverBg: string;           // ex: 'hover:bg-pink-50 dark:hover:bg-white/5'
@@ -62,16 +62,16 @@ export const PEDIATRIA_CONFIG: ModuleConfig = {
     primary: 'pink',
     gradientFrom: 'from-pink-500',
     gradientTo: 'to-rose-400',
-    activeGradient: 'bg-gradient-to-r from-pink-500 to-rose-400',
-    border: 'border-pink-100 dark:border-gray-800',
-    borderAccent: 'border-pink-200 dark:border-gray-700',
-    bgSubtle: 'bg-pink-50 dark:bg-pink-900/20',
+    activeGradient: 'bg-gradient-to-r from-pink-500 to-rose-400 dark:from-pink-600 dark:to-rose-500',
+    border: 'border-pink-100 dark:border-[#1e2334]',
+    borderAccent: 'border-pink-200 dark:border-pink-800/30',
+    bgSubtle: 'bg-pink-50 dark:bg-pink-950/30',
     bgBlur: 'bg-pink-100 dark:bg-pink-500',
-    hoverBg: 'hover:bg-pink-50 dark:hover:bg-white/5',
-    text: 'text-pink-400 dark:text-pink-300',
+    hoverBg: 'hover:bg-pink-50 dark:hover:bg-white/[0.04]',
+    text: 'text-pink-400 dark:text-pink-400',
     textBold: 'text-pink-600 dark:text-pink-400',
     shadow: 'shadow-[4px_0_24px_rgba(249,168,212,0.1)]',
-    shadowActive: 'shadow-md shadow-pink-200 dark:shadow-none',
+    shadowActive: 'shadow-md shadow-pink-200 dark:shadow-lg dark:shadow-pink-500/10',
     selectionBg: 'selection:bg-pink-200 selection:text-pink-900',
     sparkleColor: 'text-pink-300 dark:text-pink-700',
   },
@@ -89,7 +89,7 @@ export const PEDIATRIA_CONFIG: ModuleConfig = {
 export const ATENDIMENTO_CONFIG: ModuleConfig = {
   id: 'atendimento',
   label: 'Centro Médico\nAliança',
-  sublabel: 'Clínica Geral',
+  sublabel: 'Sistema Geral da Clínica',
   schema: 'atendimento',
   aiAgentId: 'atendimento_agent',
   aiMagicPhone: '00000000001',
@@ -98,18 +98,18 @@ export const ATENDIMENTO_CONFIG: ModuleConfig = {
   basePath: '/atendimento',
   theme: {
     primary: 'teal',
-    gradientFrom: 'from-teal-600',
-    gradientTo: 'to-cyan-400',
-    activeGradient: 'bg-gradient-to-r from-teal-600 to-cyan-400',
-    border: 'border-teal-100 dark:border-gray-800',
-    borderAccent: 'border-teal-200 dark:border-gray-700',
-    bgSubtle: 'bg-teal-50 dark:bg-teal-900/20',
+    gradientFrom: 'from-teal-500',
+    gradientTo: 'to-emerald-400',
+    activeGradient: 'bg-gradient-to-r from-teal-500 to-emerald-400 dark:from-teal-600 dark:to-emerald-500',
+    border: 'border-teal-100 dark:border-[#1e2334]',
+    borderAccent: 'border-teal-200 dark:border-teal-800/30',
+    bgSubtle: 'bg-teal-50 dark:bg-teal-950/30',
     bgBlur: 'bg-teal-100 dark:bg-teal-500',
-    hoverBg: 'hover:bg-teal-50 dark:hover:bg-white/5',
-    text: 'text-teal-400 dark:text-teal-300',
+    hoverBg: 'hover:bg-teal-50 dark:hover:bg-white/[0.04]',
+    text: 'text-teal-500 dark:text-teal-400',
     textBold: 'text-teal-600 dark:text-teal-400',
     shadow: 'shadow-[4px_0_24px_rgba(13,148,136,0.1)]',
-    shadowActive: 'shadow-md shadow-teal-200 dark:shadow-none',
+    shadowActive: 'shadow-md shadow-teal-200 dark:shadow-lg dark:shadow-teal-500/10',
     selectionBg: 'selection:bg-teal-200 selection:text-teal-900',
     sparkleColor: 'text-teal-300 dark:text-teal-700',
   },

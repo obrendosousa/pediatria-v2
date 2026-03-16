@@ -16,7 +16,7 @@ function renderInline(text: string): React.ReactNode {
   return parts.map((part, i) => {
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
-        <code key={i} className="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-[11px] font-mono text-violet-600 dark:text-violet-400">
+        <code key={i} className="bg-gray-100 dark:bg-[#1e2334] px-1 py-0.5 rounded text-[11px] font-mono text-violet-600 dark:text-violet-400">
           {part.slice(1, -1)}
         </code>
       );
@@ -42,7 +42,7 @@ function CopilotMarkdown({ content }: { content: string }) {
     // Headings
     if (line.startsWith("### ")) {
       elements.push(
-        <p key={i} className="font-semibold text-xs text-gray-700 dark:text-gray-300 mt-2 mb-0.5">
+        <p key={i} className="font-semibold text-xs text-gray-700 dark:text-[#a0a8be] mt-2 mb-0.5">
           {renderInline(line.slice(4))}
         </p>
       );
@@ -54,7 +54,7 @@ function CopilotMarkdown({ content }: { content: string }) {
       );
     } else if (line.startsWith("# ")) {
       elements.push(
-        <p key={i} className="font-bold text-sm text-gray-900 dark:text-gray-100 mt-2 mb-1">
+        <p key={i} className="font-bold text-sm text-gray-900 dark:text-[#e8ecf4] mt-2 mb-1">
           {renderInline(line.slice(2))}
         </p>
       );
@@ -355,12 +355,12 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
         {/* Sugestões */}
         {!isLoadingMemory && messages.length === 0 && !isLoading && (
           <div className="space-y-2 pt-2">
-            <p className="text-xs text-gray-400 dark:text-gray-500 text-center mb-3">Sugestões rápidas</p>
+            <p className="text-xs text-gray-400 dark:text-[#565d73] text-center mb-3">Sugestões rápidas</p>
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
                 onClick={() => sendQuestion(s)}
-                className="w-full text-left text-xs px-3 py-2 rounded-lg border border-violet-100 dark:border-violet-800 bg-white dark:bg-[#2a2d36] text-gray-700 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:border-violet-300 transition-colors"
+                className="w-full text-left text-xs px-3 py-2 rounded-lg border border-violet-100 dark:border-violet-800 bg-white dark:bg-[#141722] text-gray-700 dark:text-[#a0a8be] hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:border-violet-300 transition-colors"
               >
                 {s}
               </button>
@@ -379,7 +379,7 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
                 className={`max-w-[88%] rounded-2xl px-3 py-2.5 ${
                   msg.role === "user"
                     ? "bg-violet-600 text-white text-sm leading-relaxed rounded-br-sm"
-                    : "bg-white dark:bg-[#2a2d36] text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700 rounded-bl-sm shadow-sm"
+                    : "bg-white dark:bg-[#141722] text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-[#252a3a] rounded-bl-sm shadow-sm"
                 }`}
               >
                 {msg.role === "assistant" ? (
@@ -414,9 +414,9 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
       {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="px-3 py-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-[#202c33] shrink-0"
+        className="px-3 py-3 border-t border-gray-100 dark:border-[#252a3a] bg-white dark:bg-[#202c33] shrink-0"
       >
-        <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#2a2d36] border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus-within:border-violet-400 transition-colors">
+        <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#141722] border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus-within:border-violet-400 transition-colors">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}

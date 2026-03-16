@@ -1,8 +1,11 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Trash2, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { scrollButtonVariants } from '@/lib/animations';
 import { createClient } from '@supabase/supabase-js';
 import { Message, Chat } from '@/types';
 import MessageBubble from './MessageBubble';
@@ -26,6 +29,7 @@ interface MessageListProps {
   onReact?: (msg: Message, emoji: string) => void;
   onPreviewImage: (url: string) => void;
   onPreviewVideo: (url: string) => void;
+  onSaveSticker?: (url: string) => void;
 }
 
 export default function MessageList({ 
@@ -39,7 +43,8 @@ export default function MessageList({
   onForward,
   onReact,
   onPreviewImage,
-  onPreviewVideo
+  onPreviewVideo,
+  onSaveSticker
 }: MessageListProps) {
   const { toast } = useToast();
   const pediatricWallpaper = useMemo(() => {
@@ -427,7 +432,7 @@ export default function MessageList({
                 opacity: 0
               }}
             >
-              <span className="bg-[var(--chat-surface)] dark:bg-[#202c33] text-[var(--chat-text-muted)] dark:text-[#8696a0] text-xs py-1.5 px-3 rounded-lg shadow-sm font-medium uppercase tracking-wide border border-gray-100 dark:border-gray-700/50">
+              <span className="bg-[var(--chat-surface)] dark:bg-[#202c33] text-[var(--chat-text-muted)] dark:text-[#8696a0] text-xs py-1.5 px-3 rounded-lg shadow-sm font-medium uppercase tracking-wide border border-gray-100 dark:border-[#252a3a]/50">
                 {currentDate === todayDateString ? 'Hoje' : currentDate}
               </span>
             </div>
@@ -448,6 +453,7 @@ export default function MessageList({
             onReact={onReact}
             onPreviewImage={handlePreviewImage}
             onPreviewVideo={handlePreviewVideo}
+            onSaveSticker={onSaveSticker}
             isSelectionMode={isSelectionMode}
             isSelected={selectedMessageIds.includes(msg.id)}
             onToggleSelect={toggleSelectedMessage}
@@ -475,53 +481,66 @@ export default function MessageList({
     startSelectionMode,
     handleForward,
     onReact,
-    isAIChat // Variável correta no array de dependências
+    onSaveSticker,
+    isAIChat
   ]);
 
   return (
-    <div className="relative flex-1 min-w-0 min-h-0 flex flex-col">
+    <div className="relative flex-1 min-w-0 min-h-0 flex flex-col bg-[var(--chat-bg)]">
+      {/* Fade topo - mensagens somem suavemente ao rolar pra cima */}
+      <div
+        className="absolute top-0 left-0 right-0 h-16 z-10 pointer-events-none"
+        style={{ background: 'linear-gradient(to bottom, var(--chat-bg), transparent)' }}
+      />
       <div
         ref={containerRef}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:px-[5%] space-y-0 bg-[var(--chat-bg)] dark:bg-[#0b141a] scrollbar-thin scrollbar-thumb-black/10 dark:scrollbar-thumb-white/10"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:px-[5%] space-y-0 scrollbar-thin scrollbar-thumb-[var(--chat-accent)]/20 hover:scrollbar-thumb-[var(--chat-accent)]/40 transition-colors relative z-[1]"
         style={{
           backgroundImage: pediatricWallpaper,
           backgroundRepeat: 'repeat',
           backgroundSize: '180px',
         }}
       >
-        {isSelectionMode && (
-          <div className="sticky top-2 z-20 mb-3 bg-white/90 dark:bg-[#1f2c34]/90 backdrop-blur border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-sm pointer-events-none">
-            <div className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-              {selectedMessageIds.length} selecionada(s)
-            </div>
-            <div className="flex items-center gap-2 pointer-events-auto">
-              <button
-                onClick={handleBatchDeleteForEveryone}
-                disabled={!selectedMessageIds.length || isBatchDeleting}
-                className="text-[11px] px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
-              >
-                Apagar p/ todos
-              </button>
-              <button
-                onClick={handleBatchDeleteForMe}
-                disabled={!selectedMessageIds.length || isBatchDeleting}
-                className="text-[11px] px-2.5 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white disabled:opacity-50"
-              >
-                Apagar p/ mim
-              </button>
-              <button
-                onClick={clearSelectionMode}
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"
-                title="Cancelar seleção"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {isSelectionMode && (
+            <motion.div
+              className="sticky top-2 z-20 mb-3 bg-white/90 dark:bg-[var(--chat-surface)]/90 backdrop-blur-xl border border-gray-200 dark:border-white/5 rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-lg pointer-events-none"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <div className="text-xs font-semibold text-[var(--chat-text-primary)]">
+                {selectedMessageIds.length} selecionada(s)
+              </div>
+              <div className="flex items-center gap-2 pointer-events-auto">
+                <button
+                  onClick={handleBatchDeleteForEveryone}
+                  disabled={!selectedMessageIds.length || isBatchDeleting}
+                  className="text-[11px] px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 cursor-pointer transition-colors duration-200 disabled:cursor-not-allowed"
+                >
+                  Apagar p/ todos
+                </button>
+                <button
+                  onClick={handleBatchDeleteForMe}
+                  disabled={!selectedMessageIds.length || isBatchDeleting}
+                  className="text-[11px] px-2.5 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white disabled:opacity-50 cursor-pointer transition-colors duration-200 disabled:cursor-not-allowed"
+                >
+                  Apagar p/ mim
+                </button>
+                <button
+                  onClick={clearSelectionMode}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-[var(--chat-text-muted)] cursor-pointer transition-colors duration-200"
+                  title="Cancelar seleção"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {renderedMessages}
 
-        {/* Indicador animado de status da Clara — renderizado via portal para ficar acima de qualquer modal */}
+        {/* Indicador animado de status da Clara */}
         {isAIChat && claraStatus && typeof window !== 'undefined' && createPortal(
           <div className="fixed bottom-20 left-4 z-[10000] pointer-events-none">
             <ClaraStatusIndicator status={claraStatus} />
@@ -532,17 +551,23 @@ export default function MessageList({
         <div ref={bottomRef} className="h-4" />
       </div>
 
-      <button
-        onClick={scrollToBottom}
-        className={`absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[var(--chat-accent)]/50 hover:bg-[var(--chat-accent)]/70 text-white shadow-lg flex items-center justify-center z-50 transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${
-          showScrollToBottom
-            ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 scale-75 translate-y-4 pointer-events-none'
-        }`}
-        aria-label="Rolar até a última mensagem"
-      >
-        <ChevronDown size={22} strokeWidth={2.5} />
-      </button>
+      <AnimatePresence>
+        {showScrollToBottom && (
+          <motion.button
+            onClick={scrollToBottom}
+            className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[var(--chat-accent)] hover:bg-[var(--chat-accent-hover)] text-white shadow-lg flex items-center justify-center z-50 cursor-pointer"
+            variants={scrollButtonVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.85 }}
+            aria-label="Rolar até a última mensagem"
+          >
+            <ChevronDown size={22} strokeWidth={2.5} />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
