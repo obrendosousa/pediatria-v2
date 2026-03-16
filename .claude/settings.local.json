@@ -62,7 +62,11 @@
       "Bash(node /tmp/fix-chat3.js)",
       "Bash(find /c/Users/brend/Documents/pediatria-v2/src/app -type d -name [id])",
       "Bash(mkdir -p c:/Users/brend/Documents/pediatria-v2/src/app/atendimento/cadastros/profissionais/criar)",
-      "Bash(mkdir -p \"c:/Users/brend/Documents/pediatria-v2/src/app/atendimento/cadastros/profissionais/[id]\")"
+      "Bash(mkdir -p \"c:/Users/brend/Documents/pediatria-v2/src/app/atendimento/cadastros/profissionais/[id]\")",
+      "Bash(find c:UsersbrendDocumentspediatria-v2 -maxdepth 2 -type f -name CLAUDE.md -o -name *.config.* -o -name package.json -o -name tsconfig.json)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2/src/app/atendimento -type f -name *.ts -o -name *.tsx)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2/src/lib -type f -name *.ts)",
+      "Bash(grep -E \"\\\\.md$|\\\\.txt$\")"
     ]
   },
   "hooks": {
