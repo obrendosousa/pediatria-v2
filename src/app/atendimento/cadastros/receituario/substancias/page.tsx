@@ -8,7 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useSubstances } from '@/hooks/useSubstances';
 import type { Substance } from '@/types/cadastros';
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400';
 
 export default function SubstanciasPage() {
   const { toast } = useToast();
@@ -107,15 +107,15 @@ export default function SubstanciasPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <div className="flex items-center gap-2">
-          <FlaskConical className="w-5 h-5 text-teal-600" />
+          <FlaskConical className="w-5 h-5 text-blue-600" />
           <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Substâncias</h1>
           <span className="text-xs text-slate-400 dark:text-[#71717a] ml-1">({totalCount})</span>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
         >
           <Plus className="w-4 h-4" />
           NOVA SUBSTÂNCIA

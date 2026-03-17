@@ -25,7 +25,7 @@ export function NotificationToast({ notifications, onDismiss }: NotificationToas
         <div
           key={notification.id}
           className={`
-            bg-white dark:bg-[#0a0a0c] rounded-xl shadow-2xl border-l-4 p-4 min-w-[320px] max-w-md
+            bg-white dark:bg-[#08080b] rounded-xl shadow-2xl border-l-4 p-4 min-w-[320px] max-w-md
             animate-in slide-in-from-right fade-in
             ${notification.type === 'checkout' ? 'border-l-rose-500' : ''}
             ${notification.type === 'success' ? 'border-l-emerald-500' : ''}

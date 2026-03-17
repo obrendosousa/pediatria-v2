@@ -12,6 +12,7 @@ import {
   MoreVertical, MessageCircle, Receipt, Copy, Edit2, XCircle, X,
   SlidersHorizontal, ChevronDown, ChevronUp, Video, Loader2
 } from 'lucide-react';
+import { getValidNextStatuses, isValidTransition, STATUS_LABELS as TRANSITION_LABELS } from '@/config/scheduling/statusTransitions';
 
 const supabase = createSchemaClient('atendimento');
 
@@ -66,7 +67,7 @@ const STATUS_COLORS: Record<string, string> = {
   scheduled: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300',
   confirmed: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300',
   waiting: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300',
-  in_service: 'bg-teal-100 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300',
+  in_service: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300',
   finished: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300',
   cancelled: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300',
   no_show: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300',
@@ -205,6 +206,10 @@ export default function AppointmentViewPage() {
 
   const handleChangeStatus = async () => {
     if (!appointment || !newStatus) return;
+    if (!isValidTransition(appointment.status, newStatus)) {
+      toast.error('Transicao de status nao permitida.');
+      return;
+    }
     try {
       const updateData: Record<string, unknown> = { status: newStatus };
       if (newStatus === 'confirmed') updateData.confirmed_at = new Date().toISOString();
@@ -255,7 +260,7 @@ export default function AppointmentViewPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-teal-500 animate-spin"/>
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin"/>
       </div>
     );
   }
@@ -264,15 +269,15 @@ export default function AppointmentViewPage() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-4">
         <p className="text-slate-500 dark:text-[#a1a1aa]">Agendamento nao encontrado.</p>
-        <button onClick={() => router.push('/atendimento/agenda')} className="text-teal-600 hover:underline text-sm font-semibold">Voltar para agenda</button>
+        <button onClick={() => router.push('/atendimento/agenda')} className="text-blue-600 hover:underline text-sm font-semibold">Voltar para agenda</button>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#0b141a] transition-colors">
+    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#08080b] transition-colors">
       {/* ── Header ── */}
-      <div className="px-6 py-4 bg-white dark:bg-[#0a0a0c] border-b border-slate-100 dark:border-[#27272a] shadow-sm flex items-center justify-between">
+      <div className="px-6 py-4 bg-white dark:bg-[#08080b] border-b border-slate-100 dark:border-[#2d2d36] shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/atendimento/agenda')} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors">
             <ArrowLeft size={20} className="text-slate-500 dark:text-[#a1a1aa]"/>
@@ -322,7 +327,7 @@ export default function AppointmentViewPage() {
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)}/>
-                <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg shadow-xl z-50 py-1">
+                <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg shadow-xl z-50 py-1">
                   <button onClick={handleClone} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/5 flex items-center gap-2.5 transition-colors">
                     <Copy size={15} className="text-slate-400"/> Clonar agendamento
                   </button>
@@ -332,7 +337,7 @@ export default function AppointmentViewPage() {
                   <button onClick={() => { setMenuOpen(false); setConfirmCancel(true); }} className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2.5 transition-colors">
                     <XCircle size={15}/> Cancelar agendamento
                   </button>
-                  <div className="border-t border-slate-100 dark:border-[#2e2e33] my-1"/>
+                  <div className="border-t border-slate-100 dark:border-[#3d3d48] my-1"/>
                   <button onClick={() => { setMenuOpen(false); setStatusModalOpen(true); }} className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/5 flex items-center gap-2.5 transition-colors">
                     <SlidersHorizontal size={15} className="text-slate-400"/> Ajustar status
                   </button>
@@ -346,21 +351,21 @@ export default function AppointmentViewPage() {
       {/* ── Conteudo ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
         {/* Stepper de status */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl border border-slate-100 dark:border-[#27272a] shadow-sm p-6">
-          <StatusStepper steps={stepperSteps} currentStepKey={appointment.status} accentColor="teal"/>
+        <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] shadow-sm p-6">
+          <StatusStepper steps={stepperSteps} currentStepKey={appointment.status} accentColor="blue"/>
         </div>
 
         {/* Cards de detalhes */}
         <div className="grid grid-cols-2 gap-4">
           {/* Procedimentos */}
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-100 dark:border-[#27272a] shadow-sm p-5 col-span-2">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-100 dark:border-[#2d2d36] shadow-sm p-5 col-span-2">
             <h3 className="text-xs font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <FileText size={14} className="text-teal-500"/> Procedimento(s)
+              <FileText size={14} className="text-blue-600"/> Procedimento(s)
             </h3>
             {appointment.procedures && appointment.procedures.length > 0 ? (
               <div className="space-y-2">
                 {appointment.procedures.map((proc, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#18181b] rounded-lg border border-slate-100 dark:border-[#2e2e33]">
+                  <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#1c1c21] rounded-lg border border-slate-100 dark:border-[#3d3d48]">
                     <span className="text-sm text-slate-700 dark:text-gray-200">{proc}</span>
                   </div>
                 ))}
@@ -371,9 +376,9 @@ export default function AppointmentViewPage() {
           </div>
 
           {/* Data e Hora */}
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-100 dark:border-[#27272a] shadow-sm p-5">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-100 dark:border-[#2d2d36] shadow-sm p-5">
             <h3 className="text-xs font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <Calendar size={14} className="text-teal-500"/> Data e Horario
+              <Calendar size={14} className="text-blue-600"/> Data e Horario
             </h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
@@ -389,7 +394,7 @@ export default function AppointmentViewPage() {
                 <span className="text-sm font-semibold text-slate-800 dark:text-[#fafafa]">{formatTime(appointment.end_time)}</span>
               </div>
               {appointment.appointment_subtype && (
-                <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-[#2e2e33]">
+                <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-[#3d3d48]">
                   <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">Tipo</span>
                   <span className="text-xs font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-[#d4d4d8] px-2 py-0.5 rounded">
                     {appointment.appointment_subtype === 'orcamento' ? 'Orcamento' : 'Simples'}
@@ -400,12 +405,12 @@ export default function AppointmentViewPage() {
           </div>
 
           {/* Profissional */}
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-100 dark:border-[#27272a] shadow-sm p-5">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-100 dark:border-[#2d2d36] shadow-sm p-5">
             <h3 className="text-xs font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <Stethoscope size={14} className="text-teal-500"/> Profissional
+              <Stethoscope size={14} className="text-blue-600"/> Profissional
             </h3>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/20 flex items-center justify-center text-teal-600 dark:text-teal-400 font-bold">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold">
                 {appointment.doctor_name?.charAt(0) || 'P'}
               </div>
               <div>
@@ -416,9 +421,9 @@ export default function AppointmentViewPage() {
           </div>
 
           {/* Paciente */}
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-100 dark:border-[#27272a] shadow-sm p-5">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-100 dark:border-[#2d2d36] shadow-sm p-5">
             <h3 className="text-xs font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <User size={14} className="text-teal-500"/> Paciente
+              <User size={14} className="text-blue-600"/> Paciente
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
@@ -444,18 +449,18 @@ export default function AppointmentViewPage() {
           </div>
 
           {/* Descricao + Info do agendamento */}
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-100 dark:border-[#27272a] shadow-sm p-5">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-100 dark:border-[#2d2d36] shadow-sm p-5">
             <h3 className="text-xs font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <FileText size={14} className="text-teal-500"/> Informacoes
+              <FileText size={14} className="text-blue-600"/> Informacoes
             </h3>
             <div className="space-y-3">
               <div>
                 <span className="text-xs text-slate-500 dark:text-[#a1a1aa] block mb-1">Descricao</span>
-                <p className="text-sm text-slate-700 dark:text-gray-200 bg-slate-50 dark:bg-[#18181b] p-3 rounded-lg border border-slate-100 dark:border-[#2e2e33] min-h-[60px]">
+                <p className="text-sm text-slate-700 dark:text-gray-200 bg-slate-50 dark:bg-[#1c1c21] p-3 rounded-lg border border-slate-100 dark:border-[#3d3d48] min-h-[60px]">
                   {appointment.description || appointment.notes || <span className="text-slate-400 italic">Sem descricao</span>}
                 </p>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-[#2e2e33]">
+              <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-[#3d3d48]">
                 <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">Responsavel pelo agendamento</span>
                 <span className="text-xs font-medium text-slate-700 dark:text-gray-200">{appointment.scheduled_by || 'Sistema'}</span>
               </div>
@@ -468,13 +473,13 @@ export default function AppointmentViewPage() {
         </div>
 
         {/* ── Secao colapsavel: Alteracoes de status ── */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-100 dark:border-[#27272a] shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-100 dark:border-[#2d2d36] shadow-sm overflow-hidden">
           <button
             onClick={() => setLogOpen(!logOpen)}
             className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
           >
             <span className="text-sm font-bold text-slate-700 dark:text-gray-200 flex items-center gap-2">
-              <SlidersHorizontal size={16} className="text-teal-500"/>
+              <SlidersHorizontal size={16} className="text-blue-600"/>
               Alteracoes de Status
               <span className="text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-[#a1a1aa] px-2 py-0.5 rounded-full">
                 {statusLog.length}
@@ -484,14 +489,14 @@ export default function AppointmentViewPage() {
           </button>
 
           {logOpen && (
-            <div className="border-t border-slate-100 dark:border-[#27272a]">
+            <div className="border-t border-slate-100 dark:border-[#2d2d36]">
               {statusLog.length === 0 ? (
                 <p className="p-5 text-sm text-slate-400 dark:text-[#71717a] text-center italic">Nenhuma alteracao registrada.</p>
               ) : (
                 <div className="divide-y divide-slate-100 dark:divide-gray-800">
                   {statusLog.map(entry => (
                     <div key={entry.id} className="px-5 py-3 flex items-center gap-4">
-                      <div className="w-2 h-2 rounded-full bg-teal-400 shrink-0"/>
+                      <div className="w-2 h-2 rounded-full bg-blue-400 shrink-0"/>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           {entry.old_status && (
@@ -554,10 +559,10 @@ export default function AppointmentViewPage() {
       {/* Modal de ajustar status */}
       {statusModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 dark:border-[#2e2e33] flex justify-between items-center">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-200 dark:border-[#3d3d48] flex justify-between items-center">
               <h3 className="text-sm font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
-                <SlidersHorizontal size={16} className="text-teal-500"/> Ajustar Status
+                <SlidersHorizontal size={16} className="text-blue-600"/> Ajustar Status
               </h3>
               <button onClick={() => setStatusModalOpen(false)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg">
                 <X size={16} className="text-slate-400"/>
@@ -569,11 +574,11 @@ export default function AppointmentViewPage() {
                 <select
                   value={newStatus}
                   onChange={e => setNewStatus(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 >
                   <option value="">Selecione...</option>
-                  {Object.entries(STATUS_LABELS).filter(([k]) => k !== appointment.status && k !== 'blocked').map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
+                  {getValidNextStatuses(appointment.status).map(k => (
+                    <option key={k} value={k}>{TRANSITION_LABELS[k] || k}</option>
                   ))}
                 </select>
               </div>
@@ -581,7 +586,7 @@ export default function AppointmentViewPage() {
                 <button onClick={() => setStatusModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-[#d4d4d8] rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                   Cancelar
                 </button>
-                <button onClick={handleChangeStatus} disabled={!newStatus} className="flex-1 px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors disabled:opacity-40">
+                <button onClick={handleChangeStatus} disabled={!newStatus} className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors disabled:opacity-40">
                   Confirmar
                 </button>
               </div>

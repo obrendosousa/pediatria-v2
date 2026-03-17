@@ -42,7 +42,7 @@ export default function EditarLaudoPage() {
   if (loadingData) {
     return (
       <div className="h-full flex items-center justify-center bg-slate-50 dark:bg-[#15171e]">
-        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
       </div>
     );
   }
@@ -54,7 +54,7 @@ export default function EditarLaudoPage() {
       subtitle="Atualize o modelo de laudo"
       backPath="/atendimento/cadastros/modelos/laudos"
       onSubmit={handleSubmit}
-      icon={<FileSearch className="w-5 h-5 text-teal-600" />}
+      icon={<FileSearch className="w-5 h-5 text-blue-600" />}
     />
   );
 }

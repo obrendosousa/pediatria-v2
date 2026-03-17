@@ -34,7 +34,7 @@ function KpiCard({
 }) {
   const palette = toneClassMap[tone];
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#27272a] dark:bg-[#0a0a0c]">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#2d2d36] dark:bg-[#08080b]">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-1.5">

@@ -282,7 +282,7 @@ export function PatientListTable({
              <input 
                type="text"
                placeholder="Buscar por nome ou telefone..."
-               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all outline-none"
+               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all outline-none"
                value={searchTerm}
                onChange={(e) => onSearchChange(e.target.value)}
              />
@@ -300,10 +300,10 @@ export function PatientListTable({
       </div>
 
        {/* --- TABELA DE DADOS --- */}
-       <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl border border-slate-200 dark:border-[#27272a] shadow-sm">
+       <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-200 dark:border-[#2d2d36] shadow-sm">
          <div className="overflow-x-auto overflow-y-visible relative">
            <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 dark:bg-[#252830] border-b border-slate-100 dark:border-[#27272a]">
+            <thead className="bg-slate-50 dark:bg-[#252830] border-b border-slate-100 dark:border-[#2d2d36]">
               <tr>
                 <th className="px-6 py-4 font-semibold text-slate-600 dark:text-[#d4d4d8]">Paciente</th>
                 <th className="px-6 py-4 font-semibold text-slate-600 dark:text-[#d4d4d8]">Telefone</th>
@@ -340,7 +340,7 @@ export function PatientListTable({
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-[#18181b] text-slate-500 dark:text-[#a1a1aa] group-hover:bg-rose-100 group-hover:text-rose-600 dark:group-hover:bg-rose-900/40 dark:group-hover:text-rose-400 flex items-center justify-center font-bold text-sm transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-[#1c1c21] text-slate-500 dark:text-[#a1a1aa] group-hover:bg-rose-100 group-hover:text-rose-600 dark:group-hover:bg-rose-900/40 dark:group-hover:text-rose-400 flex items-center justify-center font-bold text-sm transition-colors">
                           {patient.name ? patient.name.substring(0, 2).toUpperCase() : '--'}
                         </div>
                         <div>
@@ -379,7 +379,7 @@ export function PatientListTable({
                             e.stopPropagation();
                             setMenuOpenId(menuOpenId === patient.id ? null : patient.id);
                           }}
-                          className="p-2 hover:bg-slate-200 dark:hover:bg-[#27272a] rounded-full transition-colors text-slate-400 relative z-10"
+                          className="p-2 hover:bg-slate-200 dark:hover:bg-[#2d2d36] rounded-full transition-colors text-slate-400 relative z-10"
                         >
                           <MoreHorizontal className="w-5 h-5" />
                         </button>
@@ -397,7 +397,7 @@ export function PatientListTable({
       {menuOpenId !== null && menuPosition && (
         <div 
           ref={dropdownMenuRef}
-          className="fixed bg-white dark:bg-[#18181b] shadow-xl rounded-lg border border-slate-200 dark:border-[#2e2e33] py-1 w-48 z-[200] animate-in fade-in zoom-in-95 duration-100 overflow-hidden"
+          className="fixed bg-white dark:bg-[#1c1c21] shadow-xl rounded-lg border border-slate-200 dark:border-[#3d3d48] py-1 w-48 z-[200] animate-in fade-in zoom-in-95 duration-100 overflow-hidden"
           style={{
             top: `${menuPosition.top}px`,
             left: `${menuPosition.left}px`

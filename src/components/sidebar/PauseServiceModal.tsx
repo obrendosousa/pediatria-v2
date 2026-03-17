@@ -110,9 +110,9 @@ export default function PauseServiceModal({
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 dark:bg-black/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-[#08080b] rounded-2xl shadow-xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-[#2e2e33]">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-[#3d3d48]">
           <h2 className="text-xl font-semibold text-[#111b21] dark:text-[#fafafa]">
             Pausar Atendimento
           </h2>
@@ -144,7 +144,7 @@ export default function PauseServiceModal({
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Digite a mensagem que será enviada automaticamente..."
-                className="w-full min-h-[100px] p-3 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-[#111b21] dark:text-[#fafafa] placeholder-[#8696a0] resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                className="w-full min-h-[100px] p-3 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-[#111b21] dark:text-[#fafafa] placeholder-[#8696a0] resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/50"
               />
             )}
           </div>
@@ -176,7 +176,7 @@ export default function PauseServiceModal({
                       className={`w-full text-left p-3 rounded-lg border transition-colors ${
                         selectedSavedMessageId === saved.id
                           ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20'
-                          : 'border-gray-200 dark:border-[#2e2e33] hover:bg-gray-50 dark:hover:bg-white/5'
+                          : 'border-gray-200 dark:border-[#3d3d48] hover:bg-gray-50 dark:hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-start gap-2">
@@ -200,7 +200,7 @@ export default function PauseServiceModal({
 
           {/* Preview */}
           {previewMessage && (
-            <div className="mt-4 p-4 bg-gray-50 dark:bg-[#18181b] rounded-lg border border-gray-200 dark:border-[#2e2e33]">
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-[#1c1c21] rounded-lg border border-gray-200 dark:border-[#3d3d48]">
               <p className="text-xs font-medium text-[#54656f] dark:text-[#a1a1aa] mb-2">
                 Preview da mensagem:
               </p>
@@ -219,7 +219,7 @@ export default function PauseServiceModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-[#2e2e33]">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-[#3d3d48]">
           <button
             onClick={onClose}
             disabled={isLoading}

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
 import { createClient } from '@/lib/supabase/client';
 import { getTimeSlots } from '@/app/agenda/utils/agendaUtils';
+import { blockCoversDate as sharedBlockCoversDate, buildBlockedSlots as sharedBuildBlockedSlots, type RawBlock } from '@/utils/scheduling/validation';
 import { useAuth } from '@/contexts/AuthContext';
 
 import AtendimentoAgendaHeader from '@/components/atendimento/agenda/AtendimentoAgendaHeader';
@@ -36,17 +37,6 @@ type AtendimentoAppointment = {
   amount_paid?: number;
 };
 
-type RawBlock = {
-  doctor_id: number | null;
-  title: string;
-  start_date: string;
-  end_date: string;
-  start_time: string | null;
-  end_time: string | null;
-  all_day: boolean;
-  recurrence: string;
-};
-
 function mapAppointment(row: Record<string, unknown>): AtendimentoAppointment {
   const patient = row.patients as { full_name?: string; phone?: string; sex?: string } | null;
   return {
@@ -70,34 +60,6 @@ function mapAppointment(row: Record<string, unknown>): AtendimentoAppointment {
   };
 }
 
-/** Verifica se um bloco cobre uma data específica (considerando recorrência) */
-function blockCoversDate(block: RawBlock, dateStr: string): boolean {
-  if (dateStr < block.start_date || dateStr > block.end_date) return false;
-  if (block.recurrence === 'none' || block.recurrence === 'daily') return true;
-  const targetDate = new Date(dateStr + 'T12:00:00');
-  const startDate = new Date(block.start_date + 'T12:00:00');
-  if (block.recurrence === 'weekly') return targetDate.getDay() === startDate.getDay();
-  if (block.recurrence === 'monthly') return targetDate.getDate() === startDate.getDate();
-  return true;
-}
-
-/** Gera set de time slots bloqueados para um dia */
-function buildBlockedSlots(blocks: RawBlock[], dateStr: string, doctorId: number | null, allSlots: string[]): Set<string> {
-  const blocked = new Set<string>();
-  for (const block of blocks) {
-    if (doctorId && block.doctor_id && block.doctor_id !== doctorId) continue;
-    if (!blockCoversDate(block, dateStr)) continue;
-    if (block.all_day) {
-      allSlots.forEach(s => blocked.add(s));
-    } else if (block.start_time && block.end_time) {
-      const st = block.start_time.slice(0, 5);
-      const et = block.end_time.slice(0, 5);
-      allSlots.forEach(s => { if (s >= st && s < et) blocked.add(s); });
-    }
-  }
-  return blocked;
-}
-
 /** Gera mapa de bloqueios por dia para a semana */
 function buildWeekBlocks(blocks: RawBlock[], weekDays: Date[], doctorId: number | null): Record<string, DayBlock[]> {
   const map: Record<string, DayBlock[]> = {};
@@ -106,7 +68,7 @@ function buildWeekBlocks(blocks: RawBlock[], weekDays: Date[], doctorId: number 
     const dayBlocks: DayBlock[] = [];
     for (const block of blocks) {
       if (doctorId && block.doctor_id && block.doctor_id !== doctorId) continue;
-      if (!blockCoversDate(block, dateStr)) continue;
+      if (!sharedBlockCoversDate(block, dateStr)) continue;
       dayBlocks.push({ title: block.title, start_time: block.start_time, end_time: block.end_time, all_day: block.all_day });
     }
     if (dayBlocks.length > 0) map[dateStr] = dayBlocks;
@@ -235,7 +197,7 @@ export default function AtendimentoAgendaPage() {
   const dayBlockedSlots = useMemo(() => {
     if (viewMode !== 'day') return new Set<string>();
     const dateStr = currentDate.toLocaleDateString('en-CA');
-    return buildBlockedSlots(rawBlocks, dateStr, effectiveDoctorId, timeSlots);
+    return sharedBuildBlockedSlots(rawBlocks, dateStr, effectiveDoctorId, timeSlots);
   }, [rawBlocks, currentDate, effectiveDoctorId, viewMode, timeSlots]);
 
   const weekDayBlocksMap = useMemo(() => {
@@ -325,7 +287,7 @@ export default function AtendimentoAgendaPage() {
   }, []);
 
   return (
-    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#0b141a] transition-colors duration-300">
+    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#08080b] transition-colors duration-300">
       <AtendimentoAgendaHeader
         viewMode={viewMode}
         setViewMode={setViewMode}
@@ -341,7 +303,7 @@ export default function AtendimentoAgendaPage() {
       />
 
       <div className="flex-1 overflow-hidden flex p-6 gap-6">
-        <div className="flex-1 bg-white dark:bg-[#0a0a0c] rounded-2xl border border-slate-100 dark:border-[#27272a] shadow-sm overflow-hidden flex flex-col transition-colors">
+        <div className="flex-1 bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] shadow-sm overflow-hidden flex flex-col transition-colors">
           {viewMode === 'day' ? (
             <AtendimentoDayView
               timeSlots={timeSlots}

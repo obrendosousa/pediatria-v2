@@ -111,10 +111,10 @@ export default function MaskedInput({
         onChange={handleChange}
         disabled={disabled}
         placeholder={placeholder ?? config.placeholder}
-        className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 transition-colors ${
+        className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 transition-colors ${
           error
             ? 'border-red-300 dark:border-red-700 focus:ring-red-400'
-            : 'border-slate-200 dark:border-[#2e2e33] focus:ring-teal-400'
+            : 'border-slate-200 dark:border-[#3d3d48] focus:ring-teal-400'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
       />
       {error && (

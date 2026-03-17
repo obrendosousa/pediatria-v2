@@ -90,7 +90,7 @@ function OptionsEditor({
           onChange={e => setNewOpt(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addOption(); } }}
           placeholder="Adicionar opção..."
-          className="flex-1 px-2.5 py-1 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+          className="flex-1 px-2.5 py-1 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
         />
         <button
           type="button"
@@ -197,12 +197,12 @@ export default function QuestionnaireBuilder({
     setDragOverIndex(null);
   };
 
-  const inputClass = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400';
+  const inputClass = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400';
 
   return (
     <div className="space-y-4">
       {/* Formulário de nova pergunta */}
-      <div className="bg-slate-50 dark:bg-[#18181b] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+      <div className="bg-slate-50 dark:bg-[#1c1c21] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
         <h4 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">
           Nova Pergunta
         </h4>
@@ -230,7 +230,7 @@ export default function QuestionnaireBuilder({
               }
               setError('');
             }}
-            className="px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 w-48"
+            className="px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 w-48"
           >
             {QUESTION_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -282,7 +282,7 @@ export default function QuestionnaireBuilder({
                   if (e.key === 'Enter') { e.preventDefault(); handleAddNewOption(); }
                 }}
                 placeholder="Ex: Sim, Não, Às vezes..."
-                className="flex-1 px-3 py-1.5 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                className="flex-1 px-3 py-1.5 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400"
               />
               <button
                 type="button"
@@ -328,10 +328,10 @@ export default function QuestionnaireBuilder({
                 onDragOver={e => handleDragOver(e, idx)}
                 onDrop={() => handleDrop(idx)}
                 onDragEnd={resetDrag}
-                className={`bg-white dark:bg-[#0a0a0c] rounded-xl border transition-colors ${
+                className={`bg-white dark:bg-[#08080b] rounded-xl border transition-colors ${
                   dragOverIndex === idx
                     ? 'border-teal-300 dark:border-teal-700 bg-teal-50 dark:bg-teal-900/20'
-                    : 'border-slate-200 dark:border-[#2e2e33]'
+                    : 'border-slate-200 dark:border-[#3d3d48]'
                 }`}
               >
                 {/* Linha principal */}
@@ -366,7 +366,7 @@ export default function QuestionnaireBuilder({
                         });
                         if (TYPE_NEEDS_OPTIONS(t)) setExpandedId(q.id);
                       }}
-                      className="text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-600 dark:text-[#d4d4d8] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-400 w-44 shrink-0"
+                      className="text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-600 dark:text-[#d4d4d8] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-400 w-44 shrink-0"
                     >
                       {QUESTION_TYPES.map(t => (
                         <option key={t.value} value={t.value}>{t.label}</option>
@@ -406,7 +406,7 @@ export default function QuestionnaireBuilder({
                     {q.options.map((opt, i) => (
                       <span
                         key={i}
-                        className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#18181b] text-slate-500 dark:text-[#a1a1aa]"
+                        className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#1c1c21] text-slate-500 dark:text-[#a1a1aa]"
                       >
                         {opt}
                       </span>
@@ -416,7 +416,7 @@ export default function QuestionnaireBuilder({
 
                 {/* Editor de opções (quando expandido) */}
                 {needsOpts && isExpanded && onUpdate && (
-                  <div className="px-4 pb-4 border-t border-slate-100 dark:border-[#27272a] pt-3">
+                  <div className="px-4 pb-4 border-t border-slate-100 dark:border-[#2d2d36] pt-3">
                     <OptionsEditor
                       options={q.options}
                       onChange={opts => onUpdate(q.id, { options: opts })}

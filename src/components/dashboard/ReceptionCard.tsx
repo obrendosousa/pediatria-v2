@@ -56,31 +56,32 @@ export default function ReceptionCard({
   const getCardStyles = () => {
     switch (status) {
       case 'scheduled':
-        return 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10';
+        return 'border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-gradient-to-b dark:from-blue-900/15 dark:to-[#131316]';
       case 'called':
-        return 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20';
+        return 'border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-gradient-to-b dark:from-amber-900/20 dark:to-[#131316]';
       case 'waiting':
-        return 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10';
-      case 'in_service':
+        return 'border-green-200 dark:border-green-800/60 bg-green-50/50 dark:bg-gradient-to-b dark:from-green-900/15 dark:to-[#131316]';
+      case 'in_service': {
         // Verificar se está há muito tempo em atendimento
         const isLongRunning = isLongRunningAppointment(appointment.start_time, 2); // >2h
         const timeInService = calculateTimeInService(appointment.start_time);
         const hoursMatch = timeInService.match(/(\d+)h/);
         const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
         const isVeryLong = timeInService.includes('dia') || hours > 2;
-        
+
         if (isVeryLong) {
-          return 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10';
+          return 'border-red-200 dark:border-red-800/60 bg-red-50/50 dark:bg-gradient-to-b dark:from-red-900/15 dark:to-[#131316]';
         } else if (isLongRunning) {
-          return 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20';
+          return 'border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-gradient-to-b dark:from-amber-900/20 dark:to-[#131316]';
         }
-        return 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/20';
-      case 'waiting_payment': // Novo Status de Checkout
-        return 'border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20';
+        return 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-gradient-to-b dark:from-emerald-900/20 dark:to-[#131316]';
+      }
+      case 'waiting_payment':
+        return 'border-purple-200 dark:border-purple-800/60 bg-purple-50/50 dark:bg-gradient-to-b dark:from-purple-900/20 dark:to-[#131316]';
       case 'finished':
-        return 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/20 opacity-75';
+        return 'border-slate-200 dark:border-slate-700/60 bg-slate-50/50 dark:bg-gradient-to-b dark:from-slate-800/20 dark:to-[#131316] opacity-75';
       default:
-        return 'border-slate-200 dark:border-slate-700 bg-white dark:bg-[#202c33]';
+        return 'border-slate-200 dark:border-slate-700 bg-white dark:bg-gradient-to-b dark:from-[#1c1c21] dark:to-[#131316]';
     }
   };
 
@@ -218,7 +219,7 @@ export default function ReceptionCard({
       </div>
 
       {/* Botões de ação compactos */}
-      <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-200/50 dark:border-[#2e2e33]/50">
+      <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-200/50 dark:border-[#3d3d48]/50">
         {status === 'scheduled' && (
           <>
             <button

@@ -23,7 +23,7 @@ export default function CriarEvolucaoPage() {
       subtitle="Crie um modelo de evolução com editor estendido"
       backPath="/atendimento/cadastros/modelos/evolucao"
       onSubmit={handleSubmit}
-      icon={<Activity className="w-5 h-5 text-teal-600" />}
+      icon={<Activity className="w-5 h-5 text-blue-600" />}
       extended
       hideVariables
     />

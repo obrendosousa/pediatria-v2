@@ -136,7 +136,7 @@ function SearchRow({
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
           placeholder={placeholder}
-          className="w-full pl-3 pr-8 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+          className="w-full pl-3 pr-8 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
         />
         {value ? (
           <button type="button" onMouseDown={onClear} className="absolute right-2 top-2 text-slate-400 hover:text-slate-600">
@@ -149,13 +149,13 @@ function SearchRow({
 
       {/* Dropdown */}
       {open && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg shadow-xl max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg shadow-xl max-h-60 overflow-y-auto">
           {results.map((item, i) => (
             <button
               key={i}
               type="button"
               onMouseDown={() => { onSelect(item); setOpen(false); }}
-              className="w-full text-left px-3 py-2.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-[#2e2e33]/50 last:border-0"
+              className="w-full text-left px-3 py-2.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-[#3d3d48]/50 last:border-0"
             >
               {renderResult(item)}
             </button>
@@ -184,7 +184,7 @@ function MedicationRow({
   useEffect(() => { setQuery(item.name); }, [item.name]);
 
   return (
-    <div className="relative bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg p-4">
+    <div className="relative bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg p-4">
       <div className="absolute -top-3 left-4 w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
         {index + 1}
       </div>
@@ -236,9 +236,9 @@ function MedicationRow({
             onChange={(e) => onUpdate(index, { ...item, posology: e.target.value })}
             placeholder="Digite a posologia..."
             rows={2}
-            className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all ${showError && !item.posology.trim()
+            className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all ${showError && !item.posology.trim()
                 ? 'border-red-400 dark:border-red-500 bg-red-50/30'
-                : 'border-slate-200 dark:border-[#2e2e33]'
+                : 'border-slate-200 dark:border-[#3d3d48]'
               }`}
           />
           {showError && !item.posology.trim() && (
@@ -253,12 +253,12 @@ function MedicationRow({
           <input
             type="number" min={1} value={item.quantity}
             onChange={(e) => onUpdate(index, { ...item, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-            className="w-14 px-2 py-1.5 text-sm text-center border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-14 px-2 py-1.5 text-sm text-center border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
           <select
             value={item.unit}
             onChange={(e) => onUpdate(index, { ...item, unit: e.target.value })}
-            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           >
             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
@@ -268,7 +268,7 @@ function MedicationRow({
                 onClick={() => onUpdate(index, { ...item, receipt_type: t })}
                 className={`px-2.5 py-1 text-xs font-semibold rounded transition-colors ${item.receipt_type === t
                     ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 dark:bg-[#27272a] text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-gray-600'
+                    : 'bg-slate-100 dark:bg-[#2d2d36] text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-gray-600'
                   }`}
               >
                 {t === 'simples' ? 'Receituário Simples' : 'Especial'}
@@ -331,7 +331,7 @@ function ExamPrescriptionRow({
       <input
         type="number" min={1} value={item.quantity}
         onChange={(e) => onUpdate(index, { ...item, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-        className="w-16 px-2 py-2 text-sm text-center border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        className="w-16 px-2 py-2 text-sm text-center border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
       />
       {canRemove && (
         <button type="button" onClick={() => onRemove(index)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
@@ -398,7 +398,7 @@ function VaccineRow({
       <select
         value={item.dose || '1ª dose'}
         onChange={(e) => onUpdate(index, { ...item, dose: e.target.value })}
-        className="px-2 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        className="px-2 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
       >
         {DOSES.map((d) => <option key={d} value={d}>{d}</option>)}
       </select>
@@ -437,7 +437,7 @@ export function generatePrescriptionHTML(draft: DraftPrescription, patientData: 
 
   const medsHtml = meds.map((item, i) => `
     <div class="medication-item">
-      <div class="medication-number">${i + 1}</div>
+      <div class="medication-number">${i + 1}.</div>
       <div class="medication-content">
         <div class="medication-name">${item.name}</div>
         <div class="medication-posology">${item.posology || ''}</div>
@@ -467,18 +467,16 @@ export function generatePrescriptionHTML(draft: DraftPrescription, patientData: 
   <title>${title}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-    body { padding: 30px; font-size: 11px; color: #1a1a1a; }
-    .header { border-bottom: 2px solid #1a1a1a; padding-bottom: 12px; margin-bottom: 20px; }
-    .clinic-name { font-size: 18px; font-weight: bold; }
-    .clinic-phones { font-size: 11px; color: #555; margin-top: 2px; }
+    body { padding: 0; font-size: 11px; color: #1a1a1a; background: transparent; }
+    .page { width: 210mm; min-height: 290mm; padding: 32mm 20mm 30mm; display: flex; flex-direction: column; }
     .title { text-align: center; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; }
-    .patient-section { border: 1px solid #ccc; border-radius: 4px; padding: 10px 14px; margin-bottom: 20px; background: #f9f9f9; }
+    .patient-section { border: 1px solid #ccc; border-radius: 4px; padding: 10px 14px; margin-bottom: 20px; }
     .patient-label { font-size: 9px; text-transform: uppercase; color: #777; letter-spacing: 1px; }
     .patient-name { font-size: 13px; font-weight: bold; margin-top: 2px; }
     .patient-cpf { font-size: 11px; color: #555; margin-top: 2px; }
     .section-title { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #555; letter-spacing: 1px; margin: 16px 0 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
-    .medication-item { display: flex; gap: 12px; margin-bottom: 14px; }
-    .medication-number { width: 22px; height: 22px; background: #1a1a1a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0; margin-top: 1px; }
+    .medication-item { display: flex; gap: 10px; margin-bottom: 14px; }
+    .medication-number { font-size: 12px; font-weight: bold; color: #1a1a1a; flex-shrink: 0; margin-top: 1px; }
     .medication-content { flex: 1; }
     .medication-name { font-size: 13px; font-weight: bold; text-transform: uppercase; }
     .medication-posology { font-size: 11px; color: #333; margin-top: 3px; line-height: 1.4; }
@@ -487,51 +485,51 @@ export function generatePrescriptionHTML(draft: DraftPrescription, patientData: 
     .exam-num { font-weight: bold; color: #555; width: 18px; flex-shrink: 0; }
     .exam-code { font-family: monospace; color: #2563eb; font-size: 10px; }
     .exam-qty { margin-left: auto; color: #777; font-size: 10px; }
-    .footer { position: fixed; bottom: 30px; left: 30px; right: 30px; border-top: 1px solid #ccc; padding-top: 12px; }
-    .footer-row { display: flex; justify-content: space-between; align-items: flex-end; }
-    .footer-date { font-size: 10px; color: #555; }
-    .doctor-block { text-align: right; }
-    .doctor-signature { width: 160px; border-top: 1px solid #1a1a1a; margin-bottom: 6px; margin-left: auto; }
+    .footer { margin-top: auto; padding-top: 12px; }
+    .footer-date { font-size: 10px; color: #555; margin-bottom: 16px; }
+    .signature-block { text-align: center; }
+    .signature-line { width: 200px; border-top: 1px solid #1a1a1a; margin: 0 auto 4px; }
     .doctor-name { font-size: 12px; font-weight: bold; }
     .doctor-crm { font-size: 10px; color: #555; }
-    .footer-credit { text-align: center; font-size: 9px; color: #aaa; margin-top: 10px; }
-    @page { size: A5; margin: 8mm; }
-    @media print { body { padding: 0; } .footer { position: fixed; } }
+    @page { size: A4; margin: 0; }
+    @media print {
+      body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .letterhead-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="clinic-name">Karla Fernanda</div>
-    <div class="clinic-phones">CRM: 9223 | Telefone: (99) 98429-2254</div>
-  </div>
-  <div class="title">${title}</div>
-  <div class="patient-section">
-    <div class="patient-label">Paciente</div>
-    <div class="patient-name">${patientName}</div>
-    ${patientCpf ? `<div class="patient-cpf">CPF: ${patientCpf}</div>` : ''}
-  </div>
+  <div class="page">
+    <div class="title">${title}</div>
+    <div class="patient-section">
+      <div class="patient-label">Paciente</div>
+      <div class="patient-name">${patientName}</div>
+      ${patientCpf ? `<div class="patient-cpf">CPF: ${patientCpf}</div>` : ''}
+    </div>
 
-  ${showMeds && meds.length > 0 ? `<div class="section-title">Medicamentos</div>${medsHtml}` : ''}
-  ${showExams && exams.length > 0 ? `<div class="section-title">Exames Solicitados</div>${examsHtml}` : ''}
-  ${showVaccines && vaccines.length > 0 ? `<div class="section-title">Vacinas</div>${vaccinesHtml}` : ''}
+    ${showMeds && meds.length > 0 ? `<div class="section-title">Medicamentos</div>${medsHtml}` : ''}
+    ${showExams && exams.length > 0 ? `<div class="section-title">Exames Solicitados</div>${examsHtml}` : ''}
+    ${showVaccines && vaccines.length > 0 ? `<div class="section-title">Vacinas</div>${vaccinesHtml}` : ''}
 
-  <div class="footer">
-    <div class="footer-row">
-      <div class="footer-date">Lago da Pedra - MA, ${dateStr}</div>
-      <div class="doctor-block">
-        <div class="doctor-signature"></div>
+    <div class="footer">
+      <div class="signature-block">
+        <div class="signature-line"></div>
         <div class="doctor-name">Dra. Fernanda Santana</div>
         <div class="doctor-crm">CRM 9223 - MA</div>
+        <div class="footer-date">${dateStr}</div>
       </div>
     </div>
-    <div class="footer-credit">Documento gerado pelo sistema Centro Médico Aliança</div>
   </div>
 </body>
 </html>`;
 }
 
-export function printPrescription(draft: DraftPrescription, patientData: any, docType?: PrescriptionDocType) {
-  const html = generatePrescriptionHTML(draft, patientData, docType);
+export async function printPrescription(draft: DraftPrescription, patientData: any, docType?: PrescriptionDocType) {
+  const { getLetterheadDataUrl, getLetterheadHtmlSnippet } = await import('@/lib/letterhead');
+  const letterheadUrl = await getLetterheadDataUrl();
+  let html = generatePrescriptionHTML(draft, patientData, docType);
+  // Injeta o timbrado como imagem de fundo no HTML para impressão
+  html = html.replace('<body>', `<body>${getLetterheadHtmlSnippet(letterheadUrl)}`);
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;';
   document.body.appendChild(iframe);
@@ -564,7 +562,7 @@ function PrescriptionCard({
   ].filter(Boolean).slice(0, 3).join(', ');
 
   return (
-    <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg p-4">
+    <div className="bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg p-4">
       <div className="flex items-start gap-3">
         {/* Calendário */}
         <div className="flex-shrink-0 text-center">
@@ -663,7 +661,7 @@ function PrescriptionTemplatesGrid({ onSelectTemplate }: {
 
   if (templates.length === 0) {
     return (
-      <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-lg">
+      <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-[#3d3d48] rounded-lg">
         <BookOpen className="w-8 h-8 text-slate-300 dark:text-gray-600 mx-auto mb-2" />
         <p className="text-xs text-slate-400">Nenhum modelo salvo ainda.</p>
       </div>
@@ -685,7 +683,7 @@ function PrescriptionTemplatesGrid({ onSelectTemplate }: {
               }
             } catch { /* ignora */ }
           }}
-          className="text-left p-3 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all"
+          className="text-left p-3 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all"
         >
           <ClipboardList className="w-5 h-5 text-slate-400 mb-2" />
           <p className="text-xs font-semibold text-slate-700 dark:text-gray-200 line-clamp-2">{t.title}</p>
@@ -838,18 +836,18 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={() => { setModelAction('load'); setModelModalOpen(true); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-md hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#3d3d48] rounded-md hover:bg-slate-50 dark:hover:bg-[#2d2d36] transition-colors">
               <BookOpen className="w-3.5 h-3.5" /> Histórico
             </button>
             <button type="button" onClick={() => { setModelAction('save'); setModelModalOpen(true); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-md hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#3d3d48] rounded-md hover:bg-slate-50 dark:hover:bg-[#2d2d36] transition-colors">
               <Save className="w-3.5 h-3.5" /> Usar Modelo
             </button>
           </div>
         </div>
 
         {/* Abas: Medicamentos | Exames | Vacinas */}
-        <div className="flex gap-0 border-b border-slate-200 dark:border-[#2e2e33] mb-4">
+        <div className="flex gap-0 border-b border-slate-200 dark:border-[#3d3d48] mb-4">
           {([
             { key: 'medications', label: 'Medicamentos', icon: <Pill className="w-4 h-4" />, count: medCount },
             { key: 'exams', label: 'Exames', icon: <Microscope className="w-4 h-4" />, count: examCount },
@@ -893,7 +891,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
               />
             ))}
             <button type="button" onClick={addMed}
-              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               <Plus className="w-4 h-4" /> Novo Item
             </button>
           </div>
@@ -913,7 +911,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
               />
             ))}
             <button type="button" onClick={addExam}
-              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               <Plus className="w-4 h-4" /> Novo Item
             </button>
           </div>
@@ -933,21 +931,21 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
               />
             ))}
             <button type="button" onClick={addVaccine}
-              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               <Plus className="w-4 h-4" /> Novo Item
             </button>
           </div>
         )}
 
         {/* Rodapé */}
-        <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100 dark:border-[#2e2e33]/50">
+        <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100 dark:border-[#3d3d48]/50">
           <button type="button" onClick={() => setView('landing')} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-gray-300 transition-colors">
             Cancelar
           </button>
           <div className="flex items-center gap-2">
             <button type="button"
               onClick={() => { setModelAction('save'); setModelModalOpen(true); }}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors">
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#3d3d48] rounded-lg hover:bg-slate-50 dark:hover:bg-[#2d2d36] transition-colors">
               <Save className="w-4 h-4" />
               Salvar como Modelo
             </button>
@@ -988,7 +986,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
           <span className="text-xs text-slate-600 dark:text-[#a1a1aa] uppercase">{currentDate}</span>
         </div>
 
-        <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg p-5 mb-4">
+        <div className="bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg p-5 mb-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
               <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -1006,7 +1004,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
           <p className="text-sm text-slate-500 dark:text-[#a1a1aa] mb-4">Imprima os documentos separadamente:</p>
 
           {meds.length > 0 && (
-            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#2e2e33] rounded-lg">
+            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#3d3d48] rounded-lg">
               <div className="flex items-center gap-2">
                 <Pill className="w-4 h-4 text-blue-500" />
                 <span className="text-sm text-slate-700 dark:text-gray-200">
@@ -1021,7 +1019,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
             </div>
           )}
           {exams.length > 0 && (
-            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#2e2e33] rounded-lg">
+            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#3d3d48] rounded-lg">
               <div className="flex items-center gap-2">
                 <Microscope className="w-4 h-4 text-emerald-500" />
                 <span className="text-sm text-slate-700 dark:text-gray-200">
@@ -1036,7 +1034,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
             </div>
           )}
           {vaccines.length > 0 && (
-            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#2e2e33] rounded-lg">
+            <div className="flex items-center justify-between gap-2 mb-2 p-3 border border-slate-200 dark:border-[#3d3d48] rounded-lg">
               <div className="flex items-center gap-2">
                 <Syringe className="w-4 h-4 text-purple-500" />
                 <span className="text-sm text-slate-700 dark:text-gray-200">
@@ -1069,7 +1067,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
       </div>
 
       {/* Criar Prescrição */}
-      <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg p-4 mb-5">
+      <div className="bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg p-4 mb-5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -1078,7 +1076,7 @@ export function Prescriptions({ patientId, patientData, appointmentId, medicalRe
           <div className="flex gap-2">
             <button type="button"
               onClick={() => { setModelAction('load'); setModelModalOpen(true); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-md hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#3d3d48] rounded-md hover:bg-slate-50 dark:hover:bg-[#2d2d36] transition-colors">
               <BookOpen className="w-3.5 h-3.5" /> Usar Modelo
             </button>
             <button type="button" onClick={openNewForm}

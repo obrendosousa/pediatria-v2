@@ -432,7 +432,7 @@ export default function MessageList({
                 opacity: 0
               }}
             >
-              <span className="bg-[var(--chat-surface)] dark:bg-[#202c33] text-[var(--chat-text-muted)] dark:text-[#8696a0] text-xs py-1.5 px-3 rounded-lg shadow-sm font-medium uppercase tracking-wide border border-gray-100 dark:border-[#2e2e33]/50">
+              <span className="bg-[var(--chat-surface)] dark:bg-[#202c33] text-[var(--chat-text-muted)] dark:text-[#8696a0] text-xs py-1.5 px-3 rounded-lg shadow-sm font-medium uppercase tracking-wide border border-gray-100 dark:border-[#3d3d48]/50">
                 {currentDate === todayDateString ? 'Hoje' : currentDate}
               </span>
             </div>

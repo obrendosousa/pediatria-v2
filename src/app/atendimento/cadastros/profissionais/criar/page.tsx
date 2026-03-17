@@ -52,9 +52,9 @@ function CredentialsModal({ credentials, onClose }: { credentials: Credentials; 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+      <div className="bg-white dark:bg-[#08080b] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-teal-600 to-cyan-500 px-6 py-5 text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-500 px-6 py-5 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Key className="w-6 h-6" />
@@ -98,7 +98,7 @@ function CredentialsModal({ credentials, onClose }: { credentials: Credentials; 
             </div>
             <button
               onClick={() => copyToClipboard(credentials.email, 'email')}
-              className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#27272a] transition-colors shrink-0"
+              className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#2d2d36] transition-colors shrink-0"
             >
               {copiedField === 'email' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-slate-400" />}
             </button>
@@ -109,11 +109,11 @@ function CredentialsModal({ credentials, onClose }: { credentials: Credentials; 
             <Key className="w-4 h-4 text-slate-400 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-[10px] text-slate-400 uppercase font-bold">Senha temporária</p>
-              <p className="text-sm font-mono font-bold text-teal-600 dark:text-teal-400">{credentials.password}</p>
+              <p className="text-sm font-mono font-bold text-blue-600 dark:text-blue-400">{credentials.password}</p>
             </div>
             <button
               onClick={() => copyToClipboard(credentials.password, 'password')}
-              className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#27272a] transition-colors shrink-0"
+              className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#2d2d36] transition-colors shrink-0"
             >
               {copiedField === 'password' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-slate-400" />}
             </button>
@@ -124,7 +124,7 @@ function CredentialsModal({ credentials, onClose }: { credentials: Credentials; 
         <div className="px-6 pb-6 flex gap-3">
           <button
             onClick={copyAll}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors"
           >
             {copiedField === 'all' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copiedField === 'all' ? 'Copiado!' : 'Copiar tudo'}

@@ -33,7 +33,7 @@ export default function RecuperarSenhaPage() {
 
   if (sent) {
     return (
-      <div className="rounded-2xl border border-pink-100 dark:border-[#2e2e33] bg-white dark:bg-[#18181b] p-8 shadow-xl text-center">
+      <div className="rounded-2xl border border-pink-100 dark:border-[#3d3d48] bg-white dark:bg-[#1c1c21] p-8 shadow-xl text-center">
         <div className="flex justify-center mb-6">
           <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center">
             <Heart className="w-7 h-7 text-white" />
@@ -56,7 +56,7 @@ export default function RecuperarSenhaPage() {
   }
 
   return (
-    <div className="rounded-2xl border border-pink-100 dark:border-[#2e2e33] bg-white dark:bg-[#18181b] p-8 shadow-xl">
+    <div className="rounded-2xl border border-pink-100 dark:border-[#3d3d48] bg-white dark:bg-[#1c1c21] p-8 shadow-xl">
       <div className="flex justify-center mb-6">
         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center">
           <Heart className="w-7 h-7 text-white" />
@@ -84,7 +84,7 @@ export default function RecuperarSenhaPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-xl border border-pink-200 dark:border-gray-600 bg-white dark:bg-[#0a0a0c] px-4 py-2.5 text-slate-800 dark:text-[#fafafa] focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none transition"
+            className="w-full rounded-xl border border-pink-200 dark:border-gray-600 bg-white dark:bg-[#08080b] px-4 py-2.5 text-slate-800 dark:text-[#fafafa] focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none transition"
             placeholder="seu@email.com"
           />
         </div>

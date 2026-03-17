@@ -90,7 +90,7 @@ export function Conducts({ patientId, patientData, onRefresh, appointmentId }: A
   return (
     <div className="p-4 pb-20">
       {/* Card Principal */}
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] shadow-sm p-4">
+      <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] shadow-sm p-4">
         {/* Header */}
         <div className="mb-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-slate-800 dark:text-[#fafafa]">CONDUTAS</h1>
@@ -114,7 +114,7 @@ export function Conducts({ patientId, patientData, onRefresh, appointmentId }: A
           </div>
 
           {/* Botão Salvar */}
-          <div className="flex justify-end items-center gap-3 pt-3 border-t border-slate-200 dark:border-[#2e2e33]">
+          <div className="flex justify-end items-center gap-3 pt-3 border-t border-slate-200 dark:border-[#3d3d48]">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>
             )}

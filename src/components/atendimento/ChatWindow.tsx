@@ -857,14 +857,14 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
 
   if (!chat) {
     return (
-      <div className="flex-1 bg-[#F0FDFA] dark:bg-[#111b21] flex items-center justify-center text-gray-400 dark:text-gray-600 border-b-[6px] border-teal-500">
+      <div className="flex-1 bg-[#F8FAFC] dark:bg-[#131316] flex items-center justify-center text-gray-400 dark:text-gray-600 border-b-[6px] border-blue-500">
         <User size={64} />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex h-full overflow-hidden bg-[#F0FDFA] dark:bg-[#0b141a] relative transition-colors duration-300 min-w-0">
+    <div className="flex-1 flex h-full overflow-hidden bg-[#F8FAFC] dark:bg-[#08080b] relative transition-colors duration-300 min-w-0">
       <MacroModal isOpen={isMacroModalOpen} onClose={() => setIsMacroModalOpen(false)} onSave={(d) => handleSaveMacro(d, editingItem?.id)} initialData={editingItem} typeOverride={activeTab} />
       <SequenceEditorModal
         isOpen={isSequenceModalOpen}

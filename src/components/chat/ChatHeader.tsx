@@ -72,7 +72,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
             onUpdate={handleUpdate}
         />
 
-        <div className="bg-[var(--chat-surface)] dark:bg-[#202c33] px-4 py-2.5 border-l border-gray-300 dark:border-[#2e2e33] flex items-center justify-between z-10 shadow-sm transition-colors duration-300">
+        <div className="bg-[var(--chat-surface)] dark:bg-[#202c33] px-4 py-2.5 border-l border-gray-300 dark:border-[#3d3d48] flex items-center justify-between z-10 shadow-sm transition-colors duration-300">
             <div className="flex items-center gap-3">
                 {isAIChat ? (
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm border border-indigo-400/30">
@@ -157,14 +157,14 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                       </button>
                   
                       {isMenuOpen && (
-                          <div className="absolute right-0 top-10 bg-white dark:bg-[#18181b] shadow-xl rounded-lg border border-gray-100 dark:border-[#2e2e33] py-1 w-48 z-50 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
+                          <div className="absolute right-0 top-10 bg-white dark:bg-[#1c1c21] shadow-xl rounded-lg border border-gray-100 dark:border-[#3d3d48] py-1 w-48 z-50 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
                               <button
                                   onClick={() => setIsEditModalOpen(true)}
                                   className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 text-sm flex gap-2 items-center transition-colors cursor-pointer"
                               >
                                   <UserCog size={16}/> Editar Contato
                               </button>
-                              <div className="h-[1px] bg-gray-100 dark:bg-[#27272a] my-1"/>
+                              <div className="h-[1px] bg-gray-100 dark:bg-[#2d2d36] my-1"/>
                               <button
                                   onClick={handleClearChatClick}
                                   className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-red-600 dark:text-red-400 text-sm flex gap-2 items-center transition-colors cursor-pointer"

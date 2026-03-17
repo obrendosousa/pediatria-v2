@@ -90,7 +90,7 @@ function CollapsibleSection({
         onClick={() => setOpen(o => !o)}
         className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
           hasActive
-            ? 'text-teal-700 dark:text-teal-300'
+            ? 'text-blue-700 dark:text-blue-300'
             : 'text-slate-500 dark:text-[#a1a1aa] hover:text-slate-700 dark:hover:text-gray-200'
         }`}
       >
@@ -113,11 +113,11 @@ function CollapsibleSection({
                 href={item.href}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                   active
-                    ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 font-semibold'
+                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
                     : 'text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-gray-200'
                 }`}
               >
-                <span className={active ? 'text-teal-500' : 'text-slate-400 dark:text-[#71717a]'}>
+                <span className={active ? 'text-blue-600' : 'text-slate-400 dark:text-[#71717a]'}>
                   {item.icon}
                 </span>
                 {item.label}
@@ -140,12 +140,12 @@ export default function CadastrosLayout({ children }: { children: React.ReactNod
     <div className="flex h-full overflow-hidden">
       {/* Sidebar */}
       <aside
-        className={`shrink-0 flex flex-col bg-white dark:bg-[#0a0a0c] border-r border-slate-200 dark:border-[#2e2e33] transition-all duration-300 overflow-hidden ${
+        className={`shrink-0 flex flex-col bg-white dark:bg-[#08080b] border-r border-slate-200 dark:border-[#3d3d48] transition-all duration-300 overflow-hidden ${
           collapsed ? 'w-0 min-w-0' : 'w-60 min-w-60'
         }`}
       >
         {/* Sidebar header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-[#27272a]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-[#2d2d36]">
           <h2 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">
             Cadastros
           </h2>
@@ -176,11 +176,11 @@ export default function CadastrosLayout({ children }: { children: React.ReactNod
               href={STANDALONE_ITEM.href}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                 pathname.startsWith(STANDALONE_ITEM.href)
-                  ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 font-semibold'
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold'
                   : 'text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-gray-200'
               }`}
             >
-              <span className={pathname.startsWith(STANDALONE_ITEM.href) ? 'text-teal-500' : 'text-slate-400 dark:text-[#71717a]'}>
+              <span className={pathname.startsWith(STANDALONE_ITEM.href) ? 'text-blue-600' : 'text-slate-400 dark:text-[#71717a]'}>
                 {STANDALONE_ITEM.icon}
               </span>
               {STANDALONE_ITEM.label}
@@ -194,7 +194,7 @@ export default function CadastrosLayout({ children }: { children: React.ReactNod
         <button
           type="button"
           onClick={() => setCollapsed(false)}
-          className="shrink-0 flex items-center justify-center w-8 border-r border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] text-slate-400 hover:text-teal-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+          className="shrink-0 flex items-center justify-center w-8 border-r border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] text-slate-400 hover:text-blue-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
           title="Expandir menu"
         >
           <PanelLeft className="w-4 h-4" />

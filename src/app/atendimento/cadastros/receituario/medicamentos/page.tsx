@@ -30,7 +30,7 @@ const THERAPEUTIC_CLASSES = [
 
 // --- Helpers ---
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400';
 const selectClass = `${inputClass} appearance-none cursor-pointer`;
 const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
 
@@ -186,14 +186,14 @@ export default function MedicamentosPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <div className="flex items-center gap-2">
-          <Pill className="w-5 h-5 text-teal-600" />
+          <Pill className="w-5 h-5 text-blue-600" />
           <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Medicamentos</h1>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
         >
           <Plus className="w-4 h-4" />
           NOVO MEDICAMENTO

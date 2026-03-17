@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { IngestionState } from "./state";
 import {
   ensureChatExists,
@@ -111,16 +112,30 @@ export const processInputNode = async (
   const resolverStartedAt = Date.now();
 
   if (isLidJid(jid)) {
-    resolverStrategy = "lid_lookup";
-    const resolved = await resolveLidToPhone(jid);
-    if (resolved?.phone) {
-      resolvedPhone = resolved.phone;
-      resolvedJid = resolved.jid;
+    // 1. Tentar resolver via senderPn/remoteJidAlt do payload (instantâneo, sem API call)
+    const senderPn = data.key?.senderPn;
+    const remoteJidAlt = data.key?.remoteJidAlt;
+
+    if (senderPn && senderPn.includes("@s.whatsapp.net")) {
+      resolvedPhone = normalizeJidToPhone(senderPn);
+      resolvedJid = senderPn;
+      resolverStrategy = "lid_resolved";
+    } else if (remoteJidAlt && remoteJidAlt.includes("@s.whatsapp.net")) {
+      resolvedPhone = normalizeJidToPhone(remoteJidAlt);
+      resolvedJid = remoteJidAlt;
       resolverStrategy = "lid_resolved";
     } else {
-      // Política segura: não persiste telefone inválido derivado de LID.
-      resolverError = "LID_RESOLUTION_FAILED";
-      resolverStrategy = "lid_unresolved";
+      // 2. Fallback: resolver via Evolution API (mais lento)
+      resolverStrategy = "lid_lookup";
+      const resolved = await resolveLidToPhone(jid);
+      if (resolved?.phone) {
+        resolvedPhone = resolved.phone;
+        resolvedJid = resolved.jid;
+        resolverStrategy = "lid_resolved";
+      } else {
+        resolverError = "LID_RESOLUTION_FAILED";
+        resolverStrategy = "lid_unresolved";
+      }
     }
   } else {
     resolvedPhone = normalizeJidToPhone(jid);
@@ -138,6 +153,12 @@ export const processInputNode = async (
   else if (msg?.extendedTextMessage?.text) content = msg.extendedTextMessage.text;
   else if (msg?.imageMessage?.caption) content = msg.imageMessage.caption;
   else if (msg?.videoMessage?.caption) content = msg.videoMessage.caption;
+  // Interactive / Button responses
+  else if (msg?.buttonsResponseMessage?.selectedDisplayText) content = msg.buttonsResponseMessage.selectedDisplayText;
+  else if (msg?.listResponseMessage?.title) content = msg.listResponseMessage.title;
+  else if (msg?.listResponseMessage?.singleSelectReply?.selectedRowId) content = msg.listResponseMessage.singleSelectReply.selectedRowId;
+  else if (msg?.templateButtonReplyMessage?.selectedDisplayText) content = msg.templateButtonReplyMessage.selectedDisplayText;
+  else if (msg?.interactiveResponseMessage?.body?.text) content = msg.interactiveResponseMessage.body.text;
 
   let type: IngestionState["message_type"] = "text";
   let mediaUrl: string | undefined;
@@ -149,12 +170,10 @@ export const processInputNode = async (
     mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "imageMessage") {
     type = "image";
-    // Para imagem, só persiste texto quando vier caption real.
     content = content || "";
     mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
-  } else if (data.messageType === "videoMessage") {
+  } else if (data.messageType === "videoMessage" || data.messageType === "ptvMessage") {
     type = "video";
-    // Para vídeo, só persiste texto quando vier caption real.
     content = content || "";
     mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "stickerMessage") {
@@ -163,8 +182,44 @@ export const processInputNode = async (
     mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "documentMessage") {
     type = "document";
-    content = content || "📄 Documento recebido";
+    const fileName = msg?.documentMessage?.fileName || msg?.documentMessage?.title || "";
+    content = content || (fileName ? `📄 ${fileName}` : "📄 Documento recebido");
     mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
+  } else if (data.messageType === "contactMessage") {
+    type = "text";
+    const displayName = msg?.contactMessage?.displayName || "Contato";
+    content = `📇 Contato: ${displayName}`;
+  } else if (data.messageType === "contactsArrayMessage") {
+    type = "text";
+    const contacts = msg?.contactsArrayMessage?.contacts;
+    const names = Array.isArray(contacts)
+      ? contacts.map((c: any) => c.displayName || "Contato").join(", ")
+      : "Contatos";
+    content = `📇 Contatos: ${names}`;
+  } else if (data.messageType === "locationMessage" || data.messageType === "liveLocationMessage") {
+    type = "text";
+    const loc = msg?.locationMessage || msg?.liveLocationMessage;
+    const lat = loc?.degreesLatitude ?? "";
+    const lng = loc?.degreesLongitude ?? "";
+    const name = loc?.name || "";
+    const isLive = data.messageType === "liveLocationMessage";
+    content = isLive
+      ? `📍 Localização ao vivo${name ? `: ${name}` : ""}`
+      : `📍 Localização${name ? `: ${name}` : ""} (${lat}, ${lng})`;
+  } else if (data.messageType === "pollCreationMessage") {
+    type = "text";
+    const poll = msg?.pollCreationMessage || msg?.pollCreationMessageV2 || msg?.pollCreationMessageV3;
+    const question = poll?.name || "Enquete";
+    content = `📊 Enquete: ${question}`;
+  } else if (data.messageType === "pollUpdateMessage") {
+    type = "text";
+    content = "📊 Voto em enquete";
+  } else if (data.messageType === "orderMessage") {
+    type = "text";
+    content = "🛒 Pedido recebido";
+  } else if (data.messageType === "productMessage") {
+    type = "text";
+    content = "🏷️ Produto";
   } else {
     // Texto: usar extractMediaUrl apenas para URLs já existentes (raro)
     mediaUrl = extractMediaUrl(msg);

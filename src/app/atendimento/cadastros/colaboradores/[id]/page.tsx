@@ -66,7 +66,7 @@ export default function EditarColaboradorPage() {
   if (loadingData) {
     return (
       <div className="h-full flex items-center justify-center bg-slate-50 dark:bg-[#15171e]">
-        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }

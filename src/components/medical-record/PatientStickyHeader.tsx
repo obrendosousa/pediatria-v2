@@ -1,8 +1,9 @@
 // src/components/medical-record/PatientStickyHeader.tsx
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Play, Square, Clock, AlertTriangle, 
+import {
+  Play, Square, AlertTriangle,
   ChevronDown, Phone, ShieldCheck, User, ArrowLeft, MessageSquare, Edit2
 } from 'lucide-react';
 import { calculatePreciseAge } from '@/lib/dateUtils';
@@ -15,7 +16,7 @@ interface PatientStickyHeaderProps {
     birth_date?: string;
     phone?: string;
     gender?: string; // 'M' | 'F'
-    [key: string]: any; // Permite campos adicionais do paciente
+    [key: string]: unknown;
   };
   summary?: ClinicalSummary | null;
   onStartConsultation: () => void;
@@ -44,22 +45,19 @@ export function PatientStickyHeader({
 }: PatientStickyHeaderProps) {
 
   // Timer baseado em timestamp real (funciona mesmo com aba em background)
-  const [, setTimerTick] = useState(0);
+  const [timer, setTimer] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isConsultationActive && startedAt) {
-      interval = setInterval(() => {
-        setTimerTick((prev) => prev + 1);
-      }, 1000);
+    if (!isConsultationActive || !startedAt) {
+      setTimer(0);
+      return;
     }
+    const startMs = new Date(startedAt).getTime();
+    const calc = () => Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+    setTimer(calc());
+    const interval = setInterval(() => setTimer(calc()), 1000);
     return () => clearInterval(interval);
   }, [isConsultationActive, startedAt]);
-
-  const timer = (() => {
-    if (!isConsultationActive || !startedAt) return 0;
-    return Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
-  })();
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -75,7 +73,7 @@ export function PatientStickyHeader({
   const hasAllergies = summary?.allergies && summary.allergies.length > 0;
 
   return (
-    <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#0a0a0c]/90 backdrop-blur-md border-b border-slate-200 dark:border-[#27272a] shadow-sm transition-all">
+    <div className="sticky top-0 z-10 bg-white/80 dark:bg-[#08080b]/90 backdrop-blur-md border-b border-slate-200 dark:border-[#2d2d36] shadow-sm transition-all">
       <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           
@@ -94,7 +92,7 @@ export function PatientStickyHeader({
             
             {/* Avatar com Gradiente */}
             <div className="relative flex-shrink-0">
-               <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full bg-gradient-to-br from-rose-100 to-rose-50 dark:from-rose-900/40 dark:to-rose-800/20 border-2 border-white dark:border-[#2e2e33] shadow-md flex items-center justify-center text-base sm:text-lg lg:text-xl font-black text-rose-500 dark:text-rose-400">
+               <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-800/20 border-2 border-white dark:border-[#3d3d48] shadow-md flex items-center justify-center text-base sm:text-lg lg:text-xl font-black text-blue-600 dark:text-blue-400">
                   {patient.name.substring(0,2).toUpperCase()}
                </div>
                {/* Indicador Online (Opcional) */}
@@ -113,7 +111,7 @@ export function PatientStickyHeader({
                
                <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4 mt-1 sm:mt-1.5 text-xs font-medium text-slate-500 dark:text-[#a1a1aa]">
                  {/* Idade Precisa */}
-                 <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-[#18181b] px-2 py-1 rounded-md flex-shrink-0">
+                 <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-[#1c1c21] px-2 py-1 rounded-md flex-shrink-0">
                    <User className="w-3 h-3 text-slate-400 flex-shrink-0"/>
                    <span className="whitespace-nowrap">{calculatePreciseAge(patient.birth_date)}</span>
                  </span>
@@ -122,7 +120,7 @@ export function PatientStickyHeader({
                  {(primaryPhone || patient.phone) && onOpenChat && (
                    <button
                      onClick={() => onOpenChat(primaryPhone || patient.phone || '')}
-                     className="flex items-center gap-1.5 hover:text-rose-500 cursor-pointer transition-colors group flex-shrink-0 min-w-0"
+                     className="flex items-center gap-1.5 hover:text-blue-500 cursor-pointer transition-colors group flex-shrink-0 min-w-0"
                      title="Abrir chat"
                    >
                      <Phone className="w-3 h-3 flex-shrink-0"/> 
@@ -157,20 +155,22 @@ export function PatientStickyHeader({
             )}
 
             {!isConsultationActive ? (
-              <button 
+              <button
                 onClick={onStartConsultation}
-                className="group relative overflow-hidden bg-rose-600 hover:bg-rose-700 text-white px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-bold shadow-lg shadow-rose-200 dark:shadow-none transition-all active:scale-95 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+                className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-4 sm:px-5 lg:px-7 py-2.5 sm:py-3 rounded-xl font-semibold shadow-md shadow-blue-200/50 dark:shadow-blue-900/30 transition-all duration-200 active:scale-[0.97] flex items-center gap-2 sm:gap-2.5 text-sm sm:text-[15px] tracking-wide"
               >
-                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current flex-shrink-0" />
+                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                </div>
                 <span className="hidden sm:inline">Iniciar Atendimento</span>
                 <span className="sm:hidden">Iniciar</span>
               </button>
             ) : (
               <button 
                 onClick={onFinishConsultation}
-                className="bg-slate-100 hover:bg-slate-200 dark:bg-[#18181b] dark:hover:bg-[#353842] text-slate-700 dark:text-gray-200 px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-bold border border-slate-200 dark:border-[#2e2e33] transition-all active:scale-95 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-[#1c1c21] dark:hover:bg-[#353842] text-slate-700 dark:text-gray-200 px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-bold border border-slate-200 dark:border-[#3d3d48] transition-all active:scale-95 flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base"
               >
-                <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current text-rose-500 flex-shrink-0" />
+                <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current text-red-500 flex-shrink-0" />
                 <span className="hidden sm:inline">Finalizar</span>
                 <span className="sm:hidden">Fim</span>
               </button>
@@ -180,7 +180,7 @@ export function PatientStickyHeader({
             {onEditPatient && (
               <button
                 onClick={onEditPatient}
-                className="p-2 sm:p-2.5 lg:p-3 rounded-lg sm:rounded-xl hover:bg-slate-50 dark:hover:bg-[#2a2d36] text-slate-500 dark:text-[#a1a1aa] hover:text-rose-500 dark:hover:text-rose-400 border border-transparent hover:border-slate-200 dark:hover:border-gray-700 transition-all flex-shrink-0"
+                className="p-2 sm:p-2.5 lg:p-3 rounded-lg sm:rounded-xl hover:bg-slate-50 dark:hover:bg-[#2a2d36] text-slate-500 dark:text-[#a1a1aa] hover:text-blue-500 dark:hover:text-blue-400 border border-transparent hover:border-slate-200 dark:hover:border-gray-700 transition-all flex-shrink-0"
                 title="Editar cadastro do paciente"
               >
                 <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -201,8 +201,8 @@ export function PatientStickyHeader({
       
       {/* Barra de Progresso Sutil (Opcional - Estilo YouTube) */}
       {isConsultationActive && (
-        <div className="h-0.5 w-full bg-slate-100 dark:bg-[#18181b] overflow-hidden">
-           <div className="h-full bg-rose-500 animate-pulse w-full origin-left transform scale-x-100"></div>
+        <div className="h-0.5 w-full bg-slate-100 dark:bg-[#1c1c21] overflow-hidden">
+           <div className="h-full bg-blue-500 animate-pulse w-full origin-left transform scale-x-100"></div>
         </div>
       )}
     </div>

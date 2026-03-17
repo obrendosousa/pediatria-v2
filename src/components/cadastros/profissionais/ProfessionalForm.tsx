@@ -102,7 +102,7 @@ interface ProfessionalFormProps {
 
 // --- Helpers ---
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 const selectClass = `${inputClass} appearance-none cursor-pointer`;
 const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
 
@@ -229,7 +229,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <button
           onClick={() => router.push('/atendimento/cadastros/profissionais')}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -250,7 +250,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* ─── Seção 1: Informações Básicas ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <User className="w-4 h-4 text-teal-500" />
               Informações Básicas
@@ -332,7 +332,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 2: Endereço e Localização ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6">
             <AddressCepLookup
               value={form.address}
               onChange={(addr) => update('address', addr)}
@@ -340,7 +340,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 3: Informações de Contato ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <Phone className="w-4 h-4 text-teal-500" />
               Informações de Contato
@@ -393,7 +393,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           </section>
 
           {/* ─── Seção 4: Informações Profissionais ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-teal-500" />
               Informações Profissionais
@@ -540,7 +540,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
               {/* Checkboxes */}
               <div className="col-span-12">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
-                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#27272a] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#2d2d36] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <input
                       type="checkbox"
                       checked={form.restrict_prices}
@@ -552,7 +552,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                       <span className="text-[10px] text-slate-400 dark:text-[#71717a]">Impede este profissional de alterar valores de procedimentos</span>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#27272a] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#2d2d36] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <input
                       type="checkbox"
                       checked={form.has_schedule}
@@ -564,7 +564,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                       <span className="text-[10px] text-slate-400 dark:text-[#71717a]">Habilita este profissional para receber agendamentos de pacientes</span>
                     </div>
                   </label>
-                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#27272a] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-lg border border-slate-100 dark:border-[#2d2d36] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <input
                       type="checkbox"
                       checked={form.restrict_schedule}
@@ -583,13 +583,13 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
 
           {/* ─── Seção 5: Acesso ao Sistema ─── */}
           {showCreateLogin && (
-            <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-4">
+            <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-4">
               <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
                 <User className="w-4 h-4 text-teal-500" />
                 Acesso ao Sistema
               </h2>
 
-              <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-slate-100 dark:border-[#27272a] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+              <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-slate-100 dark:border-[#2d2d36] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                 <div className="pt-0.5">
                   <button
                     type="button"
@@ -621,7 +621,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
           )}
 
           {/* ─── Seção 6: Informações Complementares ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <FileText className="w-4 h-4 text-teal-500" />
               Informações Complementares
@@ -634,7 +634,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                 onDragOver={e => e.preventDefault()}
                 onDrop={handleFilesDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors"
+                className="border-2 border-dashed border-slate-200 dark:border-[#3d3d48] rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors"
               >
                 <Upload className="w-8 h-8 text-slate-300 dark:text-gray-600 mx-auto mb-2" />
                 <p className="text-sm text-slate-400 dark:text-[#71717a]">
@@ -652,7 +652,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
               {form.attachments.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {form.attachments.map((file, i) => (
-                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-[#15171e] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
+                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-[#15171e] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
                       <span className="text-sm text-slate-600 dark:text-[#d4d4d8] truncate">{file.name}</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); removeFile(i); }}
@@ -682,7 +682,7 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
       </div>
 
       {/* Footer fixo */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] flex items-center justify-end gap-3">
         <button
           onClick={() => router.push('/atendimento/cadastros/profissionais')}
           className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"

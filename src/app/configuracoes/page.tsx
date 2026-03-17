@@ -282,7 +282,7 @@ export default function ConfiguracoesPage() {
     
     // Vazios (dias do mês anterior)
     for (let i = 0; i < firstDay; i++) {
-        days.push(<div key={`empty-${i}`} className="h-[130px] bg-slate-50/30 dark:bg-[#0a0a0c] border-b border-r border-slate-100 dark:border-[#27272a]"></div>);
+        days.push(<div key={`empty-${i}`} className="h-[130px] bg-slate-50/30 dark:bg-[#08080b] border-b border-r border-slate-100 dark:border-[#2d2d36]"></div>);
     }
 
     // Dias do mês atual
@@ -307,7 +307,7 @@ export default function ConfiguracoesPage() {
              bgClass = 'bg-red-50/40 dark:bg-red-900/10 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ring-inset ring-1 ring-red-100 dark:ring-red-900/30';
              content = (
                 <div className="mt-2 space-y-1 animate-in fade-in zoom-in-95">
-                    <div className="px-2 py-1 rounded-md bg-white dark:bg-[#0a0a0c] border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold shadow-sm flex items-center gap-1.5 w-fit">
+                    <div className="px-2 py-1 rounded-md bg-white dark:bg-[#08080b] border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold shadow-sm flex items-center gap-1.5 w-fit">
                         <Lock size={10} strokeWidth={3} /> Bloqueado
                     </div>
                     {override.reason && (
@@ -320,7 +320,7 @@ export default function ConfiguracoesPage() {
              bgClass = 'bg-emerald-50/40 dark:bg-emerald-900/10 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors ring-inset ring-1 ring-emerald-100 dark:ring-emerald-900/30';
              content = (
                 <div className="mt-2 space-y-1 animate-in fade-in zoom-in-95">
-                    <div className="px-2 py-1 rounded-md bg-white dark:bg-[#0a0a0c] border border-emerald-100 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold shadow-sm flex items-center gap-1.5 w-fit">
+                    <div className="px-2 py-1 rounded-md bg-white dark:bg-[#08080b] border border-emerald-100 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold shadow-sm flex items-center gap-1.5 w-fit">
                         <Unlock size={10} strokeWidth={3} /> Extra
                     </div>
                     {override.reason && (
@@ -336,7 +336,7 @@ export default function ConfiguracoesPage() {
              <div className="mt-2 space-y-1">
                  {/* Substituído as bolinhas por um resumo textual limpo */}
                  {workRules.map((rule, idx) => (
-                     <div key={idx} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-[#d4d4d8] bg-slate-50 dark:bg-[#0a0a0c] px-1.5 py-0.5 rounded border border-slate-100 dark:border-[#2e2e33] w-fit">
+                     <div key={idx} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-[#d4d4d8] bg-slate-50 dark:bg-[#08080b] px-1.5 py-0.5 rounded border border-slate-100 dark:border-[#3d3d48] w-fit">
                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
                          <span className="font-medium">{rule.start_time.slice(0,5)} - {rule.end_time.slice(0,5)}</span>
                      </div>
@@ -346,7 +346,7 @@ export default function ConfiguracoesPage() {
       } 
       // 3. FOLGA PADRÃO
       else {
-         bgClass = 'bg-slate-50/50 dark:bg-[#0a0a0c]/50 hover:bg-slate-100/50 dark:hover:bg-[#2a2d36]/50 text-slate-300 dark:text-gray-600';
+         bgClass = 'bg-slate-50/50 dark:bg-[#08080b]/50 hover:bg-slate-100/50 dark:hover:bg-[#2a2d36]/50 text-slate-300 dark:text-gray-600';
          content = (
             <div className="mt-auto mb-2 flex justify-center opacity-30">
                 <Coffee size={16} />
@@ -358,7 +358,7 @@ export default function ConfiguracoesPage() {
         <div 
           key={d} 
           onClick={() => handleDayClick(d)}
-          className={`h-[130px] p-3 border-b border-r border-slate-100 dark:border-[#27272a] cursor-pointer relative group flex flex-col items-start transition-all ${bgClass}`}
+          className={`h-[130px] p-3 border-b border-r border-slate-100 dark:border-[#2d2d36] cursor-pointer relative group flex flex-col items-start transition-all ${bgClass}`}
         >
           <div className="flex justify-between w-full items-start mb-1">
               <span className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-bold transition-all ${isToday ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none scale-110' : 'text-slate-700 dark:text-[#d4d4d8]'}`}>
@@ -399,7 +399,7 @@ export default function ConfiguracoesPage() {
             
             {/* Status Geral */}
             <div className="flex gap-4">
-                <div className="bg-white dark:bg-[#0a0a0c] px-4 py-2 rounded-xl border border-slate-200 dark:border-[#2e2e33] shadow-sm flex items-center gap-3 transition-colors">
+                <div className="bg-white dark:bg-[#08080b] px-4 py-2 rounded-xl border border-slate-200 dark:border-[#3d3d48] shadow-sm flex items-center gap-3 transition-colors">
                     <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400"><Clock size={16}/></div>
                     <div>
                         <p className="text-[10px] text-slate-400 dark:text-[#71717a] font-bold uppercase">Duração Slot</p>
@@ -410,10 +410,10 @@ export default function ConfiguracoesPage() {
         </div>
 
         {/* CONTAINER PRINCIPAL */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-[#27272a] overflow-hidden flex flex-col min-h-[600px] transition-colors">
+        <div className="bg-white dark:bg-[#08080b] rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-[#2d2d36] overflow-hidden flex flex-col min-h-[600px] transition-colors">
             
             {/* ABAS */}
-            <div className="flex border-b border-slate-100 dark:border-[#27272a] bg-white dark:bg-[#0a0a0c] px-4">
+            <div className="flex border-b border-slate-100 dark:border-[#2d2d36] bg-white dark:bg-[#08080b] px-4">
                 <TabButton id="geral" label="Geral" icon={Settings} />
                 <TabButton id="escala" label="Escala Semanal" icon={LayoutGrid} />
                 <TabButton id="calendario" label="Calendário Mensal" icon={CalendarIcon} />
@@ -426,7 +426,7 @@ export default function ConfiguracoesPage() {
                 {/* 1. ABA GERAL */}
                 {activeTab === 'geral' && (
                     <div className="max-w-2xl mx-auto py-12 px-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="bg-white dark:bg-[#202c33] p-8 rounded-2xl border border-slate-200 dark:border-[#2e2e33] shadow-sm transition-colors">
+                        <div className="bg-white dark:bg-[#202c33] p-8 rounded-2xl border border-slate-200 dark:border-[#3d3d48] shadow-sm transition-colors">
                             <h3 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] mb-2 flex items-center gap-2">
                                 <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400"/> Tempo de Consulta
                             </h3>
@@ -438,7 +438,7 @@ export default function ConfiguracoesPage() {
                                 <select 
                                     value={duration} 
                                     onChange={(e) => setDuration(Number(e.target.value))} 
-                                    className="flex-1 bg-slate-50 dark:bg-[#0a0a0c] border border-slate-300 dark:border-gray-600 text-slate-900 dark:text-[#fafafa] text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-4 font-medium transition-shadow outline-none"
+                                    className="flex-1 bg-slate-50 dark:bg-[#08080b] border border-slate-300 dark:border-gray-600 text-slate-900 dark:text-[#fafafa] text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-4 font-medium transition-shadow outline-none"
                                 >
                                     <option value={15}>15 minutos (Rápido)</option>
                                     <option value={30}>30 minutos (Padrão)</option>
@@ -469,8 +469,8 @@ export default function ConfiguracoesPage() {
                                 const hasRules = dayRules.length > 0;
 
                                 return (
-                                    <div key={day} className={`group rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden ${hasRules ? 'bg-white dark:bg-[#202c33] border-slate-200 dark:border-[#2e2e33] shadow-sm hover:shadow-md' : 'bg-slate-50/50 dark:bg-[#0a0a0c]/50 border-slate-200 dark:border-[#27272a] border-dashed opacity-80 hover:opacity-100'}`}>
-                                        <div className={`px-5 py-4 border-b flex justify-between items-center ${hasRules ? 'bg-white dark:bg-[#202c33] border-slate-100 dark:border-[#2e2e33]' : 'bg-transparent border-slate-200 dark:border-[#27272a]'}`}>
+                                    <div key={day} className={`group rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden ${hasRules ? 'bg-white dark:bg-[#202c33] border-slate-200 dark:border-[#3d3d48] shadow-sm hover:shadow-md' : 'bg-slate-50/50 dark:bg-[#08080b]/50 border-slate-200 dark:border-[#2d2d36] border-dashed opacity-80 hover:opacity-100'}`}>
+                                        <div className={`px-5 py-4 border-b flex justify-between items-center ${hasRules ? 'bg-white dark:bg-[#202c33] border-slate-100 dark:border-[#3d3d48]' : 'bg-transparent border-slate-200 dark:border-[#2d2d36]'}`}>
                                             <span className={`font-bold flex items-center gap-2 ${hasRules ? 'text-slate-700 dark:text-gray-200' : 'text-slate-400 dark:text-[#71717a]'}`}>
                                                 {hasRules ? <Briefcase size={16} className="text-blue-500"/> : <Coffee size={16}/>}
                                                 {DAYS_MAP[day as keyof typeof DAYS_MAP]}
@@ -489,9 +489,9 @@ export default function ConfiguracoesPage() {
                                                 <div className="absolute inset-0 z-10 bg-white/95 dark:bg-[#202c33]/95 backdrop-blur-sm p-4 animate-in fade-in flex flex-col justify-center">
                                                     <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-3 text-center">Novo Turno</p>
                                                     <div className="flex items-center gap-2 mb-4">
-                                                        <input type="time" value={newSlotStart} onChange={e => setNewSlotStart(e.target.value)} className="w-full text-sm border-2 border-slate-200 dark:border-gray-600 rounded-lg p-2 focus:border-blue-500 bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 outline-none text-center font-bold"/>
+                                                        <input type="time" value={newSlotStart} onChange={e => setNewSlotStart(e.target.value)} className="w-full text-sm border-2 border-slate-200 dark:border-gray-600 rounded-lg p-2 focus:border-blue-500 bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 outline-none text-center font-bold"/>
                                                         <span className="text-slate-400">-</span>
-                                                        <input type="time" value={newSlotEnd} onChange={e => setNewSlotEnd(e.target.value)} className="w-full text-sm border-2 border-slate-200 dark:border-gray-600 rounded-lg p-2 focus:border-blue-500 bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 outline-none text-center font-bold"/>
+                                                        <input type="time" value={newSlotEnd} onChange={e => setNewSlotEnd(e.target.value)} className="w-full text-sm border-2 border-slate-200 dark:border-gray-600 rounded-lg p-2 focus:border-blue-500 bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 outline-none text-center font-bold"/>
                                                     </div>
                                                     <button 
                                                         onClick={() => handleAddSlot(day)} 
@@ -510,7 +510,7 @@ export default function ConfiguracoesPage() {
                                                 </div>
                                             ) : (
                                                 dayRules.map(rule => (
-                                                    <div key={rule.id} className="flex items-center justify-between bg-slate-50 dark:bg-[#0a0a0c] border border-slate-100 dark:border-[#2e2e33] rounded-xl p-3 group/item hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
+                                                    <div key={rule.id} className="flex items-center justify-between bg-slate-50 dark:bg-[#08080b] border border-slate-100 dark:border-[#3d3d48] rounded-xl p-3 group/item hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-1.5 h-8 bg-blue-400 rounded-full"></div>
                                                             <div>
@@ -545,13 +545,13 @@ export default function ConfiguracoesPage() {
                         {loadingUsers ? (
                             <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-pink-500" /></div>
                         ) : pendingUsers.length === 0 ? (
-                            <div className="rounded-xl border border-slate-200 dark:border-[#2e2e33] bg-slate-50/50 dark:bg-[#0a0a0c]/50 p-8 text-center text-slate-500 dark:text-[#a1a1aa]">
+                            <div className="rounded-xl border border-slate-200 dark:border-[#3d3d48] bg-slate-50/50 dark:bg-[#08080b]/50 p-8 text-center text-slate-500 dark:text-[#a1a1aa]">
                                 Nenhuma solicitação pendente.
                             </div>
                         ) : (
                             <div className="space-y-3">
                                 {pendingUsers.map((u) => (
-                                    <div key={u.id} className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#202c33] p-4">
+                                    <div key={u.id} className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#202c33] p-4">
                                         <div>
                                             <p className="font-medium text-slate-800 dark:text-[#fafafa]">{u.full_name || '—'}</p>
                                             <p className="text-sm text-slate-500 dark:text-[#a1a1aa]">{u.email}</p>
@@ -588,7 +588,7 @@ export default function ConfiguracoesPage() {
                         {/* Controles do Mês */}
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-4">
-                                <div className="flex bg-white dark:bg-[#202c33] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-1 shadow-sm transition-colors">
+                                <div className="flex bg-white dark:bg-[#202c33] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-1 shadow-sm transition-colors">
                                     <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))} className="p-2 hover:bg-slate-50 dark:hover:bg-white/10 rounded-lg text-slate-500 dark:text-[#a1a1aa]"><ChevronLeft size={20}/></button>
                                     <div className="px-6 flex items-center justify-center min-w-[160px]">
                                         <span className="text-sm font-bold text-slate-800 dark:text-gray-200 capitalize">{MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
@@ -612,8 +612,8 @@ export default function ConfiguracoesPage() {
                         </div>
 
                         {/* Grid */}
-                        <div className="bg-white dark:bg-[#202c33] border border-slate-200 dark:border-[#27272a] rounded-2xl overflow-hidden shadow-sm transition-colors">
-                            <div className="grid grid-cols-7 border-b border-slate-200 dark:border-[#27272a] bg-slate-50 dark:bg-[#0a0a0c]">
+                        <div className="bg-white dark:bg-[#202c33] border border-slate-200 dark:border-[#2d2d36] rounded-2xl overflow-hidden shadow-sm transition-colors">
+                            <div className="grid grid-cols-7 border-b border-slate-200 dark:border-[#2d2d36] bg-slate-50 dark:bg-[#08080b]">
                                 {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'].map(d => (
                                     <div key={d} className="py-3 text-center text-[11px] font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-widest">
                                         {d}
@@ -633,21 +633,21 @@ export default function ConfiguracoesPage() {
         {modalOpen && (
           <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
              <div className="bg-white dark:bg-[#202c33] rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 overflow-hidden ring-1 ring-slate-900/5 dark:ring-white/10 transition-colors">
-                <div className="px-6 py-5 border-b border-slate-100 dark:border-[#2e2e33] bg-slate-50/50 dark:bg-[#0a0a0c] flex justify-between items-center">
+                <div className="px-6 py-5 border-b border-slate-100 dark:border-[#3d3d48] bg-slate-50/50 dark:bg-[#08080b] flex justify-between items-center">
                    <div>
                        <h3 className="font-bold text-slate-800 dark:text-[#fafafa] text-lg">Gerenciar Dia</h3>
                        <p className="text-slate-500 dark:text-[#a1a1aa] text-xs font-medium mt-0.5 capitalize">{new Date(selectedDate || '').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                    </div>
-                   <button onClick={() => setModalOpen(false)} className="p-2 bg-white dark:bg-[#18181b] rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-gray-200 border border-slate-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"><X size={18}/></button>
+                   <button onClick={() => setModalOpen(false)} className="p-2 bg-white dark:bg-[#1c1c21] rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-gray-200 border border-slate-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"><X size={18}/></button>
                 </div>
                 
                 <div className="p-6 space-y-6">
                    <div className="grid grid-cols-2 gap-4">
                       <button 
                         onClick={() => setOverrideType('block')}
-                        className={`relative p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${overrideType === 'block' ? 'bg-red-50 dark:bg-red-900/20 border-red-500 text-red-700 dark:text-red-400' : 'bg-white dark:bg-[#0a0a0c] border-slate-100 dark:border-[#2e2e33] text-slate-400 dark:text-[#71717a] hover:border-red-200 dark:hover:border-red-800 hover:text-red-500 dark:hover:text-red-400'}`}
+                        className={`relative p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${overrideType === 'block' ? 'bg-red-50 dark:bg-red-900/20 border-red-500 text-red-700 dark:text-red-400' : 'bg-white dark:bg-[#08080b] border-slate-100 dark:border-[#3d3d48] text-slate-400 dark:text-[#71717a] hover:border-red-200 dark:hover:border-red-800 hover:text-red-500 dark:hover:text-red-400'}`}
                       >
-                         <div className={`p-3 rounded-full ${overrideType === 'block' ? 'bg-red-200 dark:bg-red-800' : 'bg-slate-100 dark:bg-[#18181b]'}`}>
+                         <div className={`p-3 rounded-full ${overrideType === 'block' ? 'bg-red-200 dark:bg-red-800' : 'bg-slate-100 dark:bg-[#1c1c21]'}`}>
                              <Lock size={20} />
                          </div>
                          <span className="font-bold text-sm">Bloquear Agenda</span>
@@ -656,9 +656,9 @@ export default function ConfiguracoesPage() {
 
                       <button 
                         onClick={() => setOverrideType('open')}
-                        className={`relative p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${overrideType === 'open' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-[#0a0a0c] border-slate-100 dark:border-[#2e2e33] text-slate-400 dark:text-[#71717a] hover:border-emerald-200 dark:hover:border-emerald-800 hover:text-emerald-500 dark:hover:text-emerald-400'}`}
+                        className={`relative p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${overrideType === 'open' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-[#08080b] border-slate-100 dark:border-[#3d3d48] text-slate-400 dark:text-[#71717a] hover:border-emerald-200 dark:hover:border-emerald-800 hover:text-emerald-500 dark:hover:text-emerald-400'}`}
                       >
-                         <div className={`p-3 rounded-full ${overrideType === 'open' ? 'bg-emerald-200 dark:bg-emerald-800' : 'bg-slate-100 dark:bg-[#18181b]'}`}>
+                         <div className={`p-3 rounded-full ${overrideType === 'open' ? 'bg-emerald-200 dark:bg-emerald-800' : 'bg-slate-100 dark:bg-[#1c1c21]'}`}>
                              <Unlock size={20} />
                          </div>
                          <span className="font-bold text-sm">Liberar Extra</span>
@@ -673,7 +673,7 @@ export default function ConfiguracoesPage() {
                         value={overrideReason} 
                         onChange={(e) => setOverrideReason(e.target.value)}
                         placeholder={overrideType === 'block' ? "Ex: Feriado, Médico, Congresso..." : "Ex: Plantão Sábado, Reposição..."}
-                        className="w-full border border-slate-200 dark:border-gray-600 bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium placeholder:font-normal placeholder:text-slate-400 dark:placeholder:text-gray-600 transition-colors"
+                        className="w-full border border-slate-200 dark:border-gray-600 bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium placeholder:font-normal placeholder:text-slate-400 dark:placeholder:text-gray-600 transition-colors"
                       />
                    </div>
 

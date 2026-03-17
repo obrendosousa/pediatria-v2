@@ -23,7 +23,7 @@ export default function CriarDietaPage() {
       subtitle="Crie um modelo de dieta com variáveis"
       backPath="/atendimento/cadastros/modelos/dietas"
       onSubmit={handleSubmit}
-      icon={<Apple className="w-5 h-5 text-teal-600" />}
+      icon={<Apple className="w-5 h-5 text-blue-600" />}
     />
   );
 }

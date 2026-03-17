@@ -107,38 +107,38 @@ export default function MessageSequenceBuilder({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 dark:border-[#2e2e33] bg-blue-50/70 dark:bg-blue-900/20 p-3">
+      <div className="rounded-xl border border-slate-200 dark:border-[#3d3d48] bg-blue-50/70 dark:bg-blue-900/20 p-3">
         <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
           Dica de fluxo: comece com uma mensagem de texto acolhedora e depois adicione mídia complementar.
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2 p-4 bg-slate-50 dark:bg-[#18181b] rounded-xl border border-slate-200 dark:border-[#2e2e33]">
+      <div className="flex flex-wrap gap-2 p-4 bg-slate-50 dark:bg-[#1c1c21] rounded-xl border border-slate-200 dark:border-[#3d3d48]">
         <span className="text-sm font-bold text-slate-600 dark:text-[#a1a1aa] w-full mb-2">Adicionar Mensagem:</span>
         <button
           onClick={() => addMessage('text')}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm font-medium text-slate-700 dark:text-[#d4d4d8]"
+          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm font-medium text-slate-700 dark:text-[#d4d4d8]"
         >
           <Type className="w-4 h-4" />
           Texto
         </button>
         <button
           onClick={() => addMessage('audio')}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm font-medium text-slate-700 dark:text-[#d4d4d8]"
+          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm font-medium text-slate-700 dark:text-[#d4d4d8]"
         >
           <Mic className="w-4 h-4" />
           Áudio
         </button>
         <button
           onClick={() => addMessage('image')}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm font-medium text-slate-700 dark:text-[#d4d4d8]"
+          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm font-medium text-slate-700 dark:text-[#d4d4d8]"
         >
           <ImageIcon className="w-4 h-4" />
           Imagem
         </button>
         <button
           onClick={() => addMessage('document')}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm font-medium text-slate-700 dark:text-[#d4d4d8]"
+          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm font-medium text-slate-700 dark:text-[#d4d4d8]"
         >
           <FileText className="w-4 h-4" />
           Documento
@@ -158,7 +158,7 @@ export default function MessageSequenceBuilder({
               onDragStart={() => handleDragStart(index)}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragEnd={handleDragEnd}
-              className={`flex gap-3 p-4 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-xl transition-all ${
+              className={`flex gap-3 p-4 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-xl transition-all ${
                 draggedIndex === index ? 'opacity-50' : 'hover:border-rose-300 dark:hover:border-rose-700'
               }`}
             >
@@ -169,7 +169,7 @@ export default function MessageSequenceBuilder({
                 <GripVertical className="w-5 h-5" />
               </button>
 
-              <div className="flex items-center justify-center w-10 h-10 bg-slate-100 dark:bg-[#18181b] rounded-lg shrink-0">
+              <div className="flex items-center justify-center w-10 h-10 bg-slate-100 dark:bg-[#1c1c21] rounded-lg shrink-0">
                 {getMessageIcon(message.type)}
               </div>
 
@@ -191,7 +191,7 @@ export default function MessageSequenceBuilder({
                     value={message.content}
                     onChange={(e) => updateMessage(index, { content: e.target.value })}
                     placeholder="Digite a mensagem... Use {nome_paciente}, {idade}, etc. para personalizar"
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
                     rows={3}
                   />
                 ) : (
@@ -230,7 +230,7 @@ export default function MessageSequenceBuilder({
                         <button
                           onClick={() => document.getElementById(`media-upload-${index}`)?.click()}
                           disabled={uploadingIndex === index}
-                          className="w-full px-4 py-2 bg-slate-100 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-sm font-medium text-slate-700 dark:text-[#d4d4d8] disabled:opacity-50"
+                          className="w-full px-4 py-2 bg-slate-100 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-sm font-medium text-slate-700 dark:text-[#d4d4d8] disabled:opacity-50"
                         >
                           {uploadingIndex === index ? 'Fazendo upload...' : `Selecionar ${getMessageTypeLabel(message.type)}`}
                         </button>
@@ -242,7 +242,7 @@ export default function MessageSequenceBuilder({
                         value={message.caption || ''}
                         onChange={(e) => updateMessage(index, { caption: e.target.value })}
                         placeholder="Legenda (opcional)... Use variáveis para personalizar"
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none"
                         rows={2}
                       />
                     )}
@@ -260,7 +260,7 @@ export default function MessageSequenceBuilder({
                     step="1"
                     value={message.delay || 0}
                     onChange={(e) => updateMessage(index, { delay: parseInt(e.target.value) || 0 })}
-                    className="w-20 px-2 py-1 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    className="w-20 px-2 py-1 bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500"
                   />
                   <span className="text-xs text-slate-500 dark:text-[#71717a]">segundos</span>
                 </div>
@@ -296,7 +296,7 @@ export default function MessageSequenceBuilder({
                   });
                 }
               }}
-              className="px-2 py-1 bg-white dark:bg-[#0a0a0c] border border-blue-200 dark:border-blue-800 rounded text-xs font-mono text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+              className="px-2 py-1 bg-white dark:bg-[#08080b] border border-blue-200 dark:border-blue-800 rounded text-xs font-mono text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
               title={variable.description}
             >
               {'{' + variable.key + '}'}

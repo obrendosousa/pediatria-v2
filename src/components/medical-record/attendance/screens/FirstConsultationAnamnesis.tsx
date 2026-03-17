@@ -87,10 +87,10 @@ interface FirstConsultationFormData {
 
 // Estilos reutilizáveis
 const inputClass =
-  'w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all';
+  'w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all';
 const labelClass = 'block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1';
 const sectionClass =
-  'bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3';
+  'bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3';
 
 // Componente radio Sim/Não
 function RadioSimNao({
@@ -418,7 +418,7 @@ export function FirstConsultationAnamnesis({ patientId, patientData, onRefresh, 
         </div>
 
         {/* HISTÓRICO MOLÉSTIA ATUAL (rich text) */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa]">HISTÓRICO MOLÉSTIA ATUAL?</h2>
             <div className="flex gap-2">
@@ -450,7 +450,7 @@ export function FirstConsultationAnamnesis({ patientId, patientData, onRefresh, 
         </div>
 
         {/* ANTECEDENTES DOS PAIS (rich text) */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa]">ANTECEDENTES DOS PAIS?</h2>
             <div className="flex gap-2">
@@ -501,7 +501,7 @@ export function FirstConsultationAnamnesis({ patientId, patientData, onRefresh, 
         </div>
 
         {/* MOTIVO DA CONSULTA (rich text) */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa]">MOTIVO DA CONSULTA</h2>
             <div className="flex gap-2">
@@ -577,7 +577,7 @@ export function FirstConsultationAnamnesis({ patientId, patientData, onRefresh, 
         </div>
 
         {/* AMAMENTAÇÃO (rich text) */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa]">
               AMAMENTAÇÃO / BAIXA PRODUÇÃO DOMPERIDONA 30MG DIA / SE DOR FAZER MASSAGEM / BOMBINHA
@@ -665,7 +665,7 @@ export function FirstConsultationAnamnesis({ patientId, patientData, onRefresh, 
               IMPORTANTE COMO SEGURA O NENÊ (MOSTRA COMO), CHORA MUITO NO BANHO (COLOCA PRIMEIRO O PÉ DEPOIS PERNA), OU USA FRALDINHA
             </label>
             <select {...register('banho_rn_frequencia')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
               <option value="">Selecione</option>
               <option value="1x_dia_antes_meio_dia">1X AO DIA ANTES DE MEIO DIA</option>
               <option value="2x_dia_meio_tarde">2X AO DIA MEIO DIA E A TARDE</option>
@@ -765,7 +765,7 @@ export function FirstConsultationAnamnesis({ patientId, patientData, onRefresh, 
         </div>
 
         {/* Botão Salvar */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#2e2e33] -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#3d3d48] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

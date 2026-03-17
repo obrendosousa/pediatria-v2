@@ -60,7 +60,7 @@ interface FormulaFormProps {
 
 // --- Helpers ---
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 const selectClass = `${inputClass} appearance-none cursor-pointer`;
 const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
 
@@ -215,7 +215,7 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <button
           onClick={() => router.push('/atendimento/cadastros/receituario/formulas')}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -236,7 +236,7 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* ─── Seção 1: Informações do Composto ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <FlaskConical className="w-4 h-4 text-teal-500" />
               Informações do Composto
@@ -323,7 +323,7 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
           </section>
 
           {/* ─── Seção 2: Composição ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <Layers className="w-4 h-4 text-teal-500" />
               Composição
@@ -341,11 +341,11 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
                     value={subSearch}
                     onChange={e => { setSubSearch(e.target.value); setSelectedSubstance(null); }}
                     placeholder="Buscar substância..."
-                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
 
                   {subDropdownOpen && substances.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl shadow-xl">
+                    <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl shadow-xl">
                       {substances.map(s => (
                         <button
                           key={s.id}
@@ -405,10 +405,10 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
 
             {/* Tabela de composição */}
             {compositions.length > 0 ? (
-              <div className="bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+              <div className="bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="bg-slate-100 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                    <tr className="bg-slate-100 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
                       <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Item</th>
                       <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-center">Quantidade</th>
                       <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-center">Unidade</th>
@@ -440,7 +440,7 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
                 </table>
               </div>
             ) : (
-              <div className="text-center py-6 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-dashed border-slate-200 dark:border-[#2e2e33]">
+              <div className="text-center py-6 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-dashed border-slate-200 dark:border-[#3d3d48]">
                 <Layers className="w-8 h-8 text-slate-300 dark:text-gray-600 mx-auto mb-2" />
                 <p className="text-sm text-slate-400 dark:text-[#71717a]">Nenhuma substância adicionada.</p>
               </div>
@@ -448,7 +448,7 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
           </section>
 
           {/* ─── Seção 3: Dados Complementares ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <FileText className="w-4 h-4 text-teal-500" />
               Dados Complementares
@@ -513,7 +513,7 @@ export default function FormulaForm({ initialData, initialCompositions, onSubmit
       </div>
 
       {/* Footer fixo */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] flex items-center justify-end gap-3">
         <button
           type="button"
           onClick={() => router.push('/atendimento/cadastros/receituario/formulas')}

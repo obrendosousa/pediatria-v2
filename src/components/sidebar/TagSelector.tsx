@@ -51,10 +51,10 @@ export default function TagSelector({ isOpen, onClose, chat, allTags, onSaveTags
        onClick={handleBackdropClick}
      >
        <div 
-         className="bg-white dark:bg-[#202c33] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] w-full max-w-[min(288px,90vw)] overflow-hidden border border-gray-100 dark:border-[#2e2e33] animate-in zoom-in-95 duration-200" 
+         className="bg-white dark:bg-[#202c33] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] w-full max-w-[min(288px,90vw)] overflow-hidden border border-gray-100 dark:border-[#3d3d48] animate-in zoom-in-95 duration-200" 
          onClick={e => e.stopPropagation()}
        >
-         <div className="p-4 border-b border-gray-100 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-between items-center">
+         <div className="p-4 border-b border-gray-100 dark:border-[#3d3d48] bg-gray-50 dark:bg-[#1c1c21] flex justify-between items-center">
             <div className="min-w-0 flex-1">
                <span className="text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase block">Etiquetas de</span>
                <span className="font-bold text-gray-800 dark:text-[#fafafa] truncate block">
@@ -82,7 +82,7 @@ export default function TagSelector({ isOpen, onClose, chat, allTags, onSaveTags
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 shrink-0
                       ${isSelected 
                         ? 'bg-[#00a884] border-[#00a884] scale-105' 
-                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a0a0c]'}`}
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-[#08080b]'}`}
                   >
                     {isSelected && <Check size={12} className="text-white stroke-[3] animate-in zoom-in-50 duration-150" />}
                   </div>

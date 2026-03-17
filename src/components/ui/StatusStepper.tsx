@@ -42,7 +42,7 @@ export default function StatusStepper({ steps, currentStepKey, accentColor = 'te
     <div className="w-full">
       <div className="flex items-start justify-between relative">
         {/* Linha conectora de fundo */}
-        <div className="absolute top-5 left-0 right-0 h-0.5 bg-slate-200 dark:bg-[#27272a] mx-10" />
+        <div className="absolute top-5 left-0 right-0 h-0.5 bg-slate-200 dark:bg-[#2d2d36] mx-10" />
         {/* Linha conectora de progresso */}
         {currentIndex > 0 && (
           <div
@@ -65,7 +65,7 @@ export default function StatusStepper({ steps, currentStepKey, accentColor = 'te
                   ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/30'
                   : isCurrent
                     ? `${c.bg} ${c.border} text-white shadow-md shadow-${accentColor}-500/30`
-                    : 'bg-white dark:bg-[#0a0a0c] border-slate-300 dark:border-gray-600 text-slate-400 dark:text-[#71717a]'
+                    : 'bg-white dark:bg-[#08080b] border-slate-300 dark:border-gray-600 text-slate-400 dark:text-[#71717a]'
               }`}>
                 {isCompleted ? <Check size={18} strokeWidth={3}/> : <Icon size={18}/>}
               </div>

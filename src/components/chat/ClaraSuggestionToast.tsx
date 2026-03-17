@@ -104,7 +104,7 @@ function ToastCard({ type, text, reason, scheduleDate, onApprove, onExpand, onDi
       </div>
 
       {/* Ações */}
-      <div className="flex items-center gap-1 px-2.5 pb-2 pt-0.5 border-t border-gray-100 dark:border-[#2e2e33]/50">
+      <div className="flex items-center gap-1 px-2.5 pb-2 pt-0.5 border-t border-gray-100 dark:border-[#3d3d48]/50">
         <button
           onClick={onExpand}
           disabled={isProcessing}
@@ -335,7 +335,7 @@ export default function ClaraSuggestionToast({
         )}
 
         {/* Barra de countdown */}
-        <div className="h-[3px] bg-gray-200/60 dark:bg-[#27272a]/60 rounded-full overflow-hidden mx-1">
+        <div className="h-[3px] bg-gray-200/60 dark:bg-[#2d2d36]/60 rounded-full overflow-hidden mx-1">
           <div
             ref={barRef}
             className={`h-full rounded-full ${

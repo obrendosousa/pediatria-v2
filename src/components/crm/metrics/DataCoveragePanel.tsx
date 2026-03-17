@@ -17,7 +17,7 @@ function CoverageItem({
   const total = valid + invalid;
   const quality = total > 0 ? (valid / total) * 100 : 0;
   return (
-    <div className="rounded-xl border border-slate-200 p-3 dark:border-[#27272a]">
+    <div className="rounded-xl border border-slate-200 p-3 dark:border-[#2d2d36]">
       <p className="text-xs font-semibold text-slate-600 dark:text-[#d4d4d8]">{title}</p>
       <p className="mt-1 text-sm text-slate-500 dark:text-[#a1a1aa]">
         {valid} elegíveis / {invalid} inválidos
@@ -29,7 +29,7 @@ function CoverageItem({
 
 export default function DataCoveragePanel({ metrics }: DataCoveragePanelProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#27272a] dark:bg-[#0a0a0c]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#2d2d36] dark:bg-[#08080b]">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold text-slate-800 dark:text-[#fafafa]">Confiabilidade dos dados</h3>

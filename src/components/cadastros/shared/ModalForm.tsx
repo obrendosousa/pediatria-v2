@@ -59,11 +59,11 @@ export default function ModalForm({
     >
       <div
         ref={contentRef}
-        className={`bg-white dark:bg-[#0a0a0c] w-full ${maxWidth} rounded-2xl shadow-2xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden animate-scale-in flex flex-col max-h-[90vh]`}
+        className={`bg-white dark:bg-[#08080b] w-full ${maxWidth} rounded-2xl shadow-2xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden animate-scale-in flex flex-col max-h-[90vh]`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-[#27272a] flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-[#2d2d36] flex items-center justify-between shrink-0">
           <h3 className="font-bold text-lg text-slate-800 dark:text-[#fafafa]">{title}</h3>
           <button
             type="button"
@@ -82,12 +82,12 @@ export default function ModalForm({
           </div>
 
           {/* Ações */}
-          <div className="px-6 py-4 border-t border-slate-100 dark:border-[#27272a] flex gap-3 shrink-0">
+          <div className="px-6 py-4 border-t border-slate-100 dark:border-[#2d2d36] flex gap-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-[#333640] text-slate-700 dark:text-[#d4d4d8] rounded-lg font-semibold text-sm transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-[#1c1c21] hover:bg-slate-200 dark:hover:bg-[#333640] text-slate-700 dark:text-[#d4d4d8] rounded-lg font-semibold text-sm transition-colors disabled:opacity-50"
             >
               {cancelText}
             </button>

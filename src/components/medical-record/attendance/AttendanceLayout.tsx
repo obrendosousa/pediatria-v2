@@ -1,29 +1,10 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { AttendanceTabKey, AttendanceScreenProps } from '@/types/attendance';
 import { AttendanceSidebar } from './AttendanceSidebar';
-import { AttendanceOverview } from './screens/AttendanceOverview';
-import { RoutineConsultation } from './screens/RoutineConsultation';
-import { VitalsChart } from './screens/VitalsChart';
-import { AdolescentConsultation } from './screens/AdolescentConsultation';
-import { ExamResults } from './screens/ExamResults';
-import { DiagnosticHypothesis } from './screens/DiagnosticHypothesis';
-import { Conducts } from './screens/Conducts';
-import { FoodHistory } from './screens/FoodHistory';
-import { FirstConsultationAnamnesis } from './screens/FirstConsultationAnamnesis';
-import { FollowUp } from './screens/FollowUp';
-import { EmergencyConsultation } from './screens/EmergencyConsultation';
-import { ExamsAndProcedures } from './screens/ExamsAndProcedures';
-import { Prescriptions } from './screens/Prescriptions';
-import { DocumentsAndCertificates } from './screens/DocumentsAndCertificates';
-import { AttachmentsList } from './screens/AttachmentsList';
-import { ImageGallery } from './screens/ImageGallery';
-import { Allergies } from './screens/Allergies';
-import { EvolutionsList as Evolutions } from '@/components/medical-record/screens/EvolutionsList';
-import { CertificatesList as Certificates } from '@/components/medical-record/screens/CertificatesList';
-import { ReportsList as Reports } from '@/components/medical-record/screens/ReportsList';
-import { AnamnesesList } from '@/components/medical-record/screens/AnamnesesList';
+import { useModuleSafe } from '@/contexts/ModuleContext';
+import { ATTENDANCE_CONFIGS, PEDIATRIA_ATTENDANCE } from '@/config/attendance';
 
 interface AttendanceLayoutProps {
   patientId: number;
@@ -37,30 +18,6 @@ interface AttendanceLayoutProps {
   medicalRecordId?: number | null;
 }
 
-const screenComponents: Record<AttendanceTabKey, React.ComponentType<AttendanceScreenProps>> = {
-  'overview': AttendanceOverview,
-  'routine': RoutineConsultation,
-  'vitals': VitalsChart,
-  'adolescent': AdolescentConsultation,
-  'exam-results': ExamResults,
-  'diagnostic-hypothesis': DiagnosticHypothesis,
-  'conducts': Conducts,
-  'food-history': FoodHistory,
-  'first-consultation': FirstConsultationAnamnesis,
-  'follow-up': FollowUp,
-  'emergency': EmergencyConsultation,
-  'exams-procedures': ExamsAndProcedures,
-  'prescriptions': Prescriptions,
-  'documents': DocumentsAndCertificates,
-  'images': AttachmentsList,
-  'allergies': Allergies,
-  'evolutions': Evolutions,
-  'certificates': Certificates,
-  'reports': Reports,
-  'gallery': ImageGallery,
-  'anamneses-list': AnamnesesList,
-};
-
 export function AttendanceLayout({
   patientId,
   patientData,
@@ -71,9 +28,18 @@ export function AttendanceLayout({
   appointmentId,
   medicalRecordId,
 }: AttendanceLayoutProps) {
-  const [activeTab, setActiveTab] = useState<AttendanceTabKey>('overview');
+  // Detecta módulo: se tem ModuleProvider = usa config dele, senão = pediatria (default)
+  const moduleCtx = useModuleSafe();
+  const attendanceConfig = useMemo(() => {
+    if (moduleCtx?.config.id) {
+      return ATTENDANCE_CONFIGS[moduleCtx.config.id] ?? PEDIATRIA_ATTENDANCE;
+    }
+    return PEDIATRIA_ATTENDANCE;
+  }, [moduleCtx?.config.id]);
+
+  const [activeTab, setActiveTab] = useState<AttendanceTabKey>(attendanceConfig.defaultTab);
   // Lazy mount: tela só monta na primeira visita, mas permanece montada depois
-  const [visitedTabs, setVisitedTabs] = useState<Set<AttendanceTabKey>>(new Set(['overview']));
+  const [visitedTabs, setVisitedTabs] = useState<Set<AttendanceTabKey>>(new Set([attendanceConfig.defaultTab]));
 
   const handleTabChange = useCallback((tab: AttendanceTabKey) => {
     setActiveTab(tab);
@@ -83,22 +49,27 @@ export function AttendanceLayout({
     });
   }, []);
 
+  // Screens disponíveis para este módulo
+  const screenComponents = attendanceConfig.screens as Record<AttendanceTabKey, React.ComponentType<AttendanceScreenProps>>;
+
   return (
     <div className="flex flex-1 h-full bg-slate-50/50 dark:bg-[#0b141a]">
-      {/* Sidebar */}
+      {/* Sidebar — driven pela config do módulo */}
       <AttendanceSidebar
         activeTab={activeTab}
         onTabChange={handleTabChange}
         isConsultationActive={isConsultationActive}
         consultationDuration={consultationDuration}
         onFinishConsultation={onFinishConsultation}
+        sidebarItems={attendanceConfig.sidebar}
       />
 
-      {/* Área de Conteúdo - todas as telas visitadas ficam montadas */}
+      {/* Área de Conteúdo — só renderiza screens que existem na config do módulo */}
       <div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar">
         {(Object.keys(screenComponents) as AttendanceTabKey[]).map((tabKey) => {
           if (!visitedTabs.has(tabKey)) return null;
           const ScreenComponent = screenComponents[tabKey];
+          if (!ScreenComponent) return null;
           return (
             <div
               key={tabKey}

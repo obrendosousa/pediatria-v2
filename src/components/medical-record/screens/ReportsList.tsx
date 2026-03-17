@@ -125,30 +125,19 @@ export function ReportsList({ patientId, patientData, appointmentId }: Attendanc
     setConfirmDeleteId(null);
   };
 
-  const handlePrint = (report: MedicalReport) => {
-    const win = window.open('', '_blank');
-    if (!win) return;
+  const handlePrint = async (report: MedicalReport) => {
+    const { printWithLetterhead } = await import('@/lib/letterhead');
     const doctorName = report.doctor_id ? (doctors[report.doctor_id] || '—') : '';
-    win.document.write(`
-      <html>
-      <head>
-        <title>${report.title || 'Laudo Médico'}</title>
-        <style>body{font-family:Arial,sans-serif;padding:40px;color:#333}h1{font-size:20px;margin-bottom:8px}
-        .meta{color:#666;font-size:13px;margin-bottom:16px}hr{border:none;border-top:1px solid #ddd;margin:16px 0}</style>
-      </head>
-      <body>
-        <h1>${report.title || 'Laudo Médico'}</h1>
-        <div class="meta">
-          ${report.show_date !== false && report.report_date ? `<div>Data: ${new Date(report.report_date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>` : ''}
-          ${doctorName ? `<div>Profissional: ${doctorName}</div>` : ''}
-        </div>
-        <hr/>
-        <div>${report.content || ''}</div>
-        ${report.digital_signature ? '<p style="margin-top:40px;font-weight:bold">✓ Assinado digitalmente</p>' : ''}
-      </body></html>
-    `);
-    win.document.close();
-    win.print();
+    await printWithLetterhead(`
+      <h1>${report.title || 'Laudo Médico'}</h1>
+      <div class="meta">
+        ${report.show_date !== false && report.report_date ? `<div>Data: ${new Date(report.report_date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>` : ''}
+        ${doctorName ? `<div>Profissional: ${doctorName}</div>` : ''}
+      </div>
+      <hr/>
+      <div class="content">${report.content || ''}</div>
+      ${report.digital_signature ? '<p style="margin-top:40px;font-weight:bold">Assinado digitalmente</p>' : ''}
+    `, report.title || 'Laudo Médico');
   };
 
   const handleSelectTemplate = (tmpl: DocumentTemplate) => {
@@ -185,7 +174,7 @@ export function ReportsList({ patientId, patientData, appointmentId }: Attendanc
           </div>
         </div>
 
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-3">
           <div className="flex gap-6 text-sm text-slate-500 dark:text-[#a1a1aa]">
             {selected.show_date && selected.report_date && (
               <span>Data: <strong className="text-slate-700 dark:text-gray-200">{new Date(selected.report_date + 'T12:00:00').toLocaleDateString('pt-BR')}</strong></span>
@@ -197,7 +186,7 @@ export function ReportsList({ patientId, patientData, appointmentId }: Attendanc
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ Assinado</span>
             )}
           </div>
-          <hr className="border-slate-100 dark:border-[#2e2e33]" />
+          <hr className="border-slate-100 dark:border-[#3d3d48]" />
           <div className="prose dark:prose-invert max-w-none text-sm" dangerouslySetInnerHTML={{ __html: selected.content || '<p class="text-slate-400">Sem conteúdo</p>' }} />
         </div>
       </div>
@@ -255,10 +244,10 @@ export function ReportsList({ patientId, patientData, appointmentId }: Attendanc
           <p className="text-sm text-slate-400 dark:text-[#71717a]">Nenhum laudo registrado.</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+        <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-slate-50 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+              <tr className="bg-slate-50 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
                 <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Data criação</th>
                 <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Data</th>
                 <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Nome</th>

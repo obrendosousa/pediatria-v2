@@ -23,7 +23,7 @@ export default function CriarLaudoPage() {
       subtitle="Crie um modelo de laudo com variáveis"
       backPath="/atendimento/cadastros/modelos/laudos"
       onSubmit={handleSubmit}
-      icon={<FileSearch className="w-5 h-5 text-teal-600" />}
+      icon={<FileSearch className="w-5 h-5 text-blue-600" />}
     />
   );
 }

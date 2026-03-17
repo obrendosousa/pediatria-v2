@@ -199,7 +199,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         {/* Seção: Informações do Paciente/Cuidador */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa] mb-3">Informações do Paciente/Cuidador</h2>
           
           <div>
@@ -209,7 +209,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('caregivers_name')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite o nome dos cuidadores..."
             />
           </div>
@@ -221,7 +221,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('companion_location')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite o acompanhante e localização..."
             />
           </div>
@@ -233,7 +233,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('support_network')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite a rede de apoio e nome da babá..."
             />
           </div>
@@ -245,7 +245,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('school_info')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite onde estuda e o turno..."
             />
           </div>
@@ -257,7 +257,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('siblings_info')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre irmãos..."
             />
           </div>
@@ -269,14 +269,14 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('allergies_interactions')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre alergias..."
             />
           </div>
         </div>
 
         {/* Seção: Motivo de Consulta (Rich Text) */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa]">MOTIVO DE CONSULTA</h2>
             <div className="flex gap-2">
@@ -305,7 +305,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
         </div>
 
         {/* Seção: Hábitos e Saúde */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa] mb-3">Hábitos e Saúde</h2>
           
           <div>
@@ -315,7 +315,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('breathing_info')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre respiração..."
             />
           </div>
@@ -327,7 +327,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('medications')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre medicações..."
             />
           </div>
@@ -339,7 +339,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('breastfeeding_formula')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre amamentação..."
             />
           </div>
@@ -378,7 +378,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('delayed_vaccine')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite qual vacina está atrasada..."
             />
           </div>
@@ -390,14 +390,14 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('uses_pacifier')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre uso de chupeta..."
             />
           </div>
         </div>
 
         {/* Seção: Sistemas */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa] mb-3">Sistemas</h2>
           
           <div>
@@ -407,7 +407,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('nose_wash')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre lavagem nasal..."
             />
           </div>
@@ -419,7 +419,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('skin_products')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre pele e produtos..."
             />
           </div>
@@ -431,7 +431,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('dental_info')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre saúde bucal..."
             />
           </div>
@@ -443,7 +443,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('gastrointestinal')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre sistema gastrointestinal..."
             />
           </div>
@@ -455,7 +455,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('genitourinary')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre sistema geniturinário..."
             />
           </div>
@@ -467,7 +467,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('nervous_system')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre sistema nervoso..."
             />
           </div>
@@ -479,14 +479,14 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
             <input
               type="text"
               {...register('screen_exposure')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite informações sobre exposição a telas..."
             />
           </div>
         </div>
 
         {/* Seção: Sono (Rich Text) */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa]">SONO? AGITAÇÃO A NOITE? DORME EM QUE LOCAL?</h2>
             <div className="flex gap-2">
@@ -515,7 +515,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
         </div>
 
         {/* Seção: Marcos e Exames */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-2">
               FALA DOS MARCOS DO MÊS E AVISAR O QUE PODE ACONTECER NESSE
@@ -600,7 +600,7 @@ export function RoutineConsultation({ patientId, patientData, onRefresh, appoint
         </div>
 
         {/* Botão Salvar */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#2e2e33] -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#3d3d48] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

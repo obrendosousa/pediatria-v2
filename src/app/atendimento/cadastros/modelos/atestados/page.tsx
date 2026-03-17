@@ -13,7 +13,7 @@ export default function AtestadosPage() {
       pageTitle="Modelos de Atestados"
       basePath="/atendimento/cadastros/modelos/atestados"
       entityName="atestado"
-      icon={<FileText className="w-5 h-5 text-teal-600" />}
+      icon={<FileText className="w-5 h-5 text-blue-600" />}
     />
   );
 }

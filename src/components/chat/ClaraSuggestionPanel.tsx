@@ -53,11 +53,11 @@ export default function ClaraSuggestionPanel({
 
   return (
     <div className="absolute right-[52px] sm:right-[58px] top-[56px] bottom-[68px] z-[45] w-[360px] max-w-[calc(100vw-120px)]
-      flex flex-col bg-white dark:bg-[#1a2328] border-l border-gray-200 dark:border-[#2e2e33]
+      flex flex-col bg-white dark:bg-[#1a2328] border-l border-gray-200 dark:border-[#3d3d48]
       shadow-2xl animate-in slide-in-from-right-4 fade-in duration-250">
 
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100 dark:border-[#2e2e33]/80 shrink-0">
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100 dark:border-[#3d3d48]/80 shrink-0">
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
           <Bot size={14} className="text-white" />
         </div>
@@ -80,7 +80,7 @@ export default function ClaraSuggestionPanel({
 
       {/* Tabs (só se tem ambos) */}
       {hasBoth && (
-        <div className="flex border-b border-gray-100 dark:border-[#2e2e33]/80 shrink-0">
+        <div className="flex border-b border-gray-100 dark:border-[#3d3d48]/80 shrink-0">
           <button
             onClick={() => setActiveTab('draft')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium transition-colors

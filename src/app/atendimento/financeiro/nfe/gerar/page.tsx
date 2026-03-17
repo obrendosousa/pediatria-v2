@@ -188,7 +188,7 @@ export default function GerarNfePage() {
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <button
           onClick={() => router.push('/atendimento/financeiro/nfe')}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -197,7 +197,7 @@ export default function GerarNfePage() {
         </button>
         <div>
           <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
-            <FileText className="w-5 h-5 text-teal-600" />
+            <FileText className="w-5 h-5 text-blue-600" />
             Gerar NF-e
           </h1>
           <p className="text-xs text-slate-400 dark:text-[#71717a]">Preencha os dados para emissão da nota fiscal</p>
@@ -209,21 +209,21 @@ export default function GerarNfePage() {
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* ─── Paciente ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6">
             <div ref={patientRef}>
               <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider">
                 Paciente <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 ml-1">Obrigatório</span>
               </label>
               {selectedPatient ? (
-                <div className="flex items-center gap-3 p-3 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800 rounded-xl">
-                  <div className="w-9 h-9 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-sm font-bold text-teal-700 dark:text-teal-300">
+                <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl">
+                  <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-sm font-bold text-blue-700 dark:text-blue-300">
                     {selectedPatient.full_name.charAt(0)}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">{selectedPatient.full_name}</p>
                     {selectedPatient.phone && <p className="text-xs text-slate-500">{selectedPatient.phone}</p>}
                   </div>
-                  <button onClick={handleClearPatient} className="p-1 rounded hover:bg-teal-100 dark:hover:bg-teal-900/30">
+                  <button onClick={handleClearPatient} className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30">
                     <X className="w-4 h-4 text-slate-400" />
                   </button>
                 </div>
@@ -235,19 +235,19 @@ export default function GerarNfePage() {
                     value={patientSearch}
                     onChange={e => setPatientSearch(e.target.value)}
                     placeholder="Buscar paciente por nome ou telefone..."
-                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
-                  {patientLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-teal-500 animate-spin" />}
+                  {patientLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-600 animate-spin" />}
 
                   {patientDropdownOpen && patientResults.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl shadow-xl">
+                    <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl shadow-xl">
                       {patientResults.map(p => (
                         <button
                           key={p.id}
                           onClick={() => handleSelectPatient(p)}
-                          className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-teal-50 dark:hover:bg-teal-900/10 transition-colors text-left"
+                          className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors text-left"
                         >
-                          <div className="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-xs font-bold text-teal-700 dark:text-teal-300">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-xs font-bold text-blue-700 dark:text-blue-300">
                             {p.full_name.charAt(0)}
                           </div>
                           <div>
@@ -264,9 +264,9 @@ export default function GerarNfePage() {
           </section>
 
           {/* ─── Seção 1: Dados do Tomador ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
-              <User className="w-4 h-4 text-teal-500" />
+              <User className="w-4 h-4 text-blue-600" />
               Dados do Tomador
             </h2>
 
@@ -280,7 +280,7 @@ export default function GerarNfePage() {
                   onChange={e => setTaxpayerDoc(maskDoc(e.target.value))}
                   maxLength={18}
                   placeholder="000.000.000-00"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -292,7 +292,7 @@ export default function GerarNfePage() {
                   value={taxpayerName}
                   onChange={e => setTaxpayerName(e.target.value)}
                   placeholder="Nome do tomador"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -304,7 +304,7 @@ export default function GerarNfePage() {
                   value={taxpayerEmail}
                   onChange={e => setTaxpayerEmail(e.target.value)}
                   placeholder="email@exemplo.com"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -317,7 +317,7 @@ export default function GerarNfePage() {
                   onChange={e => setCep(maskCep(e.target.value))}
                   maxLength={9}
                   placeholder="00000-000"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -330,7 +330,7 @@ export default function GerarNfePage() {
                   onChange={e => setEstado(e.target.value)}
                   maxLength={2}
                   placeholder="UF"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -342,7 +342,7 @@ export default function GerarNfePage() {
                   value={cidade}
                   onChange={e => setCidade(e.target.value)}
                   placeholder="Cidade"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -354,7 +354,7 @@ export default function GerarNfePage() {
                   value={bairro}
                   onChange={e => setBairro(e.target.value)}
                   placeholder="Bairro"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -366,7 +366,7 @@ export default function GerarNfePage() {
                   value={endereco}
                   onChange={e => setEndereco(e.target.value)}
                   placeholder="Rua, Av..."
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -378,7 +378,7 @@ export default function GerarNfePage() {
                   value={numero}
                   onChange={e => setNumero(e.target.value)}
                   placeholder="Nº"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -390,16 +390,16 @@ export default function GerarNfePage() {
                   value={complemento}
                   onChange={e => setComplemento(e.target.value)}
                   placeholder="Apto, Sala..."
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
             </div>
           </section>
 
           {/* ─── Seção 2: Informações da Nota ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
-              <ClipboardList className="w-4 h-4 text-teal-500" />
+              <ClipboardList className="w-4 h-4 text-blue-600" />
               Informações da Nota
             </h2>
 
@@ -414,7 +414,7 @@ export default function GerarNfePage() {
                   onChange={e => setServiceDescription(e.target.value)}
                   rows={3}
                   placeholder="Descreva o serviço prestado..."
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
                 />
               </div>
 
@@ -426,7 +426,7 @@ export default function GerarNfePage() {
                   onChange={e => setNotes(e.target.value)}
                   rows={2}
                   placeholder="Observações adicionais..."
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
                 />
               </div>
 
@@ -442,7 +442,7 @@ export default function GerarNfePage() {
                   value={amount || ''}
                   onChange={e => setAmount(Number(e.target.value))}
                   placeholder="0,00"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 text-right font-mono"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right font-mono"
                 />
               </div>
 
@@ -452,7 +452,7 @@ export default function GerarNfePage() {
                 <select
                   value={serviceCode}
                   onChange={e => setServiceCode(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 appearance-none cursor-pointer"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none cursor-pointer"
                 >
                   {SERVICE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
@@ -471,7 +471,7 @@ export default function GerarNfePage() {
                       value={taxInss || ''}
                       onChange={e => setTaxInss(Number(e.target.value))}
                       placeholder="0,00"
-                      className="w-full px-2 py-2 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 text-right font-mono"
+                      className="w-full px-2 py-2 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right font-mono"
                     />
                   </div>
                   <div>
@@ -483,7 +483,7 @@ export default function GerarNfePage() {
                       value={taxIr || ''}
                       onChange={e => setTaxIr(Number(e.target.value))}
                       placeholder="0,00"
-                      className="w-full px-2 py-2 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 text-right font-mono"
+                      className="w-full px-2 py-2 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right font-mono"
                     />
                   </div>
                   <div>
@@ -495,7 +495,7 @@ export default function GerarNfePage() {
                       value={taxCofins || ''}
                       onChange={e => setTaxCofins(Number(e.target.value))}
                       placeholder="0,00"
-                      className="w-full px-2 py-2 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 text-right font-mono"
+                      className="w-full px-2 py-2 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right font-mono"
                     />
                   </div>
                   <div>
@@ -507,7 +507,7 @@ export default function GerarNfePage() {
                       value={taxPis || ''}
                       onChange={e => setTaxPis(Number(e.target.value))}
                       placeholder="0,00"
-                      className="w-full px-2 py-2 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 text-right font-mono"
+                      className="w-full px-2 py-2 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right font-mono"
                     />
                   </div>
                   <div>
@@ -519,7 +519,7 @@ export default function GerarNfePage() {
                       value={taxCsll || ''}
                       onChange={e => setTaxCsll(Number(e.target.value))}
                       placeholder="0,00"
-                      className="w-full px-2 py-2 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 text-right font-mono"
+                      className="w-full px-2 py-2 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right font-mono"
                     />
                   </div>
                 </div>
@@ -532,7 +532,7 @@ export default function GerarNfePage() {
                     type="checkbox"
                     checked={issRetained}
                     onChange={e => setIssRetained(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-slate-700 dark:text-[#d4d4d8]">ISS retido na fonte</span>
                 </label>
@@ -541,7 +541,7 @@ export default function GerarNfePage() {
                     type="checkbox"
                     checked={sendByEmail}
                     onChange={e => setSendByEmail(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-slate-700 dark:text-[#d4d4d8]">Enviar nota por e-mail</span>
                 </label>
@@ -552,7 +552,7 @@ export default function GerarNfePage() {
       </div>
 
       {/* Footer fixo */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] flex items-center justify-end gap-3">
         <button
           onClick={() => router.push('/atendimento/financeiro/nfe')}
           className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
@@ -562,7 +562,7 @@ export default function GerarNfePage() {
         <button
           onClick={handleSubmit}
           disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl shadow-lg shadow-teal-500/20 transition-all active:scale-95 disabled:opacity-50"
+          className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
           GERAR NF-E

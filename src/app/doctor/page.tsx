@@ -418,9 +418,9 @@ export default function DoctorPage() {
     return (
       <div className="h-full flex bg-[#f8fafc] dark:bg-[#0b141a] relative overflow-hidden">
         {/* Lista Lateral - mantém visível */}
-        <div className="w-80 bg-white dark:bg-[#0a0a0c] border-r border-slate-200 dark:border-[#27272a] flex flex-col overflow-hidden">
+        <div className="w-80 bg-white dark:bg-[#08080b] border-r border-slate-200 dark:border-[#2d2d36] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="p-4 border-b border-slate-200 dark:border-[#27272a]">
+          <div className="p-4 border-b border-slate-200 dark:border-[#2d2d36]">
             <div className="flex items-center gap-2 mb-3">
               <Stethoscope className="w-5 h-5 text-rose-500" />
               <h2 className="font-bold text-lg text-slate-800 dark:text-[#fafafa]">
@@ -710,9 +710,9 @@ export default function DoctorPage() {
   return (
     <div className="h-full flex bg-[#f8fafc] dark:bg-[#0b141a] relative overflow-hidden">
       {/* Lista Lateral */}
-      <div className="w-80 bg-white dark:bg-[#0a0a0c] border-r border-slate-200 dark:border-[#27272a] flex flex-col overflow-hidden">
+      <div className="w-80 bg-white dark:bg-[#08080b] border-r border-slate-200 dark:border-[#2d2d36] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-slate-200 dark:border-[#27272a]">
+        <div className="p-4 border-b border-slate-200 dark:border-[#2d2d36]">
           <div className="flex items-center gap-2 mb-3">
             <Stethoscope className="w-5 h-5 text-rose-500" />
             <h2 className="font-bold text-lg text-slate-800 dark:text-[#fafafa]">

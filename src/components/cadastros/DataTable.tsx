@@ -82,7 +82,7 @@ function SkeletonRows({ columns, rows }: { columns: number; rows: number }) {
   return (
     <>
       {Array.from({ length: rows }).map((_, r) => (
-        <tr key={r} className="border-b border-slate-100 dark:border-[#27272a]">
+        <tr key={r} className="border-b border-slate-100 dark:border-[#2d2d36]">
           {Array.from({ length: columns }).map((_, c) => (
             <td key={c} className="px-4 py-3">
               <div className="h-4 bg-slate-200 dark:bg-gray-700 rounded animate-pulse" style={{ width: `${55 + Math.random() * 35}%` }} />
@@ -194,7 +194,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
   return (
     <div className="flex flex-col h-full">
       {/* Barra de busca + pageSize */}
-      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#27272a]">
+      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#2d2d36]">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -202,7 +202,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
             value={search}
             onChange={e => handleSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
           />
         </div>
 
@@ -210,7 +210,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
           <select
             value={pageSize}
             onChange={e => handlePageSizeChange(Number(e.target.value))}
-            className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-teal-400"
           >
             <option value={10}>10 / página</option>
             <option value={25}>25 / página</option>
@@ -222,10 +222,10 @@ export default function DataTable<T extends { id: string; status?: string }>({
       {/* Tabela */}
       <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
         {loading ? (
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                <tr className="bg-slate-50 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
                   {columns.map(col => (
                     <th key={col.key} className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">
                       {col.label}
@@ -249,10 +249,10 @@ export default function DataTable<T extends { id: string; status?: string }>({
             </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                <tr className="bg-slate-50 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
                   {columns.map(col => (
                     <th
                       key={col.key}
@@ -337,13 +337,13 @@ export default function DataTable<T extends { id: string; status?: string }>({
 
       {/* Paginação */}
       {pagination && totalPages > 1 && (
-        <div className="px-6 py-3 border-t border-slate-200 dark:border-[#2e2e33] flex items-center justify-between text-xs text-slate-500 dark:text-[#a1a1aa]">
+        <div className="px-6 py-3 border-t border-slate-200 dark:border-[#3d3d48] flex items-center justify-between text-xs text-slate-500 dark:text-[#a1a1aa]">
           <span>Mostrando {showingFrom} até {showingTo} de {total}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => onPageChange?.(Math.max(0, page - 1), pageSize)}
               disabled={page === 0}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2e2e33] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#3d3d48] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
               Anterior
             </button>
@@ -358,7 +358,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
                   className={`px-3 py-1.5 rounded-lg border transition-colors ${
                     page === pageNum
                       ? 'bg-teal-600 text-white border-teal-600'
-                      : 'border-slate-200 dark:border-[#2e2e33] hover:bg-slate-50 dark:hover:bg-white/5'
+                      : 'border-slate-200 dark:border-[#3d3d48] hover:bg-slate-50 dark:hover:bg-white/5'
                   }`}
                 >
                   {pageNum + 1}
@@ -368,7 +368,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
             <button
               onClick={() => onPageChange?.(Math.min(totalPages - 1, page + 1), pageSize)}
               disabled={page >= totalPages - 1}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2e2e33] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#3d3d48] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
               Próximo
             </button>
@@ -380,7 +380,7 @@ export default function DataTable<T extends { id: string; status?: string }>({
       {menuOpenId !== null && menuPosition && (
         <div
           ref={dropdownRef}
-          className="fixed z-50 w-44 bg-white dark:bg-[#18181b] rounded-xl shadow-xl border border-slate-200 dark:border-[#2e2e33] py-1 animate-in fade-in-0 zoom-in-95"
+          className="fixed z-50 w-44 bg-white dark:bg-[#1c1c21] rounded-xl shadow-xl border border-slate-200 dark:border-[#3d3d48] py-1 animate-in fade-in-0 zoom-in-95"
           style={{ top: menuPosition.top, left: menuPosition.left }}
         >
           {(() => {

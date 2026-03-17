@@ -121,7 +121,7 @@ function ToolbarDropdown({
       </button>
       {open && (
         <div
-          className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl shadow-xl py-1 min-w-[160px] animate-in fade-in-0 zoom-in-95"
+          className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl shadow-xl py-1 min-w-[160px] animate-in fade-in-0 zoom-in-95"
           onClick={() => setOpen(false)}
         >
           {children}
@@ -242,9 +242,9 @@ export default function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div className={`border border-slate-200 dark:border-[#2e2e33] rounded-xl overflow-hidden bg-white dark:bg-[#0a0a0c] ${className}`}>
+    <div className={`border border-slate-200 dark:border-[#3d3d48] rounded-xl overflow-hidden bg-white dark:bg-[#08080b] ${className}`}>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-slate-200 dark:border-[#2e2e33] bg-slate-50 dark:bg-[#18181b]">
+      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-slate-200 dark:border-[#3d3d48] bg-slate-50 dark:bg-[#1c1c21]">
 
         {/* Fonte */}
         <ToolbarDropdown label="Fonte" icon={<Type className="w-4 h-4" />}>
@@ -350,7 +350,7 @@ export default function RichTextEditor({
             <Paintbrush className="w-4 h-4" />
           </button>
           {colorPickerOpen && (
-            <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl shadow-xl p-2 grid grid-cols-5 gap-1 animate-in fade-in-0 zoom-in-95">
+            <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl shadow-xl p-2 grid grid-cols-5 gap-1 animate-in fade-in-0 zoom-in-95">
               {TEXT_COLORS.map(c => (
                 <button
                   key={c}

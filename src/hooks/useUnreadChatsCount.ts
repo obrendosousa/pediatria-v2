@@ -1,27 +1,27 @@
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-const supabase = createClient();
+import { useState, useEffect, useRef } from 'react';
+import { createSchemaClient } from '@/lib/supabase/schemaClient';
+const supabase = createSchemaClient('atendimento');
 
 export function useUnreadChatsCount() {
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [totalChats, setTotalChats] = useState<number>(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        // Busca total de chats não lidos
         const { data: unreadData, error: unreadError } = await supabase
           .from('chats')
-          .select('unread_count')
+          .select('id')
           .eq('is_archived', false)
-          .neq('status', 'DELETED');
+          .neq('status', 'DELETED')
+          .gt('unread_count', 0)
+          .limit(5000);
 
         if (!unreadError && unreadData) {
-          const totalUnread = unreadData.reduce((sum, chat) => sum + (chat.unread_count || 0), 0);
-          setUnreadCount(totalUnread);
+          setUnreadCount(unreadData.length);
         }
 
-        // Busca total de chats ativos
         const { count: totalCount, error: totalError } = await supabase
           .from('chats')
           .select('*', { count: 'exact', head: true })
@@ -38,14 +38,14 @@ export function useUnreadChatsCount() {
 
     fetchCounts();
 
-    // Subscribe para atualizações em tempo real
+    // Realtime: escuta mudanças no schema atendimento
     const channel = supabase
-      .channel('chats-count-updates')
+      .channel('atd-chats-unread')
       .on(
         'postgres_changes',
         {
           event: '*',
-          schema: 'public',
+          schema: 'atendimento',
           table: 'chats',
         },
         () => {
@@ -54,8 +54,12 @@ export function useUnreadChatsCount() {
       )
       .subscribe();
 
+    // Polling fallback a cada 5s (caso realtime falhe ou demore)
+    intervalRef.current = setInterval(fetchCounts, 5000);
+
     return () => {
       supabase.removeChannel(channel);
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 

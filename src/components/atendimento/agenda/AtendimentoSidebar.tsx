@@ -12,7 +12,7 @@ export default function AtendimentoSidebar({ currentDate, setCurrentDate }: Prop
 
   return (
     <div className="w-72 flex flex-col gap-4">
-      <div className="bg-white dark:bg-[#0a0a0c] p-5 rounded-2xl border border-slate-100 dark:border-[#27272a] shadow-sm transition-colors">
+      <div className="bg-white dark:bg-[#08080b] p-5 rounded-2xl border border-slate-100 dark:border-[#2d2d36] shadow-sm transition-colors">
         <div className="flex justify-between items-center mb-4 px-1">
           <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 capitalize">
             {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
@@ -29,7 +29,7 @@ export default function AtendimentoSidebar({ currentDate, setCurrentDate }: Prop
               <button
                 key={i}
                 onClick={() => setCurrentDate(new Date(d))}
-                className={`h-8 w-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${isSelected ? 'bg-teal-500 text-white shadow-md' : 'text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/10'}`}
+                className={`h-8 w-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${isSelected ? 'bg-blue-500 text-white shadow-md' : 'text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/10'}`}
               >
                 {d.getDate()}
               </button>

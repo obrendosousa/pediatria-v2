@@ -134,7 +134,7 @@ export function ExamResultsTab({ patientId }: ExamResultsTabProps) {
             </button>
           </div>
         </div>
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-3">
           <div className="flex gap-6 text-sm text-slate-500 dark:text-[#a1a1aa]">
             {selected.result_date && (
               <span>Data: <strong className="text-slate-700 dark:text-gray-200">{new Date(selected.result_date + 'T12:00:00').toLocaleDateString('pt-BR')}</strong></span>
@@ -143,7 +143,7 @@ export function ExamResultsTab({ patientId }: ExamResultsTabProps) {
               <span>Profissional: <strong className="text-slate-700 dark:text-gray-200">{doctors[selected.doctor_id]}</strong></span>
             )}
           </div>
-          <hr className="border-slate-100 dark:border-[#2e2e33]" />
+          <hr className="border-slate-100 dark:border-[#3d3d48]" />
           {selected.content ? (
             <div className="prose dark:prose-invert max-w-none text-sm whitespace-pre-wrap">{selected.content}</div>
           ) : (
@@ -180,7 +180,7 @@ export function ExamResultsTab({ patientId }: ExamResultsTabProps) {
               value={examName}
               onChange={e => setExamName(e.target.value)}
               placeholder="Ex: Hemograma completo"
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
           <div>
@@ -189,7 +189,7 @@ export function ExamResultsTab({ patientId }: ExamResultsTabProps) {
               type="date"
               value={resultDate}
               onChange={e => setResultDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         </div>
@@ -201,7 +201,7 @@ export function ExamResultsTab({ patientId }: ExamResultsTabProps) {
             onChange={e => setContent(e.target.value)}
             placeholder="Digite os resultados do exame..."
             rows={10}
-            className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
+            className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
           />
         </div>
 
@@ -216,7 +216,7 @@ export function ExamResultsTab({ patientId }: ExamResultsTabProps) {
           </button>
           <button
             onClick={handleBack}
-            className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-[#a1a1aa] bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+            className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-[#a1a1aa] bg-slate-100 dark:bg-[#1c1c21] hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
           >
             CANCELAR
           </button>
@@ -244,10 +244,10 @@ export function ExamResultsTab({ patientId }: ExamResultsTabProps) {
           <p className="text-sm text-slate-400 dark:text-[#71717a]">Nenhum resultado registrado.</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+        <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-slate-50 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+              <tr className="bg-slate-50 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
                 <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Data</th>
                 <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Nome do exame</th>
                 <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Profissional</th>

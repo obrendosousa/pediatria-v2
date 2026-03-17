@@ -108,26 +108,26 @@ export default function DashboardPage() {
             {/* Header skeleton */}
             <div className="flex items-center justify-between">
               <div className="space-y-3">
-                <div className="h-8 w-72 bg-gray-200 dark:bg-[#18181b] rounded-lg animate-pulse" />
-                <div className="h-4 w-48 bg-gray-100 dark:bg-[#18181b]/60 rounded animate-pulse" />
+                <div className="h-8 w-72 bg-gray-200 dark:bg-[#1c1c21] rounded-lg animate-pulse" />
+                <div className="h-4 w-48 bg-gray-100 dark:bg-[#1c1c21]/60 rounded animate-pulse" />
               </div>
-              <div className="h-10 w-40 bg-gray-200 dark:bg-[#18181b] rounded-lg animate-pulse" />
+              <div className="h-10 w-40 bg-gray-200 dark:bg-[#1c1c21] rounded-lg animate-pulse" />
             </div>
             {/* Cards skeleton */}
             <div className="grid grid-cols-4 gap-5">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-[140px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#27272a]/50 animate-pulse" />
+                <div key={i} className="h-[140px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#2d2d36]/50 animate-pulse" />
               ))}
             </div>
             <div className="grid grid-cols-4 gap-5">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-[140px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#27272a]/50 animate-pulse" />
+                <div key={i} className="h-[140px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#2d2d36]/50 animate-pulse" />
               ))}
             </div>
             {/* Charts skeleton */}
             <div className="grid grid-cols-2 gap-5">
               {[...Array(2)].map((_, i) => (
-                <div key={i} className="h-[320px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#27272a]/50 animate-pulse" />
+                <div key={i} className="h-[320px] bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#2d2d36]/50 animate-pulse" />
               ))}
             </div>
           </div>
@@ -139,7 +139,7 @@ export default function DashboardPage() {
   if (!metrics) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-[#0C1117] min-h-screen">
-        <div className="text-center p-10 bg-white dark:bg-[#161B22] rounded-2xl shadow-sm border border-gray-100 dark:border-[#27272a]/50 max-w-sm">
+        <div className="text-center p-10 bg-white dark:bg-[#161B22] rounded-2xl shadow-sm border border-gray-100 dark:border-[#2d2d36]/50 max-w-sm">
           <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center mx-auto mb-5">
             <Activity className="w-7 h-7 text-rose-500" />
           </div>
@@ -178,7 +178,7 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex bg-white dark:bg-[#161B22] rounded-xl border border-gray-200 dark:border-[#2e2e33]/50 p-1 shadow-sm">
+              <div className="flex bg-white dark:bg-[#161B22] rounded-xl border border-gray-200 dark:border-[#3d3d48]/50 p-1 shadow-sm">
                 {[
                   { value: 7, label: '7d' },
                   { value: 30, label: '30d' },
@@ -297,7 +297,7 @@ export default function DashboardPage() {
                   <div className="flex-1 w-full space-y-3">
                     <LegendRow color={CHART_COLORS.male} label="Masculino" value={metrics.demographics.male.count} pct={metrics.demographics.male.percentage} />
                     <LegendRow color={CHART_COLORS.female} label="Feminino" value={metrics.demographics.female.count} pct={metrics.demographics.female.percentage} />
-                    <div className="pt-3 border-t border-gray-100 dark:border-[#2e2e33]/50">
+                    <div className="pt-3 border-t border-gray-100 dark:border-[#3d3d48]/50">
                       <p className="text-xs text-gray-400 dark:text-[#71717a] text-center font-medium">
                         Total: {metrics.demographics.total} pacientes
                       </p>
@@ -536,7 +536,7 @@ function KPICard({
   trend?: 'up' | 'down';
 }) {
   return (
-    <div className="group relative bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#27272a]/50 p-5 sm:p-6 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/20 transition-all duration-200 cursor-default">
+    <div className="group relative bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#2d2d36]/50 p-5 sm:p-6 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/20 transition-all duration-200 cursor-default">
       {/* Barra lateral de acento */}
       <div
         className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full transition-all duration-200 group-hover:top-3 group-hover:bottom-3"
@@ -569,7 +569,7 @@ function KPICard({
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#27272a]/50 p-5 sm:p-6 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/20 transition-all duration-200">
+    <div className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-100 dark:border-[#2d2d36]/50 p-5 sm:p-6 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/20 transition-all duration-200">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-[#d4d4d8] mb-5">{title}</h3>
       {children}
     </div>
@@ -594,7 +594,7 @@ function LegendRow({ color, label, value, pct }: { color: string; label: string;
 function CustomTooltip({ active, payload, label, suffix }: { active?: boolean; payload?: Array<{ value: number; color?: string }>; label?: string; suffix?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-[#1C2128] border border-gray-200 dark:border-[#2e2e33]/50 rounded-xl px-3.5 py-2.5 shadow-xl shadow-gray-200/30 dark:shadow-black/30">
+    <div className="bg-white dark:bg-[#1C2128] border border-gray-200 dark:border-[#3d3d48]/50 rounded-xl px-3.5 py-2.5 shadow-xl shadow-gray-200/30 dark:shadow-black/30">
       <p className="text-xs font-semibold text-gray-900 dark:text-[#fafafa] mb-0.5">{label}</p>
       <p className="text-sm font-bold" style={{ color: payload[0]?.color || THEME.teal.base }}>
         {payload[0]?.value}{suffix || ''}

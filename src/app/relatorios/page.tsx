@@ -118,7 +118,7 @@ export default function RelatoriosPage() {
     return (
         <div className="flex flex-col h-screen bg-[#f8fafc] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300">
             {/* Header */}
-            <div className="bg-white dark:bg-[#0a0a0c] px-8 py-8 border-b border-slate-200 dark:border-[#27272a] flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center shrink-0 transition-colors relative overflow-hidden">
+            <div className="bg-white dark:bg-[#08080b] px-8 py-8 border-b border-slate-200 dark:border-[#2d2d36] flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center shrink-0 transition-colors relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 
                 <div className="z-10">
@@ -145,7 +145,7 @@ export default function RelatoriosPage() {
                             placeholder="Buscar por ID ou título..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-[#252833] border border-slate-200 dark:border-[#2e2e33] rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-[#252833] border border-slate-200 dark:border-[#3d3d48] rounded-xl text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
                 </div>
@@ -164,7 +164,7 @@ export default function RelatoriosPage() {
                             onClick={() => setTypeFilter('all')}
                             className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold transition-all shrink-0 ${typeFilter === 'all'
                                 ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900'
-                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#0a0a0c] dark:border-[#2e2e33] dark:text-[#d4d4d8] dark:hover:bg-white/5'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#08080b] dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/5'
                                 }`}
                         >
                             Todos
@@ -175,7 +175,7 @@ export default function RelatoriosPage() {
                                 onClick={() => setTypeFilter(type)}
                                 className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold transition-all shrink-0 ${typeFilter === type
                                     ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#0a0a0c] dark:border-[#2e2e33] dark:text-[#d4d4d8] dark:hover:bg-white/5'
+                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#08080b] dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/5'
                                     }`}
                             >
                                 {getReportTypeLabel(type)}
@@ -196,10 +196,10 @@ export default function RelatoriosPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 {filteredReports.map((report) => (
                                     <Link href={`/relatorios/${report.id}`} key={report.id} className="group outline-none">
-                                        <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200/80 dark:border-[#2e2e33]/80 rounded-3xl p-6 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:shadow-black/50 hover:border-indigo-200 dark:hover:border-indigo-800/50 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full relative overflow-hidden">
+                                        <div className="bg-white dark:bg-[#08080b] border border-slate-200/80 dark:border-[#3d3d48]/80 rounded-3xl p-6 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:shadow-black/50 hover:border-indigo-200 dark:hover:border-indigo-800/50 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full relative overflow-hidden">
 
                                             <div className="flex justify-between items-start mb-4">
-                                                <div className="w-12 h-12 bg-slate-50 dark:bg-[#252833] rounded-2xl flex items-center justify-center border border-slate-100 dark:border-[#27272a] group-hover:scale-110 transition-transform">
+                                                <div className="w-12 h-12 bg-slate-50 dark:bg-[#252833] rounded-2xl flex items-center justify-center border border-slate-100 dark:border-[#2d2d36] group-hover:scale-110 transition-transform">
                                                     {getReportIcon(report.tipo)}
                                                 </div>
                                                 <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ export default function RelatoriosPage() {
                                                 {report.titulo || `Relatório #${report.id}`}
                                             </h3>
 
-                                            <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 dark:border-[#27272a]/50">
+                                            <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 dark:border-[#2d2d36]/50">
                                                 <div className="flex flex-col gap-2">
                                                     <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md border w-fit ${getReportTypeColor(report.tipo)}`}>
                                                         {getReportTypeLabel(report.tipo)}
@@ -240,7 +240,7 @@ export default function RelatoriosPage() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] border-dashed rounded-[2rem] text-center mt-8">
+                            <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] border-dashed rounded-[2rem] text-center mt-8">
                                 <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl flex items-center justify-center mb-6">
                                     <FileSearch className="w-10 h-10 text-indigo-500 opacity-60" />
                                 </div>

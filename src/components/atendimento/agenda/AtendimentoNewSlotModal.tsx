@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
 import { X, User, Ban, FileText, Phone, Calendar, Clock, Stethoscope, Loader2, Save, Wallet, Cake } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import { isValidISODate, checkTimeConflict, checkBlockConflict } from '@/utils/scheduling/validation';
 
 const supabase = createSchemaClient('atendimento');
 
@@ -106,6 +107,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!formData.date || formData.date.length !== 10) { toast.error('Insira uma data valida (DD/MM/AAAA)'); return; }
+    if (!isValidISODate(formData.date)) { toast.error('Data invalida (dia/mes incorreto).'); return; }
 
     if (slotType === 'booked') {
       if (!formData.patient_name.trim()) { toast.error('Preencha o nome do paciente.'); return; }
@@ -113,6 +115,26 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
       if (!formData.type) { toast.error('Selecione o tipo de atendimento.'); return; }
     } else {
       if (!formData.notes.trim()) { toast.error('Informe o motivo do bloqueio.'); return; }
+    }
+
+    // Verificar conflitos de horário e bloqueios (apenas para agendamentos)
+    if (slotType === 'booked') {
+      const doctorIdCheck = selectedDoctorId || doctors[0]?.id;
+      if (doctorIdCheck && formData.time) {
+        const [conflictResult, blockResult] = await Promise.all([
+          checkTimeConflict(supabase, doctorIdCheck, formData.date, formData.time),
+          checkBlockConflict(supabase, doctorIdCheck, formData.date, formData.time),
+        ]);
+        if (conflictResult.hasConflict) {
+          const names = conflictResult.conflicts.map(c => c.patient_name || 'Paciente').join(', ');
+          toast.error(`Conflito: o profissional ja possui agendamento neste horario (${names}).`);
+          return;
+        }
+        if (blockResult.isBlocked) {
+          toast.error(`Horario bloqueado: ${blockResult.blockTitle || 'Bloqueio ativo'}.`);
+          return;
+        }
+      }
     }
 
     setLoading(true);
@@ -183,18 +205,18 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-4 border-b border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-between items-center">
+      <div className="bg-white dark:bg-[#08080b] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="p-4 border-b border-gray-200 dark:border-[#3d3d48] bg-gray-50 dark:bg-[#1c1c21] flex justify-between items-center">
           <div className="flex items-center gap-4">
             <h3 className="font-bold text-gray-800 dark:text-[#fafafa] flex items-center gap-2">
-              <Calendar className="text-teal-600 dark:text-teal-400" size={20}/>
+              <Calendar className="text-blue-600 dark:text-blue-400" size={20}/>
               {slotType === 'booked' ? 'Agendar Paciente' : 'Bloquear Horario'}
             </h3>
             <div className="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-              <button type="button" onClick={() => setSlotType('booked')} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${slotType === 'booked' ? 'bg-white text-teal-600 shadow-sm dark:bg-[#18181b] dark:text-teal-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
+              <button type="button" onClick={() => setSlotType('booked')} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${slotType === 'booked' ? 'bg-white text-blue-600 shadow-sm dark:bg-[#1c1c21] dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
                 <User size={14}/> Agendar
               </button>
-              <button type="button" onClick={() => setSlotType('blocked')} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${slotType === 'blocked' ? 'bg-white text-red-600 shadow-sm dark:bg-[#18181b] dark:text-red-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
+              <button type="button" onClick={() => setSlotType('blocked')} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${slotType === 'blocked' ? 'bg-white text-red-600 shadow-sm dark:bg-[#1c1c21] dark:text-red-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
                 <Ban size={14}/> Bloquear
               </button>
             </div>
@@ -211,7 +233,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
                 <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Nome do Paciente *</label>
                 <div className="relative">
                   <User className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                  <input type="text" value={formData.patient_name} onChange={e => setFormData({...formData, patient_name: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all" placeholder="Nome do paciente" required />
+                  <input type="text" value={formData.patient_name} onChange={e => setFormData({...formData, patient_name: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="Nome do paciente" required />
                 </div>
               </div>
 
@@ -220,14 +242,14 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
                   <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Responsavel</label>
                   <div className="relative">
                     <User className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                    <input type="text" value={formData.parent_name} onChange={e => setFormData({...formData, parent_name: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all" placeholder="Nome do responsavel" />
+                    <input type="text" value={formData.parent_name} onChange={e => setFormData({...formData, parent_name: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="Nome do responsavel" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Sexo</label>
                   <div className="flex gap-0 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                    <button type="button" onClick={() => setFormData({...formData, patient_sex: 'M'})} className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all shadow-sm ${formData.patient_sex === 'M' ? 'bg-white text-blue-600 shadow-sm dark:bg-[#18181b] dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Masculino</button>
-                    <button type="button" onClick={() => setFormData({...formData, patient_sex: 'F'})} className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all shadow-sm ${formData.patient_sex === 'F' ? 'bg-white text-pink-600 shadow-sm dark:bg-[#18181b] dark:text-pink-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Feminino</button>
+                    <button type="button" onClick={() => setFormData({...formData, patient_sex: 'M'})} className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all shadow-sm ${formData.patient_sex === 'M' ? 'bg-white text-blue-600 shadow-sm dark:bg-[#1c1c21] dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Masculino</button>
+                    <button type="button" onClick={() => setFormData({...formData, patient_sex: 'F'})} className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all shadow-sm ${formData.patient_sex === 'F' ? 'bg-white text-pink-600 shadow-sm dark:bg-[#1c1c21] dark:text-pink-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>Feminino</button>
                   </div>
                 </div>
               </div>
@@ -236,7 +258,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
                 <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Data de Nascimento (DD/MM/AAAA)</label>
                 <div className="relative">
                   <Cake className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                  <input type="text" value={formData.birthDateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all" />
+                  <input type="text" value={formData.birthDateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
                 </div>
               </div>
 
@@ -244,7 +266,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
                 <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Telefone / WhatsApp</label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                  <input type="text" value={formData.parent_phone} onChange={e => setFormData({...formData, parent_phone: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all" placeholder="11999999999" />
+                  <input type="text" value={formData.parent_phone} onChange={e => setFormData({...formData, parent_phone: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="11999999999" />
                 </div>
               </div>
 
@@ -253,14 +275,14 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
                   <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Data * (DD/MM/AAAA)</label>
                   <div className="relative">
                     <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                    <input type="text" value={formData.dateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all" required />
+                    <input type="text" value={formData.dateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Horario *</label>
                   <div className="relative">
                     <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                    <input type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all" required />
+                    <input type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required />
                   </div>
                 </div>
               </div>
@@ -269,7 +291,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
                 <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Profissional *</label>
                 <div className="relative">
                   <Stethoscope className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                  <select value={selectedDoctorId || ''} onChange={e => setSelectedDoctorId(Number(e.target.value))} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all" required>
+                  <select value={selectedDoctorId || ''} onChange={e => setSelectedDoctorId(Number(e.target.value))} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required>
                     {doctors.length === 0 ? <option value="">Carregando...</option> : doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                 </div>
@@ -277,21 +299,21 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Tipo de Atendimento *</label>
-                <select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as 'consulta' | 'retorno' | '' })} className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all" required>
+                <select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as 'consulta' | 'retorno' | '' })} className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required>
                   <option value="">Selecione...</option>
                   <option value="consulta">Consulta</option>
                   <option value="retorno">Retorno</option>
                 </select>
               </div>
 
-              <div className="bg-slate-50 dark:bg-[#18181b]/50 p-4 rounded-xl border border-slate-200 dark:border-[#2e2e33] space-y-4">
+              <div className="bg-slate-50 dark:bg-[#1c1c21]/50 p-4 rounded-xl border border-slate-200 dark:border-[#3d3d48] space-y-4">
                 <h4 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] flex items-center gap-2"><Wallet className="w-4 h-4 text-emerald-500" /> Financeiro</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Valor Total (R$)</label>
                     <div className="relative">
                       <span className="absolute left-3 top-2.5 text-gray-500 dark:text-[#a1a1aa] font-bold text-sm">R$</span>
-                      <input type="text" value={formData.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" placeholder="0,00" />
+                      <input type="text" value={formData.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" placeholder="0,00" />
                     </div>
                   </div>
                   <div>
@@ -303,7 +325,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
                   </div>
                 </div>
                 {totalNum > 0 && (
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-[#2e2e33]">
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-[#3d3d48]">
                     <span className="text-sm text-slate-500 dark:text-[#a1a1aa]">Restante:</span>
                     <span className={`text-lg font-black ${remaining > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   </div>
@@ -314,7 +336,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
                 <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Observacoes</label>
                 <div className="relative">
                   <FileText className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                  <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all resize-none" placeholder="Observacoes..." rows={3} />
+                  <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none" placeholder="Observacoes..." rows={3} />
                 </div>
               </div>
             </>
@@ -325,14 +347,14 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
                   <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Data * (DD/MM/AAAA)</label>
                   <div className="relative">
                     <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                    <input type="text" value={formData.dateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all" required />
+                    <input type="text" value={formData.dateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all" required />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Horario *</label>
                   <div className="relative">
                     <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                    <input type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all" required />
+                    <input type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all" required />
                   </div>
                 </div>
               </div>
@@ -347,9 +369,9 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
           )}
         </form>
 
-        <div className="p-4 border-t border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-end gap-3">
+        <div className="p-4 border-t border-gray-200 dark:border-[#3d3d48] bg-gray-50 dark:bg-[#1c1c21] flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 text-gray-500 dark:text-[#a1a1aa] hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-sm font-bold transition-colors">Cancelar</button>
-          <button onClick={() => handleSubmit()} disabled={loading} className={`px-6 py-2 text-white rounded-lg text-sm font-bold shadow-lg flex items-center gap-2 transition-colors disabled:opacity-50 ${slotType === 'booked' ? 'bg-teal-600 hover:bg-teal-700' : 'bg-red-600 hover:bg-red-700'}`}>
+          <button onClick={() => handleSubmit()} disabled={loading} className={`px-6 py-2 text-white rounded-lg text-sm font-bold shadow-lg flex items-center gap-2 transition-colors disabled:opacity-50 ${slotType === 'booked' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'}`}>
             {loading ? <><Loader2 size={16} className="animate-spin"/> Salvando...</> : <><Save size={16}/> {slotType === 'booked' ? 'Salvar' : 'Bloquear'}</>}
           </button>
         </div>

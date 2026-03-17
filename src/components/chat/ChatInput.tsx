@@ -443,7 +443,7 @@ export default function ChatInput({
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="absolute bottom-[70px] left-2 right-2 sm:right-auto z-50 shadow-2xl rounded-2xl bg-white dark:bg-[var(--chat-surface)] border border-gray-200 dark:border-[#2e2e33] overflow-hidden sm:w-[360px] flex flex-col"
+            className="absolute bottom-[70px] left-2 right-2 sm:right-auto z-50 shadow-2xl rounded-2xl bg-white dark:bg-[var(--chat-surface)] border border-gray-200 dark:border-[#3d3d48] overflow-hidden sm:w-[360px] flex flex-col"
           >
             {/* Conteúdo */}
             <div className="flex-1 min-h-0">
@@ -497,7 +497,7 @@ export default function ChatInput({
             </div>
 
             {/* Tab bar inferior estilo WhatsApp */}
-            <div className="flex items-center border-t border-gray-200 dark:border-[#2e2e33] bg-white dark:bg-[var(--chat-surface)]">
+            <div className="flex items-center border-t border-gray-200 dark:border-[#3d3d48] bg-white dark:bg-[var(--chat-surface)]">
               <button
                 onClick={() => { setPickerTab('emojis'); localStorage.setItem('pickerTab', 'emojis'); }}
                 className={`flex-1 flex items-center justify-center py-2.5 transition-colors duration-200 cursor-pointer relative ${pickerTab === 'emojis' ? 'text-[var(--chat-accent)]' : 'text-[var(--chat-text-muted)] hover:text-[var(--chat-text-primary)]'}`}

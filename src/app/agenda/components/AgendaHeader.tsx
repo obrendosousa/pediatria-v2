@@ -24,7 +24,7 @@ export default function AgendaHeader({
   openNewSlotModal
 }: AgendaHeaderProps) {
   return (
-    <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0a0a0c] border-b border-slate-100 dark:border-[#27272a] shadow-sm z-20 transition-colors">
+    <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#08080b] border-b border-slate-100 dark:border-[#2d2d36] shadow-sm z-20 transition-colors">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 rounded-lg shadow-sm">
           <Calendar className="w-5 h-5" />
@@ -35,7 +35,7 @@ export default function AgendaHeader({
         </div>
       </div>
 
-      <div className="flex items-center bg-slate-50 dark:bg-[#18181b] rounded-lg p-1 border border-slate-200 dark:border-[#2e2e33]">
+      <div className="flex items-center bg-slate-50 dark:bg-[#1c1c21] rounded-lg p-1 border border-slate-200 dark:border-[#3d3d48]">
         <button onClick={() => viewMode === 'day' ? changeDay(-1) : changeWeek(-1)} className="p-1.5 hover:bg-white dark:hover:bg-white/10 rounded-md text-slate-400 dark:text-[#a1a1aa] transition-all"><ChevronLeft className="w-4 h-4"/></button>
         <span className="px-4 text-sm font-bold text-slate-700 dark:text-gray-200 min-w-[180px] text-center capitalize">
           {viewMode === 'day'
@@ -47,7 +47,7 @@ export default function AgendaHeader({
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="flex bg-slate-100 dark:bg-[#18181b] p-1 rounded-lg">
+        <div className="flex bg-slate-100 dark:bg-[#1c1c21] p-1 rounded-lg">
           <button onClick={() => setViewMode('day')} className={`p-1.5 rounded-md transition-all flex items-center gap-2 px-3 text-xs font-bold ${viewMode === 'day' ? 'bg-white dark:bg-gray-600 shadow text-slate-800 dark:text-white' : 'text-slate-400 dark:text-[#71717a]'}`}><List className="w-3.5 h-3.5" /> Dia</button>
           <button onClick={() => setViewMode('week')} className={`p-1.5 rounded-md transition-all flex items-center gap-2 px-3 text-xs font-bold ${viewMode === 'week' ? 'bg-white dark:bg-gray-600 shadow text-slate-800 dark:text-white' : 'text-slate-400 dark:text-[#71717a]'}`}><Grid className="w-3.5 h-3.5" /> Semana</button>
         </div>

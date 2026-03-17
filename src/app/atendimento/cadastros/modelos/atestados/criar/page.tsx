@@ -23,7 +23,7 @@ export default function CriarAtestadoPage() {
       subtitle="Crie um modelo de atestado com variáveis"
       backPath="/atendimento/cadastros/modelos/atestados"
       onSubmit={handleSubmit}
-      icon={<FileText className="w-5 h-5 text-teal-600" />}
+      icon={<FileText className="w-5 h-5 text-blue-600" />}
     />
   );
 }

@@ -12,7 +12,7 @@ export default function CadastrosIndexPage() {
 
   return (
     <div className="h-full flex items-center justify-center">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-teal-400 border-t-transparent" />
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
     </div>
   );
 }

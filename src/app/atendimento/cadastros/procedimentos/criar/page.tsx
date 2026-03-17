@@ -19,7 +19,7 @@ export default function CriarProcedimentoPage() {
       duration_minutes: form.duration_minutes,
       composition_enabled: form.composition_enabled,
       fee_value: form.fee_value,
-      total_value: form.fee_value,
+      total_value: form.procedure_value,
       status: 'active',
     });
 

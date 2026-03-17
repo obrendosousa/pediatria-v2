@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createSchemaAdminClient } from '@/lib/supabase/schemaServer';
 import { EvolutionWebhookData } from '@/ai/ingestion/state';
-import { handleMediaUpload, normalizeJidToPhone, isLidJid, fetchProfilePictureFromEvolution } from '@/ai/ingestion/services';
+import { handleMediaUpload, normalizeJidToPhone, isLidJid, resolveLidToPhone, fetchProfilePictureFromEvolution } from '@/ai/ingestion/services';
 
 const SCHEMA = 'atendimento';
 
@@ -430,9 +430,12 @@ async function ensureChatExistsInAtendimento(phone: string, pushName: string, fr
     return existing;
   }
 
+  // Para mensagem recebida (não fromMe), usa pushName se disponível.
+  const newContactName = (!fromMe && pushName && pushName !== phone) ? pushName : phone;
+
   const { data: newChat, error } = await supabase.from('chats').insert({
     phone,
-    contact_name: phone,
+    contact_name: newContactName,
     status: 'ACTIVE',
     created_at: new Date().toISOString(),
   }).select().single();
@@ -509,11 +512,27 @@ async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
     let phone = '';
 
     if (isLidJid(jid)) {
-      // LID não suportado no atendimento por enquanto — ignora
-      console.warn('[ATD/Ingest] LID JID ignorado:', jid);
-      return;
+      // Tentar resolver LID via senderPn ou remoteJidAlt (Evolution API v2)
+      const senderPn = message.key?.senderPn;
+      const remoteJidAlt = message.key?.remoteJidAlt;
+
+      if (senderPn && senderPn.includes('@s.whatsapp.net')) {
+        phone = normalizeJidToPhone(senderPn);
+      } else if (remoteJidAlt && remoteJidAlt.includes('@s.whatsapp.net')) {
+        phone = normalizeJidToPhone(remoteJidAlt);
+      } else {
+        // Fallback: resolver via Evolution API
+        const resolved = await resolveLidToPhone(jid);
+        if (resolved?.phone) {
+          phone = resolved.phone;
+        } else {
+          console.warn('[ATD/Ingest] LID JID não resolvido:', jid);
+          return;
+        }
+      }
+    } else {
+      phone = normalizeJidToPhone(jid);
     }
-    phone = normalizeJidToPhone(jid);
     if (!phone || !/^\d{8,15}$/.test(phone)) return;
 
     const isMe = message.key?.fromMe === true;

@@ -92,7 +92,7 @@ export default function FormattedMessage({ text, className, truncateLength }: Fo
         const isMonoBlock = mbIdx % 2 === 1;
         if (isMonoBlock) {
           return [
-            <code key={`${lineIdx}-mb-${mbIdx}`} className="bg-gray-200 dark:bg-[#27272a] px-1.5 py-0.5 rounded text-sm font-mono">
+            <code key={`${lineIdx}-mb-${mbIdx}`} className="bg-gray-200 dark:bg-[#2d2d36] px-1.5 py-0.5 rounded text-sm font-mono">
               {part}
             </code>
           ];
@@ -105,7 +105,7 @@ export default function FormattedMessage({ text, className, truncateLength }: Fo
           const isInlineCode = icIdx % 2 === 1;
           if (isInlineCode) {
             return [
-              <code key={`${lineIdx}-ic-${mbIdx}-${icIdx}`} className="bg-gray-200 dark:bg-[#27272a] px-1 py-0.5 rounded text-sm font-mono">
+              <code key={`${lineIdx}-ic-${mbIdx}-${icIdx}`} className="bg-gray-200 dark:bg-[#2d2d36] px-1 py-0.5 rounded text-sm font-mono">
                 {icPart}
               </code>
             ];

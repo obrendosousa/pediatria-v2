@@ -25,8 +25,8 @@ export default function WeekView({
           const isToday = day.toDateString() === new Date().toDateString();
 
           return (
-            <div key={dateStr} className={`flex flex-col h-full transition-colors ${isToday ? 'bg-rose-50/10 dark:bg-rose-900/5' : 'bg-white dark:bg-[#0a0a0c]'}`}>
-              <div className={`text-center p-3 border-b ${isToday ? 'border-rose-200 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10' : 'border-slate-100 dark:border-[#27272a]'}`}>
+            <div key={dateStr} className={`flex flex-col h-full transition-colors ${isToday ? 'bg-rose-50/10 dark:bg-rose-900/5' : 'bg-white dark:bg-[#08080b]'}`}>
+              <div className={`text-center p-3 border-b ${isToday ? 'border-rose-200 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10' : 'border-slate-100 dark:border-[#2d2d36]'}`}>
                 <span className={`text-[10px] font-extrabold uppercase block mb-1 tracking-wider ${isToday ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-[#71717a]'}`}>{day.toLocaleDateString('pt-BR', { weekday: 'short' })}</span>
                 <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-lg font-bold ${isToday ? 'bg-rose-600 text-white shadow-md' : 'text-slate-700 dark:text-[#a1a1aa]'}`}>{day.getDate()}</div>
               </div>
@@ -70,7 +70,7 @@ export default function WeekView({
                         </p>
                       )}
                       {total > 0 && (
-                        <div className="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-200/50 dark:border-[#2e2e33]/50">
+                        <div className="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-200/50 dark:border-[#3d3d48]/50">
                           {remaining <= 0 ? (
                             <span className="inline-flex w-fit items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md font-bold">
                               <DollarSign size={10}/> Pago
@@ -85,7 +85,7 @@ export default function WeekView({
                     </div>
                   );
                 })}
-                <button onClick={() => openNewSlotModal(dateStr)} className="w-full py-2 border border-dashed border-slate-200 dark:border-[#2e2e33] rounded-lg text-slate-300 dark:text-gray-600 hover:text-rose-500 dark:hover:text-rose-400 hover:border-rose-300 dark:hover:border-rose-500/50 transition-all flex items-center justify-center"><Plus className="w-4 h-4" /></button>
+                <button onClick={() => openNewSlotModal(dateStr)} className="w-full py-2 border border-dashed border-slate-200 dark:border-[#3d3d48] rounded-lg text-slate-300 dark:text-gray-600 hover:text-rose-500 dark:hover:text-rose-400 hover:border-rose-300 dark:hover:border-rose-500/50 transition-all flex items-center justify-center"><Plus className="w-4 h-4" /></button>
               </div>
             </div>
           );

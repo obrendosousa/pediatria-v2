@@ -131,7 +131,7 @@ export default function AutomationsPage() {
   return (
     <div className="flex flex-col h-screen bg-[#f8fafc] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300">
       {/* Header */}
-      <div className="bg-white dark:bg-[#0a0a0c] px-8 py-8 border-b border-slate-200 dark:border-[#27272a] flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center shrink-0 transition-colors relative overflow-hidden">
+      <div className="bg-white dark:bg-[#08080b] px-8 py-8 border-b border-slate-200 dark:border-[#2d2d36] flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center shrink-0 transition-colors relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-rose-500/5 to-orange-400/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
         <div className="z-10">
@@ -151,7 +151,7 @@ export default function AutomationsPage() {
         </div>
 
         <div className="flex items-center gap-4 text-sm font-semibold z-10">
-          <div className="px-5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#252833] border border-slate-200 dark:border-[#2e2e33] shadow-sm">
+          <div className="px-5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#252833] border border-slate-200 dark:border-[#3d3d48] shadow-sm">
             <span className="text-slate-500 dark:text-[#a1a1aa] mr-3">Ativas</span>
             <span className="text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md">
               {milestoneAutomations.filter((a) => a.active).length +
@@ -165,7 +165,7 @@ export default function AutomationsPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Tabs */}
         <div className="px-8 pt-6 pb-2 z-10">
-          <div className="flex flex-col sm:flex-row gap-2 p-1.5 bg-slate-200/50 dark:bg-[#1a1d24] rounded-2xl lg:w-fit border border-slate-200/50 dark:border-[#27272a]">
+          <div className="flex flex-col sm:flex-row gap-2 p-1.5 bg-slate-200/50 dark:bg-[#1a1d24] rounded-2xl lg:w-fit border border-slate-200/50 dark:border-[#2d2d36]">
             {tabs.map(tab => {
               const isActive = activeTab === tab.id;
               return (
@@ -196,7 +196,7 @@ export default function AutomationsPage() {
 
               {activeTab === 'milestones' && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 bg-white dark:bg-[#0a0a0c] p-6 rounded-3xl border border-slate-200 dark:border-[#2e2e33] shadow-sm">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 bg-white dark:bg-[#08080b] p-6 rounded-3xl border border-slate-200 dark:border-[#3d3d48] shadow-sm">
                     <div className="max-w-2xl">
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-xs font-bold mb-3">
                         <TrendingUp className="w-3.5 h-3.5" /> JORNADA DE PACIENTE
@@ -229,7 +229,7 @@ export default function AutomationsPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] border-dashed rounded-[2rem] text-center">
+                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] border-dashed rounded-[2rem] text-center">
                       <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-3xl flex items-center justify-center mb-6 -rotate-6">
                         <TrendingUp className="w-10 h-10 text-rose-500" />
                       </div>
@@ -266,7 +266,7 @@ export default function AutomationsPage() {
                       onToggle={() => handleToggle(appointmentAutomation)}
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] border-dashed rounded-[2rem] text-center">
+                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] border-dashed rounded-[2rem] text-center">
                       <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-3xl flex items-center justify-center mb-6">
                         <Calendar className="w-10 h-10 text-blue-500" />
                       </div>
@@ -303,7 +303,7 @@ export default function AutomationsPage() {
                       onToggle={() => handleToggle(returnAutomation)}
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] border-dashed rounded-[2rem] text-center">
+                    <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] border-dashed rounded-[2rem] text-center">
                       <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mb-6">
                         <RotateCcw className="w-10 h-10 text-emerald-500" />
                       </div>

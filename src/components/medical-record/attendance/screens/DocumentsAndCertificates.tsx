@@ -69,7 +69,6 @@ export function generateDocumentHTML(
   patientData: any
 ): string {
   const doctorName = patientData?.doctor_name || 'Dr(a).';
-  const doctorPhone = patientData?.doctor_phone || '';
   const patientName = patientData?.full_name || patientData?.name || 'Paciente';
   const patientCPF = patientData?.cpf || '';
   const dateFormatted = formatDateBR(docDate);
@@ -81,35 +80,28 @@ export function generateDocumentHTML(
 <meta charset="UTF-8" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #1a1a1a; background: white; }
-  .page { width: 210mm; min-height: 297mm; padding: 25mm 20mm 20mm; display: flex; flex-direction: column; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; border-bottom: 2px solid #1a1a1a; margin-bottom: 20px; }
-  .clinic-name { font-size: 15pt; font-weight: bold; color: #1a1a1a; }
-  .clinic-info { font-size: 9pt; color: #555; margin-top: 3px; }
+  body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #1a1a1a; background: transparent; }
+  .page { width: 210mm; min-height: 290mm; padding: 32mm 20mm 30mm; display: flex; flex-direction: column; }
   .doc-title { text-align: center; font-size: 14pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid #ccc; }
   .patient-info { font-size: 10pt; margin-bottom: 18px; color: #333; }
   .patient-info span { font-weight: bold; color: #1a1a1a; }
   .content { flex: 1; font-size: 11pt; line-height: 1.7; text-align: justify; }
   .content p { margin-bottom: 10px; }
-  .footer { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; }
-  .signature-area { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .signature-line { width: 220px; border-bottom: 1px solid #1a1a1a; height: 40px; }
-  .signature-text { font-size: 10pt; color: #555; text-align: center; }
-  .date-location { font-size: 10pt; color: #555; margin-bottom: 20px; text-align: right; }
+  .footer { margin-top: auto; padding-top: 12px; }
+  .signature-block { text-align: center; }
+  .signature-line { width: 200px; border-top: 1px solid #1a1a1a; margin: 0 auto 4px; }
+  .doctor-name { font-size: 12px; font-weight: bold; }
+  .doctor-crm { font-size: 10px; color: #555; }
+  .footer-date { font-size: 10px; color: #555; }
+  @page { size: A4; margin: 0; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .letterhead-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+  }
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="header">
-    <div>
-      <div class="clinic-name">${doctorName}</div>
-      ${doctorPhone ? `<div class="clinic-info">Tel: ${doctorPhone}</div>` : ''}
-    </div>
-    <div style="text-align:right;">
-      <div class="clinic-info">${dateFormatted}</div>
-    </div>
-  </div>
-
   <div class="doc-title">${docType}</div>
 
   <div class="patient-info">
@@ -120,10 +112,11 @@ export function generateDocumentHTML(
   <div class="content">${contentHtml}</div>
 
   <div class="footer">
-    <div class="date-location">Data: ${dateFormatted}</div>
-    <div class="signature-area">
+    <div class="signature-block">
       <div class="signature-line"></div>
-      <div class="signature-text">${doctorName}</div>
+      <div class="doctor-name">${doctorName}</div>
+      <div class="doctor-crm">CRM 9223 - MA</div>
+      <div class="footer-date">${dateFormatted}</div>
     </div>
   </div>
 </div>
@@ -131,14 +124,17 @@ export function generateDocumentHTML(
 </html>`;
 }
 
-export function printDocument(
+export async function printDocument(
   docType: string,
   docDate: string,
   content: string,
   printIframeRef: React.RefObject<HTMLIFrameElement | null>,
   patientData: any
 ) {
-  const html = generateDocumentHTML(docType, docDate, content, patientData);
+  const { getLetterheadDataUrl, getLetterheadHtmlSnippet } = await import('@/lib/letterhead');
+  const letterheadUrl = await getLetterheadDataUrl();
+  let html = generateDocumentHTML(docType, docDate, content, patientData);
+  html = html.replace('<body>', `<body>${getLetterheadHtmlSnippet(letterheadUrl)}`);
   const iframe = printIframeRef.current;
   if (!iframe) return;
   const docHtml = iframe.contentDocument || iframe.contentWindow?.document;
@@ -148,7 +144,7 @@ export function printDocument(
   docHtml.close();
   setTimeout(() => {
     iframe.contentWindow?.print();
-  }, 400);
+  }, 600);
 }
 
 export function DocumentsAndCertificates({ patientId, patientData, appointmentId, medicalRecordId }: AttendanceScreenProps) {
@@ -270,9 +266,9 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
       />
 
       {/* ── Painel esquerdo: lista de documentos ─────────────────────────── */}
-      <div className="w-72 flex-shrink-0 border-r border-slate-200 dark:border-[#2e2e33] flex flex-col">
+      <div className="w-72 flex-shrink-0 border-r border-slate-200 dark:border-[#3d3d48] flex flex-col">
         {/* Cabeçalho */}
-        <div className="p-4 border-b border-slate-200 dark:border-[#2e2e33] flex items-center justify-between">
+        <div className="p-4 border-b border-slate-200 dark:border-[#3d3d48] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-500" />
             <span className="font-semibold text-slate-700 dark:text-gray-200 text-sm">Documentos</span>
@@ -338,7 +334,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
         {isEditing ? (
           <>
             {/* Toolbar do editor */}
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] flex items-center justify-between gap-4 flex-wrap">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-3 flex-wrap">
                 {/* Tipo do documento */}
                 <div className="flex items-center gap-2">
@@ -348,7 +344,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                   <select
                     value={docType}
                     onChange={(e) => setDocType(e.target.value)}
-                    className="text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg px-3 py-1.5 bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg px-3 py-1.5 bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   >
                     {DOCUMENT_TYPES.map((t) => (
                       <option key={t} value={t}>{t}</option>
@@ -363,7 +359,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                     type="date"
                     value={docDate}
                     onChange={(e) => setDocDate(e.target.value)}
-                    className="text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg px-3 py-1.5 bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg px-3 py-1.5 bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
 
@@ -398,7 +394,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                 <button
                   type="button"
                   onClick={() => setModelModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#3d3d48] rounded-lg hover:bg-slate-50 dark:hover:bg-[#2d2d36] transition-colors"
                 >
                   <BookOpen className="w-4 h-4" />
                   Modelos
@@ -407,7 +403,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#3d3d48] rounded-lg hover:bg-slate-50 dark:hover:bg-[#2d2d36] transition-colors"
                 >
                   <Printer className="w-4 h-4" />
                   Imprimir
@@ -416,7 +412,7 @@ export function DocumentsAndCertificates({ patientId, patientData, appointmentId
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-[#27272a] rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-[#2d2d36] rounded-lg transition-colors"
                 >
                   Cancelar
                 </button>

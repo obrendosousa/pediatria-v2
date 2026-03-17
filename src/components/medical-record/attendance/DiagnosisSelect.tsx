@@ -139,7 +139,7 @@ export function DiagnosisSelect({
               }
             }}
             placeholder="Comece a digitar..."
-            className="w-full px-4 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full px-4 py-2.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           />
           {searchTerm && (
             <button
@@ -173,7 +173,7 @@ export function DiagnosisSelect({
 
       {/* Dropdown de resultados */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg shadow-lg max-h-64 overflow-y-auto custom-scrollbar">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg shadow-lg max-h-64 overflow-y-auto custom-scrollbar">
           {isLoading ? (
             <div className="p-4 text-center text-slate-500 dark:text-[#a1a1aa]">
               Buscando...
@@ -184,7 +184,7 @@ export function DiagnosisSelect({
                 key={`${option.code}-${index}`}
                 type="button"
                 onClick={() => handleSelect(option)}
-                className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-[#27272a] last:border-b-0"
+                className="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-[#2d2d36] last:border-b-0"
               >
                 <div className="font-medium text-slate-900 dark:text-[#fafafa]">
                   {option.code}

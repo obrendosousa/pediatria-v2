@@ -13,7 +13,7 @@ export default function ReceitasPage() {
       pageTitle="Modelos de Receitas"
       basePath="/atendimento/cadastros/modelos/receitas"
       entityName="receita"
-      icon={<Pill className="w-5 h-5 text-teal-600" />}
+      icon={<Pill className="w-5 h-5 text-blue-600" />}
     />
   );
 }

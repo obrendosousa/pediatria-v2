@@ -125,7 +125,7 @@ export default function DailyReceptionList() {
         );
       case 'finished': 
         return (
-          <span className="bg-gray-100 dark:bg-[#18181b] text-gray-500 dark:text-[#a1a1aa] px-2 py-1 rounded-md text-xs font-bold">
+          <span className="bg-gray-100 dark:bg-[#1c1c21] text-gray-500 dark:text-[#a1a1aa] px-2 py-1 rounded-md text-xs font-bold">
             Finalizado
           </span>
         );
@@ -168,8 +168,8 @@ export default function DailyReceptionList() {
 
   return (
     <>
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-xl shadow-sm border border-gray-100 dark:border-[#27272a] overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-between items-center">
+      <div className="bg-white dark:bg-[#08080b] rounded-xl shadow-sm border border-gray-100 dark:border-[#2d2d36] overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-[#3d3d48] bg-gray-50 dark:bg-[#1c1c21] flex justify-between items-center">
           <h2 className="font-bold text-gray-800 dark:text-[#fafafa] flex items-center gap-2">
             <Clock className="w-5 h-5 text-pink-600 dark:text-pink-400" />
             Agenda de Hoje ({format(new Date(), "dd 'de' MMMM", { locale: ptBR })})

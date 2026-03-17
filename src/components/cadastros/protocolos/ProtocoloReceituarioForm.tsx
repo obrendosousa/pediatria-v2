@@ -145,7 +145,7 @@ export default function ProtocoloReceituarioForm({
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -182,7 +182,7 @@ export default function ProtocoloReceituarioForm({
         {/* Left column */}
         <div className="flex-1 flex flex-col overflow-y-auto p-6 gap-5">
           {/* Informações do protocolo */}
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-5">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-5">
             <p className="text-xs font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wide mb-4">
               INFORMAÇÕES DO PROTOCOLO
             </p>
@@ -197,10 +197,10 @@ export default function ProtocoloReceituarioForm({
                   value={name}
                   onChange={e => { setName(e.target.value); setErrors(prev => ({ ...prev, name: '' })); }}
                   placeholder="Nome do protocolo"
-                  className={`w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 ${
+                  className={`w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 ${
                     errors.name
                       ? 'border-red-400 dark:border-red-500'
-                      : 'border-slate-200 dark:border-[#2e2e33]'
+                      : 'border-slate-200 dark:border-[#3d3d48]'
                   }`}
                 />
                 {errors.name && (
@@ -216,7 +216,7 @@ export default function ProtocoloReceituarioForm({
                 <select
                   value={status}
                   onChange={e => setStatus(e.target.value as RecordStatus)}
-                  className="w-48 px-3 py-2 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-48 px-3 py-2 border border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
                 >
                   <option value="active">Ativo</option>
                   <option value="inactive">Inativo</option>
@@ -226,7 +226,7 @@ export default function ProtocoloReceituarioForm({
           </div>
 
           {/* Editor de conteúdo */}
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-5 flex flex-col gap-3">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-5 flex flex-col gap-3">
             <p className="text-xs font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wide">
               CONTEÚDO
             </p>
@@ -239,9 +239,9 @@ export default function ProtocoloReceituarioForm({
         </div>
 
         {/* Right column — Side Panel */}
-        <div className="w-80 flex-shrink-0 flex flex-col border-l border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] overflow-hidden">
+        <div className="w-80 flex-shrink-0 flex flex-col border-l border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] overflow-hidden">
           {/* Main tabs */}
-          <div className="flex border-b border-slate-200 dark:border-[#2e2e33]">
+          <div className="flex border-b border-slate-200 dark:border-[#3d3d48]">
             {(['manipulados', 'industrializado'] as MainTab[]).map(tab => (
               <button
                 key={tab}
@@ -260,7 +260,7 @@ export default function ProtocoloReceituarioForm({
 
           {/* Sub tabs — only for manipulados */}
           {mainTab === 'manipulados' && (
-            <div className="flex gap-1 px-3 py-2 border-b border-slate-100 dark:border-[#27272a]">
+            <div className="flex gap-1 px-3 py-2 border-b border-slate-100 dark:border-[#2d2d36]">
               {(['formulas', 'protocolos', 'substancias'] as SubTab[]).map(st => (
                 <button
                   key={st}
@@ -279,7 +279,7 @@ export default function ProtocoloReceituarioForm({
           )}
 
           {/* Search */}
-          <div className="px-3 py-2 border-b border-slate-100 dark:border-[#27272a]">
+          <div className="px-3 py-2 border-b border-slate-100 dark:border-[#2d2d36]">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
@@ -287,7 +287,7 @@ export default function ProtocoloReceituarioForm({
                 value={panelSearch}
                 onChange={e => setPanelSearch(e.target.value)}
                 placeholder="Buscar..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
               />
             </div>
           </div>

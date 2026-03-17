@@ -13,7 +13,7 @@ export default function EvolucaoPage() {
       pageTitle="Modelos de Evolução"
       basePath="/atendimento/cadastros/modelos/evolucao"
       entityName="evolução"
-      icon={<Activity className="w-5 h-5 text-teal-600" />}
+      icon={<Activity className="w-5 h-5 text-blue-600" />}
     />
   );
 }

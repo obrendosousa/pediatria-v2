@@ -88,7 +88,7 @@ export default function NewChatModal({ isOpen, onClose, onStartChat }: NewChatMo
       <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-xl shadow-2xl overflow-hidden flex flex-col">
         
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b]">
+        <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-[#3d3d48] bg-gray-50 dark:bg-[#1c1c21]">
           <h2 className="text-lg font-bold text-gray-800 dark:text-[#fafafa] flex items-center gap-2">
             <MessageSquarePlus className="text-green-600 dark:text-green-500" size={20}/>
             Nova Conversa

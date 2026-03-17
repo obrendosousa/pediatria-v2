@@ -99,20 +99,20 @@ function ExamRow({
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="Digite o nome ou código do exame..."
-            className="w-full pl-3 pr-9 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full pl-3 pr-9 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           />
           <Search className="absolute right-2.5 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
         </div>
 
         {/* Dropdown de resultados */}
         {open && results.length > 0 && (
-          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg shadow-lg max-h-56 overflow-y-auto">
+          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg shadow-lg max-h-56 overflow-y-auto">
             {results.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onMouseDown={() => handleSelect(item)}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-[#2e2e33]/50 last:border-0"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-slate-100 dark:border-[#3d3d48]/50 last:border-0"
               >
                 <span className="font-mono text-xs text-blue-600 dark:text-blue-400 mr-2">{item.code}</span>
                 <span className="text-slate-700 dark:text-gray-200">{item.name}</span>
@@ -136,7 +136,7 @@ function ExamRow({
         min={1}
         value={exam.quantity}
         onChange={(e) => onUpdate(index, { ...exam, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-        className="w-16 px-2 py-2 text-sm text-center border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+        className="w-16 px-2 py-2 text-sm text-center border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
       />
 
       {/* Deletar linha */}
@@ -181,7 +181,7 @@ function RequestCard({
     onUpdate({ ...draft, exams: [...draft.exams, { code: '', name: '', quantity: 1 }] });
 
   return (
-    <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-4">
+    <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-4">
       {/* Cabeçalho do card */}
       <div className="flex items-center gap-3 flex-wrap">
         {/* Toggle incluir data */}
@@ -206,7 +206,7 @@ function RequestCard({
               type="date"
               value={draft.request_date}
               onChange={(e) => onUpdate({ ...draft, request_date: e.target.value })}
-              className="px-2 py-1 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="px-2 py-1 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
         )}
@@ -216,14 +216,14 @@ function RequestCard({
           <button
             type="button"
             onClick={() => onOpenModelManager('load')}
-            className="px-3 py-1 text-xs font-semibold rounded bg-slate-100 dark:bg-[#27272a] text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors"
+            className="px-3 py-1 text-xs font-semibold rounded bg-slate-100 dark:bg-[#2d2d36] text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors"
           >
             USAR MODELO
           </button>
           <button
             type="button"
             onClick={() => onOpenModelManager('save', JSON.stringify(draft.exams))}
-            className="px-3 py-1 text-xs font-semibold rounded bg-slate-100 dark:bg-[#27272a] text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors"
+            className="px-3 py-1 text-xs font-semibold rounded bg-slate-100 dark:bg-[#2d2d36] text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors"
           >
             SALVAR COMO MODELO
           </button>
@@ -238,7 +238,7 @@ function RequestCard({
               onClick={() => onUpdate({ ...draft, request_type: t })}
               className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${draft.request_type === t
                 ? 'bg-blue-600 text-white'
-                : 'bg-slate-100 dark:bg-[#27272a] text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-gray-600'
+                : 'bg-slate-100 dark:bg-[#2d2d36] text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-200 dark:hover:bg-gray-600'
                 }`}
             >
               {t}
@@ -257,7 +257,7 @@ function RequestCard({
           value={draft.clinical_indication}
           onChange={(e) => onUpdate({ ...draft, clinical_indication: e.target.value })}
           placeholder="aqui eu colocar esse texto"
-          className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+          className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
         />
       </div>
 
@@ -291,12 +291,12 @@ function RequestCard({
       </div>
 
       {/* Ações do card */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#2e2e33]/50">
+      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#3d3d48]/50">
         <div className="flex gap-2">
           <button
             type="button"
             onClick={onPrint}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-md hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#3d3d48] rounded-md hover:bg-slate-50 dark:hover:bg-[#2d2d36] transition-colors"
           >
             <Printer className="w-3.5 h-3.5" />
             IMPRIMIR
@@ -304,7 +304,7 @@ function RequestCard({
           <button
             type="button"
             onClick={() => onOpenModelManager('save', JSON.stringify(draft.exams))}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-md hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#3d3d48] rounded-md hover:bg-slate-50 dark:hover:bg-[#2d2d36] transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
             SALVAR COMO MODELO
@@ -688,66 +688,59 @@ export function generateRequestHTML(draft: any, patientData: any): string {
   <title>Solicitação de Exames</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000; background: #fff; padding: 40px; font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
-    .header { margin-bottom: 24px; border-bottom: 1px solid #000; padding-bottom: 16px; }
-    .clinic-name { font-size: 14px; font-weight: bold; }
-    .clinic-phones { font-size: 13px; }
-    
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000; background: transparent; padding: 0; font-size: 13px; line-height: 1.5; }
+    .page { width: 210mm; min-height: 290mm; padding: 32mm 20mm 30mm; display: flex; flex-direction: column; }
+
     .patient-info { margin-bottom: 24px; }
     .patient-name { font-weight: bold; }
-    
+
     table.exams { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
     table.exams th, table.exams td { padding: 6px 8px; border: 1px solid #d1d5db; font-size: 13px; text-align: left; }
     table.exams th { font-weight: bold; }
     table.exams th:last-child, table.exams td:last-child { text-align: center; width: 100px; }
-    
-    .footer { margin-top: auto; padding-top: 32px; }
-    .footer-content { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
-    .doctor-info { text-align: right; font-size: 11px; }
-    .doctor-name { font-weight: normal; }
-    .date-info { font-size: 11px; }
-    .footer-credit { text-align: center; font-size: 10px; color: #000; }
-    
-    @media print { 
-      body { padding: 20px; } 
-      .footer { position: fixed; bottom: 20px; left: 20px; right: 20px; padding-top: 0; }
+
+    .footer { margin-top: auto; padding-top: 12px; }
+    .signature-block { text-align: center; }
+    .signature-line { width: 200px; border-top: 1px solid #1a1a1a; margin: 0 auto 4px; }
+    .doctor-name { font-size: 12px; font-weight: bold; }
+    .doctor-crm { font-size: 10px; color: #555; }
+    .footer-date { font-size: 10px; color: #555; }
+
+    @page { size: A4; margin: 0; }
+    @media print {
+      body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .letterhead-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="clinic-name">Karla Fernanda</div>
-    <div class="clinic-phones">Telefones: (99) 98429-2254</div>
-  </div>
+  <div class="page">
+    <div class="patient-info">
+      <div class="patient-name">Paciente ${patientName}</div>
+      ${patientCpf ? `<div>CPF: ${patientCpf}</div>` : '<div>CPF: </div>'}
+      ${draft.clinical_indication ? `<div>Indicação clínica: ${draft.clinical_indication}</div>` : ''}
+    </div>
 
-  <div class="patient-info">
-    <div class="patient-name">Paciente ${patientName}</div>
-    ${patientCpf ? `<div>CPF: ${patientCpf}</div>` : '<div>CPF: </div>'}
-    ${draft.clinical_indication ? `<div>Indicação clínica: ${draft.clinical_indication}</div>` : ''}
-  </div>
+    <table class="exams">
+      <thead>
+        <tr>
+          <th>Exames/Procedimentos</th>
+          <th>Quantidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${examsRows || '<tr><td colspan="2" style="text-align:center;">Nenhum exame adicionado</td></tr>'}
+      </tbody>
+    </table>
 
-  <table class="exams">
-    <thead>
-      <tr>
-        <th>Exames/Procedimentos</th>
-        <th>Quantidade</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${examsRows || '<tr><td colspan="2" style="text-align:center;">Nenhum exame adicionado</td></tr>'}
-    </tbody>
-  </table>
-
-  <div class="footer">
-    <div class="footer-content">
-      <div class="date-info">${dateStr}</div>
-      <div class="doctor-info">
+    <div class="footer">
+      <div class="signature-block">
+        <div class="signature-line"></div>
         <div class="doctor-name">Dra. Fernanda Santana</div>
-        <div>CRM: 9223 - MA</div>
-        <div>Rua Senador Vitorino Freire , 130 - Lago da Pedra</div>
+        <div class="doctor-crm">CRM 9223 - MA</div>
+        <div class="footer-date">${dateStr}</div>
       </div>
     </div>
-    <div class="footer-credit">Documento gerado por Centro Medico Aliança - Sistema para gestão de clinicas e consultórios</div>
   </div>
 </body>
 </html>`;
@@ -757,8 +750,14 @@ export function generateRequestHTML(draft: any, patientData: any): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function printRequest(draft: any, patientData: any) {
-  const html = generateRequestHTML(draft, patientData);
+export async function printRequest(draft: any, patientData: any) {
+  let html = generateRequestHTML(draft, patientData);
+  // Aplica timbrado apenas em guias particulares (SADT é formulário oficial TISS)
+  if (draft.request_type !== 'SADT') {
+    const { getLetterheadDataUrl, getLetterheadHtmlSnippet } = await import('@/lib/letterhead');
+    const letterheadUrl = await getLetterheadDataUrl();
+    html = html.replace('<body>', `<body>${getLetterheadHtmlSnippet(letterheadUrl)}`);
+  }
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;';
   document.body.appendChild(iframe);
@@ -900,7 +899,7 @@ export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: 
           className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
             subTab === 'pedidos'
               ? 'bg-blue-600 text-white'
-              : 'bg-slate-100 dark:bg-[#18181b] text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-200 dark:hover:bg-white/10'
+              : 'bg-slate-100 dark:bg-[#1c1c21] text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-200 dark:hover:bg-white/10'
           }`}
         >
           <ClipboardList className="w-4 h-4" />
@@ -911,7 +910,7 @@ export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: 
           className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
             subTab === 'resultados'
               ? 'bg-blue-600 text-white'
-              : 'bg-slate-100 dark:bg-[#18181b] text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-200 dark:hover:bg-white/10'
+              : 'bg-slate-100 dark:bg-[#1c1c21] text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-200 dark:hover:bg-white/10'
           }`}
         >
           <FlaskConical className="w-4 h-4" />
@@ -947,9 +946,9 @@ export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: 
           <div key={item.id} className="mb-4">
             {(requests.length > 0 || index > 0) && (
               <div className="flex items-center gap-2 mb-3">
-                <div className="h-px flex-1 bg-slate-200 dark:bg-[#27272a]" />
+                <div className="h-px flex-1 bg-slate-200 dark:bg-[#2d2d36]" />
                 <span className="text-xs text-slate-400 dark:text-[#71717a] uppercase font-medium">Nova Solicitação</span>
-                <div className="h-px flex-1 bg-slate-200 dark:bg-[#27272a]" />
+                <div className="h-px flex-1 bg-slate-200 dark:bg-[#2d2d36]" />
               </div>
             )}
             <RequestCard
@@ -979,7 +978,7 @@ export function ExamsAndProcedures({ patientId, patientData, medicalRecordId }: 
               { id: `draft-${Date.now()}-${Math.random()}`, draft: emptyDraft() },
             ])
           }
-          className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm text-slate-500 dark:text-[#a1a1aa] hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm text-slate-500 dark:text-[#a1a1aa] hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" />
           Adicionar Solicitação

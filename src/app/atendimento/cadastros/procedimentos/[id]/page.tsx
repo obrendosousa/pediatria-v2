@@ -67,7 +67,7 @@ export default function EditarProcedimentoPage() {
       duration_minutes: form.duration_minutes,
       composition_enabled: form.composition_enabled,
       fee_value: form.fee_value,
-      total_value: form.fee_value,
+      total_value: form.procedure_value,
     });
 
     await setCompositions(id, compositions.map(c => ({
@@ -82,7 +82,7 @@ export default function EditarProcedimentoPage() {
   if (loadingData) {
     return (
       <div className="h-full flex items-center justify-center bg-slate-50 dark:bg-[#15171e]">
-        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
       </div>
     );
   }

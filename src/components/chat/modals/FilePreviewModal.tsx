@@ -266,7 +266,7 @@ export default function FilePreviewModal({ files, onSend, onClose, onAddMore }: 
       <div className="shrink-0 pb-4 relative z-10 bg-[var(--chat-surface)] dark:bg-[var(--chat-surface)]">
         {/* Caption input */}
         <div className="flex items-center gap-2 mx-auto max-w-[600px] px-4 mb-4 pt-4">
-          <div className="flex-1 flex items-center bg-gray-100 dark:bg-[#18181b] rounded-lg px-3 h-[42px]">
+          <div className="flex-1 flex items-center bg-gray-100 dark:bg-[#1c1c21] rounded-lg px-3 h-[42px]">
             <Smile size={20} className="text-gray-400 dark:text-[#71717a] shrink-0 mr-2" />
             <input
               ref={captionRef}

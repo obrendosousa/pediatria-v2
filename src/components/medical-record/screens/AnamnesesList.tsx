@@ -124,30 +124,19 @@ export function AnamnesesList({ patientId, patientData, appointmentId }: Attenda
     setConfirmDeleteId(null);
   };
 
-  const handlePrint = (a: Anamnese) => {
-    const win = window.open('', '_blank');
-    if (!win) return;
+  const handlePrint = async (a: Anamnese) => {
+    const { printWithLetterhead } = await import('@/lib/letterhead');
     const doctorName = a.doctor_id ? (doctors[a.doctor_id] || '—') : '';
-    win.document.write(`
-      <html>
-      <head>
-        <title>${a.title || 'Anamnese'}</title>
-        <style>body{font-family:Arial,sans-serif;padding:40px;color:#333}h1{font-size:20px;margin-bottom:8px}
-        .meta{color:#666;font-size:13px;margin-bottom:16px}hr{border:none;border-top:1px solid #ddd;margin:16px 0}</style>
-      </head>
-      <body>
-        <h1>${a.title || 'Anamnese'}</h1>
-        <div class="meta">
-          ${a.show_date !== false && a.fill_date ? `<div>Data: ${new Date(a.fill_date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>` : ''}
-          ${doctorName ? `<div>Profissional: ${doctorName}</div>` : ''}
-        </div>
-        <hr/>
-        <div>${a.content || ''}</div>
-        ${a.signed ? '<p style="margin-top:40px;font-weight:bold">✓ Assinado digitalmente</p>' : ''}
-      </body></html>
-    `);
-    win.document.close();
-    win.print();
+    await printWithLetterhead(`
+      <h1>${a.title || 'Anamnese'}</h1>
+      <div class="meta">
+        ${a.show_date !== false && a.fill_date ? `<div>Data: ${new Date(a.fill_date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>` : ''}
+        ${doctorName ? `<div>Profissional: ${doctorName}</div>` : ''}
+      </div>
+      <hr/>
+      <div class="content">${a.content || ''}</div>
+      ${a.signed ? '<p style="margin-top:40px;font-weight:bold">Assinado digitalmente</p>' : ''}
+    `, a.title || 'Anamnese');
   };
 
   const handleSelectTemplate = (tmpl: AnamneseTemplate) => {
@@ -184,7 +173,7 @@ export function AnamnesesList({ patientId, patientData, appointmentId }: Attenda
           </div>
         </div>
 
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-3">
           <div className="flex gap-6 text-sm text-slate-500 dark:text-[#a1a1aa]">
             {selected.show_date && selected.fill_date && (
               <span>Data: <strong className="text-slate-700 dark:text-gray-200">{new Date(selected.fill_date + 'T12:00:00').toLocaleDateString('pt-BR')}</strong></span>
@@ -196,7 +185,7 @@ export function AnamnesesList({ patientId, patientData, appointmentId }: Attenda
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ Assinado</span>
             )}
           </div>
-          <hr className="border-slate-100 dark:border-[#2e2e33]" />
+          <hr className="border-slate-100 dark:border-[#3d3d48]" />
           <div className="prose dark:prose-invert max-w-none text-sm" dangerouslySetInnerHTML={{ __html: selected.content || '<p class="text-slate-400">Sem conteúdo</p>' }} />
         </div>
       </div>
@@ -225,7 +214,7 @@ export function AnamnesesList({ patientId, patientData, appointmentId }: Attenda
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="Ex: Anamnese inicial"
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
           <div className="flex items-end gap-6">
@@ -263,7 +252,7 @@ export function AnamnesesList({ patientId, patientData, appointmentId }: Attenda
                   type="date"
                   value={fillDate}
                   onChange={e => setFillDate(e.target.value)}
-                  className="px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
             )}
@@ -299,7 +288,7 @@ export function AnamnesesList({ patientId, patientData, appointmentId }: Attenda
           </button>
           <button
             onClick={handleBack}
-            className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-[#a1a1aa] bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+            className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-[#a1a1aa] bg-slate-100 dark:bg-[#1c1c21] hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
           >
             CANCELAR
           </button>
@@ -327,10 +316,10 @@ export function AnamnesesList({ patientId, patientData, appointmentId }: Attenda
           <p className="text-sm text-slate-400 dark:text-[#71717a]">Nenhuma anamnese registrada.</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+        <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-slate-50 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+              <tr className="bg-slate-50 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
                 <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Data criação</th>
                 <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Data preenchimento</th>
                 <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Nome</th>
@@ -399,7 +388,7 @@ function TemplatePanel({ templates, onSelect }: {
 }) {
   if (templates.length === 0) {
     return (
-      <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-4">
+      <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-4">
         <div className="flex items-center gap-2 mb-3">
           <BookOpen className="w-4 h-4 text-slate-400" />
           <h3 className="text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Modelos de anamnese</h3>
@@ -412,7 +401,7 @@ function TemplatePanel({ templates, onSelect }: {
   }
 
   return (
-    <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-4 overflow-y-auto max-h-[500px]">
+    <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-4 overflow-y-auto max-h-[500px]">
       <div className="flex items-center gap-2 mb-3">
         <BookOpen className="w-4 h-4 text-slate-400" />
         <h3 className="text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Modelos de anamnese</h3>
@@ -422,7 +411,7 @@ function TemplatePanel({ templates, onSelect }: {
           <button
             key={tmpl.id}
             onClick={() => onSelect(tmpl)}
-            className="w-full text-left p-3 rounded-lg bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all group"
+            className="w-full text-left p-3 rounded-lg bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all group"
           >
             <p className="text-xs font-bold text-slate-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
               {tmpl.title}

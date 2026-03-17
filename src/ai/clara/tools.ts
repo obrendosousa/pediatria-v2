@@ -754,7 +754,7 @@ export const criarAgendamentoTool = new DynamicStructuredTool({
       const { data: existingPatient } = await supabase
         .from("patients")
         .select("id")
-        .or(`phone.eq.${phoneDigits},phone.eq.+${phoneDigits}`)
+        .or(`phone.ilike.%${phoneDigits.slice(-11)}%`)
         .maybeSingle();
 
       if (existingPatient?.id) {

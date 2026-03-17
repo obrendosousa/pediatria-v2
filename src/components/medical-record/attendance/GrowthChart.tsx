@@ -35,7 +35,7 @@ function ReferenceLineLegend({ lines }: { lines: { label: string; color: string 
         </div>
       ))}
       <div className="flex items-center gap-1">
-        <span className="inline-block w-3 h-3 rounded-full bg-slate-800 dark:bg-gray-200 border-2 border-white dark:border-[#27272a]" />
+        <span className="inline-block w-3 h-3 rounded-full bg-slate-800 dark:bg-gray-200 border-2 border-white dark:border-[#2d2d36]" />
         <span className="text-[11px] text-slate-500 dark:text-[#a1a1aa]">Paciente</span>
       </div>
     </div>
@@ -67,8 +67,8 @@ export function GrowthChart({ data, chartConfig, displayMode, yAxisLabel, xAxisL
       : formatXAxisLabel(label);
 
     return (
-      <div className="bg-white/95 dark:bg-[#0a0a0c]/95 backdrop-blur shadow-xl border border-slate-200 dark:border-[#2e2e33] rounded-lg p-3 text-xs min-w-[150px]">
-        <p className="text-slate-500 dark:text-[#a1a1aa] font-medium pb-1 mb-1.5 border-b border-slate-100 dark:border-[#2e2e33]">
+      <div className="bg-white/95 dark:bg-[#08080b]/95 backdrop-blur shadow-xl border border-slate-200 dark:border-[#3d3d48] rounded-lg p-3 text-xs min-w-[150px]">
+        <p className="text-slate-500 dark:text-[#a1a1aa] font-medium pb-1 mb-1.5 border-b border-slate-100 dark:border-[#3d3d48]">
           {xAxisLabel}: <span className="text-slate-700 dark:text-gray-200">{xText}</span>
         </p>
 
@@ -94,7 +94,7 @@ export function GrowthChart({ data, chartConfig, displayMode, yAxisLabel, xAxisL
 
         {/* Valor do paciente (destaque) */}
         {patientPayload?.value !== undefined && (
-          <div className="flex items-center gap-2 pt-1.5 border-t border-slate-100 dark:border-[#2e2e33]">
+          <div className="flex items-center gap-2 pt-1.5 border-t border-slate-100 dark:border-[#3d3d48]">
             <span className="w-2.5 h-2.5 rounded-full bg-slate-800 dark:bg-gray-200 border border-white flex-shrink-0" />
             <div className="flex items-center justify-between w-full">
               <p className="text-[10px] text-slate-400 dark:text-[#71717a]">Paciente</p>
@@ -129,7 +129,7 @@ export function GrowthChart({ data, chartConfig, displayMode, yAxisLabel, xAxisL
   const legendLines = data.referenceLines.map(l => ({ label: l.label, color: l.color }));
 
   return (
-    <div className="w-full bg-white dark:bg-[#0a0a0c] rounded-lg">
+    <div className="w-full bg-white dark:bg-[#08080b] rounded-lg">
       <ResponsiveContainer width="100%" height={460}>
         <LineChart data={chartData} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
           <CartesianGrid

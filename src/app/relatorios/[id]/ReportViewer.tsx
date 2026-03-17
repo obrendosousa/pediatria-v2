@@ -25,7 +25,7 @@ const TIPO_COLORS: Record<string, string> = {
   analise_chats: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
   financeiro: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
   agendamento: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  geral: "bg-gray-100 text-gray-700 dark:bg-[#18181b] dark:text-[#d4d4d8]",
+  geral: "bg-gray-100 text-gray-700 dark:bg-[#1c1c21] dark:text-[#d4d4d8]",
 };
 
 
@@ -58,7 +58,7 @@ export default function ReportViewer({ report }: { report: Report }) {
   return (
     <div className="h-full overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-[#0b141a] print:bg-white print:overflow-visible">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-gray-200 dark:border-[#27272a] bg-white/90 dark:bg-[#111b21]/90 backdrop-blur-sm print:hidden">
+      <div className="sticky top-0 z-10 border-b border-gray-200 dark:border-[#2d2d36] bg-white/90 dark:bg-[#111b21]/90 backdrop-blur-sm print:hidden">
         <div className="mx-auto max-w-4xl px-4 py-3 flex items-center justify-between gap-4">
           <Link
             href="/"
@@ -78,7 +78,7 @@ export default function ReportViewer({ report }: { report: Report }) {
 
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-[#2e2e33] hover:bg-gray-100 dark:hover:bg-[#18181b] text-gray-600 dark:text-[#d4d4d8] transition-colors"
+              className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-[#3d3d48] hover:bg-gray-100 dark:hover:bg-[#1c1c21] text-gray-600 dark:text-[#d4d4d8] transition-colors"
             >
               <Printer size={14} />
               Imprimir
@@ -107,7 +107,7 @@ export default function ReportViewer({ report }: { report: Report }) {
               )}
             </div>
           </div>
-          <hr className="mt-6 border-gray-200 dark:border-[#2e2e33] print:border-gray-300" />
+          <hr className="mt-6 border-gray-200 dark:border-[#3d3d48] print:border-gray-300" />
         </div>
 
         {/* Conteúdo renderizado — usa ClaraMarkdownMessage para suporte a links [[chat:ID|Name]] */}
@@ -116,7 +116,7 @@ export default function ReportViewer({ report }: { report: Report }) {
         </div>
 
         {/* Rodapé */}
-        <div className="mt-12 pt-6 border-t border-gray-200 dark:border-[#2e2e33] print:mt-8">
+        <div className="mt-12 pt-6 border-t border-gray-200 dark:border-[#3d3d48] print:mt-8">
           <p className="text-xs text-gray-400 dark:text-gray-600">
             Relatório #{report.id} · Gerado automaticamente pela Clara IA · Painel Clínica
           </p>

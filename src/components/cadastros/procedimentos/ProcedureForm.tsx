@@ -27,6 +27,8 @@ export interface ProcedureFormData {
   duration_minutes: number;
   composition_enabled: boolean;
   fee_value: number;
+  fee_percent: number;
+  procedure_value: number;
 }
 
 export interface CompositionItem {
@@ -45,9 +47,9 @@ interface ProcedureFormProps {
 
 // --- Helpers ---
 
-const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+const inputClass = 'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 const selectClass = `${inputClass} appearance-none cursor-pointer`;
-const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
+const labelClass = 'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 flex items-center min-h-[20px] uppercase tracking-wider';
 
 function RequiredBadge() {
   return (
@@ -67,15 +69,23 @@ const EMPTY_FORM: ProcedureFormData = {
   duration_minutes: 30,
   composition_enabled: false,
   fee_value: 0,
+  fee_percent: 0,
+  procedure_value: 0,
 };
 
 function procedureToForm(p: Procedure): ProcedureFormData {
+  // Recalcula % a partir dos valores salvos
+  const procValue = p.total_value || 0;
+  const feeVal = p.fee_value || 0;
+  const pct = procValue > 0 ? Math.round((feeVal / procValue) * 100 * 100) / 100 : 0;
   return {
     name: p.name,
     procedure_type: p.procedure_type,
     duration_minutes: p.duration_minutes,
     composition_enabled: p.composition_enabled,
-    fee_value: p.fee_value,
+    fee_value: feeVal,
+    fee_percent: pct,
+    procedure_value: procValue,
   };
 }
 
@@ -111,7 +121,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
     });
   }, []);
 
-  // Calcular valor total: fee_value + soma dos sub-procedimentos
+  // Calcular totais da composição: valor + honorários dos sub-procedimentos
   const compositionTotal = useMemo(() => {
     return compositions.reduce((acc, item) => {
       const proc = allProcedures.find(p => p.id === item.sub_procedure_id);
@@ -119,7 +129,18 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
     }, 0);
   }, [compositions, allProcedures]);
 
-  const totalValue = form.fee_value + (form.composition_enabled ? compositionTotal : 0);
+  const compositionFeeTotal = useMemo(() => {
+    return compositions.reduce((acc, item) => {
+      const proc = allProcedures.find(p => p.id === item.sub_procedure_id);
+      return acc + (proc ? proc.fee_value * item.quantity : 0);
+    }, 0);
+  }, [compositions, allProcedures]);
+
+  // Quando composição está habilitada, os valores vêm dos sub-procedimentos
+  const effectiveValue = form.composition_enabled && compositions.length > 0 ? compositionTotal : form.procedure_value;
+  const effectiveFee = form.composition_enabled && compositions.length > 0 ? compositionFeeTotal : form.fee_value;
+  const effectivePercent = effectiveValue > 0 ? Math.round((effectiveFee / effectiveValue) * 100 * 100) / 100 : 0;
+  const totalValue = effectiveValue;
 
   // Procedimentos disponíveis para composição (excluindo o atual e já adicionados)
   const availableProcedures = useMemo(() => {
@@ -180,7 +201,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <button
           onClick={() => router.push('/atendimento/cadastros/procedimentos')}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -201,7 +222,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* ─── Seção: Informações do Procedimento ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <Stethoscope className="w-4 h-4 text-teal-500" />
               Informações do Procedimento
@@ -209,7 +230,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
 
             <div className="grid grid-cols-12 gap-5">
               {/* Nome */}
-              <div className="col-span-12 md:col-span-6">
+              <div className="col-span-12 md:col-span-5">
                 <label className={labelClass}>Nome <RequiredBadge /></label>
                 <input
                   type="text"
@@ -222,7 +243,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
               </div>
 
               {/* Tipo */}
-              <div className="col-span-6 md:col-span-3">
+              <div className="col-span-6 md:col-span-4">
                 <label className={labelClass}>Tipo <RequiredBadge /></label>
                 <div className="relative">
                   <select
@@ -254,7 +275,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
           </section>
 
           {/* ─── Seção: Composição do Procedimento ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide">
                 Composição do Procedimento
@@ -287,13 +308,13 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
                     value={compSearch}
                     onChange={e => setCompSearch(e.target.value)}
                     placeholder="Buscar procedimento para adicionar..."
-                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
                   />
                 </div>
 
                 {/* Lista de disponíveis (mostra quando tem busca) */}
                 {compSearch.trim() && availableProcedures.length > 0 && (
-                  <div className="max-h-40 overflow-y-auto bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#2e2e33]">
+                  <div className="max-h-40 overflow-y-auto bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#3d3d48]">
                     {availableProcedures.slice(0, 10).map(proc => (
                       <button
                         key={proc.id}
@@ -316,10 +337,10 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
 
                 {/* Itens adicionados */}
                 {compositions.length > 0 ? (
-                  <div className="bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+                  <div className="bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
                     <table className="w-full text-left text-sm">
                       <thead>
-                        <tr className="bg-slate-100 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                        <tr className="bg-slate-100 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
                           <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Procedimento</th>
                           <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-center w-24">Qtd</th>
                           <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-center w-16">Ação</th>
@@ -335,7 +356,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
                                 min={1}
                                 value={item.quantity}
                                 onChange={e => updateCompositionQty(idx, Number(e.target.value))}
-                                className="w-16 px-2 py-1 text-sm text-center border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                className="w-16 px-2 py-1 text-sm text-center border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
                               />
                             </td>
                             <td className="px-4 py-3 text-center">
@@ -352,7 +373,7 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-6 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-dashed border-slate-200 dark:border-[#2e2e33]">
+                  <div className="text-center py-6 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-dashed border-slate-200 dark:border-[#3d3d48]">
                     <p className="text-sm text-slate-400 dark:text-[#71717a]">Nenhum sub-procedimento adicionado.</p>
                   </div>
                 )}
@@ -361,52 +382,98 @@ export default function ProcedureForm({ initialData, initialCompositions, onSubm
           </section>
 
           {/* ─── Seção: Precificação ─── */}
-          <section className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-teal-500" />
               Precificação do Procedimento
             </h2>
 
-            <div className="grid grid-cols-12 gap-5">
-              {/* Valor de honorários */}
-              <div className="col-span-6 md:col-span-4">
-                <label className={labelClass}>Valor de honorários (R$) <RequiredBadge /></label>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={form.fee_value || ''}
-                  onChange={e => update('fee_value', Number(e.target.value))}
-                  placeholder="0,00"
-                  className={`${inputClass} text-right font-mono ${errors.fee_value ? 'border-red-300 dark:border-red-700' : ''}`}
-                />
-                {errors.fee_value && <p className="mt-1 text-xs text-red-500">{errors.fee_value}</p>}
-              </div>
-
-              {/* Composição total (se habilitada) */}
-              {form.composition_enabled && compositions.length > 0 && (
-                <div className="col-span-6 md:col-span-4">
-                  <label className={labelClass}>Composição</label>
-                  <div className="px-3 py-2.5 text-sm font-mono text-right text-slate-600 dark:text-[#d4d4d8] bg-slate-100 dark:bg-[#15171e] border border-slate-200 dark:border-[#2e2e33] rounded-xl">
-                    {formatCurrency(compositionTotal)}
+            {form.composition_enabled && compositions.length > 0 ? (
+              /* ── Modo composição: valores calculados dos sub-procedimentos ── */
+              <div className="grid grid-cols-12 gap-5">
+                <div className="col-span-6 md:col-span-3">
+                  <label className={labelClass}>Valor (R$)</label>
+                  <div className="px-3 py-2.5 text-sm font-mono text-right text-slate-600 dark:text-[#d4d4d8] bg-slate-100 dark:bg-[#15171e] border border-slate-200 dark:border-[#3d3d48] rounded-xl">
+                    {formatCurrency(effectiveValue)}
                   </div>
                 </div>
-              )}
-
-              {/* Valor total */}
-              <div className="col-span-6 md:col-span-4">
-                <label className={labelClass}>Valor total</label>
-                <div className="px-3 py-2.5 text-sm font-bold font-mono text-right text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800 rounded-xl">
-                  {formatCurrency(totalValue)}
+                <div className="col-span-6 md:col-span-3">
+                  <label className={labelClass}>Honorários (%)</label>
+                  <div className="px-3 py-2.5 text-sm font-mono text-right text-slate-600 dark:text-[#d4d4d8] bg-slate-100 dark:bg-[#15171e] border border-slate-200 dark:border-[#3d3d48] rounded-xl">
+                    {effectivePercent}%
+                  </div>
+                </div>
+                <div className="col-span-6 md:col-span-3">
+                  <label className={labelClass}>Honorários (R$)</label>
+                  <div className="px-3 py-2.5 text-sm font-mono text-right text-slate-600 dark:text-[#d4d4d8] bg-slate-100 dark:bg-[#15171e] border border-slate-200 dark:border-[#3d3d48] rounded-xl">
+                    {formatCurrency(effectiveFee)}
+                  </div>
+                </div>
+                <div className="col-span-6 md:col-span-3">
+                  <label className={labelClass}>Valor Total</label>
+                  <div className="px-3 py-2.5 text-sm font-bold font-mono text-right text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800 rounded-xl">
+                    {formatCurrency(totalValue)}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* ── Modo manual: usuário define valor e % ── */
+              <div className="grid grid-cols-12 gap-5">
+                <div className="col-span-6 md:col-span-3">
+                  <label className={labelClass}>Valor (R$) <RequiredBadge /></label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={form.procedure_value || ''}
+                    onChange={e => {
+                      const val = Number(e.target.value);
+                      update('procedure_value', val);
+                      const feeCalc = Math.round(val * (form.fee_percent / 100) * 100) / 100;
+                      update('fee_value', feeCalc);
+                    }}
+                    placeholder="0,00"
+                    className={`${inputClass} text-right font-mono`}
+                  />
+                </div>
+                <div className="col-span-6 md:col-span-3">
+                  <label className={labelClass}>Honorários (%)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={form.fee_percent || ''}
+                    onChange={e => {
+                      const pct = Math.min(100, Math.max(0, Number(e.target.value)));
+                      update('fee_percent', pct);
+                      const feeCalc = Math.round(form.procedure_value * (pct / 100) * 100) / 100;
+                      update('fee_value', feeCalc);
+                    }}
+                    placeholder="0"
+                    className={`${inputClass} text-right font-mono`}
+                  />
+                </div>
+                <div className="col-span-6 md:col-span-3">
+                  <label className={labelClass}>Honorários (R$)</label>
+                  <div className="px-3 py-2.5 text-sm font-mono text-right text-slate-600 dark:text-[#d4d4d8] bg-slate-100 dark:bg-[#15171e] border border-slate-200 dark:border-[#3d3d48] rounded-xl">
+                    {formatCurrency(form.fee_value)}
+                  </div>
+                </div>
+                <div className="col-span-6 md:col-span-3">
+                  <label className={labelClass}>Valor Total</label>
+                  <div className="px-3 py-2.5 text-sm font-bold font-mono text-right text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800 rounded-xl">
+                    {formatCurrency(totalValue)}
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
         </div>
       </div>
 
       {/* Footer fixo */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] flex items-center justify-end gap-3">
         <button
           onClick={() => router.push('/atendimento/cadastros/procedimentos')}
           className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"

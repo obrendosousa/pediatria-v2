@@ -91,7 +91,7 @@ export function ClinicalSummaryGrid({ patientId, summaryData, onRefresh }: Clini
               key={card.key}
               onClick={() => setActiveSection(card.key)}
               className={`
-                relative bg-white dark:bg-[#0a0a0c] p-4 rounded-2xl border border-slate-100 dark:border-[#27272a] 
+                relative bg-white dark:bg-[#08080b] p-4 rounded-2xl border border-slate-100 dark:border-[#2d2d36] 
                 shadow-sm hover:shadow-md hover:border-rose-200 dark:hover:border-rose-900/30 transition-all cursor-pointer group min-h-[140px] flex flex-col
                 ${hasData && card.key === 'allergies' ? 'border-l-4 border-l-red-500' : ''}
               `}

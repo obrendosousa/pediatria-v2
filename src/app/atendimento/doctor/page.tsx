@@ -122,8 +122,8 @@ export default function AtendimentoDoctorPage() {
       if (inService) {
         setAppointmentId(inService.id);
 
-        if ((inService as Record<string, unknown>).patient_id) {
-          setPatientId((inService as Record<string, unknown>).patient_id as number);
+        if ((inService as unknown as Record<string, unknown>).patient_id) {
+          setPatientId((inService as unknown as Record<string, unknown>).patient_id as number);
           setCurrentAppointment(null);
           return;
         }
@@ -322,7 +322,7 @@ export default function AtendimentoDoctorPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center bg-slate-50 dark:bg-[#15171e]">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -342,7 +342,7 @@ export default function AtendimentoDoctorPage() {
     return (
       <div className="h-full flex items-center justify-center bg-slate-50 dark:bg-[#15171e]">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-4" />
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-slate-600 dark:text-[#a1a1aa]">Criando cadastro do paciente...</p>
         </div>
       </div>
@@ -374,7 +374,7 @@ export default function AtendimentoDoctorPage() {
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {showPosition && index !== undefined && (
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-              index === 0 ? 'bg-teal-500 text-white' : 'bg-slate-200 dark:bg-gray-600 text-slate-600 dark:text-[#d4d4d8]'
+              index === 0 ? 'bg-blue-500 text-white' : 'bg-slate-200 dark:bg-gray-600 text-slate-600 dark:text-[#d4d4d8]'
             }`}>
               {index + 1}º
             </span>
@@ -429,10 +429,10 @@ export default function AtendimentoDoctorPage() {
   return (
     <div className="h-full flex bg-slate-50 dark:bg-[#15171e] relative overflow-hidden">
       {/* Sidebar */}
-      <div className="w-80 bg-white dark:bg-[#0a0a0c] border-r border-slate-200 dark:border-[#27272a] flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-[#27272a]">
+      <div className="w-80 bg-white dark:bg-[#08080b] border-r border-slate-200 dark:border-[#2d2d36] flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-slate-200 dark:border-[#2d2d36]">
           <div className="flex items-center gap-2 mb-3">
-            <Stethoscope className="w-5 h-5 text-teal-500" />
+            <Stethoscope className="w-5 h-5 text-blue-600" />
             <h2 className="font-bold text-lg text-slate-800 dark:text-[#fafafa]">Painel Médico</h2>
           </div>
           <div className="flex items-center gap-2">
@@ -481,18 +481,18 @@ export default function AtendimentoDoctorPage() {
         ) : (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center max-w-md">
-              <Stethoscope className="w-20 h-20 text-teal-500/50 mx-auto mb-6" />
+              <Stethoscope className="w-20 h-20 text-blue-600/50 mx-auto mb-6" />
               <h2 className="text-2xl font-bold text-slate-800 dark:text-[#fafafa] mb-2">Aguardando Prontuário</h2>
               <p className="text-slate-600 dark:text-[#a1a1aa]">
                 Quando um paciente for colocado em atendimento, o prontuário aparecerá automaticamente aqui.
               </p>
               {waiting.length > 0 && (
-                <div className="mt-6 p-4 bg-teal-50 dark:bg-teal-900/10 rounded-lg border border-teal-200 dark:border-teal-800">
-                  <p className="text-sm font-semibold text-teal-700 dark:text-teal-300">
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
                     {waiting.length} paciente{waiting.length > 1 ? 's' : ''} na fila
                   </p>
                   {waiting[0] && (
-                    <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                       Próximo: {waiting[0].patient_name || 'Sem nome'}
                     </p>
                   )}

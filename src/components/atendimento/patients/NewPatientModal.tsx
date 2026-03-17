@@ -282,15 +282,15 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
   return (
     <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-all duration-300 ${showModal ? 'bg-black/40 backdrop-blur-sm' : 'bg-transparent invisible'}`}>
       <div className={`
-        bg-white dark:bg-[#0a0a0c] w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform transition-all duration-500
+        bg-white dark:bg-[#08080b] w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform transition-all duration-500
         ${showModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}
       `}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-[#27272a] bg-white/80 dark:bg-[#0a0a0c]/90 backdrop-blur-md z-20">
+        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-[#2d2d36] bg-white/80 dark:bg-[#08080b]/90 backdrop-blur-md z-20">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <User className="w-5 h-5" />
               </div>
               {patientId ? 'Editar Paciente' : 'Novo Paciente'}
@@ -309,7 +309,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar com abas */}
-          <aside className="w-56 bg-slate-50/50 dark:bg-[#181a20] border-r border-slate-200/60 dark:border-[#27272a] flex flex-col py-4 px-3 gap-1.5 overflow-y-auto">
+          <aside className="w-56 bg-slate-50/50 dark:bg-[#181a20] border-r border-slate-200/60 dark:border-[#2d2d36] flex flex-col py-4 px-3 gap-1.5 overflow-y-auto">
             {tabs.map(t => (
               <NavButton
                 key={t.key}
@@ -323,7 +323,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
           </aside>
 
           {/* Form */}
-          <main className="flex-1 overflow-y-auto bg-white dark:bg-[#0a0a0c] relative scroll-smooth">
+          <main className="flex-1 overflow-y-auto bg-white dark:bg-[#08080b] relative scroll-smooth">
             <form
               id="atendimento-patient-form"
               onSubmit={handleSubmit(onSubmit, handleInvalidSubmit)}
@@ -362,14 +362,14 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
                         <button
                           type="button"
                           onClick={() => setValue('sex', 'M')}
-                          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchSex === 'M' ? 'bg-white text-teal-600 shadow-sm dark:bg-[#18181b] dark:text-teal-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchSex === 'M' ? 'bg-white text-blue-600 shadow-sm dark:bg-[#1c1c21] dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
                           Masculino
                         </button>
                         <button
                           type="button"
                           onClick={() => setValue('sex', 'F')}
-                          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchSex === 'F' ? 'bg-white text-pink-600 shadow-sm dark:bg-[#18181b] dark:text-pink-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchSex === 'F' ? 'bg-white text-pink-600 shadow-sm dark:bg-[#1c1c21] dark:text-pink-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
                           Feminino
                         </button>
@@ -513,7 +513,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
                       <textarea
                         {...register('notes')}
                         rows={3}
-                        className="w-full bg-slate-50 dark:bg-[#15171e] border border-slate-200 dark:border-slate-700/60 rounded-xl px-3 py-2.5 text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 transition-all duration-200 focus:bg-white dark:focus:bg-[#1a1d24] focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none resize-none"
+                        className="w-full bg-slate-50 dark:bg-[#15171e] border border-slate-200 dark:border-slate-700/60 rounded-xl px-3 py-2.5 text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 transition-all duration-200 focus:bg-white dark:focus:bg-[#1a1d24] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none resize-none"
                         placeholder="Observações gerais sobre o paciente..."
                       />
                     </div>
@@ -560,7 +560,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100 dark:border-[#27272a] bg-white/90 dark:bg-[#0a0a0c]/95 backdrop-blur z-30 flex justify-between items-center">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100 dark:border-[#2d2d36] bg-white/90 dark:bg-[#08080b]/95 backdrop-blur z-30 flex justify-between items-center">
           <div className="text-xs text-slate-400 pl-4 hidden md:block">
             <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 mr-1 align-middle">Obrigatório</span>
             Destaque nos campos obrigatórios
@@ -577,7 +577,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
               type="submit"
               form="atendimento-patient-form"
               disabled={isSubmitting}
-              className="relative overflow-hidden group px-8 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-teal-500/20 hover:shadow-teal-600/40 transition-all duration-300 transform active:scale-95 disabled:opacity-70 disabled:active:scale-100 flex items-center gap-2"
+              className="relative overflow-hidden group px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-500/20 hover:shadow-blue-600/40 transition-all duration-300 transform active:scale-95 disabled:opacity-70 disabled:active:scale-100 flex items-center gap-2"
             >
               <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -590,7 +590,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
   );
 }
 
-// ─── UI Kit (teal theme) ────────────────────────────────────────────────────
+// ─── UI Kit (blue theme) ────────────────────────────────────────────────────
 
 const NavButton = ({ active, label, desc, onClick, icon: Icon }: {
   active: boolean; label: string; desc: string; onClick: () => void;
@@ -601,22 +601,22 @@ const NavButton = ({ active, label, desc, onClick, icon: Icon }: {
     type="button"
     className={`w-full text-left p-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${
       active
-        ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 shadow-sm ring-1 ring-teal-200 dark:ring-teal-800'
+        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 shadow-sm ring-1 ring-blue-200 dark:ring-blue-800'
         : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-800'
     }`}
   >
     <div className="flex items-start gap-3 relative z-10">
-      <div className={`mt-0.5 p-1.5 rounded-lg transition-colors ${active ? 'bg-teal-200/50 dark:bg-teal-800/50' : 'bg-slate-200/50 dark:bg-slate-800'}`}>
-        <Icon className={`w-4 h-4 ${active ? 'text-teal-600 dark:text-teal-300' : 'text-slate-400'}`} />
+      <div className={`mt-0.5 p-1.5 rounded-lg transition-colors ${active ? 'bg-blue-200/50 dark:bg-blue-800/50' : 'bg-slate-200/50 dark:bg-slate-800'}`}>
+        <Icon className={`w-4 h-4 ${active ? 'text-blue-600 dark:text-blue-300' : 'text-slate-400'}`} />
       </div>
       <div>
         <span className="block text-sm font-bold">{label}</span>
-        <span className={`text-[10px] block mt-0.5 ${active ? 'text-teal-600/70 dark:text-teal-300/70' : 'text-slate-400'}`}>
+        <span className={`text-[10px] block mt-0.5 ${active ? 'text-blue-600/70 dark:text-blue-300/70' : 'text-slate-400'}`}>
           {desc}
         </span>
       </div>
     </div>
-    {active && <div className="absolute left-0 top-3 bottom-3 w-1 bg-teal-500 rounded-r-full" />}
+    {active && <div className="absolute left-0 top-3 bottom-3 w-1 bg-blue-500 rounded-r-full" />}
   </button>
 );
 
@@ -632,7 +632,7 @@ interface ModernInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 const ModernInput = ({ label, register, name, error, icon, className = '', requiredField = false, ...props }: ModernInputProps) => (
   <div className="w-full group">
     {label && (
-      <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-teal-600 dark:group-focus-within:text-teal-400">
+      <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400">
         <span>{label}</span>
         {requiredField && (
           <span className="ml-2 inline-block text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 align-middle">
@@ -645,7 +645,7 @@ const ModernInput = ({ label, register, name, error, icon, className = '', requi
       <input
         {...register(name)}
         {...props}
-        className={`w-full bg-slate-50 dark:bg-[#15171e] border border-slate-200 dark:border-slate-700/60 rounded-xl px-3 py-2.5 text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-200 focus:bg-white dark:focus:bg-[#1a1d24] focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none disabled:opacity-60 disabled:cursor-not-allowed ${
+        className={`w-full bg-slate-50 dark:bg-[#15171e] border border-slate-200 dark:border-slate-700/60 rounded-xl px-3 py-2.5 text-sm text-slate-700 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all duration-200 focus:bg-white dark:focus:bg-[#1a1d24] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none disabled:opacity-60 disabled:cursor-not-allowed ${
           requiredField ? 'border-amber-300/80 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-900/10' : ''
         } ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10 bg-red-50/30' : ''} ${icon ? 'pl-9' : ''} ${className}`}
       />
@@ -662,11 +662,11 @@ const ModernSelect = ({ label, register, name, children }: {
   children: React.ReactNode;
 }) => (
   <div className="w-full group">
-    {label && <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-teal-600">{label}</label>}
+    {label && <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-blue-600">{label}</label>}
     <div className="relative">
       <select
         {...register(name)}
-        className="w-full bg-slate-50 dark:bg-[#15171e] border border-slate-200 dark:border-slate-700/60 rounded-xl px-3 py-2.5 text-sm text-slate-700 dark:text-gray-200 transition-all duration-200 appearance-none focus:bg-white dark:focus:bg-[#1a1d24] focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none cursor-pointer"
+        className="w-full bg-slate-50 dark:bg-[#15171e] border border-slate-200 dark:border-slate-700/60 rounded-xl px-3 py-2.5 text-sm text-slate-700 dark:text-gray-200 transition-all duration-200 appearance-none focus:bg-white dark:focus:bg-[#1a1d24] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none cursor-pointer"
       >
         {children}
       </select>
@@ -679,7 +679,7 @@ const ModernSelect = ({ label, register, name, children }: {
 
 const SectionHeader = ({ icon: Icon, title }: { icon: React.ComponentType<{ className?: string }>; title: string }) => (
   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
-    <Icon className="w-4 h-4 text-teal-500" />
+    <Icon className="w-4 h-4 text-blue-500" />
     <h3 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide">{title}</h3>
   </div>
 );
@@ -687,6 +687,6 @@ const SectionHeader = ({ icon: Icon, title }: { icon: React.ComponentType<{ clas
 const Switch = ({ register, name }: { register: UseFormRegister<AtendimentoPatientFormData>; name: keyof AtendimentoPatientFormData }) => (
   <label className="relative inline-flex items-center cursor-pointer">
     <input type="checkbox" {...register(name)} className="sr-only peer" />
-    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300/30 dark:peer-focus:ring-teal-800/30 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-teal-600" />
+    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300/30 dark:peer-focus:ring-blue-800/30 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600" />
   </label>
 );

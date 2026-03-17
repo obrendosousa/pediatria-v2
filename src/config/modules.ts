@@ -8,8 +8,8 @@ export interface ModuleTheme {
   gradientTo: string;        // ex: 'to-rose-400'
   activeGradient: string;    // ex: 'bg-gradient-to-r from-pink-500 to-rose-400'
   // Bordas e backgrounds
-  border: string;            // ex: 'border-pink-100 dark:border-[#27272a]'
-  borderAccent: string;      // ex: 'border-pink-200 dark:border-[#2e2e33]'
+  border: string;            // ex: 'border-pink-100 dark:border-[#2d2d36]'
+  borderAccent: string;      // ex: 'border-pink-200 dark:border-[#3d3d48]'
   bgSubtle: string;          // ex: 'bg-pink-50 dark:bg-pink-900/20'
   bgBlur: string;            // ex: 'bg-pink-100 dark:bg-pink-500'
   hoverBg: string;           // ex: 'hover:bg-pink-50 dark:hover:bg-white/5'
@@ -46,6 +46,8 @@ export interface ModuleConfig {
     financeiro: string;      // Rota financeira
     configuracoes: string;   // Rota de configurações
   };
+  // Config de attendance (sidebar + screens) — definida em src/config/attendance/
+  attendanceConfigKey?: string; // chave no ATTENDANCE_CONFIGS (ex: 'pediatria', 'atendimento')
 }
 
 export const PEDIATRIA_CONFIG: ModuleConfig = {
@@ -63,7 +65,7 @@ export const PEDIATRIA_CONFIG: ModuleConfig = {
     gradientFrom: 'from-pink-500',
     gradientTo: 'to-rose-400',
     activeGradient: 'bg-gradient-to-r from-pink-500 to-rose-400 dark:from-pink-600 dark:to-rose-500',
-    border: 'border-pink-100 dark:border-[#27272a]',
+    border: 'border-pink-100 dark:border-[#2d2d36]',
     borderAccent: 'border-pink-200 dark:border-pink-800/30',
     bgSubtle: 'bg-pink-50 dark:bg-pink-950/30',
     bgBlur: 'bg-pink-100 dark:bg-pink-500',
@@ -97,21 +99,21 @@ export const ATENDIMENTO_CONFIG: ModuleConfig = {
   evolutionInstanceEnv: 'EVOLUTION_ATENDIMENTO_INSTANCE',
   basePath: '/atendimento',
   theme: {
-    primary: 'teal',
-    gradientFrom: 'from-teal-500',
-    gradientTo: 'to-emerald-400',
-    activeGradient: 'bg-gradient-to-r from-teal-500 to-emerald-400 dark:from-teal-600 dark:to-emerald-500',
-    border: 'border-teal-100 dark:border-[#27272a]',
-    borderAccent: 'border-teal-200 dark:border-teal-800/30',
-    bgSubtle: 'bg-teal-50 dark:bg-teal-950/30',
-    bgBlur: 'bg-teal-100 dark:bg-teal-500',
-    hoverBg: 'hover:bg-teal-50 dark:hover:bg-white/[0.06]',
-    text: 'text-teal-500 dark:text-teal-400',
-    textBold: 'text-teal-600 dark:text-teal-400',
-    shadow: 'shadow-[4px_0_24px_rgba(13,148,136,0.1)]',
-    shadowActive: 'shadow-md shadow-teal-200 dark:shadow-lg dark:shadow-teal-500/10',
-    selectionBg: 'selection:bg-teal-200 selection:text-teal-900',
-    sparkleColor: 'text-teal-300 dark:text-teal-700',
+    primary: 'blue',
+    gradientFrom: 'from-blue-600',
+    gradientTo: 'to-indigo-500',
+    activeGradient: 'bg-gradient-to-r from-blue-600 to-indigo-500',
+    border: 'border-slate-100 dark:border-[#1c1c21]',
+    borderAccent: 'border-blue-200/60 dark:border-[#2d2d36]',
+    bgSubtle: 'bg-blue-50/50 dark:bg-blue-950/20',
+    bgBlur: 'bg-blue-100 dark:bg-blue-500',
+    hoverBg: 'hover:bg-slate-50 dark:hover:bg-white/[0.04]',
+    text: 'text-blue-600 dark:text-blue-400',
+    textBold: 'text-blue-700 dark:text-blue-400',
+    shadow: 'shadow-[0_0_20px_rgba(37,99,235,0.04)]',
+    shadowActive: 'shadow-sm shadow-blue-200/30 dark:shadow-none dark:ring-1 dark:ring-white/[0.08]',
+    selectionBg: 'selection:bg-blue-100 selection:text-blue-900',
+    sparkleColor: 'text-blue-300 dark:text-blue-800',
   },
   routes: {
     chat: '/atendimento',

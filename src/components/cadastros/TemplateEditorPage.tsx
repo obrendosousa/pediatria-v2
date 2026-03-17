@@ -57,7 +57,7 @@ const TEMPLATE_VARIABLES: TemplateVariable[] = [
 // --- Styles ---
 
 const inputClass =
-  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
 
 const labelClass =
   'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
@@ -130,7 +130,7 @@ export function TemplateListPage<T extends TemplateRecord>({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <div className="flex items-center gap-2">
           {icon || <ClipboardList className="w-5 h-5 text-teal-600" />}
           <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">{pageTitle}</h1>
@@ -143,7 +143,7 @@ export function TemplateListPage<T extends TemplateRecord>({
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
               onlyMine
                 ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300'
-                : 'bg-white dark:bg-[#18181b] border-slate-200 dark:border-[#2e2e33] text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/5'
+                : 'bg-white dark:bg-[#1c1c21] border-slate-200 dark:border-[#3d3d48] text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/5'
             }`}
           >
             <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
@@ -268,7 +268,7 @@ export function TemplateFormPage({
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -290,7 +290,7 @@ export function TemplateFormPage({
       {/* Body */}
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 custom-scrollbar">
         <div className="max-w-4xl mx-auto space-y-6">
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-4">
+          <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-4">
             {/* Nome */}
             <div>
               <label className={labelClass}>
@@ -326,7 +326,7 @@ export function TemplateFormPage({
       </form>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex justify-end">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] flex justify-end">
         <button
           type="submit"
           disabled={saving}

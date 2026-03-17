@@ -119,8 +119,8 @@ export default function AnalystChat() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#27272a]">
-      <div className="border-b border-slate-200 dark:border-[#27272a] p-4">
+    <div className="flex h-full flex-col bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#2d2d36]">
+      <div className="border-b border-slate-200 dark:border-[#2d2d36] p-4">
         <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Analista de Atendimento</h1>
         <p className="text-sm text-slate-500 dark:text-[#a1a1aa]">
           Faça análises profundas. A IA irá navegar nos bancos de dados para obter conclusões.
@@ -129,7 +129,7 @@ export default function AnalystChat() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="rounded-xl border border-dashed border-slate-300 dark:border-[#2e2e33] p-4">
+          <div className="rounded-xl border border-dashed border-slate-300 dark:border-[#3d3d48] p-4">
             <p className="text-sm text-slate-600 dark:text-[#d4d4d8] mb-3">
               Exemplos de pesquisas em cadeia para começar:
             </p>
@@ -139,7 +139,7 @@ export default function AnalystChat() {
                   key={item}
                   type="button"
                   onClick={() => void sendQuestion(item)}
-                  className="w-full rounded-lg border border-slate-200 dark:border-[#2e2e33] px-3 py-2 text-left text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-[#18181b] transition-colors"
+                  className="w-full rounded-lg border border-slate-200 dark:border-[#3d3d48] px-3 py-2 text-left text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-[#1c1c21] transition-colors"
                 >
                   {item}
                 </button>
@@ -167,7 +167,7 @@ export default function AnalystChat() {
 
         {/* EFEITO CURSOR: UI LOGS DA IA PENSANDO */}
         {isLoading && uiLogs.length > 0 && (
-          <div className="mr-auto w-full max-w-xl rounded-xl border border-slate-200 dark:border-[#2e2e33] bg-slate-50 dark:bg-[#1a2228] p-3 shadow-sm">
+          <div className="mr-auto w-full max-w-xl rounded-xl border border-slate-200 dark:border-[#3d3d48] bg-slate-50 dark:bg-[#1a2228] p-3 shadow-sm">
             <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
               <Activity className="h-3 w-3 animate-pulse text-pink-500" />
               Linha de Raciocínio (Deep Research)
@@ -188,7 +188,7 @@ export default function AnalystChat() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t border-slate-200 dark:border-[#27272a] p-4">
+      <div className="border-t border-slate-200 dark:border-[#2d2d36] p-4">
         {error && (
           <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
             {error}
@@ -206,7 +206,7 @@ export default function AnalystChat() {
             }}
             placeholder="Peça para ela mapear padrões, analisar lotes de chats, encontrar objeções..."
             rows={2}
-            className="flex-1 resize-none rounded-xl border border-slate-300 dark:border-[#2e2e33] bg-white dark:bg-[#0f171d] px-3 py-2 text-sm text-slate-800 dark:text-[#fafafa] outline-none focus:ring-2 focus:ring-pink-400 transition-all"
+            className="flex-1 resize-none rounded-xl border border-slate-300 dark:border-[#3d3d48] bg-white dark:bg-[#0f171d] px-3 py-2 text-sm text-slate-800 dark:text-[#fafafa] outline-none focus:ring-2 focus:ring-pink-400 transition-all"
           />
           <button
             type="submit"

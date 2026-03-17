@@ -13,7 +13,7 @@ export default function ExamesPage() {
       pageTitle="Modelos de Exames"
       basePath="/atendimento/cadastros/modelos/exames"
       entityName="exame"
-      icon={<FlaskConical className="w-5 h-5 text-teal-600" />}
+      icon={<FlaskConical className="w-5 h-5 text-blue-600" />}
     />
   );
 }

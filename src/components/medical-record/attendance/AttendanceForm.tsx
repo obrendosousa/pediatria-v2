@@ -261,7 +261,7 @@ export function AttendanceForm({
         </div>
 
       {/* Seção: Anamnese */}
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+      <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
         <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200 mb-3">Atendimento</h2>
         
         {/* Queixa Principal */}
@@ -272,7 +272,7 @@ export function AttendanceForm({
           <input
             {...register('chief_complaint')}
             type="text"
-            className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             placeholder="Digite a queixa principal..."
           />
         </div>
@@ -309,7 +309,7 @@ export function AttendanceForm({
       </div>
 
       {/* Seção: Exame Físico & Vitals */}
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+      <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
         <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200 mb-3">Exame físico</h2>
 
         {/* Exame Físico */}
@@ -340,7 +340,7 @@ export function AttendanceForm({
                   {...register('weight', { valueAsNumber: true })}
                   type="number"
                   step="0.1"
-                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center"
+                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center"
                   placeholder="0"
                 />
                 <span className="text-xs text-slate-500">kg</span>
@@ -354,7 +354,7 @@ export function AttendanceForm({
                   value={formatHeight(heightDigitsState)}
                   onKeyDown={handleHeightKeyDown}
                   readOnly
-                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center cursor-text"
+                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center cursor-text"
                   placeholder="0,00"
                 />
                 <span className="text-xs text-slate-500">m</span>
@@ -370,7 +370,7 @@ export function AttendanceForm({
       </div>
 
       {/* Seção: Diagnóstico */}
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+      <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
         <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200 mb-3">Diagnóstico</h2>
         <DiagnosisSelect
           value={watch('diagnosis')}
@@ -411,7 +411,7 @@ export function AttendanceForm({
       </div>
 
       {/* Seção: Condutas */}
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+      <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
         <h2 className="text-sm font-bold text-slate-800 dark:text-gray-200 mb-3">Condutas</h2>
         <RichTextEditor
           value={watch('conducts')}
@@ -424,7 +424,7 @@ export function AttendanceForm({
       </div>
 
         {/* Barra de Ações */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#2e2e33] -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#3d3d48] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

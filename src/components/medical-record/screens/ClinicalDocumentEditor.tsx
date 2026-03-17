@@ -104,7 +104,7 @@ export function ClinicalDocumentEditor({
               value={title}
               onChange={e => onTitleChange(e.target.value)}
               placeholder={titlePlaceholder}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         )}
@@ -140,7 +140,7 @@ export function ClinicalDocumentEditor({
               type="date"
               value={date}
               onChange={e => onDateChange(e.target.value)}
-              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         )}
@@ -177,7 +177,7 @@ export function ClinicalDocumentEditor({
         </button>
         <button
           onClick={onBack}
-          className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-[#a1a1aa] bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+          className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-[#a1a1aa] bg-slate-100 dark:bg-[#1c1c21] hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
         >
           CANCELAR
         </button>
@@ -195,7 +195,7 @@ function DocumentTemplatePanel({ templates, onSelect, title }: {
 }) {
   if (templates.length === 0) {
     return (
-      <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-4">
+      <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-4">
         <div className="flex items-center gap-2 mb-3">
           <BookOpen className="w-4 h-4 text-slate-400" />
           <h3 className="text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">{title}</h3>
@@ -208,7 +208,7 @@ function DocumentTemplatePanel({ templates, onSelect, title }: {
   }
 
   return (
-    <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-4 overflow-y-auto max-h-[500px]">
+    <div className="w-64 shrink-0 bg-slate-50 dark:bg-[#16171c] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-4 overflow-y-auto max-h-[500px]">
       <div className="flex items-center gap-2 mb-3">
         <BookOpen className="w-4 h-4 text-slate-400" />
         <h3 className="text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">{title}</h3>
@@ -218,7 +218,7 @@ function DocumentTemplatePanel({ templates, onSelect, title }: {
           <button
             key={tmpl.id}
             onClick={() => onSelect(tmpl)}
-            className="w-full text-left p-3 rounded-lg bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all group"
+            className="w-full text-left p-3 rounded-lg bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all group"
           >
             <p className="text-xs font-bold text-slate-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
               {tmpl.title}

@@ -17,7 +17,7 @@ interface EditModalProps {
 }
 
 const COLORS = [
-  { id: 'white', bg: 'bg-white dark:bg-[#18181b]', border: 'border-slate-200 dark:border-[#2e2e33]', btn: 'bg-teal-600' },
+  { id: 'white', bg: 'bg-white dark:bg-[#1c1c21]', border: 'border-slate-200 dark:border-[#3d3d48]', btn: 'bg-blue-600' },
   { id: 'yellow', bg: 'bg-yellow-100 dark:bg-yellow-900/30', border: 'border-yellow-200 dark:border-yellow-700/50', btn: 'bg-yellow-500' },
   { id: 'rose', bg: 'bg-rose-100 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-700/50', btn: 'bg-rose-500' },
   { id: 'blue', bg: 'bg-blue-100 dark:bg-blue-900/30', border: 'border-blue-200 dark:border-blue-700/50', btn: 'bg-blue-500' },

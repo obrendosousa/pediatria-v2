@@ -34,7 +34,7 @@ export default function HistoricoAgendamentosPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-[#16171c]">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -43,7 +43,7 @@ export default function HistoricoAgendamentosPage() {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-slate-50 dark:bg-[#16171c] text-slate-500 dark:text-[#a1a1aa]">
         <p className="text-sm">Paciente não encontrado.</p>
-        <button onClick={() => router.back()} className="mt-3 text-xs text-teal-600 hover:underline">Voltar</button>
+        <button onClick={() => router.back()} className="mt-3 text-xs text-blue-600 hover:underline">Voltar</button>
       </div>
     );
   }
@@ -51,12 +51,12 @@ export default function HistoricoAgendamentosPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#16171c] transition-colors">
       {/* Header */}
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0a0a0c] border-b border-slate-100 dark:border-[#27272a] shadow-sm">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#08080b] border-b border-slate-100 dark:border-[#2d2d36] shadow-sm">
         <div className="flex items-center gap-3">
           <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="p-2 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-300 rounded-lg">
+          <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 rounded-lg">
             <Calendar className="w-5 h-5" />
           </div>
           <div>

@@ -8,7 +8,7 @@ type OperationalCapacityPanelProps = {
 
 export default function OperationalCapacityPanel({ metrics }: OperationalCapacityPanelProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#27272a] dark:bg-[#0a0a0c]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#2d2d36] dark:bg-[#08080b]">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-bold text-slate-800 dark:text-[#fafafa]">Capacidade e respostas em aberto</h3>

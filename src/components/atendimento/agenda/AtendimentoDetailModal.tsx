@@ -8,6 +8,7 @@ import {
   Save, Trash2, Info, Wallet
 } from 'lucide-react';
 import { formatDateToDisplay, formatDateToISO, formatCurrency, parseCurrency } from '@/app/agenda/utils/agendaUtils';
+import { getValidNextStatuses, isValidTransition } from '@/config/scheduling/statusTransitions';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
 const supabase = createSchemaClient('atendimento');
@@ -58,6 +59,7 @@ const initialEditForm = {
 export default function AtendimentoDetailModal({ selectedAppointment, setSelectedAppointment, doctors, onSaveSuccess }: Props) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState(initialEditForm);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
@@ -107,10 +109,14 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
   }, [selectedAppointment, doctors]);
 
   const handleSaveEdit = async () => {
-    if (!selectedAppointment) return;
+    if (!selectedAppointment || isSaving) return;
     if (!editForm.date || editForm.date.length !== 10) { toast.error('Data invalida'); return; }
     if (!editForm.doctor_id) { toast.error('Selecione um profissional'); return; }
+    if (editForm.status !== selectedAppointment.status && !isValidTransition(selectedAppointment.status, editForm.status)) {
+      toast.error('Transicao de status nao permitida.'); return;
+    }
 
+    setIsSaving(true);
     try {
       const updateData: Record<string, unknown> = {
         notes: editForm.notes || null,
@@ -134,6 +140,8 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
     } catch (err: unknown) {
       console.error('Erro ao salvar:', err);
       toast.error('Erro ao salvar: ' + (err instanceof Error ? err.message : 'Tente novamente.'));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -172,12 +180,12 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
   return (
     <>
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white dark:bg-[#202c33] w-full max-w-lg rounded-2xl shadow-lg border border-slate-200 dark:border-[#2e2e33] overflow-hidden animate-scale-in">
-        <div className={`p-4 border-b border-slate-200 dark:border-[#2e2e33] flex justify-between items-center ${
-          selectedAppointment.status === 'blocked' ? 'bg-red-50/50 dark:bg-red-900/10' : 'bg-teal-50/50 dark:bg-teal-900/10'
+      <div className="bg-white dark:bg-[#1c1c21] w-full max-w-lg rounded-2xl shadow-lg border border-slate-200 dark:border-[#3d3d48] overflow-hidden animate-scale-in">
+        <div className={`p-4 border-b border-slate-200 dark:border-[#3d3d48] flex justify-between items-center ${
+          selectedAppointment.status === 'blocked' ? 'bg-red-50/50 dark:bg-red-900/10' : 'bg-blue-50/50 dark:bg-blue-900/10'
         }`}>
           <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-lg ${selectedAppointment.status === 'blocked' ? 'bg-red-100 dark:bg-red-900/20 text-red-500' : 'bg-teal-100 dark:bg-teal-900/20 text-teal-500 dark:text-teal-400'}`}>
+            <div className={`p-1.5 rounded-lg ${selectedAppointment.status === 'blocked' ? 'bg-red-100 dark:bg-red-900/20 text-red-500' : 'bg-blue-100 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400'}`}>
               <Info size={16}/>
             </div>
             <h3 className="text-base font-semibold text-slate-700 dark:text-gray-200">
@@ -190,9 +198,9 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
         </div>
 
         <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-[#2e2e33]">
+          <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-[#3d3d48]">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-semibold text-lg ${
-              selectedAppointment.status === 'blocked' ? 'bg-red-100 dark:bg-red-900/20 text-red-600' : 'bg-teal-100 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400'
+              selectedAppointment.status === 'blocked' ? 'bg-red-100 dark:bg-red-900/20 text-red-600' : 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
             }`}>
               {isEditing ? <Edit2 size={18}/> : (selectedAppointment.status === 'blocked' ? <Ban size={18}/> : (selectedAppointment.patient_name?.charAt(0) || 'P'))}
             </div>
@@ -200,7 +208,7 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
               {isEditing ? (
                 <div className="space-y-1">
                   <label className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Nome do Paciente</label>
-                  <input type="text" className="w-full text-sm font-medium text-slate-800 dark:text-[#fafafa] border border-slate-200 dark:border-gray-600 rounded-lg px-3 py-1.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none bg-white dark:bg-[#18181b] transition-all" value={editForm.patient_name} onChange={(e) => setEditForm({ ...editForm, patient_name: e.target.value })} />
+                  <input type="text" className="w-full text-sm font-medium text-slate-800 dark:text-[#fafafa] border border-slate-200 dark:border-gray-600 rounded-lg px-3 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1c1c21] transition-all" value={editForm.patient_name} onChange={(e) => setEditForm({ ...editForm, patient_name: e.target.value })} />
                 </div>
               ) : (
                 <>
@@ -209,7 +217,7 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
                   </h4>
                   <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md ${
                     selectedAppointment.status === 'blocked' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                      : selectedAppointment.status === 'scheduled' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300'
+                      : selectedAppointment.status === 'scheduled' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                       : selectedAppointment.status === 'confirmed' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
                       : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                   }`}>
@@ -221,13 +229,16 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
                 <div className="space-y-2 mt-2">
                   <div>
                     <label className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Status</label>
-                    <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none bg-white dark:bg-[#18181b] mt-1">
-                      <option value="scheduled">Agendado</option><option value="confirmed">Confirmado</option><option value="waiting">Sala de Espera</option><option value="in_service">Em Atendimento</option><option value="finished">Atendido</option><option value="late">Atrasado</option><option value="cancelled">Cancelado</option><option value="no_show">Faltou</option><option value="unmarked">Desmarcado</option><option value="rescheduled">Reagendado</option><option value="not_attended">Nao Atendido</option><option value="blocked">Bloqueado</option>
+                    <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1c1c21] mt-1">
+                      <option value={selectedAppointment.status}>{statusLabels[selectedAppointment.status] || selectedAppointment.status}</option>
+                      {getValidNextStatuses(selectedAppointment.status).map(k => (
+                        <option key={k} value={k}>{statusLabels[k] || k}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
                     <label className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Tipo</label>
-                    <select value={editForm.type} onChange={e => setEditForm({ ...editForm, type: e.target.value })} className="w-full text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none bg-white dark:bg-[#18181b] mt-1">
+                    <select value={editForm.type} onChange={e => setEditForm({ ...editForm, type: e.target.value })} className="w-full text-xs font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1c1c21] mt-1">
                       <option value="">Nao definido</option><option value="consulta">Consulta</option><option value="retorno">Retorno</option>
                     </select>
                   </div>
@@ -237,18 +248,18 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
-              <div className="flex items-center gap-1.5 mb-1.5"><CalendarDays size={14} className="text-teal-500 dark:text-teal-400"/><span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data</span></div>
+            <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+              <div className="flex items-center gap-1.5 mb-1.5"><CalendarDays size={14} className="text-blue-500 dark:text-blue-400"/><span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data</span></div>
               {isEditing ? (
-                <input type="text" value={editForm.dateDisplay} onChange={e => handleDateMaskedInput(e.target.value)} placeholder="DD/MM/AAAA" maxLength={10} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none bg-white dark:bg-[#18181b]" />
+                <input type="text" value={editForm.dateDisplay} onChange={e => handleDateMaskedInput(e.target.value)} placeholder="DD/MM/AAAA" maxLength={10} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1c1c21]" />
               ) : (
                 <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">{selectedAppointment.date ? formatDateToDisplay(selectedAppointment.date) : 'N/A'}</p>
               )}
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
-              <div className="flex items-center gap-1.5 mb-1.5"><Clock size={14} className="text-teal-500 dark:text-teal-400"/><span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Horario</span></div>
+            <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+              <div className="flex items-center gap-1.5 mb-1.5"><Clock size={14} className="text-blue-500 dark:text-blue-400"/><span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Horario</span></div>
               {isEditing ? (
-                <input type="time" value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none bg-white dark:bg-[#18181b]" />
+                <input type="time" value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1c1c21]" />
               ) : (
                 <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">{displayTime}</p>
               )}
@@ -256,12 +267,12 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
-              <div className="p-1.5 bg-teal-100 dark:bg-teal-900/20 text-teal-500 dark:text-teal-400 rounded-md"><Stethoscope size={14}/></div>
+            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+              <div className="p-1.5 bg-blue-100 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 rounded-md"><Stethoscope size={14}/></div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Profissional</p>
                 {isEditing ? (
-                  <select value={editForm.doctor_id || ''} onChange={e => setEditForm({ ...editForm, doctor_id: Number(e.target.value) })} className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none bg-white dark:bg-[#18181b]">
+                  <select value={editForm.doctor_id || ''} onChange={e => setEditForm({ ...editForm, doctor_id: Number(e.target.value) })} className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1c1c21]">
                     <option value="">Selecione...</option>
                     {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
@@ -270,23 +281,23 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
+            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
               <div className="p-1.5 bg-purple-100 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400 rounded-md"><User size={14}/></div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Responsavel</p>
                 {isEditing ? (
-                  <input type="text" value={editForm.parent_name} onChange={e => setEditForm({ ...editForm, parent_name: e.target.value })} placeholder="Nome do responsavel" className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none bg-white dark:bg-[#18181b]" />
+                  <input type="text" value={editForm.parent_name} onChange={e => setEditForm({ ...editForm, parent_name: e.target.value })} placeholder="Nome do responsavel" className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1c1c21]" />
                 ) : (
                   <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{selectedAppointment.parent_name || 'Nao informado'}</p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
+            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
               <div className="p-1.5 bg-green-100 dark:bg-green-900/20 text-green-500 dark:text-green-400 rounded-md"><Phone size={14}/></div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Telefone</p>
                 {isEditing ? (
-                  <input type="text" className="w-full text-sm font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none bg-white dark:bg-[#18181b]" value={editForm.parent_phone} onChange={(e) => setEditForm({ ...editForm, parent_phone: e.target.value })} placeholder="11999999999" />
+                  <input type="text" className="w-full text-sm font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1c1c21]" value={editForm.parent_phone} onChange={(e) => setEditForm({ ...editForm, parent_phone: e.target.value })} placeholder="11999999999" />
                 ) : (
                   <p className="text-sm text-slate-700 dark:text-gray-200 font-medium">{(selectedAppointment.parent_phone || selectedAppointment.patient_phone) ? (selectedAppointment.parent_phone || selectedAppointment.patient_phone)!.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : 'Nao informado'}</p>
                 )}
@@ -295,36 +306,36 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
           </div>
 
           {selectedAppointment.status !== 'blocked' && (
-            <div className="bg-slate-50 dark:bg-[#1a1f28] p-3 rounded-xl border border-slate-200 dark:border-[#2e2e33]">
+            <div className="bg-slate-50 dark:bg-[#1a1f28] p-3 rounded-xl border border-slate-200 dark:border-[#3d3d48]">
               <h5 className="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1"><Wallet size={12}/> Financeiro</h5>
               {isEditing ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] text-slate-400 uppercase">Total (R$)</label>
-                    <input type="text" value={editForm.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full text-sm font-bold border border-slate-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                    <input type="text" value={editForm.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full text-sm font-bold border border-slate-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400" />
                   </div>
                   <div>
                     <label className="text-[10px] text-slate-400 uppercase">Pago (R$)</label>
                     <input type="text" value={editForm.paidAmount} onChange={e => handleMoneyInput('paidAmount', e.target.value)} className="w-full text-sm font-bold border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400" />
                   </div>
-                  <div className="col-span-2 text-right text-xs font-bold text-slate-500 dark:text-[#a1a1aa] border-t border-slate-200 dark:border-[#2e2e33] pt-2 mt-1">
+                  <div className="col-span-2 text-right text-xs font-bold text-slate-500 dark:text-[#a1a1aa] border-t border-slate-200 dark:border-[#3d3d48] pt-2 mt-1">
                     Restante: <span className={editRemaining > 0 ? 'text-rose-500 text-sm' : 'text-emerald-500 text-sm'}>R$ {editRemaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               ) : (
-                <div className="flex justify-between items-center bg-white dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-[#2e2e33]">
+                <div className="flex justify-between items-center bg-white dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-[#3d3d48]">
                   <div><p className="text-[10px] text-slate-400 uppercase font-semibold">Valor Total</p><p className="text-sm font-bold text-slate-700 dark:text-gray-200">R$ {totalDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
                   <div className="text-right"><p className="text-[10px] text-emerald-600/70 uppercase font-semibold">Pago</p><p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">R$ {paidDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                  <div className="text-right pl-4 border-l border-slate-100 dark:border-[#2e2e33] ml-4"><p className="text-[10px] text-slate-400 uppercase font-semibold">Falta</p><p className={`text-sm font-black ${remainingDisplay > 0 ? 'text-rose-500' : 'text-slate-400'}`}>R$ {remainingDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                  <div className="text-right pl-4 border-l border-slate-100 dark:border-[#3d3d48] ml-4"><p className="text-[10px] text-slate-400 uppercase font-semibold">Falta</p><p className={`text-sm font-black ${remainingDisplay > 0 ? 'text-rose-500' : 'text-slate-400'}`}>R$ {remainingDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
                 </div>
               )}
             </div>
           )}
 
-          <div className="p-3 bg-teal-50/30 dark:bg-teal-900/5 rounded-lg border border-teal-200/30 dark:border-teal-800/20">
-            <div className="flex items-center gap-2 mb-2"><FileText size={14} className="text-teal-500 dark:text-teal-400"/><p className="text-[10px] font-semibold text-teal-600 dark:text-teal-300 uppercase">Observacoes</p></div>
+          <div className="p-3 bg-blue-50/30 dark:bg-blue-900/5 rounded-lg border border-blue-200/30 dark:border-blue-800/20">
+            <div className="flex items-center gap-2 mb-2"><FileText size={14} className="text-blue-500 dark:text-blue-400"/><p className="text-[10px] font-semibold text-blue-600 dark:text-blue-300 uppercase">Observacoes</p></div>
             {isEditing ? (
-              <textarea className="w-full p-2.5 text-sm text-slate-700 dark:text-gray-200 border border-teal-200 dark:border-teal-800/30 rounded-lg focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none bg-white dark:bg-[#1a1f28] min-h-[80px] resize-y" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Observacoes..." />
+              <textarea className="w-full p-2.5 text-sm text-slate-700 dark:text-gray-200 border border-blue-200 dark:border-blue-800/30 rounded-lg focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1a1f28] min-h-[80px] resize-y" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Observacoes..." />
             ) : (
               <div className="p-2.5 bg-white/60 dark:bg-[#1a1f28]/60 rounded-lg">
                 <p className="text-xs text-slate-600 dark:text-[#d4d4d8] leading-relaxed">{selectedAppointment.notes || 'Nenhuma observacao registrada.'}</p>
@@ -333,17 +344,17 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
           </div>
         </div>
 
-        <div className="p-4 bg-slate-50/50 dark:bg-[#0a0a0c] border-t border-slate-200 dark:border-[#2e2e33] flex gap-2">
+        <div className="p-4 bg-slate-50/50 dark:bg-[#08080b] border-t border-slate-200 dark:border-[#3d3d48] flex gap-2">
           {isEditing ? (
             <>
-              <button onClick={() => setIsEditing(false)} className="flex-1 bg-white dark:bg-[#18181b] border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-[#d4d4d8] py-2 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-colors">Cancelar</button>
-              <button onClick={handleSaveEdit} className="flex-1 bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5"><Save size={14}/> Salvar</button>
+              <button onClick={() => setIsEditing(false)} className="flex-1 bg-white dark:bg-[#1c1c21] border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-[#d4d4d8] py-2 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-colors">Cancelar</button>
+              <button onClick={handleSaveEdit} disabled={isSaving} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"><Save size={14}/> {isSaving ? 'Salvando...' : 'Salvar'}</button>
             </>
           ) : (
             <>
               <button onClick={() => setConfirmCancelOpen(true)} className="px-3 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5"><Trash2 size={14}/> Cancelar</button>
-              <button onClick={() => setIsEditing(true)} className="flex-1 bg-white dark:bg-[#18181b] border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-[#d4d4d8] py-2 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5"><Edit2 size={14}/> Editar</button>
-              <button onClick={() => setSelectedAppointment(null)} className="flex-1 bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg text-xs font-semibold shadow-sm transition-colors">Fechar</button>
+              <button onClick={() => setIsEditing(true)} className="flex-1 bg-white dark:bg-[#1c1c21] border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-[#d4d4d8] py-2 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5"><Edit2 size={14}/> Editar</button>
+              <button onClick={() => setSelectedAppointment(null)} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg text-xs font-semibold shadow-sm transition-colors">Fechar</button>
             </>
           )}
         </div>

@@ -5,7 +5,7 @@ import { Clock } from 'lucide-react';
 
 export default function AguardandoAprovacaoPage() {
   return (
-    <div className="rounded-2xl border border-pink-100 dark:border-[#2e2e33] bg-white dark:bg-[#18181b] p-8 shadow-xl text-center">
+    <div className="rounded-2xl border border-pink-100 dark:border-[#3d3d48] bg-white dark:bg-[#1c1c21] p-8 shadow-xl text-center">
       <div className="flex justify-center mb-6">
         <div className="w-14 h-14 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
           <Clock className="w-7 h-7 text-amber-600 dark:text-amber-400" />

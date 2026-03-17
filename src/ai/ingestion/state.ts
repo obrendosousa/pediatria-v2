@@ -5,6 +5,14 @@ export interface EvolutionWebhookData {
     remoteJid: string;
     fromMe: boolean;
     id: string;
+    /** Phone-number JID (NUMBER@s.whatsapp.net) when remoteJid is @lid — Evolution API v2 */
+    senderPn?: string;
+    /** Alternative JID: PN when remoteJid is LID, or LID when remoteJid is PN */
+    remoteJidAlt?: string;
+    /** "pn" = phone number mode, "lid" = LID mode */
+    addressingMode?: string;
+    /** Group message sender JID */
+    participant?: string;
   };
   pushName?: string;
   messageType: string;

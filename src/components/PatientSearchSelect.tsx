@@ -130,7 +130,7 @@ export default function PatientSearchSelect({
           }}
           onFocus={() => searchTerm.trim() && setOpen(true)}
           placeholder={placeholder}
-          className="w-full pl-9 pr-9 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all placeholder:text-slate-400"
+          className="w-full pl-9 pr-9 py-2.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all placeholder:text-slate-400"
         />
         {selectedPatient && (
           <button
@@ -158,7 +158,7 @@ export default function PatientSearchSelect({
       )}
 
       {open && (searchTerm.trim() || results.length > 0) && !selectedPatient && (
-        <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] rounded-lg shadow-lg custom-scrollbar">
+        <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-lg shadow-lg custom-scrollbar">
           {loading ? (
             <div className="p-4 text-center text-sm text-slate-500 dark:text-[#a1a1aa]">
               Buscando...
@@ -173,9 +173,9 @@ export default function PatientSearchSelect({
                 key={p.id}
                 type="button"
                 onClick={() => handleSelect(p)}
-                className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-100 dark:border-[#27272a] last:border-0 flex items-center gap-3"
+                className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-b border-slate-100 dark:border-[#2d2d36] last:border-0 flex items-center gap-3"
               >
-                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#18181b] flex items-center justify-center text-slate-500 dark:text-[#a1a1aa] shrink-0">
+                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1c21] flex items-center justify-center text-slate-500 dark:text-[#a1a1aa] shrink-0">
                   <User className="w-4 h-4" />
                 </div>
                 <div className="min-w-0 flex-1">

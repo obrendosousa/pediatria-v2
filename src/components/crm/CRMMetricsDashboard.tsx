@@ -32,14 +32,14 @@ function MetricsSkeleton() {
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 8 }).map((_, idx) => (
-          <div key={idx} className="h-28 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#18181b]" />
+          <div key={idx} className="h-28 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#1c1c21]" />
         ))}
       </div>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="h-80 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#18181b]" />
-        <div className="h-80 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#18181b]" />
+        <div className="h-80 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#1c1c21]" />
+        <div className="h-80 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#1c1c21]" />
       </div>
-      <div className="h-72 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#18181b]" />
+      <div className="h-72 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#1c1c21]" />
     </div>
   );
 }
@@ -63,7 +63,7 @@ export default function CRMMetricsDashboard(props: CRMMetricsDashboardProps) {
 
   return (
     <div className="h-full overflow-y-auto p-6 custom-scrollbar lg:p-8">
-      <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#27272a] dark:bg-[#0a0a0c]">
+      <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#2d2d36] dark:bg-[#08080b]">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-black text-slate-800 dark:text-[#fafafa]">Gestão & Métricas de Atendimento</h2>
@@ -72,7 +72,7 @@ export default function CRMMetricsDashboard(props: CRMMetricsDashboardProps) {
           <button
             type="button"
             onClick={onRefresh}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-[#2e2e33] dark:text-[#d4d4d8] dark:hover:bg-white/5"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/5"
           >
             <RefreshCw className="h-4 w-4" />
             Atualizar
@@ -84,7 +84,7 @@ export default function CRMMetricsDashboard(props: CRMMetricsDashboardProps) {
             <select
               value={granularity}
               onChange={(e) => onGranularityChange(e.target.value as Granularity)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-[#2e2e33] dark:bg-[#111b21] dark:text-gray-200"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-[#3d3d48] dark:bg-[#111b21] dark:text-gray-200"
             >
               <option value="day">Dia</option>
               <option value="month">Mês</option>

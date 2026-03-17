@@ -116,12 +116,12 @@ export function RichTextEditor({
   const btnClass = 'p-1.5 hover:bg-slate-200 dark:hover:bg-[#353842] rounded transition-colors';
 
   return (
-    <div className={`border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#0a0a0c] ${className}`}>
+    <div className={`border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#08080b] ${className}`}>
       {/* Toolbar */}
       {showToolbar && !readOnly && (
-        <div className="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-[#2e2e33] bg-slate-50 dark:bg-[#18181b] rounded-t-lg flex-wrap">
+        <div className="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-[#3d3d48] bg-slate-50 dark:bg-[#1c1c21] rounded-t-lg flex-wrap">
           <select
-            className="px-2 py-1 text-xs border border-slate-200 dark:border-[#2e2e33] rounded bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 mr-1 cursor-pointer"
+            className="px-2 py-1 text-xs border border-slate-200 dark:border-[#3d3d48] rounded bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 mr-1 cursor-pointer"
             defaultValue="normal"
             onChange={handleHeadingChange}
           >
@@ -211,7 +211,7 @@ export function RichTextEditor({
 
       {/* Footer com botões de modelo */}
       {(onSaveModel || onUseModel) && (
-        <div className="flex justify-end gap-2 p-3 border-t border-slate-200 dark:border-[#2e2e33] bg-slate-50 dark:bg-[#18181b] rounded-b-lg">
+        <div className="flex justify-end gap-2 p-3 border-t border-slate-200 dark:border-[#3d3d48] bg-slate-50 dark:bg-[#1c1c21] rounded-b-lg">
           {onSaveModel && (
             <button
               type="button" onClick={onSaveModel}

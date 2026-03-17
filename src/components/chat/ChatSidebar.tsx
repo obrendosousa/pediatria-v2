@@ -139,14 +139,14 @@ export default function ChatSidebar({
 
                   {/* Badge de Contagem */}
                   {count > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#0a0a0c]">
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#08080b]">
                           {count}
                       </span>
                   )}
               </button>
 
               {/* Tooltip Lateral */}
-              <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-gray-900 dark:bg-[#27272a] text-white text-[11px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+              <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-gray-900 dark:bg-[#2d2d36] text-white text-[11px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                   {label}
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-l-gray-900 dark:border-l-gray-700"/>
               </div>
@@ -155,16 +155,16 @@ export default function ChatSidebar({
   };
 
   return (
-      <div className="flex h-full bg-white dark:bg-[#0a0a0c] border-l border-gray-200 dark:border-[#27272a] shadow-xl z-30 transition-all duration-300 overflow-hidden">
+      <div className="flex h-full bg-white dark:bg-[#08080b] border-l border-gray-200 dark:border-[#2d2d36] shadow-xl z-30 transition-all duration-300 overflow-hidden">
         
         {/* --- PAINEL EXPANSÍVEL (CONTEÚDO) --- */}
-        <div className={`flex flex-col bg-gray-50/50 dark:bg-[#111b21] transition-all duration-300 ease-in-out border-r border-gray-100 dark:border-[#27272a] overflow-hidden ${activeTab ? 'w-[calc(100vw-58px)] sm:w-[360px] opacity-100' : 'w-0 opacity-0'}`}>
+        <div className={`flex flex-col bg-gray-50/50 dark:bg-[#111b21] transition-all duration-300 ease-in-out border-r border-gray-100 dark:border-[#2d2d36] overflow-hidden ${activeTab ? 'w-[calc(100vw-58px)] sm:w-[360px] opacity-100' : 'w-0 opacity-0'}`}>
             
             {activeTab && (
                 <div className="flex flex-col h-full w-full"> 
                     
                     {/* Header do Painel */}
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-[#2e2e33] bg-white dark:bg-[#202c33] flex justify-between items-center shrink-0 transition-colors">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-[#3d3d48] bg-white dark:bg-[#202c33] flex justify-between items-center shrink-0 transition-colors">
                         <div className="flex items-center gap-2.5">
                           {activeTab === 'text' && <div className="p-1.5 rounded-lg bg-[var(--chat-accent)]/10"><FileText size={16} className="text-[var(--chat-accent)]"/></div>}
                           {activeTab === 'audio' && <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/20"><Mic size={16} className="text-purple-500"/></div>}
@@ -195,14 +195,14 @@ export default function ChatSidebar({
 
                     {/* Barra de Busca */}
                     {activeTab !== 'schedule' && activeTab !== 'executions' && activeTab !== 'copiloto' && (
-                        <div className="px-4 py-3 bg-white dark:bg-[#202c33] border-b border-gray-100 dark:border-[#2e2e33] transition-colors">
+                        <div className="px-4 py-3 bg-white dark:bg-[#202c33] border-b border-gray-100 dark:border-[#3d3d48] transition-colors">
                             <div className="relative group">
                                 <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4 group-focus-within:text-[var(--chat-accent)] transition-colors" />
                                 <input 
                                     value={searchTerm} 
                                     onChange={e => setSearchTerm(e.target.value)} 
                                     placeholder="Pesquisar..." 
-                                    className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 focus:outline-none focus:border-[var(--chat-accent)] focus:bg-white dark:focus:bg-[#2a2d36] transition-all" 
+                                    className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-[#1c1c21] border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 focus:outline-none focus:border-[var(--chat-accent)] focus:bg-white dark:focus:bg-[#2a2d36] transition-all" 
                                 />
                             </div>
                         </div>
@@ -295,7 +295,7 @@ export default function ChatSidebar({
                                 return sameType && (!searchTerm || m.title.toLowerCase().includes(searchTerm.toLowerCase()));
                             })
                             .map(macro => (
-                                <div key={macro.id} className="bg-white dark:bg-[#18181b] rounded-xl border border-gray-200 dark:border-[#2e2e33] p-3 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-all group cursor-pointer" onClick={() => toggleExpand(macro.id)}>
+                                <div key={macro.id} className="bg-white dark:bg-[#1c1c21] rounded-xl border border-gray-200 dark:border-[#3d3d48] p-3 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-all group cursor-pointer" onClick={() => toggleExpand(macro.id)}>
                                     {(() => {
                                       const isMacroSending = isProcessingMacro && processingActionId === `macro:${macro.id}`;
                                       return (
@@ -332,7 +332,7 @@ export default function ChatSidebar({
                                     })()}
                                     
                                     {expandedItemId === macro.id && (
-                                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-[#2e2e33] animate-in slide-in-from-top-1">
+                                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-[#3d3d48] animate-in slide-in-from-top-1">
                                             <div className="mb-3">
                                                 {activeTab === 'text' ? (
                                                     <p className="text-xs text-gray-600 dark:text-[#d4d4d8] bg-gray-50 dark:bg-[#202c33] p-2 rounded-lg border border-gray-100 dark:border-gray-600 leading-relaxed">
@@ -378,7 +378,7 @@ export default function ChatSidebar({
                               </div>
                             ) : (
                               <>
-                                <div className="bg-white dark:bg-[#18181b] rounded-xl border border-gray-200 dark:border-[#2e2e33] p-3">
+                                <div className="bg-white dark:bg-[#1c1c21] rounded-xl border border-gray-200 dark:border-[#3d3d48] p-3">
                                   <div className="flex items-center gap-2 mb-2">
                                     <span className="text-[10px] font-bold uppercase tracking-wide text-gray-500">Script ativo</span>
                                   </div>
@@ -410,7 +410,7 @@ export default function ChatSidebar({
                                 </div>
 
                                 {selectedScript && (
-                                  <div className="bg-white dark:bg-[#18181b] rounded-xl border border-gray-200 dark:border-[#2e2e33] p-3">
+                                  <div className="bg-white dark:bg-[#1c1c21] rounded-xl border border-gray-200 dark:border-[#3d3d48] p-3">
                                     <div className="mb-3">
                                       <h4 className="font-bold text-sm text-gray-700 dark:text-[#fafafa]">{selectedScript.title}</h4>
                                       <p className="text-[10px] text-gray-500 dark:text-[#a1a1aa]">
@@ -440,7 +440,7 @@ export default function ChatSidebar({
                                         return (
                                           <div
                                             key={`${selectedScript.id}-${idx}`}
-                                            className="bg-gray-50 dark:bg-[#202c33] p-2.5 rounded-lg border border-gray-100 dark:border-[#2e2e33]"
+                                            className="bg-gray-50 dark:bg-[#202c33] p-2.5 rounded-lg border border-gray-100 dark:border-[#3d3d48]"
                                           >
                                             <div className="flex items-start gap-2.5">
                                               <div className="w-5 h-5 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
@@ -478,7 +478,7 @@ export default function ChatSidebar({
                                               <button
                                                 onClick={() => !isWaitStep && onRunScriptStep(step, selectedScript.title)}
                                                 disabled={isProcessingMacro || isWaitStep}
-                                                className="text-[10px] bg-white dark:bg-[#0a0a0c] border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-[#d4d4d8] hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-700 px-2.5 py-1.5 rounded shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="text-[10px] bg-white dark:bg-[#08080b] border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-[#d4d4d8] hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-700 px-2.5 py-1.5 rounded shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                               >
                                                 {isProcessingMacro && processingActionId === `script:${selectedScript.title}:${step?.title || step?.type || 'step'}`
                                                   ? <span className="inline-flex items-center gap-1"><Loader2 size={10} className="animate-spin"/> Enviando</span>
@@ -500,7 +500,7 @@ export default function ChatSidebar({
                         {activeTab === 'funnels' && (
                             funnels.filter(f => (f as any).type === 'funnel' || !(f as any).type)
                             .map(funnel => (
-                                <div key={funnel.id} className="bg-white dark:bg-[#18181b] rounded-xl border border-gray-200 dark:border-[#2e2e33] p-3 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-all group">
+                                <div key={funnel.id} className="bg-white dark:bg-[#1c1c21] rounded-xl border border-gray-200 dark:border-[#3d3d48] p-3 hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-all group">
                                     <div className="flex justify-between items-center mb-2.5">
                                         <div className="flex items-center gap-2.5">
                                             <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 dark:text-indigo-300 rounded-lg"><Workflow size={16}/></div>
@@ -541,7 +541,7 @@ export default function ChatSidebar({
                                             <p className="text-xs text-gray-400 dark:text-[#71717a] mt-1 text-center max-w-[220px]">Agende mensagens para envio automático.</p>
                                         </div>
                                     ) : scheduledMessages.map(sched => (
-                                        <div key={sched.id} className="bg-white dark:bg-[#18181b] p-3 rounded-xl border border-gray-200 dark:border-[#2e2e33] hover:shadow-sm transition-all relative overflow-hidden group">
+                                        <div key={sched.id} className="bg-white dark:bg-[#1c1c21] p-3 rounded-xl border border-gray-200 dark:border-[#3d3d48] hover:shadow-sm transition-all relative overflow-hidden group">
                                             <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--chat-accent)]"/>
                                             <div className="flex justify-between items-start mb-1.5 pl-2">
                                                 <span className="font-semibold text-gray-700 dark:text-[#fafafa] text-[12px] truncate max-w-[200px]">{sched.title || 'Agendamento'}</span>
@@ -569,7 +569,7 @@ export default function ChatSidebar({
 
                     {/* Footer do Painel (Botão Criar para templates) */}
                     {['text', 'audio', 'image', 'script', 'funnels'].includes(activeTab ?? '') && (
-                        <div className="p-3 border-t border-gray-100 dark:border-[#27272a] bg-white dark:bg-[#202c33] shrink-0 transition-colors">
+                        <div className="p-3 border-t border-gray-100 dark:border-[#2d2d36] bg-white dark:bg-[#202c33] shrink-0 transition-colors">
                             <button
                                 onClick={() => {
                                     if(activeTab === 'script' || activeTab === 'funnels') {
@@ -588,7 +588,7 @@ export default function ChatSidebar({
         </div>
 
         {/* --- ÍCONES LATERAIS (NAVBAR) --- */}
-        <div className="w-[52px] sm:w-[58px] flex flex-col items-center py-3 sm:py-4 gap-1.5 bg-white dark:bg-[#0a0a0c] z-40 border-l border-gray-100 dark:border-[#27272a] transition-colors">
+        <div className="w-[52px] sm:w-[58px] flex flex-col items-center py-3 sm:py-4 gap-1.5 bg-white dark:bg-[#08080b] z-40 border-l border-gray-100 dark:border-[#2d2d36] transition-colors">
 
             {/* Toggle */}
             <button
@@ -610,7 +610,7 @@ export default function ChatSidebar({
                 count: executions.length,
             })}
 
-            <div className="w-6 h-px bg-gray-100 dark:bg-[#27272a] my-1"/>
+            <div className="w-6 h-px bg-gray-100 dark:bg-[#2d2d36] my-1"/>
 
             {/* Grupo: Conteúdo */}
             <span className="text-[8px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600 mb-0.5">Envio</span>
@@ -618,7 +618,7 @@ export default function ChatSidebar({
             {renderSidebarIcon({ id:"audio", icon:Mic, label:"Áudios", colorClass:"bg-purple-600" })}
             {renderSidebarIcon({ id:"image", icon:ImageIcon, label:"Mídia", colorClass:"bg-emerald-600" })}
 
-            <div className="w-6 h-px bg-gray-100 dark:bg-[#27272a] my-1"/>
+            <div className="w-6 h-px bg-gray-100 dark:bg-[#2d2d36] my-1"/>
 
             {/* Grupo: Automação */}
             <span className="text-[8px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600 mb-0.5">Auto</span>
@@ -640,11 +640,11 @@ export default function ChatSidebar({
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm animate-pulse">
                     <Bot size={14} className="text-white" />
                   </div>
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#0a0a0c]">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-[#08080b]">
                     {claraSuggestionCount}
                   </span>
                 </button>
-                <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-gray-900 dark:bg-[#27272a] text-white text-[11px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-gray-900 dark:bg-[#2d2d36] text-white text-[11px] font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                   Sugestões da Clara
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-l-gray-900 dark:border-l-gray-700"/>
                 </div>

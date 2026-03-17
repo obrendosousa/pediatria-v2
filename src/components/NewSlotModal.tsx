@@ -296,10 +296,10 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-[#08080b] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-between items-center">
+        <div className="p-4 border-b border-gray-200 dark:border-[#3d3d48] bg-gray-50 dark:bg-[#1c1c21] flex justify-between items-center">
           <div className="flex items-center gap-4">
             <h3 className="font-bold text-gray-800 dark:text-[#fafafa] flex items-center gap-2">
               <Calendar className="text-pink-600 dark:text-pink-400" size={20}/>
@@ -311,7 +311,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                 onClick={() => setSlotType('booked')}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
                   slotType === 'booked'
-                    ? 'bg-white text-pink-600 shadow-sm dark:bg-[#18181b] dark:text-pink-400'
+                    ? 'bg-white text-pink-600 shadow-sm dark:bg-[#1c1c21] dark:text-pink-400'
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
                 }`}
               >
@@ -322,7 +322,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                 onClick={() => setSlotType('blocked')}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
                   slotType === 'blocked'
-                    ? 'bg-white text-red-600 shadow-sm dark:bg-[#18181b] dark:text-red-400'
+                    ? 'bg-white text-red-600 shadow-sm dark:bg-[#1c1c21] dark:text-red-400'
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
                 }`}
               >
@@ -377,7 +377,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                     type="text"
                     value={formData.patient_name}
                     onChange={e => setFormData({...formData, patient_name: e.target.value})}
-                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                     placeholder="Nome da criança"
                     required
                   />
@@ -396,7 +396,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                       type="text"
                       value={formData.parent_name}
                       onChange={e => setFormData({...formData, parent_name: e.target.value})}
-                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                       placeholder="Nome do pai/mãe"
                     />
                   </div>
@@ -413,7 +413,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                       onClick={() => setFormData({...formData, patient_sex: 'M'})}
                       className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all shadow-sm ${
                         formData.patient_sex === 'M'
-                          ? 'bg-white text-blue-600 shadow-sm dark:bg-[#18181b] dark:text-blue-400'
+                          ? 'bg-white text-blue-600 shadow-sm dark:bg-[#1c1c21] dark:text-blue-400'
                           : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
                       }`}
                     >
@@ -424,7 +424,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                       onClick={() => setFormData({...formData, patient_sex: 'F'})}
                       className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all shadow-sm ${
                         formData.patient_sex === 'F'
-                          ? 'bg-white text-pink-600 shadow-sm dark:bg-[#18181b] dark:text-pink-400'
+                          ? 'bg-white text-pink-600 shadow-sm dark:bg-[#1c1c21] dark:text-pink-400'
                           : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
                       }`}
                     >
@@ -447,7 +447,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                     onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')}
                     placeholder="DD/MM/AAAA"
                     maxLength={10}
-                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                     required
                   />
                 </div>
@@ -464,7 +464,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                     type="text"
                     value={formData.patient_phone}
                     onChange={e => setFormData({...formData, patient_phone: e.target.value})}
-                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                     placeholder="11999999999"
                   />
                 </div>
@@ -484,7 +484,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                       onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')}
                       placeholder="DD/MM/AAAA"
                       maxLength={10}
-                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                       required
                     />
                   </div>
@@ -499,7 +499,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                       type="time"
                       value={formData.time}
                       onChange={e => setFormData({...formData, time: e.target.value})}
-                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                       required
                     />
                   </div>
@@ -516,7 +516,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                   <select
                     value={selectedDoctorId || ''}
                     onChange={e => setSelectedDoctorId(Number(e.target.value))}
-                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                     required
                   >
                     {doctors.length === 0 ? (
@@ -540,7 +540,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                 <select
                   value={formData.appointment_type}
                   onChange={e => setFormData({ ...formData, appointment_type: e.target.value as 'consulta' | 'retorno' | '' })}
-                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
                   required
                 >
                   <option value="">Selecione...</option>
@@ -550,7 +550,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
               </div>
 
               {/* --- NOVO BLOCO FINANCEIRO --- */}
-              <div className="bg-slate-50 dark:bg-[#18181b]/50 p-4 rounded-xl border border-slate-200 dark:border-[#2e2e33] space-y-4">
+              <div className="bg-slate-50 dark:bg-[#1c1c21]/50 p-4 rounded-xl border border-slate-200 dark:border-[#3d3d48] space-y-4">
                 <h4 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] flex items-center gap-2">
                   <Wallet className="w-4 h-4 text-emerald-500" />
                   Financeiro do Agendamento
@@ -568,7 +568,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                         type="text"
                         value={formData.totalAmount}
                         onChange={e => handleMoneyInput('totalAmount', e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                        className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                         placeholder="0,00"
                       />
                     </div>
@@ -594,7 +594,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
 
                 {/* Resumo Restante */}
                 {totalNum > 0 && (
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-[#2e2e33]">
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-[#3d3d48]">
                     <span className="text-sm text-slate-500 dark:text-[#a1a1aa]">Restante a pagar no local:</span>
                     <span className={`text-lg font-black ${remaining > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                       R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -613,7 +613,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                   <textarea
                     value={formData.notes}
                     onChange={e => setFormData({...formData, notes: e.target.value})}
-                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all resize-none"
+                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all resize-none"
                     placeholder="Resumo dos sintomas ou motivo da consulta..."
                     rows={3}
                   />
@@ -636,7 +636,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                       onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')}
                       placeholder="DD/MM/AAAA"
                       maxLength={10}
-                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
                       required
                     />
                   </div>
@@ -651,7 +651,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                       type="time"
                       value={formData.time}
                       onChange={e => setFormData({...formData, time: e.target.value})}
-                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
                       required
                     />
                   </div>
@@ -678,7 +678,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         </form>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-end gap-3">
+        <div className="p-4 border-t border-gray-200 dark:border-[#3d3d48] bg-gray-50 dark:bg-[#1c1c21] flex justify-end gap-3">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-500 dark:text-[#a1a1aa] hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-sm font-bold transition-colors"

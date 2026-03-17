@@ -18,7 +18,7 @@ const TEMPLATE_VARIABLES: TemplateVariable[] = [
 ];
 
 const inputClass =
-  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-xl bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50';
+  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50';
 
 const labelClass =
   'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
@@ -95,7 +95,7 @@ export default function EditarDocumentoPage() {
   if (loadingData) {
     return (
       <div className="h-full flex items-center justify-center bg-slate-50 dark:bg-[#15171e]">
-        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -103,7 +103,7 @@ export default function EditarDocumentoPage() {
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -114,7 +114,7 @@ export default function EditarDocumentoPage() {
           </button>
           <div>
             <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
-              <FileSignature className="w-5 h-5 text-teal-600" />
+              <FileSignature className="w-5 h-5 text-blue-600" />
               Editar Documento
             </h1>
             <p className="text-xs text-slate-400 dark:text-[#71717a]">Atualize o modelo de documento</p>
@@ -125,7 +125,7 @@ export default function EditarDocumentoPage() {
       {/* Body */}
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 custom-scrollbar">
         <div className="max-w-4xl mx-auto space-y-6">
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl border border-slate-200 dark:border-[#2e2e33] p-6 space-y-4">
+          <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-4">
             {/* Título */}
             <div>
               <label className={labelClass}>
@@ -148,7 +148,7 @@ export default function EditarDocumentoPage() {
                 type="button"
                 onClick={() => setIsDefault(prev => !prev)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  isDefault ? 'bg-teal-600' : 'bg-slate-300 dark:bg-gray-600'
+                  isDefault ? 'bg-blue-600' : 'bg-slate-300 dark:bg-gray-600'
                 }`}
               >
                 <span
@@ -180,12 +180,12 @@ export default function EditarDocumentoPage() {
       </form>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c] flex justify-end">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] flex justify-end">
         <button
           type="submit"
           disabled={saving}
           onClick={handleSubmit}
-          className="flex items-center gap-2 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
+          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           SALVAR INFORMAÇÕES

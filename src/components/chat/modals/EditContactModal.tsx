@@ -60,7 +60,7 @@ export default function EditContactModal({ isOpen, onClose, chat, onUpdate }: Ed
   const modalContent = (
     <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-[#202c33] w-full max-w-sm rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-[#2e2e33]">
+        <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-[#3d3d48]">
           <h2 className="text-md font-bold text-gray-800 dark:text-[#fafafa] flex items-center gap-2">
             <UserCog className="text-blue-500" size={18}/>
             Editar Contato
@@ -77,7 +77,7 @@ export default function EditContactModal({ isOpen, onClose, chat, onUpdate }: Ed
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1c1c21] border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
             />
           </div>
           <div>
@@ -86,7 +86,7 @@ export default function EditContactModal({ isOpen, onClose, chat, onUpdate }: Ed
               type="text"
               value={phone}
               onChange={e => setPhone(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1c1c21] border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
             />
           </div>
 

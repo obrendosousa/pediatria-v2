@@ -51,7 +51,7 @@ function AppointmentCard({ app, setSelectedAppointment }: { app: Appointment; se
           )}
         </div>
       )}
-      {app.notes && <div className="text-[10px] text-slate-400 dark:text-[#71717a] bg-white/50 dark:bg-black/20 px-2 py-1 rounded border border-slate-100/50 dark:border-[#2e2e33] flex items-center gap-1"><FileText className="w-3 h-3"/></div>}
+      {app.notes && <div className="text-[10px] text-slate-400 dark:text-[#71717a] bg-white/50 dark:bg-black/20 px-2 py-1 rounded border border-slate-100/50 dark:border-[#3d3d48] flex items-center gap-1"><FileText className="w-3 h-3"/></div>}
     </div>
   );
 }
@@ -101,7 +101,7 @@ export default function DayView({
             </div>
             <div className="flex-1 min-h-[50px] relative">
               <div className={`absolute top-3.5 left-0 w-full h-px ${
-                isCurrent ? 'bg-rose-200 dark:bg-rose-900/30' : 'bg-slate-50 dark:bg-[#18181b]'
+                isCurrent ? 'bg-rose-200 dark:bg-rose-900/30' : 'bg-slate-50 dark:bg-[#1c1c21]'
               }`}></div>
               {apps.length > 0 ? (
                 <div className="flex flex-col gap-2">

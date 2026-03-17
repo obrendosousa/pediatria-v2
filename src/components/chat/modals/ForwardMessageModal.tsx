@@ -132,8 +132,8 @@ export default function ForwardMessageModal({
 
   const modalContent = (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#233138] rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col border border-gray-200 dark:border-[#2e2e33]">
-        <div className="p-4 border-b border-gray-100 dark:border-[#2e2e33] flex items-center justify-between shrink-0">
+      <div className="bg-white dark:bg-[#233138] rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col border border-gray-200 dark:border-[#3d3d48]">
+        <div className="p-4 border-b border-gray-100 dark:border-[#3d3d48] flex items-center justify-between shrink-0">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa]">
             Encaminhar mensagem
           </h3>
@@ -148,7 +148,7 @@ export default function ForwardMessageModal({
         </div>
 
         {message && (
-          <div className="px-4 py-2 bg-gray-50 dark:bg-[#0b141a] border-b border-gray-100 dark:border-[#2e2e33] shrink-0">
+          <div className="px-4 py-2 bg-gray-50 dark:bg-[#0b141a] border-b border-gray-100 dark:border-[#3d3d48] shrink-0">
             <p className="text-xs text-gray-500 dark:text-[#a1a1aa] mb-1">Mensagem selecionada</p>
             <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2">
               {message.message_type === 'text'
@@ -158,7 +158,7 @@ export default function ForwardMessageModal({
           </div>
         )}
 
-        <div className="p-2 border-b border-gray-100 dark:border-[#2e2e33] shrink-0">
+        <div className="p-2 border-b border-gray-100 dark:border-[#3d3d48] shrink-0">
           <div className="relative">
             <Search
               size={18}
@@ -230,7 +230,7 @@ export default function ForwardMessageModal({
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-100 dark:border-[#2e2e33] flex gap-2 shrink-0">
+        <div className="p-4 border-t border-gray-100 dark:border-[#3d3d48] flex gap-2 shrink-0">
           <button
             type="button"
             onClick={onClose}

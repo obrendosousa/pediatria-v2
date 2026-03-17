@@ -64,7 +64,7 @@ export default function SidePanelSelector({
   }, [items, activeTab, tabs, search]);
 
   return (
-    <div className="flex flex-col h-full border-l border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+    <div className="flex flex-col h-full border-l border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
       {/* Título */}
       {title && (
         <div className="px-4 pt-4 pb-2">
@@ -74,7 +74,7 @@ export default function SidePanelSelector({
 
       {/* Tabs */}
       {tabs && tabs.length > 0 && (
-        <div className="flex border-b border-slate-200 dark:border-[#2e2e33]">
+        <div className="flex border-b border-slate-200 dark:border-[#3d3d48]">
           {tabs.map(tab => (
             <button
               key={tab.key}
@@ -94,7 +94,7 @@ export default function SidePanelSelector({
 
       {/* SubTabs */}
       {subTabs && subTabs.length > 0 && (
-        <div className="flex gap-1 px-3 py-2 border-b border-slate-100 dark:border-[#27272a]">
+        <div className="flex gap-1 px-3 py-2 border-b border-slate-100 dark:border-[#2d2d36]">
           {subTabs.map(st => (
             <button
               key={st.key}
@@ -114,7 +114,7 @@ export default function SidePanelSelector({
 
       {/* Busca */}
       {searchable && (
-        <div className="px-3 py-2 border-b border-slate-100 dark:border-[#27272a]">
+        <div className="px-3 py-2 border-b border-slate-100 dark:border-[#2d2d36]">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
             <input
@@ -122,7 +122,7 @@ export default function SidePanelSelector({
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+              className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function SidePanelSelector({
 
       {/* Toggle */}
       {showToggle && (
-        <div className="px-3 py-2 border-b border-slate-100 dark:border-[#27272a] flex items-center gap-2">
+        <div className="px-3 py-2 border-b border-slate-100 dark:border-[#2d2d36] flex items-center gap-2">
           <button
             type="button"
             onClick={() => { setToggleOn(v => !v); onToggleChange?.(!toggleOn); }}

@@ -230,9 +230,9 @@ export async function ensureChatExists(phone: string, pushName: string, fromMe: 
   }
 
   // 2. Se não existe, cria um novo
-  // Para novo contato, o nome principal inicia pelo telefone.
-  // Isso evita usar seu próprio pushName em mensagens enviadas do celular.
-  const newContactName = phone;
+  // Para mensagem recebida (não fromMe), usa pushName se disponível.
+  // Para mensagem enviada (fromMe), usa telefone como fallback seguro.
+  const newContactName = (!fromMe && pushName && pushName !== phone) ? pushName : phone;
 
   const { data: newChat, error } = await supabase
     .from("chats")

@@ -111,21 +111,21 @@ export default function BudgetListTable() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#2e2e33]">
+      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#3d3d48]">
         <div>
           <h2 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Orçamentos</h2>
           <p className="text-xs text-slate-400 dark:text-[#71717a] mt-0.5">{totalCount} orçamento{totalCount !== 1 ? 's' : ''}</p>
         </div>
         <button
           onClick={() => router.push('/atendimento/orcamentos/criar')}
-          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition-all active:scale-95"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition-all active:scale-95"
         >
           <Plus className="w-4 h-4" /> CRIAR ORÇAMENTO
         </button>
       </div>
 
       {/* Filtros */}
-      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#27272a]">
+      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#2d2d36]">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -133,7 +133,7 @@ export default function BudgetListTable() {
             value={searchTerm}
             onChange={e => handleSearchChange(e.target.value)}
             placeholder="Buscar por paciente ou registro..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
@@ -145,7 +145,7 @@ export default function BudgetListTable() {
               onClick={() => handleStatusChange(f)}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                 statusFilter === f
-                  ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300'
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                   : 'text-slate-500 dark:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-white/5'
               }`}
             >
@@ -159,21 +159,21 @@ export default function BudgetListTable() {
             type="date"
             value={dateFrom}
             onChange={e => { setDateFrom(e.target.value); setPage(0); }}
-            className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           <span className="text-xs text-slate-400">até</span>
           <input
             type="date"
             value={dateTo}
             onChange={e => { setDateTo(e.target.value); setPage(0); }}
-            className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
         <select
           value={pageSize}
           onChange={e => handlePageSizeChange(Number(e.target.value) as PageSize)}
-          className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-teal-400"
+          className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
           <option value={10}>10 / página</option>
           <option value={25}>25 / página</option>
@@ -196,10 +196,10 @@ export default function BudgetListTable() {
             </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                <tr className="bg-slate-50 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
                   <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase w-16">Reg.</th>
                   <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Paciente</th>
                   <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Profissional</th>
@@ -242,7 +242,7 @@ export default function BudgetListTable() {
                           <button
                             onClick={() => router.push(`/atendimento/orcamentos/${b.id}`)}
                             title="Ver detalhes"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -267,13 +267,13 @@ export default function BudgetListTable() {
 
       {/* Paginação */}
       {totalPages > 1 && (
-        <div className="px-6 py-3 border-t border-slate-200 dark:border-[#2e2e33] flex items-center justify-between text-xs text-slate-500 dark:text-[#a1a1aa]">
+        <div className="px-6 py-3 border-t border-slate-200 dark:border-[#3d3d48] flex items-center justify-between text-xs text-slate-500 dark:text-[#a1a1aa]">
           <span>Mostrando {showingFrom} até {showingTo} de {totalCount}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2e2e33] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#3d3d48] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
               Anterior
             </button>
@@ -287,8 +287,8 @@ export default function BudgetListTable() {
                   onClick={() => setPage(pageNum)}
                   className={`px-3 py-1.5 rounded-lg border transition-colors ${
                     page === pageNum
-                      ? 'bg-teal-600 text-white border-teal-600'
-                      : 'border-slate-200 dark:border-[#2e2e33] hover:bg-slate-50 dark:hover:bg-white/5'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'border-slate-200 dark:border-[#3d3d48] hover:bg-slate-50 dark:hover:bg-white/5'
                   }`}
                 >
                   {pageNum + 1}
@@ -298,7 +298,7 @@ export default function BudgetListTable() {
             <button
               onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2e2e33] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#3d3d48] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
               Próximo
             </button>
@@ -310,7 +310,7 @@ export default function BudgetListTable() {
       {menuOpenId !== null && menuPosition && (
         <div
           ref={dropdownRef}
-          className="fixed z-50 w-44 bg-white dark:bg-[#18181b] rounded-xl shadow-xl border border-slate-200 dark:border-[#2e2e33] py-1 animate-in fade-in-0 zoom-in-95"
+          className="fixed z-50 w-44 bg-white dark:bg-[#1c1c21] rounded-xl shadow-xl border border-slate-200 dark:border-[#3d3d48] py-1 animate-in fade-in-0 zoom-in-95"
           style={{ top: menuPosition.top, left: menuPosition.left }}
         >
           {(() => {

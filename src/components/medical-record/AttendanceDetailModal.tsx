@@ -38,7 +38,7 @@ const Field = ({ label, value, isHtml = false }: { label: string, value: any, is
   const fmtValue = displayValue.toLowerCase() === 'sim' ? 'Sim' : displayValue.toLowerCase() === 'não' ? 'Não' : displayValue;
 
   return (
-    <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl p-4 transition-all hover:border-blue-200 dark:hover:border-blue-800">
+    <div className="bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl p-4 transition-all hover:border-blue-200 dark:hover:border-blue-800">
       <p className="text-xs font-bold text-slate-400 uppercase mb-2">
         {label}
       </p>
@@ -61,10 +61,10 @@ const Section = ({ title, icon: Icon, children, isEmpty }: { title: string, icon
   if (isEmpty) return null;
 
   return (
-    <div className="border border-slate-200 dark:border-[#2e2e33] rounded-xl overflow-hidden mb-6 bg-slate-50 dark:bg-[#18181b]/50">
+    <div className="border border-slate-200 dark:border-[#3d3d48] rounded-xl overflow-hidden mb-6 bg-slate-50 dark:bg-[#1c1c21]/50">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-4 bg-white dark:bg-[#18181b] hover:bg-slate-50 dark:hover:bg-[#18181b] transition-colors"
+        className="w-full flex items-center justify-between p-4 bg-white dark:bg-[#1c1c21] hover:bg-slate-50 dark:hover:bg-[#1c1c21] transition-colors"
       >
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg shadow-sm border border-blue-100 dark:border-blue-800">
@@ -78,7 +78,7 @@ const Section = ({ title, icon: Icon, children, isEmpty }: { title: string, icon
       </button>
 
       {isOpen && (
-        <div className="p-4 border-t border-slate-200 dark:border-[#2e2e33] bg-slate-50/50 dark:bg-[#18181b]/20">
+        <div className="p-4 border-t border-slate-200 dark:border-[#3d3d48] bg-slate-50/50 dark:bg-[#1c1c21]/20">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {children}
           </div>
@@ -170,10 +170,10 @@ export function AttendanceDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-[#0a0a0c] w-full max-w-5xl h-full max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-[#2e2e33]">
+      <div className="bg-white dark:bg-[#08080b] w-full max-w-5xl h-full max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-[#3d3d48]">
 
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#27272a] bg-gradient-to-r from-rose-50 to-pink-50 dark:from-[#2a2d36] dark:to-[#2a2d36]">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#2d2d36] bg-gradient-to-r from-rose-50 to-pink-50 dark:from-[#2a2d36] dark:to-[#2a2d36]">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center shadow-inner">
               <FileText className="w-6 h-6 text-rose-600 dark:text-rose-400" />
@@ -198,10 +198,10 @@ export function AttendanceDetailModal({
         </div>
 
         {/* Body - Scrollable */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-2 bg-[#f8fafc] dark:bg-[#0a0a0c]">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-2 bg-[#f8fafc] dark:bg-[#08080b]">
 
           {/* Informações do Profissional */}
-          <div className="bg-white dark:bg-[#18181b] shadow-sm rounded-xl p-4 border border-slate-200 dark:border-[#2e2e33] mb-6">
+          <div className="bg-white dark:bg-[#1c1c21] shadow-sm rounded-xl p-4 border border-slate-200 dark:border-[#3d3d48] mb-6">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
                 <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -249,7 +249,7 @@ export function AttendanceDetailModal({
           {/* 3. PRIMEIRA CONSULTA */}
           {hasFirstConsult && (
             <Section title="Primeira Consulta Anamnese" icon={Baby}>
-              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-2 mb-1 border-b border-slate-200 dark:border-[#2e2e33] pb-1">Informações Pessoais</div>
+              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-2 mb-1 border-b border-slate-200 dark:border-[#3d3d48] pb-1">Informações Pessoais</div>
               <Field label="Acompanhantes" value={data.first_consultation_anamnesis.acompanhantes} />
               <Field label="De onde indicaram?" value={data.first_consultation_anamnesis.indicacao_de_quem} />
               <Field label="Onde Mora" value={data.first_consultation_anamnesis.mora_onde} />
@@ -257,7 +257,7 @@ export function AttendanceDetailModal({
               <Field label="Rede de Apoio / Babá" value={data.first_consultation_anamnesis.rede_apoio_baba} />
               <Field label="Profissão dos Pais" value={data.first_consultation_anamnesis.profissoes_pais} />
 
-              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#2e2e33] pb-1">Antecedentes</div>
+              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#3d3d48] pb-1">Antecedentes</div>
               <div className="col-span-1 md:col-span-2"><Field label="Motivo da Consulta" value={data.first_consultation_anamnesis.motivo_consulta} isHtml /></div>
               <Field label="Alergias" value={data.first_consultation_anamnesis.alergias} />
               <Field label="História da Moléstia Atual" value={data.first_consultation_anamnesis.historico_molestia_atual} isHtml />
@@ -267,14 +267,14 @@ export function AttendanceDetailModal({
               <Field label="Rede de Apoio Familiar" value={data.first_consultation_anamnesis.rede_apoio_opcoes} />
               <Field label="Baby Blues?" value={data.first_consultation_anamnesis.baby_blues} />
 
-              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#2e2e33] pb-1">Mãe e Alimentação</div>
+              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#3d3d48] pb-1">Mãe e Alimentação</div>
               <Field label="Mãe se sentindo fraca?" value={data.first_consultation_anamnesis.mae_sentindo_fraca} />
               <Field label="Amamentação" value={data.first_consultation_anamnesis.amamentacao} isHtml />
               <Field label="Fórmula (Detalhes)" value={data.first_consultation_anamnesis.formula_detalhes} />
               <Field label="Dar Chá?" value={data.first_consultation_anamnesis.dar_cha} />
               <Field label="Dar Água?" value={data.first_consultation_anamnesis.dar_agua} />
 
-              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#2e2e33] pb-1">Sintomas e Adaptação do RN</div>
+              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#3d3d48] pb-1">Sintomas e Adaptação do RN</div>
               <Field label="Adaptado?" value={data.first_consultation_anamnesis.adaptacao_nenem} />
               <Field label="Cólicas?" value={data.first_consultation_anamnesis.colicas} />
               <Field label="Soluços?" value={data.first_consultation_anamnesis.solucos} />
@@ -286,7 +286,7 @@ export function AttendanceDetailModal({
               <Field label="Uso de Chupeta?" value={data.first_consultation_anamnesis.usa_chupeta} />
               <Field label="Medicamentos do RN" value={data.first_consultation_anamnesis.medicacao_em_uso_bebe} />
 
-              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#2e2e33] pb-1">Higiene e Cuidados</div>
+              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#3d3d48] pb-1">Higiene e Cuidados</div>
               <Field label="Limpa a Boca?" value={data.first_consultation_anamnesis.limpa_boca_apos_mamadas} />
               <Field label="Secreção Olhos" value={data.first_consultation_anamnesis.olho_secrecao} />
               <Field label="Limpa Ouvido?" value={data.first_consultation_anamnesis.limpa_ouvido} />
@@ -300,7 +300,7 @@ export function AttendanceDetailModal({
               <Field label="Material de Troca de Fraldas" value={data.first_consultation_anamnesis.troca_fraldas_material} />
               <Field label="Marca da Fralda" value={data.first_consultation_anamnesis.qual_marca_fralda} />
 
-              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#2e2e33] pb-1">Sono e Desenvolvimento</div>
+              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#3d3d48] pb-1">Sono e Desenvolvimento</div>
               <Field label="Sonecas / Onde dorme" value={data.first_consultation_anamnesis.sonecas_dorme_aonde} />
               <Field label="Sono a Noite" value={data.first_consultation_anamnesis.sono_noite} />
               <Field label="Observa o rosto? (DNPM)" value={data.first_consultation_anamnesis.dnpm_observa_rosto} />
@@ -419,7 +419,7 @@ export function AttendanceDetailModal({
                 <Field label="Recordatório: Café, Lanches, Almoço e Jantar" value={data.food_history.refeicoes_diarias} isHtml />
               </div>
 
-              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#2e2e33] pb-1">Análise de Aceitação</div>
+              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#3d3d48] pb-1">Análise de Aceitação</div>
               <div className="col-span-1 md:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4">
                 <Field label="Aceitou bem a IA?" value={data.food_history.aceitou_introducao} />
                 <Field label="Aceita Água?" value={data.food_history.aceita_agua} />
@@ -463,11 +463,11 @@ export function AttendanceDetailModal({
                 <Field label="Observações Laboratoriais" value={data.exam_results_data.laboratory_observations} isHtml />
               </div>
 
-              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-2 mb-1 border-b border-slate-200 dark:border-[#2e2e33] pb-1">Imagens</div>
+              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-2 mb-1 border-b border-slate-200 dark:border-[#3d3d48] pb-1">Imagens</div>
               <Field label="Ultrassom" value={data.exam_results_data.ultrasound} />
               <Field label="Raio-X (RX)" value={data.exam_results_data.xray} />
 
-              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#2e2e33] pb-1">Hemograma e Bioquímica</div>
+              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#3d3d48] pb-1">Hemograma e Bioquímica</div>
               <Field label="Leucócitos" value={data.exam_results_data.leukocytes} />
               <Field label="Eosinófilos" value={data.exam_results_data.eosinophils} />
               <Field label="Plaquetas" value={data.exam_results_data.platelets} />
@@ -480,7 +480,7 @@ export function AttendanceDetailModal({
               <Field label="Lipidograma" value={data.exam_results_data.lipidogram} />
               <Field label="Cariótipo" value={data.exam_results_data.karyotype} />
 
-              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#2e2e33] pb-1">Urina / Fezes / Outros</div>
+              <div className="col-span-1 md:col-span-2 font-bold text-rose-500 text-xs uppercase mt-4 mb-1 border-b border-slate-200 dark:border-[#3d3d48] pb-1">Urina / Fezes / Outros</div>
               <Field label="EAS / Urocultura / EPF" value={data.exam_results_data.eas_uroculture_epf} />
               <Field label="Eletrólitos (Sódio/Potássio/Cálcio)" value={data.exam_results_data.electrolytes} />
               <Field label="Tipagem Sanguínea" value={data.exam_results_data.blood_typing} />
@@ -492,7 +492,7 @@ export function AttendanceDetailModal({
           <Section title="Pedidos de Exames e Procedimentos" icon={TestTube} isEmpty={exams.length === 0}>
             <div className="col-span-1 md:col-span-2 grid gap-4 grid-cols-1 md:grid-cols-2">
               {exams.map((req, i) => (
-                <div key={req.id || i} className="p-4 bg-white dark:bg-[#18181b] border border-blue-100 dark:border-blue-900/30 rounded-xl shadow-sm relative group">
+                <div key={req.id || i} className="p-4 bg-white dark:bg-[#1c1c21] border border-blue-100 dark:border-blue-900/30 rounded-xl shadow-sm relative group">
                   <div className="flex justify-between items-start mb-2 border-b border-blue-50 dark:border-blue-900/10 pb-2">
                     <p className="text-xs font-bold text-blue-600 dark:text-blue-400">
                       PEDIDO {req.request_type} - {format(parseISO(req.request_date), 'dd/MM/yyyy')}
@@ -527,7 +527,7 @@ export function AttendanceDetailModal({
           <Section title="Receituários e Prescrições" icon={Pill} isEmpty={prescriptions.length === 0}>
             <div className="col-span-1 md:col-span-2 grid gap-4 grid-cols-1 md:grid-cols-2">
               {prescriptions.map((presc, i) => (
-                <div key={presc.id || i} className="p-4 bg-white dark:bg-[#18181b] border border-emerald-100 dark:border-emerald-900/30 rounded-xl shadow-sm relative group">
+                <div key={presc.id || i} className="p-4 bg-white dark:bg-[#1c1c21] border border-emerald-100 dark:border-emerald-900/30 rounded-xl shadow-sm relative group">
                   <div className="flex justify-between items-start mb-2 border-b border-emerald-50 dark:border-emerald-900/10 pb-2">
                     <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                       RECEITUÁRIO - {presc.created_at ? format(parseISO(presc.created_at), 'dd/MM/yyyy') : 'Data Indisponível'}
@@ -553,7 +553,7 @@ export function AttendanceDetailModal({
                       <p className="text-xs text-slate-400 font-bold mb-1">MEDICAMENTOS</p>
                       <ul className="space-y-2">
                         {presc.items.map((med, j) => (
-                          <li key={j} className="bg-slate-50 dark:bg-[#0a0a0c] p-2 rounded text-sm text-slate-700 dark:text-[#d4d4d8]">
+                          <li key={j} className="bg-slate-50 dark:bg-[#08080b] p-2 rounded text-sm text-slate-700 dark:text-[#d4d4d8]">
                             <div className="font-semibold">{med.name} <span className="text-slate-400 font-normal ml-1">({med.quantity} {med.unit})</span></div>
                             <div className="text-xs text-slate-500">{med.posology}</div>
                           </li>
@@ -564,7 +564,7 @@ export function AttendanceDetailModal({
 
                   {(presc.vaccine_items || []).length > 0 && (
                     <div>
-                      <p className="text-xs text-slate-400 font-bold mb-1 mt-3 border-t border-slate-100 dark:border-[#2e2e33] pt-2">VACINAS</p>
+                      <p className="text-xs text-slate-400 font-bold mb-1 mt-3 border-t border-slate-100 dark:border-[#3d3d48] pt-2">VACINAS</p>
                       <ul className="space-y-1">
                         {presc.vaccine_items.map((vac, j) => (
                           <li key={`vac-${j}`} className="flex justify-between items-center text-sm text-slate-700 dark:text-[#d4d4d8] bg-orange-50 dark:bg-orange-900/10 p-1.5 rounded">
@@ -584,7 +584,7 @@ export function AttendanceDetailModal({
           <Section title="Documentos e Atestados" icon={FileSignature} isEmpty={documents.length === 0}>
             <div className="col-span-1 md:col-span-2 space-y-4">
               {documents.map((doc, i) => (
-                <div key={doc.id || i} className="p-4 bg-white dark:bg-[#18181b] border border-amber-100 dark:border-amber-900/30 rounded-xl shadow-sm relative group">
+                <div key={doc.id || i} className="p-4 bg-white dark:bg-[#1c1c21] border border-amber-100 dark:border-amber-900/30 rounded-xl shadow-sm relative group">
                   <div className="flex justify-between items-start mb-3 pb-2 border-b border-amber-100 dark:border-amber-900/20">
                     <p className="text-sm font-bold text-amber-700 dark:text-amber-500">
                       {doc.type}
@@ -615,7 +615,7 @@ export function AttendanceDetailModal({
                       </button>
                     </div>
                   </div>
-                  <div className="text-sm text-slate-600 dark:text-[#a1a1aa] prose dark:prose-invert bg-slate-50 dark:bg-[#0a0a0c] p-3 rounded" dangerouslySetInnerHTML={{ __html: doc.content }} />
+                  <div className="text-sm text-slate-600 dark:text-[#a1a1aa] prose dark:prose-invert bg-slate-50 dark:bg-[#08080b] p-3 rounded" dangerouslySetInnerHTML={{ __html: doc.content }} />
                 </div>
               ))}
             </div>
@@ -630,7 +630,7 @@ export function AttendanceDetailModal({
                   href={file.file_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex flex-col items-center justify-center p-4 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/10 transition-all text-center h-32"
+                  className="group flex flex-col items-center justify-center p-4 bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/10 transition-all text-center h-32"
                 >
                   {isImage(file.file_type) ? <ImageIcon className="w-10 h-10 text-blue-500 mb-3 group-hover:scale-110 transition-transform" /> :
                     isVideo(file.file_type) ? <Video className="w-10 h-10 text-purple-500 mb-3 group-hover:scale-110 transition-transform" /> :
@@ -652,10 +652,10 @@ export function AttendanceDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-[#27272a] bg-white dark:bg-[#18181b] flex justify-end gap-3 z-10 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)]">
+        <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-[#2d2d36] bg-white dark:bg-[#1c1c21] flex justify-end gap-3 z-10 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)]">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 bg-slate-100 dark:bg-[#0a0a0c] border border-slate-200 dark:border-[#2e2e33] text-slate-700 dark:text-gray-200 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-[#18181b] transition-all active:scale-95 shadow-sm"
+            className="px-6 py-2.5 bg-slate-100 dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] text-slate-700 dark:text-gray-200 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-[#1c1c21] transition-all active:scale-95 shadow-sm"
           >
             Fechar
           </button>

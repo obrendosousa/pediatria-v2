@@ -13,7 +13,7 @@ export default function LaudosPage() {
       pageTitle="Modelos de Laudos"
       basePath="/atendimento/cadastros/modelos/laudos"
       entityName="laudo"
-      icon={<FileSearch className="w-5 h-5 text-teal-600" />}
+      icon={<FileSearch className="w-5 h-5 text-blue-600" />}
     />
   );
 }

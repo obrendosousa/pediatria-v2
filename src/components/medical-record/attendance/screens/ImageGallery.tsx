@@ -298,7 +298,7 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
   return (
     <div className="flex flex-col h-full">
       {/* Cabeçalho */}
-      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#2e2e33]">
+      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#3d3d48]">
         <div>
           <h2 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Galeria de Imagens</h2>
           <p className="text-xs text-slate-400 dark:text-[#71717a] mt-0.5">
@@ -316,7 +316,7 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
               }
               setCompareOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#2e2e33] rounded-xl hover:bg-slate-50 dark:hover:bg-[#27272a] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-600 dark:text-[#d4d4d8] border border-slate-200 dark:border-[#3d3d48] rounded-xl hover:bg-slate-50 dark:hover:bg-[#2d2d36] transition-colors"
           >
             <SplitSquareHorizontal className="w-4 h-4" />
             COMPARAR
@@ -361,7 +361,7 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
           className={`rounded-xl border-2 border-dashed transition-colors ${
             isDragging
               ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10'
-              : 'border-slate-300 dark:border-[#2e2e33] bg-slate-50 dark:bg-[#0a0a0c] hover:border-blue-400 dark:hover:border-blue-600'
+              : 'border-slate-300 dark:border-[#3d3d48] bg-slate-50 dark:bg-[#08080b] hover:border-blue-400 dark:hover:border-blue-600'
           }`}
         >
           <input
@@ -374,7 +374,7 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
           />
           <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
-              isDragging ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-slate-200 dark:bg-[#18181b]'
+              isDragging ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-slate-200 dark:bg-[#1c1c21]'
             }`}>
               <Camera className={`w-6 h-6 transition-colors ${isDragging ? 'text-blue-500' : 'text-slate-400'}`} />
             </div>
@@ -398,7 +398,7 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
         {uploadProgresses.length > 0 && (
           <div className="space-y-2">
             {uploadProgresses.map((p, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-[#18181b] rounded-lg">
+              <div key={i} className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-[#1c1c21] rounded-lg">
                 {p.error ? (
                   <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                 ) : p.progress === 100 ? (
@@ -425,15 +425,15 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
                 <div key={i} className="relative group rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-700 overflow-hidden bg-amber-50 dark:bg-amber-900/10">
                   <button
                     onClick={() => removePending(i)}
-                    className="absolute top-1.5 right-1.5 z-10 p-1 bg-white/90 dark:bg-[#0a0a0c]/90 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-1.5 right-1.5 z-10 p-1 bg-white/90 dark:bg-[#08080b]/90 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="w-3 h-3 text-red-500" />
                   </button>
-                  <div className="aspect-square flex items-center justify-center overflow-hidden bg-slate-100 dark:bg-[#18181b]">
+                  <div className="aspect-square flex items-center justify-center overflow-hidden bg-slate-100 dark:bg-[#1c1c21]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={pendingPreviews[i]} alt={f.name} className="w-full h-full object-cover" />
                   </div>
-                  <div className="px-2 py-1 bg-white dark:bg-[#0a0a0c]">
+                  <div className="px-2 py-1 bg-white dark:bg-[#08080b]">
                     <p className="text-xs font-medium text-slate-600 dark:text-[#d4d4d8] truncate">{f.name}</p>
                   </div>
                 </div>
@@ -471,7 +471,7 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
                 className={`relative group rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${
                   file.id && selectedIds.has(file.id)
                     ? 'border-blue-500 shadow-md shadow-blue-100 dark:shadow-blue-900/20'
-                    : 'border-slate-200 dark:border-[#2e2e33] hover:border-blue-300 dark:hover:border-blue-700'
+                    : 'border-slate-200 dark:border-[#3d3d48] hover:border-blue-300 dark:hover:border-blue-700'
                 }`}
               >
                 {/* Checkbox de seleção */}
@@ -483,7 +483,7 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                       file.id && selectedIds.has(file.id)
                         ? 'bg-blue-500 border-blue-500'
-                        : 'bg-white/80 dark:bg-[#0a0a0c]/80 border-slate-300 dark:border-gray-600 opacity-0 group-hover:opacity-100'
+                        : 'bg-white/80 dark:bg-[#08080b]/80 border-slate-300 dark:border-gray-600 opacity-0 group-hover:opacity-100'
                     }`}
                   >
                     {file.id && selectedIds.has(file.id) && (
@@ -498,7 +498,7 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
                 <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => { e.stopPropagation(); openLightbox(file); }}
-                    className="p-1.5 bg-white/90 dark:bg-[#0a0a0c]/90 rounded-lg shadow hover:bg-white dark:hover:bg-[#18181b] transition-colors"
+                    className="p-1.5 bg-white/90 dark:bg-[#08080b]/90 rounded-lg shadow hover:bg-white dark:hover:bg-[#1c1c21] transition-colors"
                     title="Ampliar"
                   >
                     <ZoomIn className="w-3.5 h-3.5 text-slate-700 dark:text-gray-200" />
@@ -509,14 +509,14 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="p-1.5 bg-white/90 dark:bg-[#0a0a0c]/90 rounded-lg shadow hover:bg-white dark:hover:bg-[#18181b] transition-colors"
+                    className="p-1.5 bg-white/90 dark:bg-[#08080b]/90 rounded-lg shadow hover:bg-white dark:hover:bg-[#1c1c21] transition-colors"
                     title="Baixar"
                   >
                     <Download className="w-3.5 h-3.5 text-slate-700 dark:text-gray-200" />
                   </a>
                   <button
                     onClick={(e) => { e.stopPropagation(); setConfirmDeleteFile(file); }}
-                    className="p-1.5 bg-white/90 dark:bg-[#0a0a0c]/90 rounded-lg shadow hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                    className="p-1.5 bg-white/90 dark:bg-[#08080b]/90 rounded-lg shadow hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                     title="Excluir"
                   >
                     <Trash2 className="w-3.5 h-3.5 text-red-500" />
@@ -525,7 +525,7 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
 
                 {/* Thumbnail */}
                 <div
-                  className="aspect-square flex items-center justify-center bg-slate-50 dark:bg-[#18181b] overflow-hidden"
+                  className="aspect-square flex items-center justify-center bg-slate-50 dark:bg-[#1c1c21] overflow-hidden"
                   onClick={() => openLightbox(file)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -538,7 +538,7 @@ export function ImageGallery({ patientId, medicalRecordId }: AttendanceScreenPro
                 </div>
 
                 {/* Rodapé */}
-                <div className="px-2 py-1.5 bg-white dark:bg-[#0a0a0c] border-t border-slate-100 dark:border-[#27272a]">
+                <div className="px-2 py-1.5 bg-white dark:bg-[#08080b] border-t border-slate-100 dark:border-[#2d2d36]">
                   <p className="text-xs font-medium text-slate-700 dark:text-gray-200 truncate" title={file.file_name}>
                     {file.file_name}
                   </p>

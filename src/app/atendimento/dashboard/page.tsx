@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   CalendarDays, UserCheck, UserX, CheckCircle2,
-  Search, ChevronDown, ChevronUp, X,
+  Search, ChevronDown, ChevronUp, AlertCircle,
   Clock, BarChart3, PieChartIcon, Cake, ClipboardList,
 } from 'lucide-react';
 import {
@@ -56,10 +56,13 @@ const STATUS_COLORS: Record<string, string> = {
   finished: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300',
   late: 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300',
   no_show: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300',
-  cancelled: 'bg-gray-100 text-gray-500 dark:bg-[#18181b] dark:text-[#a1a1aa]',
+  cancelled: 'bg-gray-100 text-gray-500 dark:bg-[#1c1c21] dark:text-[#a1a1aa]',
 };
 
 const PIE_COLORS = ['#0891B2', '#7C3AED', '#059669', '#D97706', '#E11D48', '#6366F1', '#14B8A6', '#F59E0B', '#EC4899'];
+
+// Status que indicam que o paciente confirmou presença (confirmado ou já avançou no fluxo)
+const CONFIRMED_STATUSES = new Set(['confirmed', 'waiting', 'called', 'in_service', 'waiting_payment', 'finished']);
 
 // ── Helpers ────────────────────────────────────────────────
 function getDateRange(period: Period): { from: string; to: string } {
@@ -125,31 +128,20 @@ function CollapsibleWidget({ title, icon, children, defaultOpen = true }: {
   title: string; icon: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [isVisible, setIsVisible] = useState(true);
-
-  if (!isVisible) return null;
 
   return (
-    <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-[#27272a]">
+    <div className="bg-white dark:bg-[#131316] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-[#2d2d36]">
         <div className="flex items-center gap-2">
-          <span className="text-teal-600 dark:text-teal-400">{icon}</span>
+          <span className="text-blue-600 dark:text-blue-400">{icon}</span>
           <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">{title}</h3>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setIsOpen(prev => !prev)}
-            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-slate-400"
-          >
-            {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={() => setIsVisible(false)}
-            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-slate-400"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <button
+          onClick={() => setIsOpen(prev => !prev)}
+          className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-slate-400"
+        >
+          {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
       </div>
       {isOpen && <div className="p-5">{children}</div>}
     </div>
@@ -160,9 +152,9 @@ function CollapsibleWidget({ title, icon, children, defaultOpen = true }: {
 function CustomBarTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-lg px-3 py-2 shadow-lg">
+    <div className="bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-lg px-3 py-2 shadow-lg">
       <p className="text-xs font-bold text-slate-700 dark:text-gray-200">{label}</p>
-      <p className="text-xs text-teal-600 dark:text-teal-400">{payload[0].value} atendimento{payload[0].value !== 1 ? 's' : ''}</p>
+      <p className="text-xs text-blue-600 dark:text-blue-400">{payload[0].value} atendimento{payload[0].value !== 1 ? 's' : ''}</p>
     </div>
   );
 }
@@ -176,6 +168,7 @@ export default function AtendimentoDashboardPage() {
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [birthdays, setBirthdays] = useState<BirthdayPatient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Carregar profissionais
   useEffect(() => {
@@ -188,17 +181,19 @@ export default function AtendimentoDashboardPage() {
   // Fetch principal
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const { from, to } = getDateRange(period);
       const today = getTodayStr();
 
-      // Query 1: Appointments no período
+      // Query 1: Appointments no período (limit alto para evitar truncamento silencioso)
       let apptQuery = supabase
         .from('appointments')
         .select('id, patient_id, doctor_id, date, time, type, status, procedures')
         .gte('date', from)
         .lte('date', to)
-        .neq('status', 'cancelled');
+        .neq('status', 'cancelled')
+        .limit(10000);
 
       if (doctorId) apptQuery = apptQuery.eq('doctor_id', doctorId);
 
@@ -208,20 +203,28 @@ export default function AtendimentoDashboardPage() {
         .select('id, patient_id, doctor_id, date, time, type, status, procedures')
         .eq('date', today)
         .neq('status', 'cancelled')
-        .order('time');
+        .order('time')
+        .limit(500);
 
       if (doctorId) todayQuery = todayQuery.eq('doctor_id', doctorId);
 
       // Query 3: Todos pacientes (para aniversariantes e insurance join)
       const patientsQuery = supabase
         .from('patients')
-        .select('id, full_name, birth_date, insurance');
+        .select('id, full_name, birth_date, insurance')
+        .limit(50000);
 
       const [apptRes, todayRes, patientsRes] = await Promise.all([
         apptQuery,
         todayQuery,
         patientsQuery,
       ]);
+
+      // Verificar erros nas queries
+      if (apptRes.error || todayRes.error || patientsRes.error) {
+        const msg = apptRes.error?.message || todayRes.error?.message || patientsRes.error?.message || 'Erro desconhecido';
+        throw new Error(msg);
+      }
 
       const allPatients = (patientsRes.data || []) as { id: number; full_name: string; birth_date: string | null; insurance: string | null }[];
       const patientMap = new Map(allPatients.map(p => [p.id, p]));
@@ -237,16 +240,20 @@ export default function AtendimentoDashboardPage() {
         return { ...a, patient_name: p?.full_name || '' };
       });
 
-      // Aniversariantes no período
+      // Aniversariantes no período (verifica ano atual e próximo para ranges cross-year)
       const fromDate = new Date(from);
       const toDate = new Date(to);
+      const fromYear = fromDate.getFullYear();
+      const toYear = toDate.getFullYear();
+      const yearsToCheck = fromYear === toYear ? [fromYear] : [fromYear, toYear];
+
       const bdays = allPatients.filter(p => {
         if (!p.birth_date) return false;
         const [, bm, bd] = p.birth_date.split('-').map(Number);
-        // Verificar se o aniversário cai no range
-        const thisYear = new Date().getFullYear();
-        const bdayThisYear = new Date(thisYear, bm - 1, bd);
-        return bdayThisYear >= fromDate && bdayThisYear <= toDate;
+        return yearsToCheck.some(y => {
+          const bdayDate = new Date(y, bm - 1, bd);
+          return bdayDate >= fromDate && bdayDate <= toDate;
+        });
       }).map(p => ({ id: p.id, full_name: p.full_name, birth_date: p.birth_date! }));
 
       setAppointments(enriched);
@@ -257,7 +264,9 @@ export default function AtendimentoDashboardPage() {
         return am * 100 + ad - (bm2 * 100 + bd2);
       }));
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar dados do dashboard';
       console.error('[Dashboard] loadDashboard error:', err);
+      setLoadError(message);
     } finally {
       setIsLoading(false);
     }
@@ -270,7 +279,7 @@ export default function AtendimentoDashboardPage() {
   // ── KPIs ─────────────────────────────────────────────────
   const kpis = useMemo(() => ({
     total: appointments.length,
-    confirmed: appointments.filter(a => a.status === 'confirmed').length,
+    confirmed: appointments.filter(a => CONFIRMED_STATUSES.has(a.status)).length,
     noShow: appointments.filter(a => a.status === 'no_show').length,
     finished: appointments.filter(a => a.status === 'finished').length,
   }), [appointments]);
@@ -279,16 +288,11 @@ export default function AtendimentoDashboardPage() {
   const barData = useMemo(() => {
     const map = new Map<string, number>();
     for (const a of appointments) {
-      const key = formatDateBR(a.date);
-      map.set(key, (map.get(key) || 0) + 1);
+      map.set(a.date, (map.get(a.date) || 0) + 1);
     }
     return Array.from(map.entries())
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => {
-        const [da, ma] = a.date.split('/').map(Number);
-        const [db, mb] = b.date.split('/').map(Number);
-        return (ma * 100 + da) - (mb * 100 + db);
-      });
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .map(([isoDate, count]) => ({ date: formatDateBR(isoDate), count }));
   }, [appointments]);
 
   // ── Dados pizza convênio ─────────────────────────────────
@@ -325,22 +329,22 @@ export default function AtendimentoDashboardPage() {
   // ── Loading ──────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="h-full overflow-y-auto bg-slate-50 dark:bg-[#15171e]">
+      <div className="h-full overflow-y-auto bg-slate-50 dark:bg-[#08080b]">
         <div className="max-w-[1440px] mx-auto px-6 py-8 space-y-6">
-          <div className="h-8 w-72 bg-slate-200 dark:bg-[#18181b] rounded-lg animate-pulse" />
-          <div className="h-12 w-full bg-slate-200 dark:bg-[#18181b] rounded-lg animate-pulse" />
+          <div className="h-8 w-72 bg-slate-200 dark:bg-[#1c1c21] rounded-lg animate-pulse" />
+          <div className="h-12 w-full bg-slate-200 dark:bg-[#1c1c21] rounded-lg animate-pulse" />
           <div className="grid grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 bg-slate-200 dark:bg-[#18181b] rounded-2xl animate-pulse" />
+              <div key={i} className="h-28 bg-slate-200 dark:bg-[#1c1c21] rounded-2xl animate-pulse" />
             ))}
           </div>
           <div className="grid grid-cols-12 gap-6">
             <div className="col-span-8 space-y-4">
-              <div className="h-72 bg-slate-200 dark:bg-[#18181b] rounded-xl animate-pulse" />
-              <div className="h-56 bg-slate-200 dark:bg-[#18181b] rounded-xl animate-pulse" />
+              <div className="h-72 bg-slate-200 dark:bg-[#1c1c21] rounded-xl animate-pulse" />
+              <div className="h-56 bg-slate-200 dark:bg-[#1c1c21] rounded-xl animate-pulse" />
             </div>
             <div className="col-span-4">
-              <div className="h-96 bg-slate-200 dark:bg-[#18181b] rounded-xl animate-pulse" />
+              <div className="h-96 bg-slate-200 dark:bg-[#1c1c21] rounded-xl animate-pulse" />
             </div>
           </div>
         </div>
@@ -349,12 +353,12 @@ export default function AtendimentoDashboardPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-50 dark:bg-[#15171e] custom-scrollbar">
+    <div className="h-full overflow-y-auto bg-slate-50 dark:bg-[#08080b] custom-scrollbar">
       <div className="max-w-[1440px] mx-auto px-6 py-6 space-y-6">
 
         {/* ─── Header ─── */}
         <div className="flex items-center gap-3">
-          <div className="w-1.5 h-8 rounded-full bg-gradient-to-b from-teal-500 to-cyan-600" />
+          <div className="w-1.5 h-8 rounded-full bg-gradient-to-b from-blue-600 to-indigo-500" />
           <div>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-[#fafafa]">Dashboard</h1>
             <p className="text-xs text-slate-400 dark:text-[#71717a]">Visão geral do Atendimento</p>
@@ -362,13 +366,13 @@ export default function AtendimentoDashboardPage() {
         </div>
 
         {/* ─── Filtros ─── */}
-        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] px-5 py-3">
+        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-[#131316] rounded-xl border border-slate-200 dark:border-[#3d3d48] px-5 py-3">
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Período</label>
             <select
               value={period}
               onChange={e => setPeriod(e.target.value as Period)}
-              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"
+              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
             >
               {PERIOD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -379,7 +383,7 @@ export default function AtendimentoDashboardPage() {
             <select
               value={doctorId ?? ''}
               onChange={e => setDoctorId(e.target.value ? Number(e.target.value) : null)}
-              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer min-w-[180px]"
+              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer min-w-[180px]"
             >
               <option value="">Todos</option>
               {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -389,12 +393,28 @@ export default function AtendimentoDashboardPage() {
           <div className="pt-4">
             <button
               onClick={loadDashboard}
-              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all active:scale-95"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all active:scale-95"
             >
               <Search className="w-4 h-4" /> PESQUISAR
             </button>
           </div>
         </div>
+
+        {/* ─── Banner de Erro ─── */}
+        {loadError && (
+          <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-xl px-5 py-3">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <p className="text-sm text-red-700 dark:text-red-300 flex-1">
+              Erro ao carregar dados: {loadError}
+            </p>
+            <button
+              onClick={loadDashboard}
+              className="text-xs font-bold text-red-600 dark:text-red-400 hover:underline flex-shrink-0"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
 
         {/* ─── KPI Cards ─── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -408,7 +428,7 @@ export default function AtendimentoDashboardPage() {
             icon={<CheckCircle2 className="w-5 h-5" />}
             label="Pacientes Confirmados"
             value={kpis.confirmed}
-            gradient="bg-gradient-to-br from-cyan-500 to-blue-500"
+            gradient="bg-gradient-to-br from-indigo-500 to-blue-500"
           />
           <KPICard
             icon={<UserX className="w-5 h-5" />}
@@ -481,7 +501,7 @@ export default function AtendimentoDashboardPage() {
               {proceduresData.length > 0 ? (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-[#27272a]">
+                    <tr className="border-b border-slate-100 dark:border-[#2d2d36]">
                       <th className="text-left py-2 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Procedimento</th>
                       <th className="text-right py-2 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Qtd</th>
                     </tr>
@@ -505,7 +525,7 @@ export default function AtendimentoDashboardPage() {
               {birthdays.length > 0 ? (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-[#27272a]">
+                    <tr className="border-b border-slate-100 dark:border-[#2d2d36]">
                       <th className="text-left py-2 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Paciente</th>
                       <th className="text-right py-2 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Data</th>
                     </tr>
@@ -533,11 +553,11 @@ export default function AtendimentoDashboardPage() {
 
           {/* ─── Coluna Lateral: Pacientes do dia ─── */}
           <div className="col-span-12 lg:col-span-4">
-            <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] sticky top-6">
-              <div className="px-5 py-3 border-b border-slate-100 dark:border-[#27272a] flex items-center gap-2">
-                <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            <div className="bg-white dark:bg-[#131316] rounded-xl border border-slate-200 dark:border-[#3d3d48] sticky top-6">
+              <div className="px-5 py-3 border-b border-slate-100 dark:border-[#2d2d36] flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">Pacientes do dia</h3>
-                <span className="ml-auto text-xs font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-2 py-0.5 rounded-full">
+                <span className="ml-auto text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
                   {todayAppointments.length}
                 </span>
               </div>
@@ -547,9 +567,9 @@ export default function AtendimentoDashboardPage() {
                     {todayAppointments.map(a => (
                       <div
                         key={a.id}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-[#15171e] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-[#1c1c21] hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-colors"
                       >
-                        <div className="w-9 h-9 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-sm font-bold text-teal-700 dark:text-teal-300 flex-shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-sm font-bold text-blue-700 dark:text-blue-300 flex-shrink-0">
                           {(a.patient_name || '?').charAt(0)}
                         </div>
                         <div className="flex-1 min-w-0">

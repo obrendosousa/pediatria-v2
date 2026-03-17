@@ -16,7 +16,7 @@ function renderInline(text: string): React.ReactNode {
   return parts.map((part, i) => {
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
-        <code key={i} className="bg-gray-100 dark:bg-[#27272a] px-1 py-0.5 rounded text-[11px] font-mono text-violet-600 dark:text-violet-400">
+        <code key={i} className="bg-gray-100 dark:bg-[#2d2d36] px-1 py-0.5 rounded text-[11px] font-mono text-violet-600 dark:text-violet-400">
           {part.slice(1, -1)}
         </code>
       );
@@ -360,7 +360,7 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
               <button
                 key={s}
                 onClick={() => sendQuestion(s)}
-                className="w-full text-left text-xs px-3 py-2 rounded-lg border border-violet-100 dark:border-violet-800 bg-white dark:bg-[#18181b] text-gray-700 dark:text-[#d4d4d8] hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:border-violet-300 transition-colors"
+                className="w-full text-left text-xs px-3 py-2 rounded-lg border border-violet-100 dark:border-violet-800 bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-[#d4d4d8] hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:border-violet-300 transition-colors"
               >
                 {s}
               </button>
@@ -379,7 +379,7 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
                 className={`max-w-[88%] rounded-2xl px-3 py-2.5 ${
                   msg.role === "user"
                     ? "bg-violet-600 text-white text-sm leading-relaxed rounded-br-sm"
-                    : "bg-white dark:bg-[#18181b] text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-[#2e2e33] rounded-bl-sm shadow-sm"
+                    : "bg-white dark:bg-[#1c1c21] text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-[#3d3d48] rounded-bl-sm shadow-sm"
                 }`}
               >
                 {msg.role === "assistant" ? (
@@ -414,9 +414,9 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
       {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="px-3 py-3 border-t border-gray-100 dark:border-[#2e2e33] bg-white dark:bg-[#202c33] shrink-0"
+        className="px-3 py-3 border-t border-gray-100 dark:border-[#3d3d48] bg-white dark:bg-[#202c33] shrink-0"
       >
-        <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus-within:border-violet-400 transition-colors">
+        <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#1c1c21] border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus-within:border-violet-400 transition-colors">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}

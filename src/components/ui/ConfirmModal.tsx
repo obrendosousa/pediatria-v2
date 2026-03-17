@@ -69,11 +69,11 @@ export default function ConfirmModal({
       onClick={isLoading ? undefined : onClose}
     >
       <div 
-        className="bg-white dark:bg-[#0a0a0c] w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden animate-scale-in"
+        className="bg-white dark:bg-[#08080b] w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 dark:border-[#27272a] flex items-center justify-between">
+        <div className="p-5 border-b border-slate-100 dark:border-[#2d2d36] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-xl ${styles.iconBg}`}>
               <Icon className={`w-5 h-5 ${styles.iconColor}`} />
@@ -99,11 +99,11 @@ export default function ConfirmModal({
         </div>
 
         {/* Actions */}
-        <div className="p-5 border-t border-slate-100 dark:border-[#27272a] flex gap-3">
+        <div className="p-5 border-t border-slate-100 dark:border-[#2d2d36] flex gap-3">
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-[#333640] text-slate-700 dark:text-[#d4d4d8] rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-[#1c1c21] hover:bg-slate-200 dark:hover:bg-[#333640] text-slate-700 dark:text-[#d4d4d8] rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {cancelText}
           </button>

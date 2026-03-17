@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useRef, useEffect, useLayoutEffect, useState } from 'react';
+import { memo, useRef, useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Pin, Trash2, Mail, ChevronDown, 
@@ -48,9 +48,8 @@ const ChatListItem = memo(({
     // Identificador para o chat da IA
     const isAIChat = chat.phone === '00000000000';
 
-    useEffect(() => {
-      setAvatarError(false);
-    }, [chat.id, chat.profile_pic]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useMemo(() => { setAvatarError(false); }, [chat.id, chat.profile_pic]);
 
     useLayoutEffect(() => {
         if (!isMenuOpen || !triggerRef.current || typeof document === 'undefined') return;
@@ -111,7 +110,8 @@ const ChatListItem = memo(({
         return () => {
             if (exitTimeoutRef.current) clearTimeout(exitTimeoutRef.current);
         };
-    }, [isMenuOpen]);
+     
+    }, [isMenuOpen, menuPosition]);
 
     const isUnread = (chat.unread_count || 0) > 0;
     
@@ -238,12 +238,12 @@ const ChatListItem = memo(({
     return (
       <div 
         onClick={isSelectionMode && !isAIChat ? () => onToggleSelection(chat.id) : () => onSelect(chat)}
-        className={`group relative flex items-stretch cursor-pointer transition-colors duration-150 ease-in-out border-b border-gray-100 dark:border-[#27272a] min-h-[72px]
+        className={`group relative flex items-stretch cursor-pointer transition-colors duration-150 ease-in-out border-b border-gray-100 dark:border-[#2d2d36] min-h-[72px]
           ${isSelectionMode && isSelectedInMode 
             ? 'bg-primary/10' 
             : isSelected && !isSelectionMode
-              ? 'bg-[var(--chat-surface)] dark:bg-[#202c33]'
-              : 'hover:bg-[var(--chat-surface-hover)] dark:hover:bg-[#202c33] bg-white dark:bg-[#111b21]'}
+              ? 'bg-[var(--chat-surface)] dark:bg-[var(--chat-surface-hover)]'
+              : 'hover:bg-[var(--chat-surface-hover)] dark:hover:bg-[var(--chat-surface-hover)] bg-white dark:bg-[var(--chat-surface)]'}
         `}
       >
         {firstTagColor && !isSelectionMode && (
@@ -278,10 +278,11 @@ const ChatListItem = memo(({
             </div>
           ) : (
             <div 
-              className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-[#2e2e33]"
+              className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-[#3d3d48]"
               style={!chat.profile_pic || avatarError ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
             >
               {chat.profile_pic && !avatarError ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={chat.profile_pic} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarError(true)} loading="lazy" />
               ) : (
                 <span className="text-lg font-semibold select-none" style={{ color: getAvatarTextColor(chat.id) }}>
@@ -358,7 +359,7 @@ const ChatListItem = memo(({
           <div 
             ref={menuRef}
             data-chat-menu
-            className={`fixed w-52 bg-white dark:bg-[#18181b] rounded-lg shadow-lg py-2 z-[9999] border border-gray-100 dark:border-[#2e2e33] transition-all ${isExiting ? (menuPosition.openUpward ? 'animate-chat-menu-out-upward' : 'animate-chat-menu-out') : (menuPosition.openUpward ? 'animate-chat-menu-in-upward' : 'animate-chat-menu-in')}`}
+            className={`fixed w-52 bg-white dark:bg-[#1c1c21] rounded-lg shadow-lg py-2 z-[9999] border border-gray-100 dark:border-[#3d3d48] transition-all ${isExiting ? (menuPosition.openUpward ? 'animate-chat-menu-out-upward' : 'animate-chat-menu-out') : (menuPosition.openUpward ? 'animate-chat-menu-in-upward' : 'animate-chat-menu-in')}`}
             style={{ top: menuPosition.top, left: menuPosition.left, transformOrigin: menuPosition.openUpward ? 'bottom right' : 'top right' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -380,7 +381,7 @@ const ChatListItem = memo(({
             <button onClick={(e) => onAction(e, 'select', chat)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--chat-text-primary)] dark:text-gray-200 text-[14.5px] flex items-center gap-3">
               <CheckCircle2 size={17} className="text-[var(--chat-text-muted)] dark:text-[#a1a1aa]" /> Selecionar
             </button>
-            <div className="my-1 border-t border-gray-100 dark:border-[#2e2e33]"></div>
+            <div className="my-1 border-t border-gray-100 dark:border-[#3d3d48]"></div>
             <button onClick={(e) => onAction(e, 'delete', chat)} className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-red-500 text-[14.5px] flex items-center gap-3">
               <Trash2 size={17} /> Apagar conversa
             </button>

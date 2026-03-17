@@ -196,8 +196,8 @@ export default function AutomationModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200">
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#2e2e33]">
+      <div className="bg-white dark:bg-[#08080b] rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#3d3d48]">
           <div>
             <h2 className="text-2xl font-black text-slate-800 dark:text-[#fafafa]">
               {automation ? 'Editar Automação' : 'Nova Automação'}
@@ -218,7 +218,7 @@ export default function AutomationModal({
                           ? 'bg-rose-600 text-white border-rose-600'
                           : isDone
                             ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                            : 'bg-slate-100 dark:bg-[#18181b] text-slate-600 dark:text-[#d4d4d8] border-slate-200 dark:border-[#2e2e33]'
+                            : 'bg-slate-100 dark:bg-[#1c1c21] text-slate-600 dark:text-[#d4d4d8] border-slate-200 dark:border-[#3d3d48]'
                       }`}
                     >
                       {isDone ? <CheckCircle2 className="w-4 h-4" /> : item.label}
@@ -255,7 +255,7 @@ export default function AutomationModal({
                       setAgeMonths(val === '' ? '' : parseInt(val, 10));
                     }}
                     placeholder="Ex: 1, 3, 6, 12"
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                   />
                   <p className="text-xs text-slate-500 dark:text-[#a1a1aa] mt-1">
                     Quando o bebê completar essa idade, a mensagem será disparada automaticamente.
@@ -272,7 +272,7 @@ export default function AutomationModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Mensagem de 3 meses"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                 />
               </div>
 
@@ -285,14 +285,14 @@ export default function AutomationModal({
                   type="time"
                   value={triggerTime}
                   onChange={(e) => setTriggerTime(e.target.value)}
-                  className="px-4 py-3 bg-slate-50 dark:bg-[#18181b] border border-slate-200 dark:border-[#2e2e33] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                  className="px-4 py-3 bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                 />
                 <p className="text-xs text-slate-500 dark:text-[#a1a1aa] mt-1">
                   Horário em que as mensagens serão enviadas (padrão: 08:00)
                 </p>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-[#18181b] rounded-xl border border-slate-200 dark:border-[#2e2e33]">
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-[#1c1c21] rounded-xl border border-slate-200 dark:border-[#3d3d48]">
                 <div>
                   <div className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8]">
                     Status da Automação
@@ -330,7 +330,7 @@ export default function AutomationModal({
 
           {step === 3 && (
             <div className="space-y-4">
-              <div className="p-4 rounded-xl border border-slate-200 dark:border-[#2e2e33] bg-slate-50 dark:bg-[#18181b]">
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-[#3d3d48] bg-slate-50 dark:bg-[#1c1c21]">
                 <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-[#71717a] mb-2">
                   Resumo
                 </p>
@@ -344,13 +344,13 @@ export default function AutomationModal({
               </div>
 
               {previewPatient && messages.length > 0 && (
-                <div className="p-4 bg-slate-50 dark:bg-[#18181b] rounded-xl border border-slate-200 dark:border-[#2e2e33]">
+                <div className="p-4 bg-slate-50 dark:bg-[#1c1c21] rounded-xl border border-slate-200 dark:border-[#3d3d48]">
                   <div className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] mb-3">
                     Preview da sequência
                   </div>
                   <div className="space-y-2">
                     {messages.map((msg, index) => (
-                      <div key={index} className="p-3 bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33]">
+                      <div key={index} className="p-3 bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
                         <div className="text-xs font-medium text-slate-500 dark:text-[#a1a1aa] mb-1">
                           {index + 1}. {msg.type === 'text' ? 'Texto' : msg.type === 'audio' ? 'Áudio' : msg.type === 'image' ? 'Imagem' : 'Documento'}
                         </div>
@@ -386,7 +386,7 @@ export default function AutomationModal({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 p-6 border-t border-slate-200 dark:border-[#2e2e33]">
+        <div className="flex items-center justify-between gap-3 p-6 border-t border-slate-200 dark:border-[#3d3d48]">
           <div className="text-xs text-slate-500 dark:text-[#a1a1aa]">
             Etapa {step} de 3
           </div>
@@ -394,7 +394,7 @@ export default function AutomationModal({
             {step > 1 && (
               <button
                 onClick={handlePreviousStep}
-                className="px-4 py-3 bg-slate-100 dark:bg-[#18181b] text-slate-700 dark:text-[#d4d4d8] rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors flex items-center gap-2"
+                className="px-4 py-3 bg-slate-100 dark:bg-[#1c1c21] text-slate-700 dark:text-[#d4d4d8] rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors flex items-center gap-2"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Voltar
@@ -414,7 +414,7 @@ export default function AutomationModal({
 
             <button
               onClick={onClose}
-              className="px-6 py-3 bg-slate-100 dark:bg-[#18181b] text-slate-700 dark:text-[#d4d4d8] rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+              className="px-6 py-3 bg-slate-100 dark:bg-[#1c1c21] text-slate-700 dark:text-[#d4d4d8] rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
             >
               Cancelar
             </button>

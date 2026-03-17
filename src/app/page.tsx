@@ -60,7 +60,7 @@ export default function Home() {
               {/* Status Compactos */}
               <div className="grid grid-cols-2 gap-3 w-full mb-8">
                 {/* Card IA */}
-                <div className="bg-white dark:bg-[#18181b] p-3.5 rounded-xl border border-slate-100 dark:border-[#2e2e33] shadow-sm flex items-center gap-3 hover:border-purple-200 dark:hover:border-purple-500/30 transition-all cursor-default">
+                <div className="bg-white dark:bg-[#1c1c21] p-3.5 rounded-xl border border-slate-100 dark:border-[#3d3d48] shadow-sm flex items-center gap-3 hover:border-purple-200 dark:hover:border-purple-500/30 transition-all cursor-default">
                     <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-500 dark:text-purple-300">
                         <Activity className="w-4 h-4"/>
                     </div>
@@ -71,7 +71,7 @@ export default function Home() {
                 </div>
 
                 {/* Card Conexão */}
-                <div className="bg-white dark:bg-[#18181b] p-3.5 rounded-xl border border-slate-100 dark:border-[#2e2e33] shadow-sm flex items-center gap-3 hover:border-pink-200 dark:hover:border-pink-500/30 transition-all cursor-default">
+                <div className="bg-white dark:bg-[#1c1c21] p-3.5 rounded-xl border border-slate-100 dark:border-[#3d3d48] shadow-sm flex items-center gap-3 hover:border-pink-200 dark:hover:border-pink-500/30 transition-all cursor-default">
                     <div className="p-2 bg-pink-50 dark:bg-pink-900/20 rounded-lg text-pink-500 dark:text-pink-300">
                         <Zap className="w-4 h-4"/>
                     </div>
@@ -82,7 +82,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400 dark:text-[#71717a] bg-white/80 dark:bg-[#202c33]/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-100 dark:border-[#2e2e33] transition-colors">
+              <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400 dark:text-[#71717a] bg-white/80 dark:bg-[#202c33]/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-100 dark:border-[#3d3d48] transition-colors">
                 <ShieldCheck className="w-3.5 h-3.5" /> Criptografia ponta a ponta
               </div>
 

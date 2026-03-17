@@ -75,10 +75,10 @@ export default function QuickChatModal({ isOpen, onClose, patientPhone }: QuickC
 
   const modalContent = (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-[#08080b] rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
         
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-between items-center">
+        <div className="p-4 border-b border-gray-200 dark:border-[#3d3d48] bg-gray-50 dark:bg-[#1c1c21] flex justify-between items-center">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-pink-600 dark:text-pink-400" />
             <h3 className="font-bold text-gray-800 dark:text-[#fafafa]">

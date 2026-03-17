@@ -158,7 +158,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
   return (
     <div className="flex flex-col h-full">
       {/* Cabeçalho */}
-      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#2e2e33]">
+      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#3d3d48]">
         <div>
           <h2 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Anexos</h2>
           <p className="text-xs text-slate-400 dark:text-[#71717a] mt-0.5">
@@ -197,7 +197,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
           className={`rounded-xl border-2 border-dashed transition-colors ${
             isDragging
               ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10'
-              : 'border-slate-300 dark:border-[#2e2e33] bg-slate-50 dark:bg-[#0a0a0c] hover:border-blue-400 dark:hover:border-blue-600'
+              : 'border-slate-300 dark:border-[#3d3d48] bg-slate-50 dark:bg-[#08080b] hover:border-blue-400 dark:hover:border-blue-600'
           }`}
         >
           <input
@@ -210,7 +210,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
           />
           <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
-              isDragging ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-slate-200 dark:bg-[#18181b]'
+              isDragging ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-slate-200 dark:bg-[#1c1c21]'
             }`}>
               <Upload className={`w-6 h-6 transition-colors ${isDragging ? 'text-blue-500' : 'text-slate-400'}`} />
             </div>
@@ -234,7 +234,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
         {uploadProgresses.length > 0 && (
           <div className="space-y-2">
             {uploadProgresses.map((p, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-[#18181b] rounded-lg">
+              <div key={i} className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-[#1c1c21] rounded-lg">
                 {p.error ? (
                   <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                 ) : p.progress === 100 ? (
@@ -280,7 +280,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Buscar por nome do arquivo..."
-              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         )}
@@ -292,10 +292,10 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
             <span className="text-sm">Carregando arquivos...</span>
           </div>
         ) : filteredFiles.length > 0 ? (
-          <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#18181b] border-b border-slate-200 dark:border-[#2e2e33]">
+                <tr className="bg-slate-50 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
                   <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Nome do arquivo</th>
                   <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Tipo</th>
                   <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Ext.</th>
@@ -318,7 +318,7 @@ export function AttachmentsList({ patientId, medicalRecordId }: AttendanceScreen
                       {getFileTypeLabel(file.file_type)}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 text-xs font-bold bg-slate-100 dark:bg-[#18181b] text-slate-500 dark:text-[#a1a1aa] rounded">
+                      <span className="px-2 py-0.5 text-xs font-bold bg-slate-100 dark:bg-[#1c1c21] text-slate-500 dark:text-[#a1a1aa] rounded">
                         {getFileExtension(file.file_name)}
                       </span>
                     </td>

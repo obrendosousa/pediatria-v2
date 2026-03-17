@@ -101,9 +101,7 @@ export function getTimeSlots(startHour: number, endHour: number): string[] {
   const timeSlots: string[] = [];
   for (let h = startHour; h < endHour; h++) {
     timeSlots.push(`${h.toString().padStart(2, '0')}:00`);
-    if (h < 23) {
-      timeSlots.push(`${h.toString().padStart(2, '0')}:30`);
-    }
+    timeSlots.push(`${h.toString().padStart(2, '0')}:30`);
   }
   return timeSlots;
 }

@@ -49,14 +49,14 @@ export default function DocumentosPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <div className="flex items-center gap-2">
-          <FileSignature className="w-5 h-5 text-teal-600" />
+          <FileSignature className="w-5 h-5 text-blue-600" />
           <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Modelos de Documentos</h1>
         </div>
         <button
           onClick={() => router.push('/atendimento/cadastros/documentos/criar')}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
         >
           <Plus className="w-4 h-4" />
           ADICIONAR DOCUMENTO

@@ -60,10 +60,10 @@ export default function ReceptionCheckoutModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-[#08080b] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-between items-center">
+        <div className="p-4 border-b border-gray-200 dark:border-[#3d3d48] bg-gray-50 dark:bg-[#1c1c21] flex justify-between items-center">
           <h3 className="font-bold text-gray-800 dark:text-[#fafafa] flex items-center gap-2">
             <DollarSign className="text-green-600 dark:text-green-400" size={20}/>
             Checkout Final - {appointment?.patient_name || 'Paciente'}
@@ -77,7 +77,7 @@ export default function ReceptionCheckoutModal({
           
           {/* Informações do Paciente */}
           {appointment && (
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-[#111b21] rounded-lg border border-gray-200 dark:border-[#2e2e33]">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-[#111b21] rounded-lg border border-gray-200 dark:border-[#3d3d48]">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-gray-400" />
                 <div>
@@ -139,7 +139,7 @@ export default function ReceptionCheckoutModal({
                 type="button"
                 onClick={handlePrintDocuments}
                 disabled={!appointment.patient_id}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#18181b] text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors font-bold text-xs shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1c1c21] text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors font-bold text-xs shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Printer size={16} />
                 Imprimir Tudo
@@ -159,7 +159,7 @@ export default function ReceptionCheckoutModal({
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar produtos para adicionar agora..."
-                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
+                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
               />
             </div>
             {search && (
@@ -167,7 +167,7 @@ export default function ReceptionCheckoutModal({
                 {filteredCatalog.map(product => (
                   <div
                     key={product.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#111b21] rounded-lg border border-gray-200 dark:border-[#2e2e33] hover:border-green-300 dark:hover:border-green-700 transition-all cursor-pointer"
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#111b21] rounded-lg border border-gray-200 dark:border-[#3d3d48] hover:border-green-300 dark:hover:border-green-700 transition-all cursor-pointer"
                     onClick={() => addItem(product, product.category === 'servico' ? 'service' : 'product')}
                   >
                     <div className="flex-1">
@@ -198,7 +198,7 @@ export default function ReceptionCheckoutModal({
                         ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800' 
                         : item.type === 'medical_item'
                         ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'
-                        : 'bg-white dark:bg-[#18181b] border-gray-200 dark:border-[#2e2e33]'
+                        : 'bg-white dark:bg-[#1c1c21] border-gray-200 dark:border-[#3d3d48]'
                     }`}
                   >
                     <div className="flex-1 flex items-center gap-2">
@@ -231,11 +231,11 @@ export default function ReceptionCheckoutModal({
                       {/* Controles para itens normais ou médicos */}
                       {(item.type !== 'debt') && (
                         <div className="flex items-center gap-1">
-                          <button onClick={() => removeItem(item)} className="p-1.5 bg-gray-100 dark:bg-[#27272a] hover:bg-gray-200 rounded"><Minus size={14} /></button>
+                          <button onClick={() => removeItem(item)} className="p-1.5 bg-gray-100 dark:bg-[#2d2d36] hover:bg-gray-200 rounded"><Minus size={14} /></button>
                           <span className="text-sm w-6 text-center">{item.qty}</span>
                           <button
                             onClick={() => item.product && addItem(item.product, item.type === 'service' ? 'service' : 'product')}
-                            className="p-1.5 bg-gray-100 dark:bg-[#27272a] hover:bg-gray-200 rounded"
+                            className="p-1.5 bg-gray-100 dark:bg-[#2d2d36] hover:bg-gray-200 rounded"
                           >
                             <Plus size={14} />
                           </button>
@@ -254,7 +254,7 @@ export default function ReceptionCheckoutModal({
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-400 text-sm bg-gray-50 dark:bg-white/5 rounded-lg border border-dashed border-gray-300 dark:border-[#2e2e33]">
+            <div className="text-center py-8 text-gray-400 text-sm bg-gray-50 dark:bg-white/5 rounded-lg border border-dashed border-gray-300 dark:border-[#3d3d48]">
               Nenhum valor pendente.
             </div>
           )}
@@ -269,7 +269,7 @@ export default function ReceptionCheckoutModal({
                 <select
                   value={paymentMethod}
                   onChange={e => setPaymentMethod(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
                 >
                   <option value="cash">Dinheiro</option>
                   <option value="pix">PIX</option>
@@ -289,7 +289,7 @@ export default function ReceptionCheckoutModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-[#2e2e33] bg-gray-50 dark:bg-[#18181b] flex justify-end gap-3">
+        <div className="p-4 border-t border-gray-200 dark:border-[#3d3d48] bg-gray-50 dark:bg-[#1c1c21] flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 text-gray-500 dark:text-[#a1a1aa] hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-sm font-bold transition-colors">
             Cancelar
           </button>

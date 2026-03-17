@@ -166,7 +166,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         {/* Card: Exames de Imagem */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               ULTRASSOM
@@ -174,7 +174,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('ultrasound')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os resultados do ultrassom..."
             />
           </div>
@@ -186,14 +186,14 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('xray')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os resultados do raio X..."
             />
           </div>
         </div>
 
         {/* Campo: LABORATORIAS/ OBSERVAÇÕES (Rich Text) */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div className="flex justify-between items-center mb-2">
             <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8]">
               LABORATORIAS/ OBSERVAÇÕES
@@ -226,7 +226,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
         </div>
 
         {/* Card: Hemograma */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               LEUCOCITOS
@@ -234,7 +234,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('leukocytes')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de leucócitos..."
             />
           </div>
@@ -246,7 +246,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('eosinophils')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de eosinófilos..."
             />
           </div>
@@ -258,14 +258,14 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('platelets')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de plaquetas..."
             />
           </div>
         </div>
 
         {/* Card: Função Renal e Hepática */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               UREIA/ CREATININA
@@ -273,7 +273,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('urea_creatinine')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de ureia e creatinina..."
             />
           </div>
@@ -285,14 +285,14 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('tgo_tgp')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de TGO e TGP..."
             />
           </div>
         </div>
 
         {/* Card: Vitaminas e Minerais */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               VITD, VITC, VIT B12 E ZINCO
@@ -300,7 +300,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('vitamins')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de vitaminas D, C, B12 e zinco..."
             />
           </div>
@@ -312,14 +312,14 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('ferritin_pcr')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de ferritina e PCR ultrassensível..."
             />
           </div>
         </div>
 
         {/* Card: Função Tireoidiana */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               TSH E T4 TOTAL
@@ -327,14 +327,14 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('tsh_t4')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de TSH e T4 total..."
             />
           </div>
         </div>
 
         {/* Card: Urina */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               EAS/ UROCULTURA / EPF
@@ -342,14 +342,14 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('eas_uroculture_epf')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os resultados de EAS, urocultura e EPF..."
             />
           </div>
         </div>
 
         {/* Card: Outros */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-1">
               TIPAGEM SANGUINEA
@@ -357,7 +357,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('blood_typing')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite a tipagem sanguínea..."
             />
           </div>
@@ -369,7 +369,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('electrolytes')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de sódio, potássio e cálcio..."
             />
           </div>
@@ -381,7 +381,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('glucose_insulin')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores de glicemia em jejum, hemoglobina glicada e insulina..."
             />
           </div>
@@ -393,7 +393,7 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('lipidogram')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os valores do lipidograma..."
             />
           </div>
@@ -405,14 +405,14 @@ export function ExamResults({ patientId, patientData, onRefresh, appointmentId }
             <input
               type="text"
               {...register('karyotype')}
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#0a0a0c] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               placeholder="Digite os resultados do cariótipo..."
             />
           </div>
         </div>
 
         {/* Botão Salvar */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#2e2e33] -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#3d3d48] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

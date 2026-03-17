@@ -146,22 +146,22 @@ export function AIInsights({ metrics }: AIInsightsProps) {
 
   if (isGenerating) {
     return (
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#27272a] p-6 shadow-sm">
+      <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#2d2d36] p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-4">
           <Sparkles className="w-5 h-5 text-purple-500 animate-pulse" />
           <h3 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">IA Pulse</h3>
           <span className="text-xs text-slate-400">Analisando dados...</span>
         </div>
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-slate-200 dark:bg-[#27272a] rounded w-3/4"></div>
-          <div className="h-4 bg-slate-200 dark:bg-[#27272a] rounded w-1/2"></div>
+          <div className="h-4 bg-slate-200 dark:bg-[#2d2d36] rounded w-3/4"></div>
+          <div className="h-4 bg-slate-200 dark:bg-[#2d2d36] rounded w-1/2"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl border border-slate-200/60 dark:border-[#27272a]/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
+    <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-200/60 dark:border-[#2d2d36]/60 p-5 sm:p-6 shadow-sm hover:shadow-lg transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30">
@@ -206,7 +206,7 @@ export function AIInsights({ metrics }: AIInsightsProps) {
 
       <button
         onClick={generateInsights}
-        className="mt-4 w-full py-2 text-sm font-medium text-slate-600 dark:text-[#a1a1aa] hover:text-slate-800 dark:hover:text-gray-200 hover:bg-slate-50 dark:hover:bg-[#18181b] rounded-lg transition-colors"
+        className="mt-4 w-full py-2 text-sm font-medium text-slate-600 dark:text-[#a1a1aa] hover:text-slate-800 dark:hover:text-gray-200 hover:bg-slate-50 dark:hover:bg-[#1c1c21] rounded-lg transition-colors"
       >
         Atualizar insights
       </button>

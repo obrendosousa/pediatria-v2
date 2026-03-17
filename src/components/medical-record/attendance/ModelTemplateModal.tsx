@@ -127,21 +127,21 @@ function ExamsEditor({
             value={exam.code}
             onChange={(e) => update(i, 'code', e.target.value)}
             placeholder="Código"
-            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
           <input
             type="text"
             value={exam.name}
             onChange={(e) => update(i, 'name', e.target.value)}
             placeholder="Nome do exame"
-            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
           <input
             type="number"
             min={1}
             value={exam.quantity}
             onChange={(e) => update(i, 'quantity', parseInt(e.target.value) || 1)}
-            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
+            className="px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
           />
           <button
             onClick={() => remove(i)}
@@ -224,14 +224,14 @@ function PrescriptionEditor({
           </h4>
           <div className="space-y-2">
             {data.medications.map((med, i) => (
-              <div key={i} className="p-3 border border-slate-200 dark:border-[#2e2e33] rounded-lg space-y-2">
+              <div key={i} className="p-3 border border-slate-200 dark:border-[#3d3d48] rounded-lg space-y-2">
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={med.name}
                     onChange={(e) => updateMed(i, 'name', e.target.value)}
                     placeholder="Nome do medicamento"
-                    className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                   <button
                     onClick={() => removeMed(i)}
@@ -246,7 +246,7 @@ function PrescriptionEditor({
                   value={med.posology}
                   onChange={(e) => updateMed(i, 'posology', e.target.value)}
                   placeholder="Posologia"
-                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <div className="flex gap-2">
                   <input
@@ -254,7 +254,7 @@ function PrescriptionEditor({
                     min={1}
                     value={med.quantity}
                     onChange={(e) => updateMed(i, 'quantity', parseInt(e.target.value) || 1)}
-                    className="w-20 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
+                    className="w-20 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
                   />
                   <span className="text-xs text-slate-500 dark:text-[#a1a1aa] self-center">{med.unit}</span>
                 </div>
@@ -282,21 +282,21 @@ function PrescriptionEditor({
                   value={exam.code}
                   onChange={(e) => updateExam(i, 'code', e.target.value)}
                   placeholder="Código"
-                  className="w-20 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-20 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <input
                   type="text"
                   value={exam.name}
                   onChange={(e) => updateExam(i, 'name', e.target.value)}
                   placeholder="Nome do exame"
-                  className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <input
                   type="number"
                   min={1}
                   value={exam.quantity}
                   onChange={(e) => updateExam(i, 'quantity', parseInt(e.target.value) || 1)}
-                  className="w-16 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
+                  className="w-16 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-center"
                 />
                 <button onClick={() => removeExam(i)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md transition-colors">
                   <Minus className="w-4 h-4 text-red-500" />
@@ -325,14 +325,14 @@ function PrescriptionEditor({
                   value={vac.name}
                   onChange={(e) => updateVaccine(i, 'name', e.target.value)}
                   placeholder="Nome da vacina"
-                  className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="flex-1 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <input
                   type="text"
                   value={vac.dose}
                   onChange={(e) => updateVaccine(i, 'dose', e.target.value)}
                   placeholder="Dose"
-                  className="w-28 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#2e2e33] rounded-md bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-28 px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <button onClick={() => removeVaccine(i)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md transition-colors">
                   <Minus className="w-4 h-4 text-red-500" />
@@ -359,9 +359,9 @@ function FormattedContentView({ content }: { content: string }) {
     return (
       <div className="space-y-1.5">
         {exams.map((exam, i) => (
-          <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#18181b] rounded-md">
+          <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#1c1c21] rounded-md">
             {exam.code && (
-              <span className="text-xs font-mono text-slate-500 dark:text-[#a1a1aa] bg-slate-100 dark:bg-[#27272a] px-1.5 py-0.5 rounded">
+              <span className="text-xs font-mono text-slate-500 dark:text-[#a1a1aa] bg-slate-100 dark:bg-[#2d2d36] px-1.5 py-0.5 rounded">
                 {exam.code}
               </span>
             )}
@@ -385,7 +385,7 @@ function FormattedContentView({ content }: { content: string }) {
           <div>
             <h4 className="text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase mb-1.5">Medicamentos</h4>
             {meds.map((m, i) => (
-              <div key={i} className="p-2 bg-slate-50 dark:bg-[#18181b] rounded-md mb-1.5">
+              <div key={i} className="p-2 bg-slate-50 dark:bg-[#1c1c21] rounded-md mb-1.5">
                 <div className="text-sm font-medium text-slate-700 dark:text-gray-200">{m.name}</div>
                 {m.posology && <div className="text-xs text-slate-500 dark:text-[#a1a1aa] mt-0.5">{m.posology}</div>}
                 <div className="text-xs text-slate-400 dark:text-[#71717a] mt-0.5">{m.quantity} {m.unit}</div>
@@ -397,8 +397,8 @@ function FormattedContentView({ content }: { content: string }) {
           <div>
             <h4 className="text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase mb-1.5">Exames</h4>
             {exams.map((e, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#18181b] rounded-md mb-1.5">
-                {e.code && <span className="text-xs font-mono text-slate-500 bg-slate-100 dark:bg-[#27272a] px-1.5 py-0.5 rounded">{e.code}</span>}
+              <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#1c1c21] rounded-md mb-1.5">
+                {e.code && <span className="text-xs font-mono text-slate-500 bg-slate-100 dark:bg-[#2d2d36] px-1.5 py-0.5 rounded">{e.code}</span>}
                 <span className="text-sm text-slate-700 dark:text-gray-200 flex-1">{e.name}</span>
                 <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">x{e.quantity}</span>
               </div>
@@ -409,7 +409,7 @@ function FormattedContentView({ content }: { content: string }) {
           <div>
             <h4 className="text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase mb-1.5">Vacinas</h4>
             {vaccines.map((v, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#18181b] rounded-md mb-1.5">
+              <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#1c1c21] rounded-md mb-1.5">
                 <span className="text-sm text-slate-700 dark:text-gray-200 flex-1">{v.name}</span>
                 <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">{v.dose}</span>
               </div>
@@ -575,9 +575,9 @@ export function ModelTemplateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-[#08080b] rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-[#2e2e33]">
+        <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-[#3d3d48]">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${saveMode ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
               {saveMode ? <Save className="w-4 h-4 text-blue-600 dark:text-blue-400" /> : <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
@@ -614,7 +614,7 @@ export function ModelTemplateModal({
                   onChange={(e) => setSaveTitle(e.target.value)}
                   placeholder="Ex: Conduta padrao para IVAS"
                   autoFocus
-                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
                 />
               </div>
 
@@ -631,11 +631,11 @@ export function ModelTemplateModal({
                 </div>
 
                 {contentType === 'exams' ? (
-                  <div className="border border-slate-200 dark:border-[#2e2e33] rounded-lg p-4 bg-slate-50 dark:bg-[#18181b]">
+                  <div className="border border-slate-200 dark:border-[#3d3d48] rounded-lg p-4 bg-slate-50 dark:bg-[#1c1c21]">
                     <ExamsEditor items={editableExams} onChange={setEditableExams} />
                   </div>
                 ) : contentType === 'prescription' ? (
-                  <div className="border border-slate-200 dark:border-[#2e2e33] rounded-lg p-4 bg-slate-50 dark:bg-[#18181b] max-h-[350px] overflow-y-auto custom-scrollbar">
+                  <div className="border border-slate-200 dark:border-[#3d3d48] rounded-lg p-4 bg-slate-50 dark:bg-[#1c1c21] max-h-[350px] overflow-y-auto custom-scrollbar">
                     <PrescriptionEditor data={editablePrescription} onChange={setEditablePrescription} />
                   </div>
                 ) : (
@@ -645,7 +645,7 @@ export function ModelTemplateModal({
                     suppressContentEditableWarning
                     dangerouslySetInnerHTML={{ __html: editableContent }}
                     onInput={(e) => setEditableContent(e.currentTarget.innerHTML)}
-                    className="w-full min-h-[200px] max-h-[350px] overflow-y-auto px-4 py-3 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-slate-50 dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all text-sm leading-relaxed custom-scrollbar prose prose-sm dark:prose-invert max-w-none"
+                    className="w-full min-h-[200px] max-h-[350px] overflow-y-auto px-4 py-3 border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-slate-50 dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all text-sm leading-relaxed custom-scrollbar prose prose-sm dark:prose-invert max-w-none"
                   />
                 )}
 
@@ -663,8 +663,8 @@ export function ModelTemplateModal({
               >
                 &larr; Voltar para lista
               </button>
-              <div className="border border-slate-200 dark:border-[#2e2e33] rounded-lg overflow-hidden">
-                <div className="bg-slate-50 dark:bg-[#18181b] px-4 py-3 border-b border-slate-200 dark:border-[#2e2e33]">
+              <div className="border border-slate-200 dark:border-[#3d3d48] rounded-lg overflow-hidden">
+                <div className="bg-slate-50 dark:bg-[#1c1c21] px-4 py-3 border-b border-slate-200 dark:border-[#3d3d48]">
                   <h3 className="font-semibold text-slate-800 dark:text-gray-200">{previewTemplate.title}</h3>
                 </div>
                 <div className="p-4">
@@ -701,7 +701,7 @@ export function ModelTemplateModal({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar modelos..."
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
 
@@ -718,7 +718,7 @@ export function ModelTemplateModal({
                   {filteredTemplates.map((template) => (
                     <div
                       key={template.id}
-                      className="group flex items-start gap-3 p-4 border border-slate-200 dark:border-[#2e2e33] rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-800 transition-all cursor-pointer"
+                      className="group flex items-start gap-3 p-4 border border-slate-200 dark:border-[#3d3d48] rounded-lg hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-800 transition-all cursor-pointer"
                       onClick={() => setPreviewTemplate(template)}
                     >
                       <div className="flex-1 min-w-0">
@@ -772,7 +772,7 @@ export function ModelTemplateModal({
 
         {/* Footer */}
         {saveMode ? (
-          <div className="p-5 border-t border-slate-200 dark:border-[#2e2e33] flex items-center gap-3">
+          <div className="p-5 border-t border-slate-200 dark:border-[#3d3d48] flex items-center gap-3">
             <button
               onClick={handleSave}
               disabled={isSaving}
@@ -791,13 +791,13 @@ export function ModelTemplateModal({
                   setEditableContent('');
                 }
               }}
-              className="px-4 py-2.5 bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-[#353842] text-slate-700 dark:text-gray-200 font-medium rounded-lg transition-colors"
+              className="px-4 py-2.5 bg-slate-100 dark:bg-[#1c1c21] hover:bg-slate-200 dark:hover:bg-[#353842] text-slate-700 dark:text-gray-200 font-medium rounded-lg transition-colors"
             >
               Cancelar
             </button>
           </div>
         ) : !previewTemplate && (
-          <div className="p-5 border-t border-slate-200 dark:border-[#2e2e33]">
+          <div className="p-5 border-t border-slate-200 dark:border-[#3d3d48]">
             <button
               onClick={() => {
                 setSaveMode(true);
@@ -811,7 +811,7 @@ export function ModelTemplateModal({
                   setEditableContent(currentContent || '');
                 }
               }}
-              className="w-full px-4 py-2.5 bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-[#353842] text-slate-700 dark:text-gray-200 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 bg-slate-100 dark:bg-[#1c1c21] hover:bg-slate-200 dark:hover:bg-[#353842] text-slate-700 dark:text-gray-200 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
               Salvar Novo Modelo

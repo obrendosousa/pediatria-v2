@@ -44,25 +44,34 @@
     --chat-wallpaper-opacity: 0.13;
   }
 
-  /* --- TEMA ESCURO: "BLACK" — Pure Dark --- */
+  /* --- TEMA ESCURO: "BLACK" — Depth System --- */
+  /*
+   * Hierarquia de profundidade:
+   * L0  Base/fundo    #08080b  (mais escuro)
+   * L1  Card/painel   #131316  (superfície)
+   * L2  Elevated      #1c1c21  (cards elevados, dropdowns)
+   * L3  Modal/popup   #252530  (modais, popovers)
+   * Border default    #2d2d36  (visível mas sutil)
+   * Border hover      #3d3d48  (claramente visível)
+   */
   .dark {
-    --background: 9 9 11;           /* #09090b — True black */
+    --background: 8 8 11;           /* #08080b — L0: Base deepest */
     --foreground: 250 250 250;      /* #fafafa — Pure white */
 
-    --card: 17 17 19;              /* #111113 — Dark surface */
+    --card: 19 19 22;              /* #131316 — L1: Card surface */
     --card-foreground: 228 228 231;
-    --border: 39 39 42;            /* #27272a — Zinc borders */
+    --border: 45 45 54;            /* #2d2d36 — Borders (more visible) */
 
     --primary: 99 179 237;        /* #63b3ed — Sky blue accent */
-    --primary-foreground: 9 9 11;
+    --primary-foreground: 8 8 11;
 
     --secondary: 110 231 183;     /* #6ee7b7 — Emerald mint */
-    --secondary-foreground: 9 9 11;
+    --secondary-foreground: 8 8 11;
 
-    --accent: 30 30 35;           /* #1e1e23 — Elevated surface */
+    --accent: 37 37 48;           /* #252530 — L3: Elevated/modal surface */
     --accent-foreground: 228 228 231;
 
-    --muted: 20 20 23;            /* #141417 — Recessed areas */
+    --muted: 14 14 17;            /* #0e0e11 — Recessed areas (darker than bg) */
     --muted-foreground: 161 161 170; /* #a1a1aa — Zinc muted */
 
     --success: 52 211 153;        /* #34d399 */
@@ -70,9 +79,9 @@
     --destructive: 248 113 113;   /* #f87171 */
 
     /* --- Chat Module Vars (Dark Mode) --- */
-    --chat-surface: #111113;
-    --chat-surface-hover: #1c1c1f;
-    --chat-bg: #09090b;
+    --chat-surface: #131316;
+    --chat-surface-hover: #1c1c21;
+    --chat-bg: #08080b;
     --chat-accent: #00a884;
     --chat-accent-hover: #06cf9c;
     --chat-accent-secondary: #34d399;
@@ -81,42 +90,42 @@
     --chat-text-primary: #fafafa;
     --chat-text-muted: #71717a;
     --chat-text-secondary: #a1a1aa;
-    --chat-wallpaper-stroke: #27272a;
-    --chat-wallpaper-opacity: 0.04;
+    --chat-wallpaper-stroke: #2d2d36;
+    --chat-wallpaper-opacity: 0.05;
   }
 
-  /* --- Módulo Atendimento: Overrides teal --- */
+  /* --- Módulo Atendimento: Premium Blue --- */
   .module-atendimento {
-    --chat-surface: #F0FDFA;
-    --chat-surface-hover: #E0F2FE;
-    --chat-bg: #F0FDFA;
-    --chat-accent: #0891B2;
-    --chat-accent-hover: #0e7490;
-    --chat-accent-secondary: #22C55E;
-    --chat-bubble-sent: #CCFBF1;
-    --chat-bubble-sent-dark: #134E4A;
-    --chat-text-primary: #134E4A;
-    --chat-text-muted: #5E8683;
-    --chat-text-secondary: #5E8683;
-    --chat-wallpaper-stroke: #5E8683;
-    --chat-wallpaper-opacity: 0.08;
+    --chat-surface: #F8FAFC;
+    --chat-surface-hover: #F1F5F9;
+    --chat-bg: #F1F5F9;
+    --chat-accent: #2563EB;
+    --chat-accent-hover: #1D4ED8;
+    --chat-accent-secondary: #10B981;
+    --chat-bubble-sent: #EFF6FF;
+    --chat-bubble-sent-dark: #1E3A5F;
+    --chat-text-primary: #0F172A;
+    --chat-text-muted: #64748B;
+    --chat-text-secondary: #475569;
+    --chat-wallpaper-stroke: #94A3B8;
+    --chat-wallpaper-opacity: 0.06;
   }
 
-  /* --- Módulo Atendimento: Dark Mode (Black + Teal) --- */
+  /* --- Módulo Atendimento: Dark Mode (Black + Blue) --- */
   .dark .module-atendimento {
-    --chat-surface: #111113;
-    --chat-surface-hover: #1c1c1f;
-    --chat-bg: #09090b;
-    --chat-accent: #14b8a6;
-    --chat-accent-hover: #2dd4bf;
+    --chat-surface: #131316;
+    --chat-surface-hover: #1c1c21;
+    --chat-bg: #08080b;
+    --chat-accent: #60A5FA;
+    --chat-accent-hover: #93C5FD;
     --chat-accent-secondary: #34d399;
-    --chat-bubble-sent: #0a3530;
-    --chat-bubble-sent-dark: #0a3530;
+    --chat-bubble-sent: #172554;
+    --chat-bubble-sent-dark: #172554;
     --chat-text-primary: #fafafa;
     --chat-text-muted: #71717a;
     --chat-text-secondary: #a1a1aa;
-    --chat-wallpaper-stroke: #27272a;
-    --chat-wallpaper-opacity: 0.04;
+    --chat-wallpaper-stroke: #2d2d36;
+    --chat-wallpaper-opacity: 0.05;
   }
   
   body {
@@ -142,6 +151,28 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(var(--primary), 0.6);
+}
+
+/* Nav active item — Clínica Geral (sempre escuro) */
+.nav-item-active {
+  background-image: none !important;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.02) 30%, rgba(255, 255, 255, 0.08) 70%, rgba(255, 255, 255, 0.15) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none !important;
+  color: #fafafa !important;
+}
+
+.nav-item-active::before {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 55%;
+  border-radius: 99px;
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
 /* Painel de Vidro (Funciona no Dark Mode também) */
@@ -377,4 +408,42 @@
 .tag-gradient-sweep {
   transform-origin: left;
   animation: tagGradientSweep 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Scanline tech animation (horizontal) */
+@keyframes scanline {
+  0% { left: -40%; }
+  100% { left: 100%; }
+}
+
+/* Scanline vertical */
+@keyframes scanlineV {
+  0% { top: -30%; }
+  100% { top: 100%; }
+}
+
+/* Floating particles */
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.5; }
+  50% { transform: translateY(-20px) scale(1.5); opacity: 1; }
+}
+
+/* Sidebar slide-in from left */
+@keyframes sidebarSlideIn {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.sidebar-slide-in {
+  animation: sidebarSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Page transition */
+@keyframes pageSlideIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.page-transition {
+  animation: pageSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }

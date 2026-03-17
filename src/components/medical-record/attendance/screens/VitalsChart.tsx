@@ -230,16 +230,16 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
     <div className="p-5 space-y-5">
 
       {/* ── Área do Gráfico ─────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
+      <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
 
         {/* Toolbar */}
-        <div className="flex flex-wrap gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-[#2e2e33] items-center">
+        <div className="flex flex-wrap gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-[#3d3d48] items-center">
           {/* Seletor de gráfico */}
           <div className="flex-1 min-w-[220px]">
             <select
               value={selectedChartValue}
               onChange={(e) => setSelectedChartValue(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
             >
               {/* Recomendados para a idade */}
               {recommendedCharts.length > 0 && (
@@ -259,7 +259,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
           </div>
 
           {/* Toggle Z-Score / Percentil */}
-          <div className="flex bg-slate-100 dark:bg-[#18181b] rounded-lg p-1 gap-0.5">
+          <div className="flex bg-slate-100 dark:bg-[#1c1c21] rounded-lg p-1 gap-0.5">
             <button
               onClick={() => setDisplayMode('Z_SCORE')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
@@ -322,7 +322,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
       </div>
 
       {/* ── Formulário de Nova Medição ───────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-5">
+      <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-5">
         <h2 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide mb-4">
           Nova Medição
         </h2>
@@ -335,7 +335,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
               type="date"
               value={measurementDate}
               onChange={e => setMeasurementDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
           <div>
@@ -346,7 +346,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
               type="number" step="0.01" min="0"
               value={weightKg}
               onChange={e => setWeightKg(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="0.00"
             />
           </div>
@@ -358,7 +358,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
               type="number" step="0.1" min="0"
               value={heightCm}
               onChange={e => setHeightCm(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="0.0"
             />
           </div>
@@ -370,7 +370,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
               type="number" step="0.1" min="0"
               value={headCircumferenceCm}
               onChange={e => setHeadCircumferenceCm(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="0.0"
             />
           </div>
@@ -402,7 +402,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
                 type="number" min="24" max="36"
                 value={gestationalAgeWeeks}
                 onChange={e => setGestationalAgeWeeks(e.target.value ? Number(e.target.value) : '')}
-                className="w-20 px-2 py-1.5 border border-slate-200 dark:border-[#2e2e33] rounded-lg text-sm bg-white dark:bg-[#18181b] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-20 px-2 py-1.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 placeholder="semanas"
               />
               <span className="text-xs text-slate-400 dark:text-[#71717a]">semanas</span>
@@ -413,8 +413,8 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
 
       {/* ── Histórico de Medições ────────────────────────────────────────── */}
       {(isLoadingEntries || entries.length > 0) && (
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 dark:border-[#2e2e33] flex items-center justify-between">
+        <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-[#3d3d48] flex items-center justify-between">
             <h2 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">
               Histórico de Medições
             </h2>
@@ -425,7 +425,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#18181b]">
+                <tr className="bg-slate-50 dark:bg-[#1c1c21]">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
                     Data
                   </th>
@@ -502,7 +502,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
       )}
 
       {/* ── Exame Físico ─────────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-xl border border-slate-200 dark:border-[#2e2e33] p-5">
+      <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-5">
         <h2 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide mb-4">
           Exame Físico
         </h2>

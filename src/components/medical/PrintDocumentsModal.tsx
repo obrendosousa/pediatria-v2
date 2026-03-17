@@ -10,15 +10,18 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { getLetterheadDataUrl } from '@/lib/letterhead';
 
 const supabase = createClient();
 
-async function downloadHtmlAsPdf(html: string, filename: string) {
+async function downloadHtmlAsPdf(html: string, filename: string, useLetterhead: boolean = true) {
+  // Pré-carregar timbrado em paralelo com a renderização do HTML
+  const letterheadPromise = useLetterhead ? getLetterheadDataUrl() : null;
+
   const container = document.createElement('div');
   container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:white;';
   container.innerHTML = '';
 
-  // Create an iframe to properly render the full HTML document
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'width:794px;min-height:1123px;border:none;';
   container.appendChild(iframe);
@@ -32,18 +35,15 @@ async function downloadHtmlAsPdf(html: string, filename: string) {
       doc.write(html);
       doc.close();
     }
-    // Fallback timeout
     setTimeout(resolve, 1000);
   });
 
-  // Wait a bit more for styles to apply
   await new Promise((r) => setTimeout(r, 500));
 
   try {
     const body = iframe.contentWindow?.document.body;
     if (!body) throw new Error('Erro ao renderizar documento');
 
-    // Set iframe height to match content
     iframe.style.height = body.scrollHeight + 'px';
 
     const canvas = await html2canvas(body, {
@@ -53,6 +53,7 @@ async function downloadHtmlAsPdf(html: string, filename: string) {
       width: 794,
       height: body.scrollHeight,
       windowWidth: 794,
+      backgroundColor: useLetterhead ? null : '#ffffff',
     });
 
     const imgData = canvas.toDataURL('image/png');
@@ -60,18 +61,45 @@ async function downloadHtmlAsPdf(html: string, filename: string) {
     const pageHeight = 297; // A4 height in mm
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
+    const letterheadDataUrl = letterheadPromise ? await letterheadPromise : null;
+
     const pdf = new jsPDF('p', 'mm', 'a4');
-    let heightLeft = imgHeight;
-    let position = 0;
 
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft > 0) {
-      position = -(imgHeight - heightLeft);
-      pdf.addPage();
+    if (!letterheadDataUrl) {
+      // Sem timbrado: lógica simples de paginação
+      let heightLeft = imgHeight;
+      let position = 0;
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position = -(imgHeight - heightLeft);
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+    } else {
+      // Com timbrado: respeitar margens do header/footer em cada página
+      const marginTop = 32;  // mm - área do logo/QR
+      const marginBottom = 30; // mm - área dos contatos
+      const usableHeight = pageHeight - marginTop - marginBottom; // ~235mm por página
+
+      // Página 1: conteúdo já tem padding embutido, mostra normalmente
+      pdf.addImage(letterheadDataUrl, 'PNG', 0, 0, imgWidth, pageHeight);
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+      // Se conteúdo excede 1 página, paginar respeitando margens do timbrado
+      if (imgHeight > pageHeight) {
+        let contentOffset = pageHeight; // onde a página 1 cortou
+
+        while (contentOffset < imgHeight) {
+          pdf.addPage();
+          pdf.addImage(letterheadDataUrl, 'PNG', 0, 0, imgWidth, pageHeight);
+          // Posiciona o conteúdo para que a parte visível comece após o header do timbrado
+          const yPos = marginTop - contentOffset;
+          pdf.addImage(imgData, 'PNG', 0, yPos, imgWidth, imgHeight);
+          contentOffset += usableHeight;
+        }
+      }
     }
 
     pdf.save(filename);
@@ -216,8 +244,9 @@ export default function PrintDocumentsModal({
     setDownloading(key);
     try {
       const html = generateRequestHTML(req, patientData);
+      const isSADT = req.request_type === 'SADT';
       const name = (req.model_name || `Solicitacao_${idx + 1}`).replace(/\s+/g, '_');
-      await downloadHtmlAsPdf(html, `${name}.pdf`);
+      await downloadHtmlAsPdf(html, `${name}.pdf`, !isSADT);
     } catch (err) {
       console.error('Erro ao baixar solicitação:', err);
     } finally {
@@ -250,9 +279,9 @@ export default function PrintDocumentsModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white dark:bg-[#0a0a0c] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+      <div className="bg-white dark:bg-[#08080b] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
         {/* Header */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] flex justify-between items-center">
+        <div className="bg-blue-50 dark:bg-blue-900/20 px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] flex justify-between items-center">
           <div>
             <h2 className="text-lg font-black text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
@@ -306,7 +335,7 @@ export default function PrintDocumentsModal({
                       {activeTypes.map(({ type, label, count, icon, iconColor, btnClass, btnDisabledClass }) => {
                         const dlKey = `presc-${presc.id || idx}-${type}`;
                         return (
-                          <div key={type} className="flex items-center justify-between bg-slate-50 dark:bg-[#18181b] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-3">
+                          <div key={type} className="flex items-center justify-between bg-slate-50 dark:bg-[#1c1c21] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-3">
                             <div className="flex items-center gap-2 min-w-0 flex-1 mr-3">
                               <span className={iconColor}>{icon}</span>
                               <div>
@@ -353,7 +382,7 @@ export default function PrintDocumentsModal({
                       const examsCount = (req.exams || []).filter((e: any) => e.name || e.code).length;
                       const dlKey = `exam-${req.id || idx}`;
                       return (
-                        <div key={req.id || idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#18181b] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-3">
+                        <div key={req.id || idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#1c1c21] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-3">
                           <div className="min-w-0 flex-1 mr-3">
                             <p className="text-sm font-bold text-slate-700 dark:text-gray-200">
                               {req.model_name || `Solicitacao ${idx + 1}`}
@@ -403,7 +432,7 @@ export default function PrintDocumentsModal({
                     {documents.map((doc, idx) => {
                       const dlKey = `doc-${doc.id || idx}`;
                       return (
-                        <div key={doc.id || idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#18181b] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-3">
+                        <div key={doc.id || idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#1c1c21] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-3">
                           <div className="min-w-0 flex-1 mr-3">
                             <p className="text-sm font-bold text-slate-700 dark:text-gray-200">
                               {doc.type || 'Documento'}
@@ -444,7 +473,7 @@ export default function PrintDocumentsModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 bg-slate-50 dark:bg-[#18181b] border-t border-slate-200 dark:border-[#2e2e33] flex justify-end">
+        <div className="px-6 py-3 bg-slate-50 dark:bg-[#1c1c21] border-t border-slate-200 dark:border-[#3d3d48] flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-[#a1a1aa] hover:text-slate-800 dark:hover:text-gray-200 transition-colors"

@@ -65,14 +65,14 @@ export default function CalendarDatePopover({ value, onChange, label }: Calendar
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex min-w-[148px] items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-[#2e2e33] dark:bg-[#111b21] dark:text-gray-200 dark:hover:bg-white/5"
+        className="inline-flex min-w-[148px] items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-[#3d3d48] dark:bg-[#111b21] dark:text-gray-200 dark:hover:bg-white/5"
       >
         <span>{format(selectedDate, 'dd/MM/yyyy', { locale: ptBR })}</span>
         <CalendarDays className="h-4 w-4 text-slate-500 dark:text-[#a1a1aa]" />
       </button>
 
       {open ? (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-30 w-[290px] rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-[#2e2e33] dark:bg-[#111b21]">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-30 w-[290px] rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-[#3d3d48] dark:bg-[#111b21]">
           <div className="mb-3 flex items-center justify-between">
             <button
               type="button"
@@ -136,7 +136,7 @@ export default function CalendarDatePopover({ value, onChange, label }: Calendar
               onChange(format(now, 'yyyy-MM-dd'));
               setDisplayMonth(startOfMonth(now));
             }}
-            className="mt-3 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-[#2e2e33] dark:text-[#d4d4d8] dark:hover:bg-white/5"
+            className="mt-3 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/5"
           >
             Ir para hoje
           </button>

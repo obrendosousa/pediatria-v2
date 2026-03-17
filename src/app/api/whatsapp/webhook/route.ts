@@ -327,15 +327,67 @@ async function handleRevokeMessage(message: EvolutionWebhookData) {
   return true;
 }
 
+/**
+ * Desempacota wrapper types do WhatsApp (viewOnce, ephemeral, documentWithCaption, editedMessage)
+ * para extrair o conteúdo real da mensagem. Recursivo para wrappers aninhados.
+ */
+function unwrapMessage(message: unknown): unknown {
+  if (!message || typeof message !== "object") return message;
+  const msg = message as Record<string, unknown>;
+  const wrapperKeys = [
+    "viewOnceMessage", "viewOnceMessageV2", "viewOnceMessageV2Extension",
+    "ephemeralMessage", "documentWithCaptionMessage",
+  ];
+  for (const key of wrapperKeys) {
+    const wrapper = msg[key] as Record<string, unknown> | undefined;
+    if (wrapper?.message) {
+      return unwrapMessage(wrapper.message);
+    }
+  }
+  // editedMessage: desempacota o conteúdo editado
+  const edited = msg.editedMessage as Record<string, unknown> | undefined;
+  if (edited?.message) {
+    return unwrapMessage(edited.message);
+  }
+  return message;
+}
+
 function detectMessageType(message: unknown): string {
   const msg = (message ?? {}) as Record<string, unknown>;
+  // System/protocol
   if (msg.protocolMessage) return "protocolMessage";
   if (msg.reactionMessage) return "reactionMessage";
+  // Media
   if (msg.audioMessage) return "audioMessage";
   if (msg.imageMessage) return "imageMessage";
   if (msg.videoMessage) return "videoMessage";
   if (msg.stickerMessage) return "stickerMessage";
   if (msg.documentMessage) return "documentMessage";
+  if (msg.ptvMessage) return "ptvMessage";
+  // Contact
+  if (msg.contactMessage) return "contactMessage";
+  if (msg.contactsArrayMessage) return "contactsArrayMessage";
+  // Location
+  if (msg.locationMessage) return "locationMessage";
+  if (msg.liveLocationMessage) return "liveLocationMessage";
+  // Poll
+  if (msg.pollCreationMessage || msg.pollCreationMessageV2 || msg.pollCreationMessageV3) return "pollCreationMessage";
+  if (msg.pollUpdateMessage) return "pollUpdateMessage";
+  // Interactive / Buttons / Lists
+  if (msg.buttonsMessage) return "buttonsMessage";
+  if (msg.buttonsResponseMessage) return "buttonsResponseMessage";
+  if (msg.listMessage) return "listMessage";
+  if (msg.listResponseMessage) return "listResponseMessage";
+  if (msg.templateMessage) return "templateMessage";
+  if (msg.templateButtonReplyMessage) return "templateButtonReplyMessage";
+  if (msg.interactiveMessage) return "interactiveMessage";
+  if (msg.interactiveResponseMessage) return "interactiveResponseMessage";
+  // Commerce
+  if (msg.orderMessage) return "orderMessage";
+  if (msg.productMessage) return "productMessage";
+  // Group
+  if (msg.groupInviteMessage) return "groupInviteMessage";
+  // Text (must be last)
   if (msg.extendedTextMessage || msg.conversation) return "conversation";
   return "unknown";
 }
@@ -391,7 +443,7 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
         id: item.keyId ?? item.id ?? "",
       } as Record<string, unknown>);
 
-    const remoteJid = toRemoteJid(
+    let remoteJid = toRemoteJid(
       keyRaw.remoteJid ??
       item.remoteJid ??
       item.jid ??
@@ -414,10 +466,33 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
       continue;
     }
 
-    const messageValue = (item.message ?? item.content ?? {}) as unknown;
+    // --- RESOLUÇÃO DE LID: usar senderPn ou remoteJidAlt (Evolution API v2) ---
+    const senderPn = (keyRaw.senderPn ?? item.senderPn) as string | undefined;
+    const remoteJidAlt = (keyRaw.remoteJidAlt ?? item.remoteJidAlt) as string | undefined;
+    const addressingMode = (keyRaw.addressingMode ?? item.addressingMode) as string | undefined;
+    const participant = (keyRaw.participant ?? item.participant) as string | undefined;
+
+    if (remoteJid.endsWith("@lid")) {
+      if (senderPn && senderPn.includes("@s.whatsapp.net")) {
+        remoteJid = senderPn;
+      } else if (remoteJidAlt && remoteJidAlt.includes("@s.whatsapp.net")) {
+        remoteJid = remoteJidAlt;
+      }
+      // Se ainda for @lid, será resolvido no processInputNode via API
+    }
+
+    // --- DESEMPACOTAR WRAPPERS (viewOnce, ephemeral, documentWithCaption) ---
+    const rawMessageValue = (item.message ?? item.content ?? {}) as unknown;
+    const messageValue = unwrapMessage(rawMessageValue);
 
     const detectedType = detectMessageType(messageValue);
-    const messageTypeValue = (item.messageType ?? item.contentType ?? detectedType) as string;
+    // Se o messageType original é um wrapper, usar o tipo detectado do conteúdo real
+    const rawMessageType = (item.messageType ?? item.contentType ?? detectedType) as string;
+    const WRAPPER_TYPES = [
+      "viewOnceMessage", "viewOnceMessageV2", "viewOnceMessageV2Extension",
+      "ephemeralMessage", "documentWithCaptionMessage", "editedMessage",
+    ];
+    const messageTypeValue = WRAPPER_TYPES.includes(rawMessageType) ? detectedType : rawMessageType;
 
     const timestampValue = (item.messageTimestamp ?? item.timestamp ?? Date.now()) as number | string;
     const forwarded = isMessageForwarded(messageValue);
@@ -427,6 +502,10 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
         remoteJid,
         fromMe: Boolean(keyRaw.fromMe),
         id: String(keyRaw.id ?? ""),
+        senderPn: senderPn || undefined,
+        remoteJidAlt: remoteJidAlt || undefined,
+        addressingMode: addressingMode || undefined,
+        participant: participant || undefined,
       },
       pushName: typeof item.pushName === "string" ? item.pushName : undefined,
       messageType: messageTypeValue,
@@ -534,6 +613,60 @@ function isMessageBeforeIngestionStart(timestamp: number | string | undefined): 
   return ts < (INGESTION_START_TS_MS - INCOMING_CLOCK_SKEW_MS);
 }
 
+/**
+ * Processa eventos CONTACTS_UPSERT/UPDATE da Evolution API para atualizar
+ * nomes e fotos de perfil dos contatos existentes.
+ */
+async function handleContactsEvent(body: Record<string, unknown>) {
+  const supabase = getSupabase();
+  const data = body.data as unknown;
+  const contacts: unknown[] = Array.isArray(data) ? data : (data && typeof data === "object" ? [data] : []);
+
+  for (const contact of contacts) {
+    if (!contact || typeof contact !== "object") continue;
+    const c = contact as Record<string, unknown>;
+    const remoteJid = String(c.remoteJid ?? c.id ?? "");
+    if (!remoteJid || remoteJid.endsWith("@g.us") || remoteJid === "status@broadcast" || remoteJid.endsWith("@lid")) continue;
+
+    const phone = extractPhoneFromRemoteJid(remoteJid);
+    if (!phone || !/^\d{8,15}$/.test(phone)) continue;
+
+    const pushName = typeof c.pushName === "string" ? c.pushName.trim() : null;
+    const profilePicUrl = typeof c.profilePicUrl === "string" && (c.profilePicUrl as string).startsWith("http") ? c.profilePicUrl as string : null;
+
+    if (!pushName && !profilePicUrl) continue;
+
+    const { data: existingChat } = await supabase
+      .from("chats")
+      .select("id, contact_name, profile_pic")
+      .eq("phone", phone)
+      .maybeSingle();
+
+    if (!existingChat) continue;
+
+    const updatePayload: Record<string, unknown> = {};
+
+    // Atualizar nome se o atual é vazio ou igual ao telefone
+    if (pushName) {
+      const currentName = (existingChat.contact_name ?? "").trim();
+      const normalizedCurrentName = currentName.replace(/\D/g, "");
+      if (!currentName || normalizedCurrentName === phone) {
+        updatePayload.contact_name = pushName;
+      }
+    }
+
+    // Atualizar foto de perfil
+    if (profilePicUrl) {
+      updatePayload.profile_pic = profilePicUrl;
+    }
+
+    if (Object.keys(updatePayload).length > 0) {
+      await supabase.from("chats").update(updatePayload).eq("id", existingChat.id);
+      console.log(`[CONTACTS] Atualizado chat ${existingChat.id} (${phone}):`, Object.keys(updatePayload).join(", "));
+    }
+  }
+}
+
 export async function processWebhookBody(body: Record<string, unknown>, requestUrl = "") {
   try {
     const event = (body.event ?? body.type ?? "") as string;
@@ -561,13 +694,21 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
       return NextResponse.json({ status: "ignored", reason: "history_restore_disabled" });
     }
 
-    // Ignorar eventos de chats e contatos (não precisamos processar)
+    // Ignorar eventos de chats
     const isChatsEvent = ["CHATS_SET", "CHATS_UPSERT", "CHATS_UPDATE"].includes(eventUpper) ||
       ["chats.set", "chats.upsert", "chats.update"].includes(event);
-    const isContactsEvent = ["CONTACTS_UPSERT", "CONTACTS_UPDATE"].includes(eventUpper) ||
-      ["contacts.upsert", "contacts.update"].includes(event);
-    if (isChatsEvent || isContactsEvent) {
-      return NextResponse.json({ status: "ignored", reason: "chats_or_contacts_event_passive" });
+    if (isChatsEvent) {
+      return NextResponse.json({ status: "ignored", reason: "chats_event_passive" });
+    }
+
+    // Processar CONTACTS_UPSERT/UPDATE para atualizar nomes e fotos de perfil
+    const isContactsEvent = ["CONTACTS_UPSERT", "CONTACTS_UPDATE", "CONTACTS_SET"].includes(eventUpper) ||
+      ["contacts.upsert", "contacts.update", "contacts.set"].includes(event);
+    if (isContactsEvent) {
+      handleContactsEvent(body).catch((e) =>
+        console.error("[WEBHOOK] Erro ao processar contacts event:", e)
+      );
+      return NextResponse.json({ status: "processed", event: "contacts_sync" });
     }
 
     const rawMessages = normalizeMessagesFromWebhook(body);
@@ -631,8 +772,6 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
           },
         }
       );
-
-      require('fs').writeFileSync('debug_webhook.json', JSON.stringify(message, null, 2));
 
       // ── COPILOTO PROATIVO ────────────────────────────────────────────────
       // Dispara automaticamente quando detecta momento crítico na conversa.

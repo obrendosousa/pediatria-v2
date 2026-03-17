@@ -112,7 +112,7 @@ export function FollowUp({ patientId, patientData, onRefresh, appointmentId }: A
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
 
         {/* RETORNO (rich text) */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa]">RETORNO</h2>
             <div className="flex gap-2">
@@ -134,7 +134,7 @@ export function FollowUp({ patientId, patientData, onRefresh, appointmentId }: A
         </div>
 
         {/* FEZ EXAMES */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <label className="block text-xs font-medium text-slate-700 dark:text-[#d4d4d8] mb-2">
             FEZ EXAMES
           </label>
@@ -153,7 +153,7 @@ export function FollowUp({ patientId, patientData, onRefresh, appointmentId }: A
         </div>
 
         {/* CONDUTAS (rich text) */}
-        <div className="bg-white dark:bg-[#0a0a0c] rounded-lg border border-slate-200 dark:border-[#2e2e33] p-4">
+        <div className="bg-white dark:bg-[#08080b] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-[#fafafa]">CONDUTAS?</h2>
             <div className="flex gap-2">
@@ -175,7 +175,7 @@ export function FollowUp({ patientId, patientData, onRefresh, appointmentId }: A
         </div>
 
         {/* Botão Salvar */}
-        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#2e2e33] -mx-4 px-4">
+        <div className="sticky bottom-0 bg-slate-50/95 dark:bg-[#0b141a]/95 backdrop-blur-sm py-3 border-t border-slate-200 dark:border-[#3d3d48] -mx-4 px-4">
           <div className="flex justify-end items-center gap-3">
             {saveSuccess && (
               <span className="text-xs text-green-600 dark:text-green-400">Salvo com sucesso!</span>

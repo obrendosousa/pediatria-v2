@@ -13,7 +13,7 @@ export default function DietasPage() {
       pageTitle="Modelos de Dietas"
       basePath="/atendimento/cadastros/modelos/dietas"
       entityName="dieta"
-      icon={<Apple className="w-5 h-5 text-teal-600" />}
+      icon={<Apple className="w-5 h-5 text-blue-600" />}
     />
   );
 }

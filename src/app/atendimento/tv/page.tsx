@@ -144,7 +144,7 @@ export default function TVPanelPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-8 py-5 bg-black/20 border-b border-white/10">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-400 flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg">
             <Stethoscope className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -165,9 +165,9 @@ export default function TVPanelPage() {
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in-0 duration-300">
           <div className="text-center animate-in zoom-in-95 duration-500">
             <div className="flex items-center justify-center gap-3 mb-6">
-              <Volume2 className="w-10 h-10 text-teal-400 animate-pulse" />
+              <Volume2 className="w-10 h-10 text-blue-400 animate-pulse" />
             </div>
-            <p className="text-2xl text-teal-400 font-medium mb-4 uppercase tracking-widest">Chamando</p>
+            <p className="text-2xl text-blue-400 font-medium mb-4 uppercase tracking-widest">Chamando</p>
             <p className="text-6xl font-bold mb-4 animate-pulse">
               {callingPatient.patient_name || 'Paciente'}
             </p>
@@ -180,7 +180,7 @@ export default function TVPanelPage() {
               {[0, 1, 2].map(i => (
                 <div
                   key={i}
-                  className="w-3 h-3 rounded-full bg-teal-400"
+                  className="w-3 h-3 rounded-full bg-blue-400"
                   style={{ animation: `pulse 1.5s ease-in-out ${i * 0.3}s infinite` }}
                 />
               ))}
@@ -196,7 +196,7 @@ export default function TVPanelPage() {
           <div className="flex items-center gap-3 mb-4">
             <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
             <h2 className="text-xl font-bold uppercase tracking-wider text-slate-300">Fila de Espera</h2>
-            <span className="ml-auto text-3xl font-bold text-teal-400">{waiting.length}</span>
+            <span className="ml-auto text-3xl font-bold text-blue-400">{waiting.length}</span>
           </div>
 
           <div className="flex-1 overflow-hidden">
@@ -211,12 +211,12 @@ export default function TVPanelPage() {
                     key={apt.id}
                     className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
                       idx === 0
-                        ? 'bg-teal-500/20 border-teal-500/50 shadow-lg shadow-teal-500/10'
+                        ? 'bg-blue-500/20 border-blue-500/50 shadow-lg shadow-blue-500/10'
                         : 'bg-white/5 border-white/10'
                     }`}
                   >
                     <span className={`text-2xl font-bold w-12 text-center ${
-                      idx === 0 ? 'text-teal-400' : 'text-slate-500'
+                      idx === 0 ? 'text-blue-400' : 'text-slate-500'
                     }`}>
                       {idx + 1}º
                     </span>
@@ -303,7 +303,7 @@ export default function TVPanelPage() {
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-              <p className="text-3xl font-bold text-teal-400">{waiting.length + called.length}</p>
+              <p className="text-3xl font-bold text-blue-400">{waiting.length + called.length}</p>
               <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Aguardando</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">

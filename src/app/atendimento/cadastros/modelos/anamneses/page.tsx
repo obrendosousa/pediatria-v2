@@ -58,9 +58,9 @@ export default function AnamnesesPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white dark:bg-[#0a0a0c]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
         <div className="flex items-center gap-2">
-          <ClipboardList className="w-5 h-5 text-teal-600" />
+          <ClipboardList className="w-5 h-5 text-blue-600" />
           <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Modelos de Anamnese</h1>
         </div>
         <div className="flex items-center gap-3">
@@ -70,12 +70,12 @@ export default function AnamnesesPage() {
             onClick={() => { setOnlyMine(prev => !prev); setPage(0); }}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
               onlyMine
-                ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300'
-                : 'bg-white dark:bg-[#18181b] border-slate-200 dark:border-[#2e2e33] text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/5'
+                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                : 'bg-white dark:bg-[#1c1c21] border-slate-200 dark:border-[#3d3d48] text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/5'
             }`}
           >
             <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              onlyMine ? 'bg-teal-600' : 'bg-slate-300 dark:bg-gray-600'
+              onlyMine ? 'bg-blue-600' : 'bg-slate-300 dark:bg-gray-600'
             }`}>
               <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform shadow-sm ${
                 onlyMine ? 'translate-x-[18px]' : 'translate-x-[3px]'
@@ -86,7 +86,7 @@ export default function AnamnesesPage() {
 
           <button
             onClick={() => router.push('/atendimento/cadastros/modelos/anamneses/criar')}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-md transition-all active:scale-95"
           >
             <Plus className="w-4 h-4" />
             ADICIONAR MODELO

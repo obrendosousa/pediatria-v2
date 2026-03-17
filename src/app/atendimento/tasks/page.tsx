@@ -14,7 +14,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 const supabase = createSchemaClient('atendimento');
 
 const NOTES_COLORS: Record<string, string> = {
-  white: 'bg-white border-slate-200 text-slate-800 dark:bg-[#18181b] dark:border-gray-600 dark:text-[#fafafa]',
+  white: 'bg-white border-slate-200 text-slate-800 dark:bg-[#1c1c21] dark:border-gray-600 dark:text-[#fafafa]',
   yellow: 'bg-yellow-100 border-yellow-200 text-yellow-900 dark:bg-yellow-900/20 dark:border-yellow-700/50 dark:text-yellow-200',
   rose: 'bg-rose-100 border-rose-200 text-rose-900 dark:bg-rose-900/20 dark:border-rose-700/50 dark:text-rose-200',
   blue: 'bg-blue-100 border-blue-200 text-blue-900 dark:bg-blue-900/20 dark:border-blue-700/50 dark:text-blue-200',
@@ -287,7 +287,7 @@ export default function AtendimentoTasksPage() {
           )}
         </div>
         <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-          <button onClick={() => handleToggleStatus(task.id, task.status, false, false)} className={`p-1.5 rounded-lg hover:bg-black/10 transition-colors ${task.status === 'done' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300' : 'text-slate-400 dark:text-[#a1a1aa]'}`}>
+          <button onClick={() => handleToggleStatus(task.id, task.status, false, false)} className={`p-1.5 rounded-lg hover:bg-black/10 transition-colors ${task.status === 'done' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300' : 'text-slate-400 dark:text-[#a1a1aa]'}`}>
             {task.status === 'done' ? <Undo2 className="w-4 h-4" /> : <Check className="w-4 h-4" />}
           </button>
           <button onClick={() => requestDelete(task.id)} className="p-1.5 text-slate-300 dark:text-[#71717a] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
@@ -299,7 +299,7 @@ export default function AtendimentoTasksPage() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300">
+    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#08080b] overflow-hidden transition-colors duration-300">
       <style jsx global>{`
         @keyframes shatter { 0% { transform: scale(1) rotate(0deg); opacity: 1; } 100% { transform: scale(0) rotate(10deg); opacity: 0; } }
         @keyframes victory-card { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(0) translateY(-50px); opacity: 0; } }
@@ -318,9 +318,9 @@ export default function AtendimentoTasksPage() {
       )}
 
       {/* Header */}
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0a0a0c] border-b border-slate-100 dark:border-[#27272a] shadow-sm z-20 transition-colors">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#08080b] border-b border-slate-100 dark:border-[#2d2d36] shadow-sm z-20 transition-colors">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-300 rounded-lg"><CheckSquare className="w-5 h-5" /></div>
+          <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 rounded-lg"><CheckSquare className="w-5 h-5" /></div>
           <div>
             <h1 className="text-base font-bold text-slate-800 dark:text-[#fafafa] leading-none">Minhas Tarefas</h1>
             <p className="text-xs text-slate-500 dark:text-[#a1a1aa] mt-0.5">Organize seu dia</p>
@@ -330,8 +330,8 @@ export default function AtendimentoTasksPage() {
 
       <div className="flex-1 flex flex-col sm:flex-row gap-4 sm:gap-6 p-3 sm:p-6 overflow-hidden">
         {/* COLUNA 1: AGENDA */}
-        <div className="flex-1 flex flex-col bg-white dark:bg-[#0a0a0c] rounded-xl sm:rounded-2xl border border-slate-200 dark:border-[#2e2e33] shadow-sm overflow-hidden relative transition-colors">
-          <div className="p-3 sm:p-4 border-b border-slate-100 dark:border-[#2e2e33] flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
+        <div className="flex-1 flex flex-col bg-white dark:bg-[#08080b] rounded-xl sm:rounded-2xl border border-slate-200 dark:border-[#3d3d48] shadow-sm overflow-hidden relative transition-colors">
+          <div className="p-3 sm:p-4 border-b border-slate-100 dark:border-[#3d3d48] flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
             <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
               <button onClick={() => changeDate(-1)} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-500 dark:text-[#a1a1aa] transition-colors"><ChevronLeft className="w-4 h-4" /></button>
               <h2 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-[#fafafa] capitalize min-w-[120px] sm:min-w-[140px] text-center">
@@ -342,15 +342,15 @@ export default function AtendimentoTasksPage() {
               <button onClick={() => changeDate(1)} className="p-1 hover:bg-slate-100 dark:hover:bg-white/10 rounded text-slate-500 dark:text-[#a1a1aa] transition-colors"><ChevronRight className="w-4 h-4" /></button>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
-              <div className="flex bg-slate-100 dark:bg-[#18181b] p-1 rounded-lg">
+              <div className="flex bg-slate-100 dark:bg-[#1c1c21] p-1 rounded-lg">
                 <button onClick={() => setViewMode('day')} className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs font-bold transition-all ${viewMode === 'day' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-400 dark:text-[#71717a]'}`}>Dia</button>
                 <button onClick={() => setViewMode('month')} className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs font-bold transition-all ${viewMode === 'month' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-400 dark:text-[#71717a]'}`}>Mês</button>
               </div>
-              <button onClick={() => { setModalType('general'); setModalOpen(true); }} className="bg-teal-600 hover:bg-teal-700 text-white px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold shadow-md flex items-center gap-1 transition-colors"><Plus className="w-3 h-3" /> <span className="hidden sm:inline">Tarefa</span></button>
+              <button onClick={() => { setModalType('general'); setModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold shadow-md flex items-center gap-1 transition-colors"><Plus className="w-3 h-3" /> <span className="hidden sm:inline">Tarefa</span></button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-[#111b21] relative transition-colors">
+          <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-[#131316] relative transition-colors">
             {viewMode === 'month' && (
               <div className="p-3 sm:p-4 h-full flex flex-col">
                 <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
@@ -365,15 +365,15 @@ export default function AtendimentoTasksPage() {
                     const dayTasks = myTasks.filter(t => t.due_date === d.toISOString().split('T')[0]);
                     const taskCount = dayTasks.length;
                     return (
-                      <div key={`day-${d.getTime()}`} onClick={() => { setCurrentDate(d); setViewMode('day'); }} className={`aspect-square min-h-[60px] sm:min-h-[80px] p-1.5 sm:p-2 border rounded-lg flex flex-col gap-1 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md ${isToday ? 'border-teal-400 bg-teal-50 dark:bg-teal-900/30 dark:border-teal-600 shadow-sm' : 'border-slate-200 dark:border-[#2e2e33] dark:bg-[#18181b] hover:border-teal-300 dark:hover:border-teal-600 bg-white'}`}>
+                      <div key={`day-${d.getTime()}`} onClick={() => { setCurrentDate(d); setViewMode('day'); }} className={`aspect-square min-h-[60px] sm:min-h-[80px] p-1.5 sm:p-2 border rounded-lg flex flex-col gap-1 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md ${isToday ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-600 shadow-sm' : 'border-slate-200 dark:border-[#3d3d48] dark:bg-[#1c1c21] hover:border-blue-300 dark:hover:border-blue-600 bg-white'}`}>
                         <div className="flex items-center justify-between">
-                          <span className={`text-xs sm:text-sm font-bold leading-none ${isToday ? 'text-teal-600 dark:text-teal-300' : 'text-slate-700 dark:text-[#d4d4d8]'}`}>{d.getDate()}</span>
-                          {taskCount > 0 && <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-teal-600 text-white dark:bg-teal-500' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300'}`}>{taskCount}</span>}
+                          <span className={`text-xs sm:text-sm font-bold leading-none ${isToday ? 'text-blue-600 dark:text-blue-300' : 'text-slate-700 dark:text-[#d4d4d8]'}`}>{d.getDate()}</span>
+                          {taskCount > 0 && <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isToday ? 'bg-blue-600 text-white dark:bg-blue-500' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'}`}>{taskCount}</span>}
                         </div>
                         {taskCount > 0 && (
                           <div className="flex gap-0.5 flex-wrap mt-auto">
-                            {dayTasks.slice(0, 3).map(t => <div key={t.id} className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-teal-400 dark:bg-teal-500" title={t.title} />)}
-                            {taskCount > 3 && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-teal-300 dark:bg-teal-700 opacity-50" />}
+                            {dayTasks.slice(0, 3).map(t => <div key={t.id} className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-400 dark:bg-blue-500" title={t.title} />)}
+                            {taskCount > 3 && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-300 dark:bg-blue-700 opacity-50" />}
                           </div>
                         )}
                       </div>
@@ -386,7 +386,7 @@ export default function AtendimentoTasksPage() {
             {viewMode === 'day' && (
               <div className="pb-10 min-h-full">
                 {tasksByHour['none'] && tasksByHour['none'].length > 0 && (
-                  <div className="p-4 border-b border-slate-100 dark:border-[#2e2e33] bg-white/50 dark:bg-[#202c33]/50 mb-2">
+                  <div className="p-4 border-b border-slate-100 dark:border-[#3d3d48] bg-white/50 dark:bg-[#1c1c21]/50 mb-2">
                     <h4 className="text-[10px] font-bold uppercase text-slate-400 dark:text-[#71717a] mb-2">Sem Horário Definido</h4>
                     <div className="space-y-2">{tasksByHour['none'].map(task => renderTaskCard(task))}</div>
                   </div>
@@ -395,14 +395,14 @@ export default function AtendimentoTasksPage() {
                   const tasksInThisHour = tasksByHour[hour] || [];
                   const isNow = isCurrentHour(hour);
                   return (
-                    <div key={hour} className="flex min-h-[100px] border-b border-slate-100 dark:border-[#27272a] relative group">
+                    <div key={hour} className="flex min-h-[100px] border-b border-slate-100 dark:border-[#2d2d36] relative group">
                       {isNow && (
                         <div className="absolute left-0 right-0 border-t-2 border-red-500 z-10 pointer-events-none flex items-center" style={{ top: getCurrentLinePosition() }}>
                           <div className="w-3 h-3 bg-red-500 rounded-full -ml-1.5" />
                         </div>
                       )}
-                      <div className="w-16 border-r border-slate-100 dark:border-[#27272a] py-2 text-right pr-3 text-xs font-bold text-slate-400 dark:text-[#71717a] bg-white/50 dark:bg-[#0a0a0c]">{hour}:00</div>
-                      <div className="flex-1 p-2 bg-white/20 dark:bg-[#111b21] hover:bg-white/60 dark:hover:bg-[#202c33] transition-colors relative">
+                      <div className="w-16 border-r border-slate-100 dark:border-[#2d2d36] py-2 text-right pr-3 text-xs font-bold text-slate-400 dark:text-[#71717a] bg-white/50 dark:bg-[#08080b]">{hour}:00</div>
+                      <div className="flex-1 p-2 bg-white/20 dark:bg-[#131316] hover:bg-white/60 dark:hover:bg-[#1c1c21] transition-colors relative">
                         <div className="space-y-2 relative z-0">{tasksInThisHour.map(task => renderTaskCard(task))}</div>
                       </div>
                     </div>
@@ -414,16 +414,16 @@ export default function AtendimentoTasksPage() {
         </div>
 
         {/* COLUNA 2: MURAL */}
-        <div className="w-full sm:w-80 bg-slate-50 dark:bg-[#0a0a0c] rounded-xl sm:rounded-2xl border border-slate-200 dark:border-[#2e2e33] flex flex-col overflow-hidden transition-colors">
-          <div className="p-4 border-b border-slate-200 dark:border-[#2e2e33] bg-white/50 dark:bg-[#202c33] flex flex-col gap-3">
+        <div className="w-full sm:w-80 bg-slate-50 dark:bg-[#08080b] rounded-xl sm:rounded-2xl border border-slate-200 dark:border-[#3d3d48] flex flex-col overflow-hidden transition-colors">
+          <div className="p-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white/50 dark:bg-[#1c1c21] flex flex-col gap-3">
             <div className="flex justify-between items-center">
               <h3 className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wider flex items-center gap-2"><StickyNote className="w-4 h-4" /> Mural</h3>
-              <div className="flex bg-slate-200 dark:bg-[#111b21] p-0.5 rounded-lg">
+              <div className="flex bg-slate-200 dark:bg-[#131316] p-0.5 rounded-lg">
                 <button onClick={() => setNotesFilter('active')} className={`text-[10px] font-bold px-2 py-0.5 rounded transition-all ${notesFilter === 'active' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-500 dark:text-[#71717a]'}`}>Ativos</button>
                 <button onClick={() => setNotesFilter('done')} className={`text-[10px] font-bold px-2 py-0.5 rounded transition-all ${notesFilter === 'done' ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white' : 'text-slate-500 dark:text-[#71717a]'}`}>Feitos</button>
               </div>
             </div>
-            <button onClick={() => { setModalType('sticky_note'); setModalOpen(true); }} className="w-full bg-white dark:bg-[#18181b] border border-slate-200 dark:border-gray-600 hover:border-teal-300 dark:hover:border-teal-500/50 text-teal-500 px-3 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-all"><Plus className="w-3 h-3" /> Criar Nota Rápida</button>
+            <button onClick={() => { setModalType('sticky_note'); setModalOpen(true); }} className="w-full bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500/50 text-blue-600 px-3 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-all"><Plus className="w-3 h-3" /> Criar Nota Rápida</button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar relative" ref={listRef}>
@@ -440,7 +440,7 @@ export default function AtendimentoTasksPage() {
 
               return (
                 <div key={note.id} className={`${isCompleting ? 'victory-anim' : ''} ${isNoteDeleting ? 'shatter-anim' : ''}`}>
-                  {isDragging && dropIndex === index && <div className="h-1 bg-teal-500 rounded-full my-2 animate-pulse shadow-[0_0_10px_rgba(20,184,166,0.5)]" />}
+                  {isDragging && dropIndex === index && <div className="h-1 bg-blue-500 rounded-full my-2 animate-pulse shadow-[0_0_10px_rgba(20,184,166,0.5)]" />}
                   <div
                     ref={(el) => { itemRefs.current[index] = el; }}
                     onMouseDown={(e) => notesFilter === 'active' && handleMouseDown(e, note, index)}
@@ -481,7 +481,7 @@ export default function AtendimentoTasksPage() {
                 </div>
               );
             })}
-            {isDragging && dropIndex === visibleNotes.length && <div className="h-1 bg-teal-500 rounded-full my-2 animate-pulse shadow-[0_0_10px_rgba(20,184,166,0.5)]" />}
+            {isDragging && dropIndex === visibleNotes.length && <div className="h-1 bg-blue-500 rounded-full my-2 animate-pulse shadow-[0_0_10px_rgba(20,184,166,0.5)]" />}
           </div>
         </div>
       </div>

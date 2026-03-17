@@ -1,4 +1,5 @@
 // Tipos para o sistema de navegação de atendimento (estilo iClinic)
+import React from 'react';
 
 export type AttendanceTabKey =
   | 'overview'
@@ -35,5 +36,18 @@ export interface AttendanceScreenProps {
 export interface AttendanceMenuItem {
   key: AttendanceTabKey;
   label: string;
-  icon?: string; // Nome do ícone do lucide-react (opcional)
+  icon?: string;
+}
+
+// ─── Config-driven por módulo ───
+
+export type SidebarEntry =
+  | { type: 'section'; label: string }
+  | { type: 'item'; key: AttendanceTabKey; label: string; icon: React.ElementType }
+  | { type: 'submenu'; label: string; icon: React.ElementType; children: { key: AttendanceTabKey; label: string; icon: React.ElementType }[] };
+
+export interface AttendanceModuleConfig {
+  defaultTab: AttendanceTabKey;
+  sidebar: SidebarEntry[];
+  screens: Partial<Record<AttendanceTabKey, React.ComponentType<AttendanceScreenProps>>>;
 }

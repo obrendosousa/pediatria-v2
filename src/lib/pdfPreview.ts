@@ -8,7 +8,7 @@ export async function generatePdfPreview(pdfSource: string | File): Promise<Blob
 
     // Configura o worker via CDN (compatível com Next.js client)
     pdfjsLib.GlobalWorkerOptions.workerSrc =
-      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
     let loadingTask;
     if (typeof pdfSource === 'string') {

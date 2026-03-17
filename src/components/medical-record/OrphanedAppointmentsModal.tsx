@@ -152,9 +152,9 @@ export default function OrphanedAppointmentsModal({
   return (
     <>
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#0a0a0c] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-[#08080b] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#27272a]">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-[#2d2d36]">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
               <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
@@ -186,7 +186,7 @@ export default function OrphanedAppointmentsModal({
             return (
               <div
                 key={apt.id}
-                className="border border-slate-200 dark:border-[#2e2e33] rounded-xl p-4 bg-slate-50/50 dark:bg-[#111b21]"
+                className="border border-slate-200 dark:border-[#3d3d48] rounded-xl p-4 bg-slate-50/50 dark:bg-[#111b21]"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -258,7 +258,7 @@ export default function OrphanedAppointmentsModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-200 dark:border-[#27272a] bg-slate-50/50 dark:bg-[#111b21]">
+        <div className="p-6 border-t border-slate-200 dark:border-[#2d2d36] bg-slate-50/50 dark:bg-[#111b21]">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
