@@ -336,7 +336,24 @@ export async function POST(req: Request) {
       } catch (e) { /* Erro não crítico */ }
     };
 
-    if (type === 'sticker' && mediaUrl) {
+    if (type === 'contact' && options?.contact) {
+      await setPresence('composing');
+      endpoint = '/message/sendContact/{instance}';
+      // Suporta single contact e array de contatos
+      const contactList = Array.isArray(options.contact) ? options.contact : [options.contact];
+      apiBody = {
+        number: phone,
+        contact: contactList.map((c: any) => ({
+          fullName: c.fullName || c.displayName || '',
+          wuid: String(c.wuid || c.phoneNumber || c.phone || '').replace(/\D/g, ''),
+          phoneNumber: c.phoneNumber || c.phone || '',
+          ...(c.organization ? { organization: c.organization } : {}),
+          ...(c.email ? { email: c.email } : {}),
+          ...(c.url ? { url: c.url } : {}),
+        })),
+      };
+    }
+    else if (type === 'sticker' && mediaUrl) {
       await setPresence('composing');
       endpoint = '/message/sendSticker/{instance}';
       apiBody = { number: phone, sticker: mediaUrl };
@@ -459,6 +476,7 @@ export async function POST(req: Request) {
     if (type === 'image') memoryContent = `[IMAGEM ENVIADA] ${message || ''} URL: ${mediaUrl}`;
     if (type === 'video') memoryContent = `[VÍDEO ENVIADO] ${message || ''} URL: ${mediaUrl}`;
     if (type === 'document') memoryContent = `[DOCUMENTO ENVIADO] ${message || ''} URL: ${mediaUrl}`;
+    if (type === 'contact') memoryContent = `[CONTATO ENVIADO] ${message || ''}`;
 
     await supabase.from('n8n_chat_histories').insert({
       session_id: phone,

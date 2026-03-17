@@ -242,7 +242,12 @@
       "WebFetch(domain:medium.com)",
       "Read(//c/tmp/**)",
       "Bash(gh api:*)",
-      "WebFetch(domain:docs.evoapicloud.com)"
+      "WebFetch(domain:docs.evoapicloud.com)",
+      "WebFetch(domain:www.postman.com)",
+      "Bash(grep -r \"contact.*UI\\\\|contact.*info\\\\|sender.*contact\" /c/Users/brend/Documents/pediatria-v2/src/components/chat --include=*.tsx -l)",
+      "Bash(grep -n \"onSendSticker\\\\|message_type.*sticker\" /c/Users/brend/Documents/pediatria-v2/src/components/chat/*.tsx)",
+      "Bash(sed -i -e 's/dark:bg-\\\\[#111118\\\\]/dark:bg-[#050507]/g' \"$f\")",
+      "Bash(echo \"Fixed background: $f\")"
     ]
   },
   "hooks": {

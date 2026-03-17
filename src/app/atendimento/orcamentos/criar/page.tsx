@@ -171,7 +171,7 @@ export default function CriarOrcamentoPage() {
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#252530] bg-white dark:bg-[#111118]">
         <button
           onClick={() => router.push('/atendimento/orcamentos')}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -192,7 +192,7 @@ export default function CriarOrcamentoPage() {
         <div className="max-w-4xl mx-auto space-y-6">
 
           {/* ─── Seção: Informações ─── */}
-          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#111118] rounded-xl border border-slate-200 dark:border-[#252530] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <Stethoscope className="w-4 h-4 text-blue-600" />
               Informações do Orçamento
@@ -225,12 +225,12 @@ export default function CriarOrcamentoPage() {
                       value={patientSearch}
                       onChange={e => setPatientSearch(e.target.value)}
                       placeholder="Buscar paciente por nome ou telefone..."
-                      className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                     {patientLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-600 animate-spin" />}
 
                     {patientDropdownOpen && patientResults.length > 0 && (
-                      <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl shadow-xl">
+                      <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-[#1a1a22] border border-slate-200 dark:border-[#252530] rounded-xl shadow-xl">
                         {patientResults.map(p => (
                           <button
                             key={p.id}
@@ -262,7 +262,7 @@ export default function CriarOrcamentoPage() {
                   <select
                     value={selectedDoctorId ?? ''}
                     onChange={e => setSelectedDoctorId(e.target.value ? Number(e.target.value) : null)}
-                    className="w-full pl-10 pr-8 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none cursor-pointer"
+                    className="w-full pl-10 pr-8 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none cursor-pointer"
                   >
                     <option value="">Selecione o profissional...</option>
                     {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -274,7 +274,7 @@ export default function CriarOrcamentoPage() {
           </section>
 
           {/* ─── Seção: Itens do Orçamento ─── */}
-          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#111118] rounded-xl border border-slate-200 dark:border-[#252530] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <Receipt className="w-4 h-4 text-blue-600" />
               Itens do Orçamento
@@ -289,7 +289,7 @@ export default function CriarOrcamentoPage() {
                   value={newProcName}
                   onChange={e => setNewProcName(e.target.value)}
                   placeholder="Nome do procedimento"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
               <div className="col-span-4 md:col-span-2">
@@ -299,7 +299,7 @@ export default function CriarOrcamentoPage() {
                   min={1}
                   value={newSessions}
                   onChange={e => setNewSessions(Math.max(1, Number(e.target.value)))}
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center"
                 />
               </div>
               <div className="col-span-4 md:col-span-3">
@@ -311,7 +311,7 @@ export default function CriarOrcamentoPage() {
                   value={newUnitPrice || ''}
                   onChange={e => setNewUnitPrice(Number(e.target.value))}
                   placeholder="0,00"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right"
                 />
               </div>
               <div className="col-span-4 md:col-span-2">
@@ -326,10 +326,10 @@ export default function CriarOrcamentoPage() {
 
             {/* Tabela de itens */}
             {items.length > 0 ? (
-              <div className="bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
+              <div className="bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#252530] overflow-hidden">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="bg-slate-100 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
+                    <tr className="bg-slate-100 dark:bg-[#1a1a22] border-b border-slate-200 dark:border-[#252530]">
                       <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Procedimento</th>
                       <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-center">Sessões</th>
                       <th className="px-4 py-2.5 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase text-right">Valor unit.</th>
@@ -358,7 +358,7 @@ export default function CriarOrcamentoPage() {
                 </table>
               </div>
             ) : (
-              <div className="text-center py-8 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-dashed border-slate-200 dark:border-[#3d3d48]">
+              <div className="text-center py-8 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-dashed border-slate-200 dark:border-[#252530]">
                 <Receipt className="w-10 h-10 text-slate-300 dark:text-gray-600 mx-auto mb-2" />
                 <p className="text-sm text-slate-400 dark:text-[#71717a]">Nenhum item adicionado.</p>
               </div>
@@ -366,7 +366,7 @@ export default function CriarOrcamentoPage() {
           </section>
 
           {/* ─── Seção: Totalizador ─── */}
-          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
+          <section className="bg-white dark:bg-[#111118] rounded-xl border border-slate-200 dark:border-[#252530] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-blue-600" />
               Totalizador
@@ -376,7 +376,7 @@ export default function CriarOrcamentoPage() {
               {/* Subtotal */}
               <div className="col-span-6 md:col-span-3">
                 <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1 ml-1 block uppercase tracking-wider">Subtotal</label>
-                <div className="px-3 py-2.5 text-sm font-bold text-slate-700 dark:text-gray-200 bg-slate-100 dark:bg-[#15171e] border border-slate-200 dark:border-[#3d3d48] rounded-xl text-right font-mono">
+                <div className="px-3 py-2.5 text-sm font-bold text-slate-700 dark:text-gray-200 bg-slate-100 dark:bg-[#15171e] border border-slate-200 dark:border-[#252530] rounded-xl text-right font-mono">
                   {formatCurrency(subtotal)}
                 </div>
               </div>
@@ -384,7 +384,7 @@ export default function CriarOrcamentoPage() {
               {/* Desconto tipo + valor */}
               <div className="col-span-6 md:col-span-4">
                 <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1 ml-1 block uppercase tracking-wider">Desconto</label>
-                <div className="flex gap-0 border border-slate-200 dark:border-[#3d3d48] rounded-xl overflow-hidden">
+                <div className="flex gap-0 border border-slate-200 dark:border-[#252530] rounded-xl overflow-hidden">
                   <div className="flex bg-slate-100 dark:bg-[#15171e]">
                     <button
                       onClick={() => setDiscountType('%')}
@@ -407,7 +407,7 @@ export default function CriarOrcamentoPage() {
                     value={discountValue || ''}
                     onChange={e => setDiscountValue(Number(e.target.value))}
                     placeholder="0"
-                    className="flex-1 px-3 py-2.5 text-sm bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none text-right"
+                    className="flex-1 px-3 py-2.5 text-sm bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none text-right"
                   />
                 </div>
               </div>
@@ -420,7 +420,7 @@ export default function CriarOrcamentoPage() {
                   min={1}
                   value={installments}
                   onChange={e => setInstallments(Math.max(1, Number(e.target.value)))}
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center"
                 />
               </div>
 
@@ -447,7 +447,7 @@ export default function CriarOrcamentoPage() {
           </section>
 
           {/* ─── Seção: Observações ─── */}
-          <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6">
+          <section className="bg-white dark:bg-[#111118] rounded-xl border border-slate-200 dark:border-[#252530] p-6">
             <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider">
               Observações
             </label>
@@ -456,14 +456,14 @@ export default function CriarOrcamentoPage() {
               onChange={e => setNotes(e.target.value)}
               rows={3}
               placeholder="Observações adicionais sobre o orçamento..."
-              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
             />
           </section>
         </div>
       </div>
 
       {/* Footer fixo */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#252530] bg-white dark:bg-[#111118] flex items-center justify-end gap-3">
         <button
           onClick={() => router.push('/atendimento/orcamentos')}
           className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"

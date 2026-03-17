@@ -33,7 +33,7 @@ export default function HistoricoAgendamentosPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-[#16171c]">
+      <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-[#050507]">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
@@ -41,7 +41,7 @@ export default function HistoricoAgendamentosPage() {
 
   if (!patientId || isNaN(patientId)) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-slate-50 dark:bg-[#16171c] text-slate-500 dark:text-[#a1a1aa]">
+      <div className="flex flex-col items-center justify-center h-screen bg-slate-50 dark:bg-[#050507] text-slate-500 dark:text-[#a1a1aa]">
         <p className="text-sm">Paciente não encontrado.</p>
         <button onClick={() => router.back()} className="mt-3 text-xs text-blue-600 hover:underline">Voltar</button>
       </div>
@@ -49,9 +49,9 @@ export default function HistoricoAgendamentosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#16171c] transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#050507] transition-colors">
       {/* Header */}
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#08080b] border-b border-slate-100 dark:border-[#2d2d36] shadow-sm">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#111118] border-b border-slate-100 dark:border-[#1e1e28] shadow-sm">
         <div className="flex items-center gap-3">
           <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 transition-colors">
             <ArrowLeft className="w-5 h-5" />

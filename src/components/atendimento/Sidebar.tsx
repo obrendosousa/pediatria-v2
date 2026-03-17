@@ -238,7 +238,7 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
 
   return (
     <>
-      <div className="w-[320px] min-w-[260px] md:w-[380px] lg:w-[400px] shrink-0 flex flex-col border-r border-slate-200 dark:border-[#2d2d36] bg-white dark:bg-[#131316] h-full relative z-10 transition-colors duration-300">
+      <div className="w-[320px] min-w-[260px] md:w-[380px] lg:w-[400px] shrink-0 flex flex-col border-r border-slate-200 dark:border-[#1e1e28] bg-white dark:bg-[#0e0e14] h-full relative z-10 transition-colors duration-300">
 
         {/* --- MODAIS --- */}
         <TagsManager
@@ -291,8 +291,8 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
 
         {/* 1. MODO ARQUIVADOS */}
         {isViewingArchived ? (
-          <div className="flex flex-col animate-in fade-in duration-200 bg-[#F8FAFC] dark:bg-[#131316]">
-            <div className="h-[60px] flex items-center px-4 gap-4 border-b border-gray-200/50 dark:border-[#2d2d36]">
+          <div className="flex flex-col animate-in fade-in duration-200 bg-[#F8FAFC] dark:bg-[#0e0e14]">
+            <div className="h-[60px] flex items-center px-4 gap-4 border-b border-gray-200/50 dark:border-[#1e1e28]">
               <button
                 onClick={() => setIsViewingArchived(false)}
                 className="hover:bg-gray-200 dark:hover:bg-white/10 rounded-full p-2 transition-colors -ml-2 text-slate-400 dark:text-[#d4d4d8]"
@@ -301,7 +301,7 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
               </button>
               <h2 className="text-[19px] font-medium text-slate-800 dark:text-[#fafafa]">Arquivadas</h2>
             </div>
-            <div className="py-4 px-8 text-center bg-gray-50/50 dark:bg-transparent border-b border-gray-100 dark:border-[#2d2d36]">
+            <div className="py-4 px-8 text-center bg-gray-50/50 dark:bg-transparent border-b border-gray-100 dark:border-[#1e1e28]">
               <p className="text-[13px] text-slate-400 dark:text-[#a1a1aa] leading-relaxed">
                 Todas as suas conversas arquivadas estão aqui.
               </p>
@@ -333,7 +333,7 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
           /* 4. MODO PADRÃO */
         ) : (
           <>
-            <div className="h-[60px] bg-[#F8FAFC] dark:bg-[#131316] flex items-center justify-between px-4 shrink-0 border-b border-gray-200/60 dark:border-[#2d2d36]">
+            <div className="h-[60px] bg-[#F8FAFC] dark:bg-[#0e0e14] flex items-center justify-between px-4 shrink-0 border-b border-gray-200/60 dark:border-[#1e1e28]">
               <div
                 className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ring-2 ring-transparent hover:ring-blue-200 dark:hover:ring-blue-700"
                 style={!myProfilePic || myProfilePicError ? { backgroundColor: getAvatarColorHex(0) } : {}}
@@ -388,7 +388,7 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
                   </button>
 
                   {isHeaderMenuOpen && (
-                    <div className="absolute right-0 top-12 w-56 bg-white dark:bg-[#1c1c21] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.3)] py-1.5 z-[60] border border-gray-100 dark:border-[#2d2d36] animate-in fade-in zoom-in-95 duration-200 origin-top-right transition-all">
+                    <div className="absolute right-0 top-12 w-56 bg-white dark:bg-[#1a1a22] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.3)] py-1.5 z-[60] border border-gray-100 dark:border-[#1e1e28] animate-in fade-in zoom-in-95 duration-200 origin-top-right transition-all">
                       <button
                         onClick={() => { setIsTagsManagerOpen(true); setIsHeaderMenuOpen(false); }}
                         className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-3 text-[14px] text-slate-800 dark:text-gray-200 cursor-pointer transition-colors"
@@ -404,8 +404,8 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
               </div>
             </div>
 
-            <div className="px-3 py-2 border-b border-gray-100 dark:border-[#2d2d36] bg-white dark:bg-[#131316] relative transition-colors duration-300">
-              <div className="bg-[#F8FAFC] dark:bg-[#08080b] rounded-lg flex items-center px-3.5 py-1.5 h-[36px] transition-colors duration-300 focus-within:ring-2 focus-within:ring-blue-300/50 dark:focus-within:ring-blue-700/50">
+            <div className="px-3 py-2 border-b border-gray-100 dark:border-[#1e1e28] bg-white dark:bg-[#0e0e14] relative transition-colors duration-300">
+              <div className="bg-[#F8FAFC] dark:bg-[#111118] rounded-lg flex items-center px-3.5 py-1.5 h-[36px] transition-colors duration-300 focus-within:ring-2 focus-within:ring-blue-300/50 dark:focus-within:ring-blue-700/50">
                 <Search size={16} className="text-slate-400 dark:text-[#a1a1aa] mr-3 shrink-0" />
                 <input
                   type="text"
@@ -428,13 +428,13 @@ export default function AtendimentoSidebar({ onSelectChat, selectedChatId }: Sid
         )}
 
         {/* --- LISTAGEM --- */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin hover:scrollbar-thumb-gray-300 dark:hover:scrollbar-thumb-gray-600 bg-white dark:bg-[#131316] transition-colors duration-300">
+        <div className="flex-1 overflow-y-auto scrollbar-thin hover:scrollbar-thumb-gray-300 dark:hover:scrollbar-thumb-gray-600 bg-white dark:bg-[#0e0e14] transition-colors duration-300">
 
           {/* BOTÕES DE NAVEGAÇÃO SUPERIORES */}
           {!isViewingArchived && !isSelectionMode && !searchTerm && (
             <div
               onClick={() => setIsViewingArchived(true)}
-              className="flex items-center px-4 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 text-slate-800 dark:text-gray-200 border-b border-gray-100 dark:border-[#2d2d36] transition-colors duration-200"
+              className="flex items-center px-4 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 text-slate-800 dark:text-gray-200 border-b border-gray-100 dark:border-[#1e1e28] transition-colors duration-200"
             >
               <div className="w-8 h-8 rounded-lg bg-blue-50/50 dark:bg-blue-900/20 flex items-center justify-center">
                 <Archive size={16} className="text-blue-600 dark:text-blue-400" />

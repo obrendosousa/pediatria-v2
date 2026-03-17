@@ -163,7 +163,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
   return (
     <div className="flex flex-col h-full">
       {/* Cabeçalho */}
-      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#3d3d48]">
+      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-200 dark:border-[#252530]">
         <div>
           <h2 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Pacientes</h2>
           <p className="text-xs text-slate-400 dark:text-[#71717a] mt-0.5">{totalCount} paciente{totalCount !== 1 ? 's' : ''}</p>
@@ -177,7 +177,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
       </div>
 
       {/* Barra de busca e filtros */}
-      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#2d2d36]">
+      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#1e1e28]">
         {/* Busca */}
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -186,7 +186,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
             value={searchTerm}
             onChange={e => handleSearchChange(e.target.value)}
             placeholder="Buscar por nome, telefone ou CPF..."
-            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
@@ -212,7 +212,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
         <select
           value={pageSize}
           onChange={e => handlePageSizeChange(Number(e.target.value) as PageSize)}
-          className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="px-2 py-1.5 text-xs border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
           <option value={10}>10 / página</option>
           <option value={25}>25 / página</option>
@@ -235,10 +235,10 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
             </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
+          <div className="bg-white dark:bg-[#111118] rounded-xl border border-slate-200 dark:border-[#252530] overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-[#1c1c21] border-b border-slate-200 dark:border-[#3d3d48]">
+                <tr className="bg-slate-50 dark:bg-[#1a1a22] border-b border-slate-200 dark:border-[#252530]">
                   <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase w-16">Reg.</th>
                   <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Nome</th>
                   <th className="px-4 py-3 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Telefone</th>
@@ -322,13 +322,13 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
 
       {/* Paginação */}
       {totalPages > 1 && (
-        <div className="px-6 py-3 border-t border-slate-200 dark:border-[#3d3d48] flex items-center justify-between text-xs text-slate-500 dark:text-[#a1a1aa]">
+        <div className="px-6 py-3 border-t border-slate-200 dark:border-[#252530] flex items-center justify-between text-xs text-slate-500 dark:text-[#a1a1aa]">
           <span>Mostrando {showingFrom} até {showingTo} de {totalCount}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#3d3d48] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#252530] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
               Anterior
             </button>
@@ -343,7 +343,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
                   className={`px-3 py-1.5 rounded-lg border transition-colors ${
                     page === pageNum
                       ? 'bg-blue-600 text-white border-blue-600'
-                      : 'border-slate-200 dark:border-[#3d3d48] hover:bg-slate-50 dark:hover:bg-white/5'
+                      : 'border-slate-200 dark:border-[#252530] hover:bg-slate-50 dark:hover:bg-white/5'
                   }`}
                 >
                   {pageNum + 1}
@@ -353,7 +353,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
             <button
               onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#3d3d48] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#252530] disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
               Próximo
             </button>
@@ -365,7 +365,7 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
       {menuOpenId !== null && menuPosition && (
         <div
           ref={dropdownRef}
-          className="fixed z-50 w-44 bg-white dark:bg-[#1c1c21] rounded-xl shadow-xl border border-slate-200 dark:border-[#3d3d48] py-1 animate-in fade-in-0 zoom-in-95"
+          className="fixed z-50 w-44 bg-white dark:bg-[#1a1a22] rounded-xl shadow-xl border border-slate-200 dark:border-[#252530] py-1 animate-in fade-in-0 zoom-in-95"
           style={{ top: menuPosition.top, left: menuPosition.left }}
         >
           {(() => {

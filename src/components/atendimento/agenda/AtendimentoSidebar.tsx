@@ -12,7 +12,7 @@ export default function AtendimentoSidebar({ currentDate, setCurrentDate }: Prop
 
   return (
     <div className="w-72 flex flex-col gap-4">
-      <div className="bg-white dark:bg-[#08080b] p-5 rounded-2xl border border-slate-100 dark:border-[#2d2d36] shadow-sm transition-colors">
+      <div className="bg-white dark:bg-[#111118] p-5 rounded-2xl border border-slate-100 dark:border-[#1e1e28] shadow-sm transition-colors">
         <div className="flex justify-between items-center mb-4 px-1">
           <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 capitalize">
             {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}

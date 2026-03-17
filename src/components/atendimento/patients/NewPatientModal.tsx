@@ -282,12 +282,12 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
   return (
     <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-all duration-300 ${showModal ? 'bg-black/40 backdrop-blur-sm' : 'bg-transparent invisible'}`}>
       <div className={`
-        bg-white dark:bg-[#08080b] w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform transition-all duration-500
+        bg-white dark:bg-[#111118] w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden transform transition-all duration-500
         ${showModal ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}
       `}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-[#2d2d36] bg-white/80 dark:bg-[#08080b]/90 backdrop-blur-md z-20">
+        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 dark:border-[#1e1e28] bg-white/80 dark:bg-[#111118]/90 backdrop-blur-md z-20">
           <div>
             <h2 className="text-xl font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -309,7 +309,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar com abas */}
-          <aside className="w-56 bg-slate-50/50 dark:bg-[#181a20] border-r border-slate-200/60 dark:border-[#2d2d36] flex flex-col py-4 px-3 gap-1.5 overflow-y-auto">
+          <aside className="w-56 bg-slate-50/50 dark:bg-[#181a20] border-r border-slate-200/60 dark:border-[#1e1e28] flex flex-col py-4 px-3 gap-1.5 overflow-y-auto">
             {tabs.map(t => (
               <NavButton
                 key={t.key}
@@ -323,7 +323,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
           </aside>
 
           {/* Form */}
-          <main className="flex-1 overflow-y-auto bg-white dark:bg-[#08080b] relative scroll-smooth">
+          <main className="flex-1 overflow-y-auto bg-white dark:bg-[#111118] relative scroll-smooth">
             <form
               id="atendimento-patient-form"
               onSubmit={handleSubmit(onSubmit, handleInvalidSubmit)}
@@ -362,14 +362,14 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
                         <button
                           type="button"
                           onClick={() => setValue('sex', 'M')}
-                          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchSex === 'M' ? 'bg-white text-blue-600 shadow-sm dark:bg-[#1c1c21] dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchSex === 'M' ? 'bg-white text-blue-600 shadow-sm dark:bg-[#1a1a22] dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
                           Masculino
                         </button>
                         <button
                           type="button"
                           onClick={() => setValue('sex', 'F')}
-                          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchSex === 'F' ? 'bg-white text-pink-600 shadow-sm dark:bg-[#1c1c21] dark:text-pink-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all shadow-sm ${watchSex === 'F' ? 'bg-white text-pink-600 shadow-sm dark:bg-[#1a1a22] dark:text-pink-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                         >
                           Feminino
                         </button>
@@ -560,7 +560,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100 dark:border-[#2d2d36] bg-white/90 dark:bg-[#08080b]/95 backdrop-blur z-30 flex justify-between items-center">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100 dark:border-[#1e1e28] bg-white/90 dark:bg-[#111118]/95 backdrop-blur z-30 flex justify-between items-center">
           <div className="text-xs text-slate-400 pl-4 hidden md:block">
             <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 mr-1 align-middle">Obrigatório</span>
             Destaque nos campos obrigatórios

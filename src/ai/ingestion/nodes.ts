@@ -186,11 +186,11 @@ export const processInputNode = async (
     content = content || (fileName ? `📄 ${fileName}` : "📄 Documento recebido");
     mediaUrl = (await handleMediaUpload(msg, data.key, data.base64)) ?? undefined;
   } else if (data.messageType === "contactMessage") {
-    type = "text";
+    type = "contact";
     const displayName = msg?.contactMessage?.displayName || "Contato";
     content = `📇 Contato: ${displayName}`;
   } else if (data.messageType === "contactsArrayMessage") {
-    type = "text";
+    type = "contact";
     const contacts = msg?.contactsArrayMessage?.contacts;
     const names = Array.isArray(contacts)
       ? contacts.map((c: any) => c.displayName || "Contato").join(", ")
@@ -286,7 +286,8 @@ export const sessionManagerNode = async (
   const chat = await ensureChatExists(state.phone, state.contact_name, isMe);
 
   // Buscar foto de perfil em background (Evolution API fetchProfilePictureUrl)
-  if (!isMe && !chat.profile_pic && state.phone) {
+  // Tenta sempre que não tiver foto, incluindo retentativas em mensagens subsequentes
+  if (!isMe && state.phone && !chat.profile_pic) {
     fetchAndUpdateProfilePicture(state.phone, chat.id);
   }
 
@@ -305,6 +306,29 @@ export const saveToDbNode = async (
 
   const isMe = state.raw_input.key.fromMe;
 
+  // Extrair dados de contato (vCard) para persistir em tool_data
+  let extraToolData: Record<string, unknown> | undefined;
+  if (state.message_type === "contact") {
+    const rawMsg = state.raw_input.message;
+    const contactMsg = rawMsg?.contactMessage;
+    const contactsArray = rawMsg?.contactsArrayMessage;
+    if (contactMsg) {
+      extraToolData = {
+        contact: {
+          displayName: contactMsg.displayName || "",
+          vcard: contactMsg.vcard || "",
+        },
+      };
+    } else if (contactsArray?.contacts) {
+      extraToolData = {
+        contacts: (contactsArray.contacts as any[]).map((c: any) => ({
+          displayName: c.displayName || "",
+          vcard: c.vcard || "",
+        })),
+      };
+    }
+  }
+
   await saveMessageToDb({
     chat_id: state.chat_id!,
     phone: state.phone,
@@ -316,6 +340,7 @@ export const saveToDbNode = async (
     message_timestamp_iso: state.message_timestamp_iso,
     forwarded: state.is_forwarded === true,
     quoted_info: state.quoted_info ?? undefined,
+    extra_tool_data: extraToolData,
   });
   return {};
 };

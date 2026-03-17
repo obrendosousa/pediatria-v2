@@ -17,7 +17,7 @@ export default function AtendimentoClientDetailPage({ params }: PageProps) {
 
   if (isNaN(patientId)) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f8fafc] dark:bg-[#08080b]">
+      <div className="flex h-screen items-center justify-center bg-[#f8fafc] dark:bg-[#111118]">
         <div className="text-center">
           <p className="text-lg font-medium text-slate-600 dark:text-[#a1a1aa] mb-2">
             ID de paciente inválido
@@ -34,7 +34,7 @@ export default function AtendimentoClientDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#08080b] overflow-hidden">
+    <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#111118] overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
         <PatientProntuarioView
           patientId={patientId}

@@ -21,7 +21,7 @@ export default function AtendimentoChatPage() {
   }, [searchParams]);
 
   return (
-    <div className="flex h-screen min-w-0 bg-[#F8FAFC] dark:bg-[#08080b] overflow-hidden transition-colors duration-300 relative">
+    <div className="flex h-screen min-w-0 bg-[#F8FAFC] dark:bg-[#050507] overflow-hidden transition-colors duration-300 relative">
 
       {/* Sidebar de Chats */}
       <AtendimentoSidebar
@@ -36,7 +36,7 @@ export default function AtendimentoChatPage() {
           <AtendimentoChatWindow chat={selectedChat} />
         ) : (
           // --- DASHBOARD DE STANDBY (tema azul) ---
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden bg-white/40 dark:bg-[#131316] transition-colors duration-300">
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden bg-white/40 dark:bg-[#0e0e14] transition-colors duration-300">
 
             {/* Decoração Sutil (Glow azul) */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-50/30 dark:bg-blue-900/5 rounded-full blur-[100px] pointer-events-none transition-colors duration-500"></div>
@@ -58,7 +58,7 @@ export default function AtendimentoChatPage() {
               {/* Status Compactos */}
               <div className="grid grid-cols-2 gap-3 w-full mb-8">
                 {/* Card IA */}
-                <div className="bg-white dark:bg-[#1c1c21] p-3.5 rounded-xl border border-slate-100 dark:border-[#3d3d48] shadow-sm flex items-center gap-3 hover:border-blue-200 dark:hover:border-blue-500/30 transition-all cursor-default">
+                <div className="bg-white dark:bg-[#1a1a22] p-3.5 rounded-xl border border-slate-100 dark:border-[#252530] shadow-sm flex items-center gap-3 hover:border-blue-200 dark:hover:border-blue-500/30 transition-all cursor-default">
                     <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-300">
                         <Activity className="w-4 h-4"/>
                     </div>
@@ -69,7 +69,7 @@ export default function AtendimentoChatPage() {
                 </div>
 
                 {/* Card Conexão */}
-                <div className="bg-white dark:bg-[#1c1c21] p-3.5 rounded-xl border border-slate-100 dark:border-[#3d3d48] shadow-sm flex items-center gap-3 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all cursor-default">
+                <div className="bg-white dark:bg-[#1a1a22] p-3.5 rounded-xl border border-slate-100 dark:border-[#252530] shadow-sm flex items-center gap-3 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all cursor-default">
                     <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-300">
                         <Zap className="w-4 h-4"/>
                     </div>
@@ -80,7 +80,7 @@ export default function AtendimentoChatPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400 dark:text-[#71717a] bg-white/80 dark:bg-[#1c1c21]/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-100 dark:border-[#3d3d48] transition-colors">
+              <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400 dark:text-[#71717a] bg-white/80 dark:bg-[#1a1a22]/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-100 dark:border-[#252530] transition-colors">
                 <ShieldCheck className="w-3.5 h-3.5" /> Criptografia ponta a ponta
               </div>
 

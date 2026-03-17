@@ -187,6 +187,25 @@ async function handleRevokeMessage(message: EvolutionWebhookData) {
   return true;
 }
 
+/**
+ * Desempacota wrapper types do WhatsApp (viewOnce, ephemeral, documentWithCaption, editedMessage).
+ */
+function unwrapMessage(message: unknown): unknown {
+  if (!message || typeof message !== 'object') return message;
+  const msg = message as Record<string, unknown>;
+  const wrapperKeys = [
+    'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension',
+    'ephemeralMessage', 'documentWithCaptionMessage',
+  ];
+  for (const key of wrapperKeys) {
+    const wrapper = msg[key] as Record<string, unknown> | undefined;
+    if (wrapper?.message) return unwrapMessage(wrapper.message);
+  }
+  const edited = msg.editedMessage as Record<string, unknown> | undefined;
+  if (edited?.message) return unwrapMessage(edited.message);
+  return message;
+}
+
 function detectMessageType(message: unknown): string {
   const msg = (message ?? {}) as Record<string, unknown>;
   if (msg.protocolMessage) return 'protocolMessage';
@@ -196,6 +215,24 @@ function detectMessageType(message: unknown): string {
   if (msg.videoMessage) return 'videoMessage';
   if (msg.stickerMessage) return 'stickerMessage';
   if (msg.documentMessage) return 'documentMessage';
+  if (msg.ptvMessage) return 'ptvMessage';
+  if (msg.contactMessage) return 'contactMessage';
+  if (msg.contactsArrayMessage) return 'contactsArrayMessage';
+  if (msg.locationMessage) return 'locationMessage';
+  if (msg.liveLocationMessage) return 'liveLocationMessage';
+  if (msg.pollCreationMessage || msg.pollCreationMessageV2 || msg.pollCreationMessageV3) return 'pollCreationMessage';
+  if (msg.pollUpdateMessage) return 'pollUpdateMessage';
+  if (msg.buttonsMessage) return 'buttonsMessage';
+  if (msg.buttonsResponseMessage) return 'buttonsResponseMessage';
+  if (msg.listMessage) return 'listMessage';
+  if (msg.listResponseMessage) return 'listResponseMessage';
+  if (msg.templateMessage) return 'templateMessage';
+  if (msg.templateButtonReplyMessage) return 'templateButtonReplyMessage';
+  if (msg.interactiveMessage) return 'interactiveMessage';
+  if (msg.interactiveResponseMessage) return 'interactiveResponseMessage';
+  if (msg.orderMessage) return 'orderMessage';
+  if (msg.productMessage) return 'productMessage';
+  if (msg.groupInviteMessage) return 'groupInviteMessage';
   if (msg.extendedTextMessage || msg.conversation) return 'conversation';
   return 'unknown';
 }
@@ -244,19 +281,45 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
     const keyRaw = (item.key as Record<string, unknown> | undefined) ??
       ({ remoteJid: item.keyRemoteJid ?? item.remoteJid, fromMe: item.keyFromMe ?? item.fromMe, id: item.keyId ?? item.id ?? '' } as Record<string, unknown>);
 
-    const remoteJid = toRemoteJid(keyRaw.remoteJid ?? item.remoteJid ?? item.jid ?? item.from ?? item.sender ?? item.number ?? item.phone);
+    let remoteJid = toRemoteJid(keyRaw.remoteJid ?? item.remoteJid ?? item.jid ?? item.from ?? item.sender ?? item.number ?? item.phone);
     if (!remoteJid || remoteJid === 'status@broadcast') continue;
-    // Ignorar mensagens de grupo
     if (remoteJid.endsWith('@g.us')) continue;
 
-    const messageValue = (item.message ?? item.content ?? {}) as unknown;
+    // --- RESOLUÇÃO DE LID: usar senderPn ou remoteJidAlt (Evolution API v2) ---
+    const senderPn = (keyRaw.senderPn ?? item.senderPn) as string | undefined;
+    const remoteJidAlt = (keyRaw.remoteJidAlt ?? item.remoteJidAlt) as string | undefined;
+    const addressingMode = (keyRaw.addressingMode ?? item.addressingMode) as string | undefined;
+    const participant = (keyRaw.participant ?? item.participant) as string | undefined;
+
+    if (remoteJid.endsWith('@lid')) {
+      if (senderPn && senderPn.includes('@s.whatsapp.net')) {
+        remoteJid = senderPn;
+      } else if (remoteJidAlt && remoteJidAlt.includes('@s.whatsapp.net')) {
+        remoteJid = remoteJidAlt;
+      }
+    }
+
+    // --- DESEMPACOTAR WRAPPERS (viewOnce, ephemeral, documentWithCaption) ---
+    const rawMessageValue = (item.message ?? item.content ?? {}) as unknown;
+    const messageValue = unwrapMessage(rawMessageValue);
+
     const detectedType = detectMessageType(messageValue);
-    const messageTypeValue = (item.messageType ?? item.contentType ?? detectedType) as string;
+    const rawMessageType = (item.messageType ?? item.contentType ?? detectedType) as string;
+    const WRAPPER_TYPES = [
+      'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension',
+      'ephemeralMessage', 'documentWithCaptionMessage', 'editedMessage',
+    ];
+    const messageTypeValue = WRAPPER_TYPES.includes(rawMessageType) ? detectedType : rawMessageType;
+
     const timestampValue = (item.messageTimestamp ?? item.timestamp ?? Date.now()) as number | string;
     const forwarded = isMessageForwarded(messageValue);
 
     normalized.push({
-      key: { remoteJid, fromMe: Boolean(keyRaw.fromMe), id: String(keyRaw.id ?? '') },
+      key: {
+        remoteJid, fromMe: Boolean(keyRaw.fromMe), id: String(keyRaw.id ?? ''),
+        senderPn: senderPn || undefined, remoteJidAlt: remoteJidAlt || undefined,
+        addressingMode: addressingMode || undefined, participant: participant || undefined,
+      },
       pushName: typeof item.pushName === 'string' ? item.pushName : undefined,
       messageType: messageTypeValue,
       message: messageValue,
@@ -333,6 +396,48 @@ function isMessageBeforeIngestionStart(timestamp: number | string | undefined): 
   return ts < (INGESTION_START_TS_MS - INCOMING_CLOCK_SKEW_MS);
 }
 
+/**
+ * Processa eventos CONTACTS_UPSERT/UPDATE para atualizar nomes e fotos no schema atendimento.
+ */
+async function handleContactsEventAtd(body: Record<string, unknown>) {
+  const supabase = getSupabase();
+  const data = body.data as unknown;
+  const contacts: unknown[] = Array.isArray(data) ? data : (data && typeof data === 'object' ? [data] : []);
+
+  for (const contact of contacts) {
+    if (!contact || typeof contact !== 'object') continue;
+    const c = contact as Record<string, unknown>;
+    const remoteJid = String(c.remoteJid ?? c.id ?? '');
+    if (!remoteJid || remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast' || remoteJid.endsWith('@lid')) continue;
+
+    const phone = extractPhoneFromRemoteJid(remoteJid);
+    if (!phone || !/^\d{8,15}$/.test(phone)) continue;
+
+    const pushName = typeof c.pushName === 'string' ? c.pushName.trim() : null;
+    const profilePicUrl = typeof c.profilePicUrl === 'string' && (c.profilePicUrl as string).startsWith('http') ? c.profilePicUrl as string : null;
+    if (!pushName && !profilePicUrl) continue;
+
+    const { data: existingChat } = await supabase
+      .from('chats').select('id, contact_name, profile_pic').eq('phone', phone).maybeSingle();
+    if (!existingChat) continue;
+
+    const updatePayload: Record<string, unknown> = {};
+    if (pushName) {
+      const currentName = (existingChat.contact_name ?? '').trim();
+      const normalizedCurrentName = currentName.replace(/\D/g, '');
+      if (!currentName || normalizedCurrentName === phone) {
+        updatePayload.contact_name = pushName;
+      }
+    }
+    if (profilePicUrl) {
+      updatePayload.profile_pic = profilePicUrl;
+    }
+    if (Object.keys(updatePayload).length > 0) {
+      await supabase.from('chats').update(updatePayload).eq('id', existingChat.id);
+    }
+  }
+}
+
 async function processWebhookBody(body: Record<string, unknown>, requestUrl = '') {
   try {
     const event = (body.event ?? body.type ?? '') as string;
@@ -359,13 +464,21 @@ async function processWebhookBody(body: Record<string, unknown>, requestUrl = ''
       return NextResponse.json({ status: 'ignored', reason: 'history_restore_disabled' });
     }
 
-    // Ignorar eventos de chats e contatos (não precisamos processar)
+    // Ignorar eventos de chats
     const isChatsEvent = ['CHATS_SET', 'CHATS_UPSERT', 'CHATS_UPDATE'].includes(eventUpper) ||
       ['chats.set', 'chats.upsert', 'chats.update'].includes(event);
-    const isContactsEvent = ['CONTACTS_UPSERT', 'CONTACTS_UPDATE'].includes(eventUpper) ||
-      ['contacts.upsert', 'contacts.update'].includes(event);
-    if (isChatsEvent || isContactsEvent) {
-      return NextResponse.json({ status: 'ignored', reason: 'chats_or_contacts_event_passive' });
+    if (isChatsEvent) {
+      return NextResponse.json({ status: 'ignored', reason: 'chats_event_passive' });
+    }
+
+    // Processar CONTACTS_UPSERT/UPDATE para atualizar nomes e fotos de perfil
+    const isContactsEvent = ['CONTACTS_UPSERT', 'CONTACTS_UPDATE', 'CONTACTS_SET'].includes(eventUpper) ||
+      ['contacts.upsert', 'contacts.update', 'contacts.set'].includes(event);
+    if (isContactsEvent) {
+      handleContactsEventAtd(body).catch((e) =>
+        console.error('[ATD/Webhook] Erro ao processar contacts event:', e)
+      );
+      return NextResponse.json({ status: 'processed', event: 'contacts_sync' });
     }
 
     const rawMessages = normalizeMessagesFromWebhook(body);
@@ -450,6 +563,7 @@ async function saveMessageInAtendimento(payload: {
   media_url?: string; wpp_id: string;
   message_timestamp_iso?: string; forwarded?: boolean;
   quoted_info?: { wpp_id: string; sender: string; sender_name?: string; message_type: string; message_text: string; remote_jid?: string } | null;
+  extra_tool_data?: Record<string, unknown>;
 }) {
   const supabase = getSupabase();
   if (payload.type === 'reaction') return;
@@ -461,6 +575,7 @@ async function saveMessageInAtendimento(payload: {
   const toolData: Record<string, unknown> = {};
   if (payload.forwarded) toolData.forwarded = true;
   if (payload.quoted_info) toolData.reply_to = payload.quoted_info;
+  if (payload.extra_tool_data) Object.assign(toolData, payload.extra_tool_data);
 
   const insertPayload: Record<string, unknown> = {
     chat_id: payload.chat_id, phone: payload.phone,
@@ -545,46 +660,76 @@ async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
     else if (msg?.extendedTextMessage?.text) content = msg.extendedTextMessage.text;
     else if (msg?.imageMessage?.caption) content = msg.imageMessage.caption;
     else if (msg?.videoMessage?.caption) content = msg.videoMessage.caption;
+    else if (msg?.buttonsResponseMessage?.selectedDisplayText) content = msg.buttonsResponseMessage.selectedDisplayText;
+    else if (msg?.listResponseMessage?.title) content = msg.listResponseMessage.title;
+    else if (msg?.listResponseMessage?.singleSelectReply?.selectedRowId) content = msg.listResponseMessage.singleSelectReply.selectedRowId;
+    else if (msg?.templateButtonReplyMessage?.selectedDisplayText) content = msg.templateButtonReplyMessage.selectedDisplayText;
+    else if (msg?.interactiveResponseMessage?.body?.text) content = msg.interactiveResponseMessage.body.text;
 
     let type = 'text';
     let mediaUrl: string | undefined;
-
-    // Debug: rastrear presença de base64 no payload do webhook para mídia
-    const isMediaType = ['audioMessage', 'imageMessage', 'videoMessage', 'stickerMessage', 'documentMessage'].includes(message.messageType as string);
-    if (isMediaType) {
-      const msgKeys = msg ? Object.keys(msg) : [];
-      const hasTopBase64 = typeof message.base64 === 'string';
-      const hasMsgBase64 = msg && typeof msg.base64 === 'string';
-      console.log(`[ATD/Media-Debug] type=${message.messageType} topBase64=${hasTopBase64} msgBase64=${hasMsgBase64} msgKeys=[${msgKeys.join(',')}]`);
-    }
+    const instanceKey = 'EVOLUTION_ATENDIMENTO_INSTANCE';
 
     if (message.messageType === 'audioMessage') {
       type = 'audio'; content = content || '🎵 Áudio recebido';
-      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, 'EVOLUTION_ATENDIMENTO_INSTANCE')) ?? undefined;
+      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, instanceKey)) ?? undefined;
     } else if (message.messageType === 'imageMessage') {
       type = 'image'; content = content || '';
-      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, 'EVOLUTION_ATENDIMENTO_INSTANCE')) ?? undefined;
-    } else if (message.messageType === 'videoMessage') {
+      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, instanceKey)) ?? undefined;
+    } else if (message.messageType === 'videoMessage' || message.messageType === 'ptvMessage') {
       type = 'video'; content = content || '';
-      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, 'EVOLUTION_ATENDIMENTO_INSTANCE')) ?? undefined;
+      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, instanceKey)) ?? undefined;
     } else if (message.messageType === 'stickerMessage') {
       type = 'sticker'; content = content || '💟 Figurinha';
-      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, 'EVOLUTION_ATENDIMENTO_INSTANCE')) ?? undefined;
+      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, instanceKey)) ?? undefined;
     } else if (message.messageType === 'documentMessage') {
-      type = 'document'; content = content || '📄 Documento recebido';
-      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, 'EVOLUTION_ATENDIMENTO_INSTANCE')) ?? undefined;
+      type = 'document';
+      const fileName = msg?.documentMessage?.fileName || msg?.documentMessage?.title || '';
+      content = content || (fileName ? `📄 ${fileName}` : '📄 Documento recebido');
+      mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, instanceKey)) ?? undefined;
+    } else if (message.messageType === 'contactMessage') {
+      type = 'contact';
+      content = `📇 Contato: ${msg?.contactMessage?.displayName || 'Contato'}`;
+    } else if (message.messageType === 'contactsArrayMessage') {
+      type = 'contact';
+      const contacts = msg?.contactsArrayMessage?.contacts;
+      const names = Array.isArray(contacts) ? contacts.map((c: any) => c.displayName || 'Contato').join(', ') : 'Contatos';
+      content = `📇 Contatos: ${names}`;
+    } else if (message.messageType === 'locationMessage' || message.messageType === 'liveLocationMessage') {
+      type = 'text';
+      const loc = msg?.locationMessage || msg?.liveLocationMessage;
+      const lat = loc?.degreesLatitude ?? '';
+      const lng = loc?.degreesLongitude ?? '';
+      const name = loc?.name || '';
+      content = message.messageType === 'liveLocationMessage'
+        ? `📍 Localização ao vivo${name ? `: ${name}` : ''}`
+        : `📍 Localização${name ? `: ${name}` : ''} (${lat}, ${lng})`;
+    } else if (message.messageType === 'pollCreationMessage') {
+      type = 'text';
+      const poll = msg?.pollCreationMessage || msg?.pollCreationMessageV2 || msg?.pollCreationMessageV3;
+      content = `📊 Enquete: ${poll?.name || 'Enquete'}`;
+    } else if (message.messageType === 'pollUpdateMessage') {
+      type = 'text';
+      content = '📊 Voto em enquete';
+    } else if (message.messageType === 'orderMessage') {
+      type = 'text'; content = '🛒 Pedido recebido';
+    } else if (message.messageType === 'productMessage') {
+      type = 'text'; content = '🏷️ Produto';
     }
 
     // Upsert chat no schema atendimento
     const chat = await ensureChatExistsInAtendimento(phone, pushName, isMe);
 
     // Buscar foto de perfil em background (usa instância atendimento)
-    if (!isMe && !chat.profile_pic && phone) {
+    if (!isMe && phone && !chat.profile_pic) {
       fetchProfilePictureFromEvolution(phone, 'EVOLUTION_ATENDIMENTO_INSTANCE').then(async (url) => {
         if (!url) return;
         const supabase = getSupabase();
         await supabase.from('chats').update({ profile_pic: url }).eq('id', chat.id);
-      }).catch(() => {});
+        console.log(`[ATD/ProfilePic] Foto atualizada: chat=${chat.id} phone=${phone}`);
+      }).catch((e) => {
+        console.warn(`[ATD/ProfilePic] Erro ao buscar foto para ${phone}:`, (e as Error).message);
+      });
     }
 
     // Extrair informações de mensagem citada (reply-to / contextInfo)
@@ -619,6 +764,22 @@ async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
       };
     }
 
+    // Extrair dados de contato (vCard) para persistir em tool_data
+    let extraToolData: Record<string, unknown> | undefined;
+    if (type === 'contact') {
+      const contactMsg = msg?.contactMessage;
+      const contactsArray = msg?.contactsArrayMessage;
+      if (contactMsg) {
+        extraToolData = { contact: { displayName: contactMsg.displayName || '', vcard: contactMsg.vcard || '' } };
+      } else if (contactsArray?.contacts) {
+        extraToolData = {
+          contacts: (contactsArray.contacts as any[]).map((c: any) => ({
+            displayName: c.displayName || '', vcard: c.vcard || '',
+          })),
+        };
+      }
+    }
+
     // Salvar mensagem
     await saveMessageInAtendimento({
       chat_id: chat.id, phone, content,
@@ -628,6 +789,7 @@ async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
       message_timestamp_iso: toIsoFromTimestamp(message.messageTimestamp),
       forwarded: message.isForwarded === true,
       quoted_info: quotedInfo,
+      extra_tool_data: extraToolData,
     });
 
     console.log(`[ATD/Ingest] Mensagem salva: chat=${chat.id} phone=${phone} type=${type}`);

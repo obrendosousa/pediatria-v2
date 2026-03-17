@@ -17,7 +17,7 @@ interface ModalProps {
 }
 
 const COLORS = [
-  { id: 'white', bg: 'bg-white dark:bg-[#1c1c21]', border: 'border-slate-200 dark:border-gray-600' },
+  { id: 'white', bg: 'bg-white dark:bg-[#1a1a22]', border: 'border-slate-200 dark:border-gray-600' },
   { id: 'yellow', bg: 'bg-yellow-100 dark:bg-yellow-900/30', border: 'border-yellow-200 dark:border-yellow-700/50' },
   { id: 'rose', bg: 'bg-rose-100 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-700/50' },
   { id: 'blue', bg: 'bg-blue-100 dark:bg-blue-900/30', border: 'border-blue-200 dark:border-blue-700/50' },
@@ -87,7 +87,7 @@ export default function CreateAtendimentoTaskModal({ isOpen, onClose, onSuccess,
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-[#1a1c23] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
-        <div className="bg-slate-50 dark:bg-[#08080b] p-4 border-b border-slate-100 dark:border-[#3d3d48] flex justify-between items-center">
+        <div className="bg-slate-50 dark:bg-[#111118] p-4 border-b border-slate-100 dark:border-[#252530] flex justify-between items-center">
           <h3 className="font-bold text-slate-700 dark:text-[#fafafa] flex items-center gap-2">
             {initialType === 'general' ? <><CheckSquare className="w-5 h-5 text-blue-500" /> Nova Tarefa</> : <><StickyNote className="w-5 h-5 text-rose-500" /> Nova Nota</>}
           </h3>
@@ -97,18 +97,18 @@ export default function CreateAtendimentoTaskModal({ isOpen, onClose, onSuccess,
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Título</label>
-            <input required value={title} onChange={e => setTitle(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] outline-none font-bold text-slate-700 dark:text-[#fafafa] focus:ring-2 focus:ring-blue-400 transition-all" placeholder="Título..." />
+            <input required value={title} onChange={e => setTitle(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#1a1a22] border border-slate-200 dark:border-[#252530] outline-none font-bold text-slate-700 dark:text-[#fafafa] focus:ring-2 focus:ring-blue-400 transition-all" placeholder="Título..." />
           </div>
 
           {initialType === 'general' && (
             <div className="flex gap-4">
               <div className="flex-1">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Data</label>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] outline-none text-sm text-slate-600 dark:text-gray-300" />
+                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#1a1a22] border border-slate-200 dark:border-[#252530] outline-none text-sm text-slate-600 dark:text-gray-300" />
               </div>
               <div className="w-1/3">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hora</label>
-                <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] outline-none text-sm text-slate-600 dark:text-gray-300" />
+                <input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#1a1a22] border border-slate-200 dark:border-[#252530] outline-none text-sm text-slate-600 dark:text-gray-300" />
               </div>
             </div>
           )}
@@ -116,12 +116,12 @@ export default function CreateAtendimentoTaskModal({ isOpen, onClose, onSuccess,
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Checklist (Opcional)</label>
             <div className="flex gap-2 mb-2">
-              <input value={newItemText} onChange={e => setNewItemText(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChecklistItem())} className="flex-1 p-2 rounded-lg bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] text-sm outline-none text-slate-700 dark:text-gray-300" placeholder="Adicionar item..." />
+              <input value={newItemText} onChange={e => setNewItemText(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChecklistItem())} className="flex-1 p-2 rounded-lg bg-slate-50 dark:bg-[#1a1a22] border border-slate-200 dark:border-[#252530] text-sm outline-none text-slate-700 dark:text-gray-300" placeholder="Adicionar item..." />
               <button type="button" onClick={addChecklistItem} className="p-2 bg-slate-100 dark:bg-[#3d3d48] rounded-lg hover:bg-slate-200 dark:hover:bg-[#333338]"><Plus className="w-4 h-4 text-slate-500" /></button>
             </div>
             <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
               {checklist.map((item, i) => (
-                <div key={i} className="flex justify-between items-center text-xs bg-slate-50 dark:bg-[#1c1c21] p-2 rounded-lg">
+                <div key={i} className="flex justify-between items-center text-xs bg-slate-50 dark:bg-[#1a1a22] p-2 rounded-lg">
                   <span className="text-slate-700 dark:text-gray-300">{item.text}</span>
                   <button type="button" onClick={() => setChecklist(checklist.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600"><Trash2 className="w-3 h-3" /></button>
                 </div>
@@ -131,7 +131,7 @@ export default function CreateAtendimentoTaskModal({ isOpen, onClose, onSuccess,
 
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Detalhes Extras</label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] outline-none text-sm text-slate-600 dark:text-gray-300 resize-none" placeholder="Anotações..." />
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#1a1a22] border border-slate-200 dark:border-[#252530] outline-none text-sm text-slate-600 dark:text-gray-300 resize-none" placeholder="Anotações..." />
           </div>
 
           <div>

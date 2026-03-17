@@ -56,7 +56,7 @@ const STATUS_COLORS: Record<string, string> = {
   finished: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300',
   late: 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300',
   no_show: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300',
-  cancelled: 'bg-gray-100 text-gray-500 dark:bg-[#1c1c21] dark:text-[#a1a1aa]',
+  cancelled: 'bg-gray-100 text-gray-500 dark:bg-[#1a1a22] dark:text-[#a1a1aa]',
 };
 
 const PIE_COLORS = ['#0891B2', '#7C3AED', '#059669', '#D97706', '#E11D48', '#6366F1', '#14B8A6', '#F59E0B', '#EC4899'];
@@ -130,8 +130,8 @@ function CollapsibleWidget({ title, icon, children, defaultOpen = true }: {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="bg-white dark:bg-[#131316] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-[#2d2d36]">
+    <div className="bg-white dark:bg-[#0e0e14] rounded-xl border border-slate-200 dark:border-[#252530] overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-[#1e1e28]">
         <div className="flex items-center gap-2">
           <span className="text-blue-600 dark:text-blue-400">{icon}</span>
           <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">{title}</h3>
@@ -152,7 +152,7 @@ function CollapsibleWidget({ title, icon, children, defaultOpen = true }: {
 function CustomBarTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-lg px-3 py-2 shadow-lg">
+    <div className="bg-white dark:bg-[#1a1a22] border border-slate-200 dark:border-[#252530] rounded-lg px-3 py-2 shadow-lg">
       <p className="text-xs font-bold text-slate-700 dark:text-gray-200">{label}</p>
       <p className="text-xs text-blue-600 dark:text-blue-400">{payload[0].value} atendimento{payload[0].value !== 1 ? 's' : ''}</p>
     </div>
@@ -329,22 +329,22 @@ export default function AtendimentoDashboardPage() {
   // ── Loading ──────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="h-full overflow-y-auto bg-slate-50 dark:bg-[#08080b]">
+      <div className="h-full overflow-y-auto bg-slate-50 dark:bg-[#050507]">
         <div className="max-w-[1440px] mx-auto px-6 py-8 space-y-6">
-          <div className="h-8 w-72 bg-slate-200 dark:bg-[#1c1c21] rounded-lg animate-pulse" />
-          <div className="h-12 w-full bg-slate-200 dark:bg-[#1c1c21] rounded-lg animate-pulse" />
+          <div className="h-8 w-72 bg-slate-200 dark:bg-[#1a1a22] rounded-lg animate-pulse" />
+          <div className="h-12 w-full bg-slate-200 dark:bg-[#1a1a22] rounded-lg animate-pulse" />
           <div className="grid grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 bg-slate-200 dark:bg-[#1c1c21] rounded-2xl animate-pulse" />
+              <div key={i} className="h-28 bg-slate-200 dark:bg-[#1a1a22] rounded-2xl animate-pulse" />
             ))}
           </div>
           <div className="grid grid-cols-12 gap-6">
             <div className="col-span-8 space-y-4">
-              <div className="h-72 bg-slate-200 dark:bg-[#1c1c21] rounded-xl animate-pulse" />
-              <div className="h-56 bg-slate-200 dark:bg-[#1c1c21] rounded-xl animate-pulse" />
+              <div className="h-72 bg-slate-200 dark:bg-[#1a1a22] rounded-xl animate-pulse" />
+              <div className="h-56 bg-slate-200 dark:bg-[#1a1a22] rounded-xl animate-pulse" />
             </div>
             <div className="col-span-4">
-              <div className="h-96 bg-slate-200 dark:bg-[#1c1c21] rounded-xl animate-pulse" />
+              <div className="h-96 bg-slate-200 dark:bg-[#1a1a22] rounded-xl animate-pulse" />
             </div>
           </div>
         </div>
@@ -353,7 +353,7 @@ export default function AtendimentoDashboardPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-50 dark:bg-[#08080b] custom-scrollbar">
+    <div className="h-full overflow-y-auto bg-slate-50 dark:bg-[#050507] custom-scrollbar">
       <div className="max-w-[1440px] mx-auto px-6 py-6 space-y-6">
 
         {/* ─── Header ─── */}
@@ -366,13 +366,13 @@ export default function AtendimentoDashboardPage() {
         </div>
 
         {/* ─── Filtros ─── */}
-        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-[#131316] rounded-xl border border-slate-200 dark:border-[#3d3d48] px-5 py-3">
+        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-[#0e0e14] rounded-xl border border-slate-200 dark:border-[#252530] px-5 py-3">
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Período</label>
             <select
               value={period}
               onChange={e => setPeriod(e.target.value as Period)}
-              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
             >
               {PERIOD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -383,7 +383,7 @@ export default function AtendimentoDashboardPage() {
             <select
               value={doctorId ?? ''}
               onChange={e => setDoctorId(e.target.value ? Number(e.target.value) : null)}
-              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer min-w-[180px]"
+              className="px-3 py-2 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer min-w-[180px]"
             >
               <option value="">Todos</option>
               {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -501,7 +501,7 @@ export default function AtendimentoDashboardPage() {
               {proceduresData.length > 0 ? (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-[#2d2d36]">
+                    <tr className="border-b border-slate-100 dark:border-[#1e1e28]">
                       <th className="text-left py-2 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Procedimento</th>
                       <th className="text-right py-2 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Qtd</th>
                     </tr>
@@ -525,7 +525,7 @@ export default function AtendimentoDashboardPage() {
               {birthdays.length > 0 ? (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-[#2d2d36]">
+                    <tr className="border-b border-slate-100 dark:border-[#1e1e28]">
                       <th className="text-left py-2 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Paciente</th>
                       <th className="text-right py-2 text-xs font-extrabold text-slate-500 dark:text-[#a1a1aa] uppercase">Data</th>
                     </tr>
@@ -553,8 +553,8 @@ export default function AtendimentoDashboardPage() {
 
           {/* ─── Coluna Lateral: Pacientes do dia ─── */}
           <div className="col-span-12 lg:col-span-4">
-            <div className="bg-white dark:bg-[#131316] rounded-xl border border-slate-200 dark:border-[#3d3d48] sticky top-6">
-              <div className="px-5 py-3 border-b border-slate-100 dark:border-[#2d2d36] flex items-center gap-2">
+            <div className="bg-white dark:bg-[#0e0e14] rounded-xl border border-slate-200 dark:border-[#252530] sticky top-6">
+              <div className="px-5 py-3 border-b border-slate-100 dark:border-[#1e1e28] flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">Pacientes do dia</h3>
                 <span className="ml-auto text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
@@ -567,7 +567,7 @@ export default function AtendimentoDashboardPage() {
                     {todayAppointments.map(a => (
                       <div
                         key={a.id}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-[#1c1c21] hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-colors"
+                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-[#1a1a22] hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-colors"
                       >
                         <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-sm font-bold text-blue-700 dark:text-blue-300 flex-shrink-0">
                           {(a.patient_name || '?').charAt(0)}

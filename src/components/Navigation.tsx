@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Trello, Stethoscope, CheckSquare,
   Store, PieChart, Heart, Sparkles, Users, Moon, Sun,
   ChevronLeft, ChevronRight, Zap, FileText, ArrowLeftRight, Receipt,
-  ClipboardList, Ban, DollarSign, BarChart3, BookOpen, Tv,
+  ClipboardList, Ban, DollarSign, BarChart3, BookOpen, Monitor, ExternalLink,
 } from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -221,7 +221,7 @@ export default function Navigation() {
 
             <MenuGroup title="Operacional" moduleTheme={mt}>
               <NavItem icon={Trello} label="CRM" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={CheckSquare} label="Tasks" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} showHeart={false} />
+              <NavItem icon={CheckSquare} label="Tarefas" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} showHeart={false} />
             </MenuGroup>
           </>
         ) : isAtendimento ? (
@@ -230,12 +230,16 @@ export default function Navigation() {
               <NavItem icon={LayoutDashboard} label="Dashboard" path="/atendimento/dashboard" active={isActive('/atendimento/dashboard')} color="blue" moduleTheme={mt} showHeart={false} />
               <NavItem icon={MessageSquare} label="Chat" path="/atendimento" active={pathname === '/atendimento'} badge={unreadCount > 0 ? unreadCount : undefined} color="teal" moduleTheme={mt} showHeart={false} />
               <NavItem icon={Trello} label="CRM" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={CheckSquare} label="Tasks" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} showHeart={false} />
+              <NavItem icon={CheckSquare} label="Tarefas" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} showHeart={false} />
             </MenuGroup>
 
             <MenuGroup title="Clínico" moduleTheme={mt}>
               <NavItem icon={Stethoscope} label="Painel Médico" path="/atendimento/doctor" active={isActive('/atendimento/doctor')} color="teal" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={Tv} label="Painel TV" path="/atendimento/tv" active={isActive('/atendimento/tv')} color="blue" moduleTheme={mt} showHeart={false} />
+              <a href="/atendimento/tv" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-1.5 mx-1 rounded-lg text-[11px] font-medium text-slate-400 dark:text-[#52525b] hover:text-slate-600 dark:hover:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer" title="Abrir Painel TV em tela cheia">
+                <Monitor className="w-3.5 h-3.5" />
+                <span>Abrir Painel TV</span>
+                <ExternalLink className="w-3 h-3 ml-auto opacity-50" />
+              </a>
             </MenuGroup>
 
             <MenuGroup title="Agenda" moduleTheme={mt}>

@@ -358,6 +358,7 @@ function MessageBubble({
   const isImageMessage = message.message_type === 'image' && !!message.media_url;
   const isVideoMessage = message.message_type === 'video' && !!message.media_url;
   const isRevoked = message.message_type === 'revoked';
+  const isContactMessage = message.message_type === 'contact';
 
   // Legenda real da imagem (texto que não é placeholder de sistema)
   const imageCaptionText = (() => {
@@ -639,6 +640,55 @@ function MessageBubble({
       );
     }
 
+    // Cartão de contato (vCard)
+    if (isContactMessage) {
+      const toolData = (message.tool_data && typeof message.tool_data === 'object' ? message.tool_data : {}) as Record<string, unknown>;
+      const singleContact = toolData.contact as { displayName?: string; vcard?: string } | undefined;
+      const multipleContacts = toolData.contacts as Array<{ displayName?: string; vcard?: string }> | undefined;
+      const contactsList = multipleContacts || (singleContact ? [singleContact] : []);
+
+      // Parser simples de vCard para extrair telefone
+      const parseVcardPhone = (vcard?: string): string => {
+        if (!vcard) return '';
+        const telMatch = vcard.match(/TEL[^:]*:([^\n\r]+)/i);
+        return telMatch ? telMatch[1].trim() : '';
+      };
+
+      if (contactsList.length > 0) {
+        return (
+          <div className="pt-1 w-[240px] sm:w-[260px] space-y-1.5">
+            {contactsList.map((c, idx) => {
+              const phone = parseVcardPhone(c.vcard);
+              return (
+                <div
+                  key={idx}
+                  className="rounded-lg overflow-hidden border border-black/8 dark:border-white/8"
+                >
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-white/40 dark:bg-[#0a0a0d]">
+                    <div className="w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center shrink-0">
+                      <User size={18} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold truncate text-gray-800 dark:text-[#fafafa] leading-tight">
+                        {c.displayName || 'Contato'}
+                      </p>
+                      {phone && (
+                        <p className="text-[11px] text-gray-500 dark:text-[#a1a1aa] mt-0.5 truncate">
+                          {phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+      // Fallback: sem dados de vCard, renderiza como texto
+      return renderTextContent(message.message_text || '📇 Contato');
+    }
+
     // Fallbacks para mídia sem media_url (mensagens ingeridas antes do fix ou falha de upload)
     if (message.message_type === 'audio' || message.message_type === 'voice') {
       return (
@@ -786,7 +836,9 @@ function MessageBubble({
                         ? '\u{1F49F} Figurinha'
                         : replyData?.message_type === 'document'
                           ? '\u{1F4C4} Documento'
-                          : replyData?.message_text || 'Mensagem'}
+                          : replyData?.message_type === 'contact'
+                            ? '\u{1F4C7} Contato'
+                            : replyData?.message_text || 'Mensagem'}
               </p>
             </div>
           )}

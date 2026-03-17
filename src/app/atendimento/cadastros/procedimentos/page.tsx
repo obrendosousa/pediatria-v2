@@ -120,7 +120,7 @@ export default function ProcedimentosPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252530] bg-white dark:bg-[#111118]">
         <div className="flex items-center gap-2">
           <Stethoscope className="w-5 h-5 text-blue-600" />
           <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Procedimentos</h1>
@@ -144,7 +144,7 @@ export default function ProcedimentosPage() {
       </div>
 
       {/* Filtros */}
-      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#2d2d36] bg-white dark:bg-[#08080b]">
+      <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#1e1e28] bg-white dark:bg-[#111118]">
         {/* Tipo multi-select */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase">Tipo:</span>
@@ -155,7 +155,7 @@ export default function ProcedimentosPage() {
               className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-colors ${
                 selectedTypes.includes(tf.value)
                   ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white dark:bg-[#1c1c21] text-slate-600 dark:text-[#d4d4d8] border-slate-200 dark:border-[#3d3d48] hover:border-blue-400'
+                  : 'bg-white dark:bg-[#1a1a22] text-slate-600 dark:text-[#d4d4d8] border-slate-200 dark:border-[#252530] hover:border-blue-400'
               }`}
             >
               {tf.label}
@@ -170,7 +170,7 @@ export default function ProcedimentosPage() {
             <select
               value={statusFilter}
               onChange={e => { setStatusFilter(e.target.value); setPage(0); }}
-              className="px-3 py-1 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none pr-7 cursor-pointer"
+              className="px-3 py-1 text-xs border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-600 dark:text-[#d4d4d8] focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none pr-7 cursor-pointer"
             >
               <option value="">Todos</option>
               <option value="active">Ativo</option>
@@ -241,8 +241,8 @@ export default function ProcedimentosPage() {
       {/* Modal: Reajustar Preços */}
       {showAdjustModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] shadow-2xl w-full max-w-md mx-4 animate-in fade-in-0 zoom-in-95">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48]">
+          <div className="bg-white dark:bg-[#111118] rounded-xl border border-slate-200 dark:border-[#252530] shadow-2xl w-full max-w-md mx-4 animate-in fade-in-0 zoom-in-95">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252530]">
               <h3 className="text-base font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-amber-500" />
                 Reajustar Preços
@@ -271,12 +271,12 @@ export default function ProcedimentosPage() {
                   onChange={e => setAdjustPercentage(e.target.value)}
                   placeholder="Ex: 10 ou -5"
                   autoFocus
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-slate-200 dark:border-[#3d3d48] flex items-center justify-end gap-3">
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-[#252530] flex items-center justify-end gap-3">
               <button
                 onClick={() => { setShowAdjustModal(false); setAdjustPercentage(''); }}
                 className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"

@@ -286,6 +286,8 @@ export async function saveMessageToDb(payload: {
     message_text: string;
     remote_jid: string;
   } | null;
+  /** Dados extras para tool_data (ex: vCard de contato, localização, etc.) */
+  extra_tool_data?: Record<string, unknown>;
 }) {
   const supabase = await getSupabase();
 
@@ -311,10 +313,11 @@ export async function saveMessageToDb(payload: {
 
   if (status) insertPayload.status = status;
 
-  // Monta tool_data com forwarded e/ou reply_to, se presentes
+  // Monta tool_data com forwarded, reply_to e extras (vCard, etc.)
   const toolDataContent: Record<string, unknown> = {};
   if (payload.forwarded === true) toolDataContent.forwarded = true;
   if (payload.quoted_info) toolDataContent.reply_to = payload.quoted_info;
+  if (payload.extra_tool_data) Object.assign(toolDataContent, payload.extra_tool_data);
   if (Object.keys(toolDataContent).length > 0) insertPayload.tool_data = toolDataContent;
 
   // Persiste o wpp_id da mensagem citada no campo dedicado
@@ -398,15 +401,15 @@ export async function saveMessageToDb(payload: {
 export async function fetchProfilePictureFromEvolution(phone: string, instanceEnvKey = 'EVOLUTION_INSTANCE'): Promise<string | null> {
   const baseUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, "");
   const instance = process.env[instanceEnvKey] || process.env.EVOLUTION_INSTANCE;
-  // Deriva a API key da instância (ex: EVOLUTION_ATENDIMENTO_INSTANCE → EVOLUTION_ATENDIMENTO_API_KEY)
   const apiKeyEnvKey = instanceEnvKey.replace(/_INSTANCE$/, '_API_KEY');
   const apiKey = process.env[apiKeyEnvKey] || process.env.EVOLUTION_API_KEY;
 
   if (!baseUrl || !instance || !apiKey) {
+    console.warn(`[ProfilePic] Config ausente para ${instanceEnvKey}: baseUrl=${!!baseUrl} instance=${!!instance} apiKey=${!!apiKey}`);
     return null;
   }
 
-  const endpoint = `${baseUrl}/chat/fetchProfilePictureUrl/${instance}`;
+  const endpoint = `${baseUrl}/chat/fetchProfilePictureUrl/${encodeURIComponent(instance)}`;
   try {
     const res = await fetch(endpoint, {
       method: "POST",
@@ -414,13 +417,19 @@ export async function fetchProfilePictureFromEvolution(phone: string, instanceEn
       body: JSON.stringify({ number: phone }),
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`[ProfilePic] Falha ${res.status} para ${phone} (${instanceEnvKey})`);
+      return null;
+    }
 
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    const url = (data.profilePictureUrl ?? data.profile_picture_url) as string | undefined;
+    // Evolution pode retornar em diferentes formatos: {profilePictureUrl}, {data: {profilePictureUrl}}
+    const inner = (data.data && typeof data.data === "object" ? data.data as Record<string, unknown> : data);
+    const url = (inner.profilePictureUrl ?? inner.profile_picture_url ?? data.profilePictureUrl ?? data.profile_picture_url) as string | undefined;
     if (typeof url === "string" && url.startsWith("http")) return url;
     return null;
-  } catch {
+  } catch (e) {
+    console.warn(`[ProfilePic] Erro ao buscar foto para ${phone}:`, (e as Error).message);
     return null;
   }
 }
@@ -429,15 +438,18 @@ export async function fetchProfilePictureFromEvolution(phone: string, instanceEn
  * Busca foto de perfil na Evolution API e atualiza o chat no banco.
  * Execução em background (fire-and-forget) para não bloquear o webhook.
  */
-export function fetchAndUpdateProfilePicture(phone: string, chatId: number): void {
+export function fetchAndUpdateProfilePicture(phone: string, chatId: number, instanceEnvKey = 'EVOLUTION_INSTANCE'): void {
   if (!phone || !chatId) return;
-  fetchProfilePictureFromEvolution(phone)
+  fetchProfilePictureFromEvolution(phone, instanceEnvKey)
     .then(async (url) => {
       if (!url) return;
       const supabase = await getSupabase();
       await supabase.from("chats").update({ profile_pic: url }).eq("id", chatId);
+      console.log(`[ProfilePic] Atualizada foto do chat ${chatId} (${phone})`);
     })
-    .catch(() => { });
+    .catch((e) => {
+      console.warn(`[ProfilePic] Erro ao atualizar foto do chat ${chatId}:`, (e as Error).message);
+    });
 }
 
 /** Bucket Supabase para mídia (áudio, imagem, sticker) - mesmo bucket usado pelo app (ChatWindow, CRM) */

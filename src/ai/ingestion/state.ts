@@ -37,7 +37,7 @@ export interface IngestionState {
   resolver_latency_ms?: number;
   resolver_error?: string;
   message_content: string;
-  message_type: "text" | "audio" | "image" | "video" | "sticker" | "document";
+  message_type: "text" | "audio" | "image" | "video" | "sticker" | "document" | "contact";
   media_url?: string;
   is_ai_paused: boolean;
   should_continue: boolean;

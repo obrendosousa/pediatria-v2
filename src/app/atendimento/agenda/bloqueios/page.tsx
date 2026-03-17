@@ -175,16 +175,16 @@ export default function BloqueiosPage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-[#16171c]">
+      <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-[#050507]">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#16171c] transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#050507] transition-colors">
       {/* Header */}
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#08080b] border-b border-slate-100 dark:border-[#2d2d36] shadow-sm">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#111118] border-b border-slate-100 dark:border-[#1e1e28] shadow-sm">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/atendimento/agenda')} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 transition-colors">
             <ArrowLeft className="w-5 h-5" />
@@ -201,7 +201,7 @@ export default function BloqueiosPage() {
           <button
             onClick={() => setConfirmBatchDelete(true)}
             disabled={selected.size === 0}
-            className="flex items-center gap-2 bg-slate-100 dark:bg-[#1c1c21] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-[#a1a1aa] px-3 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-40"
+            className="flex items-center gap-2 bg-slate-100 dark:bg-[#1a1a22] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-[#a1a1aa] px-3 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-40"
           >
             <Trash2 className="w-3.5 h-3.5" /> Cancelar Bloqueios ({selected.size})
           </button>
@@ -216,7 +216,7 @@ export default function BloqueiosPage() {
 
       {/* Filtros */}
       <div className="px-6 py-4">
-        <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#2d2d36] p-4 shadow-sm">
+        <div className="bg-white dark:bg-[#111118] rounded-xl border border-slate-200 dark:border-[#1e1e28] p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
             <Filter className="w-4 h-4 text-blue-600" />
             <span className="text-sm font-bold text-slate-700 dark:text-gray-200">Filtros</span>
@@ -227,7 +227,7 @@ export default function BloqueiosPage() {
               <select
                 value={doctorFilter ?? ''}
                 onChange={e => { setDoctorFilter(e.target.value ? Number(e.target.value) : null); setPage(0); }}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400"
               >
                 <option value="">Todos</option>
                 {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -239,7 +239,7 @@ export default function BloqueiosPage() {
                 type="date"
                 value={dateFrom}
                 onChange={e => { setDateFrom(e.target.value); setPage(0); }}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400"
               />
             </div>
             <div>
@@ -248,7 +248,7 @@ export default function BloqueiosPage() {
                 type="date"
                 value={dateTo}
                 onChange={e => { setDateTo(e.target.value); setPage(0); }}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400"
               />
             </div>
           </div>
@@ -265,7 +265,7 @@ export default function BloqueiosPage() {
 
       {/* Tabela */}
       <div className="px-6 pb-6">
-        <div className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#2d2d36] shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-[#111118] rounded-xl border border-slate-200 dark:border-[#1e1e28] shadow-sm overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
@@ -282,7 +282,7 @@ export default function BloqueiosPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-100 dark:border-[#2d2d36] bg-slate-50 dark:bg-[#16171c]">
+                    <tr className="border-b border-slate-100 dark:border-[#1e1e28] bg-slate-50 dark:bg-[#050507]">
                       <th className="px-4 py-3 w-[40px]">
                         <input
                           type="checkbox"
@@ -352,7 +352,7 @@ export default function BloqueiosPage() {
               </div>
 
               {/* Rodapé: total + paginação */}
-              <div className="px-4 py-3 border-t border-slate-100 dark:border-[#2d2d36] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="px-4 py-3 border-t border-slate-100 dark:border-[#1e1e28] flex flex-col sm:flex-row items-center justify-between gap-3">
                 <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">
                   Total de <strong className="text-slate-700 dark:text-gray-200">{totalCount}</strong> bloqueio(s).
                 </span>
@@ -477,9 +477,9 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-200 dark:border-[#2d2d36] shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+      <div onClick={e => e.stopPropagation()} className="bg-white dark:bg-[#111118] rounded-2xl border border-slate-200 dark:border-[#1e1e28] shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-[#2d2d36] flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-[#1e1e28] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-lg">
               <Ban className="w-5 h-5" />
@@ -493,7 +493,7 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
 
         {/* Tipo */}
         <div className="px-6 pt-4">
-          <div className="flex bg-slate-100 dark:bg-[#1c1c21] p-1 rounded-lg">
+          <div className="flex bg-slate-100 dark:bg-[#1a1a22] p-1 rounded-lg">
             <button
               onClick={() => setBlockType('simple')}
               className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${blockType === 'simple' ? 'bg-white dark:bg-gray-600 shadow text-slate-800 dark:text-white' : 'text-slate-400 dark:text-[#71717a]'}`}
@@ -517,7 +517,7 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
             <select
               value={form.doctor_id}
               onChange={e => setForm(prev => ({ ...prev, doctor_id: e.target.value }))}
-              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
             >
               <option value="">Todos os profissionais</option>
               {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -532,7 +532,7 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
               value={form.title}
               onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Ex: Feriado, Reunião, Férias..."
-              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400 placeholder:text-slate-400"
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400 placeholder:text-slate-400"
             />
           </div>
 
@@ -544,7 +544,7 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
                 type="date"
                 value={form.start_date}
                 onChange={e => setForm(prev => ({ ...prev, start_date: e.target.value }))}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
               />
             </div>
             <div>
@@ -553,7 +553,7 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
                 type="date"
                 value={form.end_date}
                 onChange={e => setForm(prev => ({ ...prev, end_date: e.target.value }))}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
               />
             </div>
           </div>
@@ -580,7 +580,7 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
                     type="time"
                     value={form.start_time}
                     onChange={e => setForm(prev => ({ ...prev, start_time: e.target.value }))}
-                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
                   />
                 </div>
               </div>
@@ -592,7 +592,7 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
                     type="time"
                     value={form.end_time}
                     onChange={e => setForm(prev => ({ ...prev, end_time: e.target.value }))}
-                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
                   />
                 </div>
               </div>
@@ -606,7 +606,7 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
               <select
                 value={form.recurrence}
                 onChange={e => setForm(prev => ({ ...prev, recurrence: e.target.value }))}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
               >
                 <option value="daily">Diário</option>
                 <option value="weekly">Semanal</option>
@@ -623,13 +623,13 @@ function AddBlockModal({ doctors, profile, onClose, onSuccess }: {
               onChange={e => setForm(prev => ({ ...prev, notes: e.target.value }))}
               rows={3}
               placeholder="Notas adicionais..."
-              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400 placeholder:text-slate-400 resize-none"
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400 placeholder:text-slate-400 resize-none"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-[#2d2d36] flex justify-end gap-2">
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-[#1e1e28] flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 text-gray-500 dark:text-[#a1a1aa] hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-sm font-bold transition-colors">
             Cancelar
           </button>

@@ -124,7 +124,23 @@ export async function POST(req: Request) {
       } catch { /* Erro não crítico */ }
     };
 
-    if (type === 'sticker' && mediaUrl) {
+    if (type === 'contact' && options?.contact) {
+      await setPresence('composing');
+      endpoint = '/message/sendContact/{instance}';
+      const contactList = Array.isArray(options.contact) ? options.contact : [options.contact];
+      apiBody = {
+        number: phone,
+        contact: contactList.map((c: any) => ({
+          fullName: c.fullName || c.displayName || '',
+          wuid: String(c.wuid || c.phoneNumber || c.phone || '').replace(/\D/g, ''),
+          phoneNumber: c.phoneNumber || c.phone || '',
+          ...(c.organization ? { organization: c.organization } : {}),
+          ...(c.email ? { email: c.email } : {}),
+          ...(c.url ? { url: c.url } : {}),
+        })),
+      };
+    }
+    else if (type === 'sticker' && mediaUrl) {
       await setPresence('composing');
       endpoint = '/message/sendSticker/{instance}';
       apiBody = { number: phone, sticker: mediaUrl };

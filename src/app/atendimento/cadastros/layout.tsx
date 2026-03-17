@@ -140,12 +140,12 @@ export default function CadastrosLayout({ children }: { children: React.ReactNod
     <div className="flex h-full overflow-hidden">
       {/* Sidebar */}
       <aside
-        className={`shrink-0 flex flex-col bg-white dark:bg-[#08080b] border-r border-slate-200 dark:border-[#3d3d48] transition-all duration-300 overflow-hidden ${
+        className={`shrink-0 flex flex-col bg-white dark:bg-[#111118] border-r border-slate-200 dark:border-[#252530] transition-all duration-300 overflow-hidden ${
           collapsed ? 'w-0 min-w-0' : 'w-60 min-w-60'
         }`}
       >
         {/* Sidebar header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-[#2d2d36]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-[#1e1e28]">
           <h2 className="text-sm font-bold text-slate-700 dark:text-gray-200 uppercase tracking-wide">
             Cadastros
           </h2>
@@ -194,7 +194,7 @@ export default function CadastrosLayout({ children }: { children: React.ReactNod
         <button
           type="button"
           onClick={() => setCollapsed(false)}
-          className="shrink-0 flex items-center justify-center w-8 border-r border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] text-slate-400 hover:text-blue-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+          className="shrink-0 flex items-center justify-center w-8 border-r border-slate-200 dark:border-[#252530] bg-white dark:bg-[#111118] text-slate-400 hover:text-blue-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
           title="Expandir menu"
         >
           <PanelLeft className="w-4 h-4" />

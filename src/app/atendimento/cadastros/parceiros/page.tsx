@@ -11,10 +11,10 @@ import { usePartners } from '@/hooks/usePartners';
 import type { Partner } from '@/types/cadastros';
 
 const inputClass =
-  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400';
+  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400';
 
 const inputErrorClass =
-  'w-full px-3 py-2.5 text-sm border border-red-300 dark:border-red-700 rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-400';
+  'w-full px-3 py-2.5 text-sm border border-red-300 dark:border-red-700 rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-400';
 
 const labelClass =
   'block text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wider mb-1.5 ml-1';
@@ -165,7 +165,7 @@ export default function ParceirosPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252530] bg-white dark:bg-[#111118]">
         <div className="flex items-center gap-2">
           <Handshake className="w-5 h-5 text-blue-600" />
           <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Parceiros</h1>

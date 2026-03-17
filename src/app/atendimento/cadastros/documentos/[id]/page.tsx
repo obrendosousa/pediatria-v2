@@ -18,7 +18,7 @@ const TEMPLATE_VARIABLES: TemplateVariable[] = [
 ];
 
 const inputClass =
-  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50';
+  'w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#252530] rounded-xl bg-white dark:bg-[#1a1a22] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50';
 
 const labelClass =
   'text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider';
@@ -103,7 +103,7 @@ export default function EditarDocumentoPage() {
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-[#252530] bg-white dark:bg-[#111118]">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -125,7 +125,7 @@ export default function EditarDocumentoPage() {
       {/* Body */}
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 custom-scrollbar">
         <div className="max-w-4xl mx-auto space-y-6">
-          <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-4">
+          <div className="bg-white dark:bg-[#111118] rounded-2xl border border-slate-200 dark:border-[#252530] p-6 space-y-4">
             {/* Título */}
             <div>
               <label className={labelClass}>
@@ -180,7 +180,7 @@ export default function EditarDocumentoPage() {
       </form>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b] flex justify-end">
+      <div className="px-6 py-4 border-t border-slate-200 dark:border-[#252530] bg-white dark:bg-[#111118] flex justify-end">
         <button
           type="submit"
           disabled={saving}

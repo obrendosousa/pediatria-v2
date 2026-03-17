@@ -478,10 +478,10 @@ export default function AtendimentoCRMPage() {
   }, {} as Record<string, number>);
 
   return (
-    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#08080b] relative overflow-hidden transition-colors duration-300">
+    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#050507] relative overflow-hidden transition-colors duration-300">
 
       {/* HEADER */}
-      <div className="px-6 py-5 z-10 border-b border-slate-100 dark:border-[#2d2d36] bg-white/50 dark:bg-[#131316]/80 backdrop-blur-sm transition-all duration-300">
+      <div className="px-6 py-5 z-10 border-b border-slate-100 dark:border-[#1e1e28] bg-white/50 dark:bg-[#0e0e14]/80 backdrop-blur-sm transition-all duration-300">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100 flex items-center gap-2">
             <div className="p-2 bg-blue-500 text-white rounded-lg shadow-lg shadow-blue-200 dark:shadow-none">
@@ -490,13 +490,13 @@ export default function AtendimentoCRMPage() {
             Central de Controle
           </h1>
 
-          <div className="flex bg-slate-100/80 dark:bg-[#131316] p-1 rounded-xl shadow-inner border border-transparent dark:border-[#2d2d36]">
+          <div className="flex bg-slate-100/80 dark:bg-[#0e0e14] p-1 rounded-xl shadow-inner border border-transparent dark:border-[#1e1e28]">
             <button
               type="button"
               onClick={() => setReceptionFlowTab('flow')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                 receptionFlowTab === 'flow'
-                  ? 'bg-white dark:bg-[#1c1c21] text-blue-600 dark:text-blue-400 shadow-sm'
+                  ? 'bg-white dark:bg-[#1a1a22] text-blue-600 dark:text-blue-400 shadow-sm'
                   : 'text-slate-500 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/50 dark:hover:bg-white/5'
               }`}
             >
@@ -507,7 +507,7 @@ export default function AtendimentoCRMPage() {
               onClick={() => setReceptionFlowTab('checkout')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                 receptionFlowTab === 'checkout'
-                  ? 'bg-white dark:bg-[#1c1c21] text-purple-600 dark:text-purple-400 shadow-sm'
+                  ? 'bg-white dark:bg-[#1a1a22] text-purple-600 dark:text-purple-400 shadow-sm'
                   : 'text-slate-500 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/50 dark:hover:bg-white/5'
               }`}
             >
@@ -523,7 +523,7 @@ export default function AtendimentoCRMPage() {
           {/* Toolbar: Data + Filtro Médico + Novo Paciente */}
           <div className="flex justify-between items-center mb-6 gap-4 flex-wrap">
             {/* Navegação de Data */}
-            <div className="flex items-center gap-4 bg-white dark:bg-[#131316] px-2 py-1.5 rounded-full border border-slate-200 dark:border-[#3d3d48] shadow-sm transition-colors">
+            <div className="flex items-center gap-4 bg-white dark:bg-[#0e0e14] px-2 py-1.5 rounded-full border border-slate-200 dark:border-[#252530] shadow-sm transition-colors">
               <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-gray-400">
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -546,12 +546,12 @@ export default function AtendimentoCRMPage() {
               <button
                 type="button"
                 onClick={() => setIsDoctorDropdownOpen(!isDoctorDropdownOpen)}
-                className="flex items-center gap-2 bg-white dark:bg-[#131316] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-[#3d3d48] shadow-sm hover:border-blue-300 dark:hover:border-blue-700 transition-all text-sm font-medium text-slate-700 dark:text-gray-200 min-w-[200px]"
+                className="flex items-center gap-2 bg-white dark:bg-[#0e0e14] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-[#252530] shadow-sm hover:border-blue-300 dark:hover:border-blue-700 transition-all text-sm font-medium text-slate-700 dark:text-gray-200 min-w-[200px]"
               >
                 <Stethoscope className="w-4 h-4 text-blue-600 shrink-0" />
                 {selectedDoctor?.color && (
                   <span
-                    className="w-3 h-3 rounded-full shrink-0 border border-white dark:border-[#3d3d48]"
+                    className="w-3 h-3 rounded-full shrink-0 border border-white dark:border-[#252530]"
                     style={{ backgroundColor: selectedDoctor.color }}
                   />
                 )}
@@ -562,7 +562,7 @@ export default function AtendimentoCRMPage() {
               {isDoctorDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsDoctorDropdownOpen(false)} />
-                  <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white dark:bg-[#1c1c21] border border-slate-200 dark:border-[#3d3d48] rounded-xl shadow-xl z-50 overflow-hidden">
+                  <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white dark:bg-[#1a1a22] border border-slate-200 dark:border-[#252530] rounded-xl shadow-xl z-50 overflow-hidden">
                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                       {/* Opção "Todos" */}
                       <button
@@ -578,7 +578,7 @@ export default function AtendimentoCRMPage() {
                         Todos os Médicos
                       </button>
 
-                      <div className="border-t border-slate-100 dark:border-[#3d3d48]" />
+                      <div className="border-t border-slate-100 dark:border-[#252530]" />
 
                       {/* Lista de médicos */}
                       {doctors.map(doc => (
@@ -594,7 +594,7 @@ export default function AtendimentoCRMPage() {
                         >
                           {doc.color ? (
                             <span
-                              className="w-3 h-3 rounded-full shrink-0 border border-slate-200 dark:border-[#3d3d48]"
+                              className="w-3 h-3 rounded-full shrink-0 border border-slate-200 dark:border-[#252530]"
                               style={{ backgroundColor: doc.color }}
                             />
                           ) : (

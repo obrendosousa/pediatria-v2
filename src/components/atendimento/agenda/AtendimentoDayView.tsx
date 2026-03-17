@@ -72,7 +72,7 @@ function AppointmentCard({ app, setSelectedAppointment }: { app: AtendimentoAppo
           )}
         </div>
       )}
-      {app.notes && <div className="text-[10px] text-slate-400 dark:text-[#71717a] bg-white/50 dark:bg-black/20 px-2 py-1 rounded border border-slate-100/50 dark:border-[#3d3d48] flex items-center gap-1"><FileText className="w-3 h-3"/></div>}
+      {app.notes && <div className="text-[10px] text-slate-400 dark:text-[#71717a] bg-white/50 dark:bg-black/20 px-2 py-1 rounded border border-slate-100/50 dark:border-[#252530] flex items-center gap-1"><FileText className="w-3 h-3"/></div>}
     </div>
   );
 }
@@ -106,7 +106,7 @@ export default function AtendimentoDayView({
               </span>
             </div>
             <div className="flex-1 min-h-[50px] relative">
-              <div className={`absolute top-3.5 left-0 w-full h-px ${isCurrent ? 'bg-blue-200 dark:bg-blue-900/30' : 'bg-slate-50 dark:bg-[#1c1c21]'}`}></div>
+              <div className={`absolute top-3.5 left-0 w-full h-px ${isCurrent ? 'bg-blue-200 dark:bg-blue-900/30' : 'bg-slate-50 dark:bg-[#1a1a22]'}`}></div>
               {apps.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   {apps.map((app) => (
@@ -114,7 +114,7 @@ export default function AtendimentoDayView({
                   ))}
                 </div>
               ) : blocked ? (
-                <div className="w-full min-h-[40px] mt-1 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-[#3d3d48] flex items-center justify-center gap-2 text-slate-400 dark:text-[#71717a] text-xs font-bold cursor-not-allowed">
+                <div className="w-full min-h-[40px] mt-1 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-[#252530] flex items-center justify-center gap-2 text-slate-400 dark:text-[#71717a] text-xs font-bold cursor-not-allowed">
                   <Ban className="w-3 h-3" /> Bloqueado
                 </div>
               ) : (

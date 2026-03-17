@@ -287,7 +287,7 @@ export default function AtendimentoAgendaPage() {
   }, []);
 
   return (
-    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#08080b] transition-colors duration-300">
+    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#050507] transition-colors duration-300">
       <AtendimentoAgendaHeader
         viewMode={viewMode}
         setViewMode={setViewMode}
@@ -303,7 +303,7 @@ export default function AtendimentoAgendaPage() {
       />
 
       <div className="flex-1 overflow-hidden flex p-6 gap-6">
-        <div className="flex-1 bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] shadow-sm overflow-hidden flex flex-col transition-colors">
+        <div className="flex-1 bg-white dark:bg-[#111118] rounded-2xl border border-slate-100 dark:border-[#1e1e28] shadow-sm overflow-hidden flex flex-col transition-colors">
           {viewMode === 'day' ? (
             <AtendimentoDayView
               timeSlots={timeSlots}

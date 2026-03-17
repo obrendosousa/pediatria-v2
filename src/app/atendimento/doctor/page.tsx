@@ -429,8 +429,8 @@ export default function AtendimentoDoctorPage() {
   return (
     <div className="h-full flex bg-slate-50 dark:bg-[#15171e] relative overflow-hidden">
       {/* Sidebar */}
-      <div className="w-80 bg-white dark:bg-[#08080b] border-r border-slate-200 dark:border-[#2d2d36] flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-[#2d2d36]">
+      <div className="w-80 bg-white dark:bg-[#111118] border-r border-slate-200 dark:border-[#1e1e28] flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-slate-200 dark:border-[#1e1e28]">
           <div className="flex items-center gap-2 mb-3">
             <Stethoscope className="w-5 h-5 text-blue-600" />
             <h2 className="font-bold text-lg text-slate-800 dark:text-[#fafafa]">Painel Médico</h2>
