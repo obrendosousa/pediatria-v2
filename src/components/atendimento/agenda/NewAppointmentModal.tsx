@@ -367,7 +367,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
         checkBlockConflict(supabaseAtendimento, data.doctor_id!, data.date, data.time_start),
       ]);
       if (conflictResult.hasConflict || blockResult.isBlocked) {
-        toast.warning('Encaixe: agendamento criado em horario com conflito/bloqueio.');
+        toast.info('Encaixe: agendamento criado em horário com conflito/bloqueio.');
       }
     }
 

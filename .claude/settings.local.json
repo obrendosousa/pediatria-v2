@@ -257,7 +257,14 @@
       "Bash(git status:*)",
       "Bash(npm list:*)",
       "Bash(grep -r \"tv_panel\\\\|TVPanel\" c:/Users/brend/Documents/pediatria-v2/src --include=*.ts --include=*.tsx --include=*.sql)",
-      "Bash(grep -r \"appointments\\\\|tv\" c:/Users/brend/Documents/pediatria-v2/database --include=*.sql)"
+      "Bash(grep -r \"appointments\\\\|tv\" c:/Users/brend/Documents/pediatria-v2/database --include=*.sql)",
+      "Bash(grep -r 'CREATE TABLE.*tasks' /c/Users/brend/Documents/pediatria-v2/database/ --include=*.sql)",
+      "Bash(grep -r \"schemaClient\\\\|atendimento\" /c/Users/brend/Documents/pediatria-v2/src/lib --include=*.ts --include=*.tsx)",
+      "Bash(grep -A 30 'CREATE TABLE.*task' /c/Users/brend/Documents/pediatria-v2/database/*.sql)",
+      "Bash(cat /c/Users/brend/Documents/pediatria-v2/database/*.sql)",
+      "Bash(grep -r \"CREATE SCHEMA\\\\|CREATE TABLE\" /c/Users/brend/Documents/pediatria-v2/database --include=*.sql)",
+      "Bash(grep -r \"CREATE TABLE.*tasks\\\\|atendimento.tasks\" /c/Users/brend/Documents/pediatria-v2/database --include=*.sql -A 30)",
+      "Bash(grep -r .from\\\\\\(''tasks''\\\\\\) /c/Users/brend/Documents/pediatria-v2/src --include=*.tsx --include=*.ts)"
     ]
   },
   "hooks": {

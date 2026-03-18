@@ -85,9 +85,12 @@ export default function AtendimentoTasksPage() {
   }, [isDragging, dragPosition]);
 
   async function fetchTasks() {
+    if (!user?.id) return;
+
     const { data: general } = await supabase
       .from('tasks')
       .select('*')
+      .eq('user_id', user.id)
       .eq('type', 'general')
       .neq('status', 'deleted')
       .order('due_time', { ascending: true });
@@ -97,6 +100,7 @@ export default function AtendimentoTasksPage() {
     const { data: notes } = await supabase
       .from('tasks')
       .select('*')
+      .eq('user_id', user.id)
       .eq('type', 'sticky_note')
       .neq('status', 'deleted')
       .order('position', { ascending: true });
