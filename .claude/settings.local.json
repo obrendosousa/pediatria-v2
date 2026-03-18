@@ -279,7 +279,12 @@
       "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(Object.keys\\(p.dependencies || {}\\).filter\\(d => d.includes\\(''supabase''\\) || d.includes\\(''pg''\\) || d.includes\\(''postgres''\\)\\).join\\(''\\\\n''\\)\\)\")",
       "Bash(node scripts/migrate-allergies.mjs)",
       "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\")",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":3000\")",
+      "Bash(findstr LISTEN)",
+      "Bash(taskkill //F //PID 57872)",
+      "Bash(taskkill //F //IM node.exe)"
     ]
   },
   "hooks": {
