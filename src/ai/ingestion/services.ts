@@ -207,11 +207,15 @@ export async function ensureChatExists(phone: string, pushName: string, fromMe: 
   const supabase = await getSupabase();
 
   // 1. Tenta buscar o chat existente
+  // IMPORTANTE: usar .limit(1).maybeSingle() em vez de .single()
+  // .single() falha se houver 0 ou 2+ resultados, causando duplicatas em cascata
   const { data: existingChat } = await supabase
     .from("chats")
     .select("*")
     .eq("phone", phone)
-    .single();
+    .order("id", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
   if (existingChat) {
     // Regra de proteção de nome (anti sobrescrita):

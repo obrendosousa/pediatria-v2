@@ -277,7 +277,9 @@
       "Bash(curl -s \"https://juctfolupehtaoehjkwl.supabase.co/rest/v1/\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\" -H \"Accept-Profile: atendimento\")",
       "Bash(node -e \":*)",
       "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(Object.keys\\(p.dependencies || {}\\).filter\\(d => d.includes\\(''supabase''\\) || d.includes\\(''pg''\\) || d.includes\\(''postgres''\\)\\).join\\(''\\\\n''\\)\\)\")",
-      "Bash(node scripts/migrate-allergies.mjs)"
+      "Bash(node scripts/migrate-allergies.mjs)",
+      "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\")",
+      "Bash(npx supabase:*)"
     ]
   },
   "hooks": {

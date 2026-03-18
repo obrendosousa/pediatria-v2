@@ -102,7 +102,7 @@ const ALLERGY_SECTIONS: AllergySection[] = [
       { id: 31, label: 'AINNH', fieldType: 'textarea' },
       { id: 32, label: 'Anti-hipertensivos', fieldType: 'textarea' },
       { id: 33, label: 'Ansiolíticos', fieldType: 'textarea' },
-      { id: 34, label: 'Antibióticos' },
+      { id: 34, label: 'Antibióticos', fieldType: 'textarea' },
       { id: 84, label: 'Outros', fieldType: 'textarea' },
     ],
   },
@@ -237,7 +237,7 @@ export function AllergyManager({ patientId }: ProntuarioScreenProps) {
           .from('patient_allergies')
           .select('*')
           .eq('patient_id', patientId)
-          .single(),
+          .maybeSingle(),
         supabasePublic
           .from('doctors')
           .select('id, name')
@@ -252,6 +252,8 @@ export function AllergyManager({ patientId }: ProntuarioScreenProps) {
         setAlertSystem(data.alert_system || false);
       }
       if (profsData) setProfessionals(profsData);
+    } catch (err) {
+      console.error('Erro ao carregar alergias:', err);
     } finally {
       setIsLoading(false);
     }

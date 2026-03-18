@@ -116,13 +116,18 @@ async function handleMessagesUpdate(body: Record<string, unknown>) {
     if (hasEditedText) {
       const prev = existing.tool_data && typeof existing.tool_data === 'object' ? (existing.tool_data as Record<string, unknown>) : {};
       updatePayload.message_text = editedText!.trim();
-      updatePayload.is_edited = true;
-      updatePayload.edited_at = new Date().toISOString();
+      // Guardar dados de edição em tool_data (funciona mesmo sem colunas dedicadas)
       updatePayload.tool_data = { ...prev, is_edited: true, edited_at: new Date().toISOString() };
     }
 
     if (Object.keys(updatePayload).length === 0) continue;
-    await supabase.from('chat_messages').update(updatePayload).eq('wpp_id', wppId);
+    const { error: updateError } = await supabase.from('chat_messages').update(updatePayload).eq('wpp_id', wppId);
+    // Se falhar por colunas inexistentes, tenta sem campos opcionais
+    if (updateError && String(updateError.message || '').includes('schema cache')) {
+      delete updatePayload.is_edited;
+      delete updatePayload.edited_at;
+      await supabase.from('chat_messages').update(updatePayload).eq('wpp_id', wppId);
+    }
     if (existing.chat_id && mapped) {
       await supabase.from('chats').update({ last_message_status: mapped }).eq('id', existing.chat_id);
     }
@@ -530,8 +535,10 @@ function normalizePhone(value?: string | null) {
 async function ensureChatExistsInAtendimento(phone: string, pushName: string, fromMe: boolean) {
   const supabase = getSupabase();
 
+  // IMPORTANTE: usar .limit(1).maybeSingle() em vez de .single()
+  // .single() falha se houver 0 ou 2+ resultados, causando duplicatas em cascata
   const { data: existing } = await supabase
-    .from('chats').select('*').eq('phone', phone).single();
+    .from('chats').select('*').eq('phone', phone).order('id', { ascending: true }).limit(1).maybeSingle();
 
   if (existing) {
     const currentName = (existing.contact_name ?? '').trim();
@@ -587,7 +594,18 @@ async function saveMessageInAtendimento(payload: {
   if (Object.keys(toolData).length > 0) insertPayload.tool_data = toolData;
   if (payload.quoted_info?.wpp_id) insertPayload.quoted_wpp_id = payload.quoted_info.wpp_id;
 
-  const { error } = await supabase.from('chat_messages').insert(insertPayload);
+  let { error } = await supabase.from('chat_messages').insert(insertPayload);
+
+  // Se falhou por coluna inexistente (quoted_wpp_id, edited_at, etc.), tenta sem ela
+  if (error && String(error.message || '').includes('schema cache')) {
+    console.warn('[ATD/Ingest] Coluna inexistente detectada, tentando sem campos opcionais:', error.message);
+    delete insertPayload.quoted_wpp_id;
+    delete insertPayload.is_edited;
+    delete insertPayload.edited_at;
+    const retry = await supabase.from('chat_messages').insert(insertPayload);
+    error = retry.error;
+  }
+
   if (error) {
     if (String(error.message || '').toLowerCase().includes('duplicate key')) return;
     console.error('[ATD/Ingest] Erro ao salvar mensagem:', error);
