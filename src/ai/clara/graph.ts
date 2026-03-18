@@ -3,6 +3,7 @@ import {
   BaseMessage,
   HumanMessage,
   SystemMessage,
+  ToolMessage,
 } from "@langchain/core/messages";
 import { z } from "zod";
 import { END, START, StateGraph, messagesStateReducer } from "@langchain/langgraph";
@@ -116,6 +117,54 @@ async function loadDynamicPromptParts(): Promise<{
   } catch {
     return { company: CLARA_COMPANY, custom_rules: CLARA_RULES, voice_rules: "" };
   }
+}
+
+/**
+ * Gemini exige que todas as function responses de tool calls paralelas
+ * estejam em um único turn. O @langchain/google-genai pode não fazer esse
+ * merge, causando 400 "function response turn comes immediately after a
+ * function call turn". Esta função colapsa parallel tool calls em pares 1:1.
+ */
+function fixParallelToolCalls(messages: BaseMessage[]): BaseMessage[] {
+  const result: BaseMessage[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+
+    if (msg._getType() === "ai" && (msg as AIMessage).tool_calls && (msg as AIMessage).tool_calls!.length > 1) {
+      const aiMsg = msg as AIMessage;
+      const toolMsgs: ToolMessage[] = [];
+      let j = i + 1;
+      while (j < messages.length && messages[j]._getType() === "tool") {
+        toolMsgs.push(messages[j] as ToolMessage);
+        j++;
+      }
+
+      if (toolMsgs.length > 1) {
+        const firstCall = aiMsg.tool_calls![0];
+        const mergedContent = toolMsgs
+          .map((tm) => {
+            const name = tm.name || "tool";
+            const content = typeof tm.content === "string" ? tm.content : JSON.stringify(tm.content);
+            return `[${name}]\n${content}`;
+          })
+          .join("\n\n---\n\n");
+
+        result.push(
+          new AIMessage({ content: aiMsg.content, tool_calls: [firstCall] })
+        );
+        result.push(
+          new ToolMessage({ content: mergedContent, tool_call_id: firstCall.id || "", name: firstCall.name })
+        );
+        i = j - 1;
+        continue;
+      }
+    }
+
+    result.push(msg);
+  }
+
+  return result;
 }
 
 /** Extrai texto de conteúdo LLM que pode ser string ou array de partes */
@@ -384,10 +433,20 @@ claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
     state.messages.length > 0 ? state.messages : [new HumanMessage("Olá.")]
   );
 
+  // Fix: Gemini não suporta parallel tool calls com múltiplos ToolMessages separados
+  const sanitizedMessages = fixParallelToolCalls(compactedMessages);
+
   const response = (await modelWithTools.invoke([
     new SystemMessage(systemPrompt),
-    ...compactedMessages,
+    ...sanitizedMessages,
   ])) as AIMessage;
+
+  // Limita a 1 tool call por turno para evitar o mesmo problema no próximo ciclo
+  if (response.tool_calls && response.tool_calls.length > 1) {
+    return {
+      messages: [new AIMessage({ content: response.content, tool_calls: [response.tool_calls[0]] })],
+    };
+  }
 
   return { messages: [response] };
 });

@@ -277,6 +277,9 @@ export const sessionManagerNode = async (
   state: IngestionState
 ): Promise<Partial<IngestionState>> => {
   if (!state.phone) {
+    console.warn(
+      `[Ingestion] Mensagem descartada: telefone não resolvido. jid=${state.source_jid} strategy=${state.resolver_strategy} error=${state.resolver_error} type=${state.raw_input?.messageType} pushName=${state.raw_input?.pushName}`
+    );
     return { should_continue: false };
   }
 

@@ -3,6 +3,7 @@ import { getPersistedIngestionGraph } from "@/ai/ingestion/graph";
 import { NextResponse } from "next/server";
 import { EvolutionWebhookData } from "@/ai/ingestion/state";
 import { createClient } from "@supabase/supabase-js";
+import { logWebhook } from "@/lib/webhookLogger";
 
 // Política anti-restauração: após reconnect, ignora backlog/histórico e segue apenas mensagens novas.
 const INGESTION_START_TS_MS = Date.now();
@@ -691,6 +692,7 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
       return NextResponse.json({ status: "processed", event: "messages_delete" });
     }
     if (isHistorySetEvent) {
+      logWebhook({ schema_source: "public", event, status: "ignored", reason: "history_restore_disabled", payload: body });
       return NextResponse.json({ status: "ignored", reason: "history_restore_disabled" });
     }
 
@@ -713,6 +715,12 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
 
     const rawMessages = normalizeMessagesFromWebhook(body);
 
+    // Log detalhado quando nenhuma mensagem é normalizada (debug de mensagens perdidas)
+    if (rawMessages.length === 0 && (eventUpper === "MESSAGES_UPSERT" || event === "messages.upsert")) {
+      const dataSnippet = JSON.stringify(body.data ?? body).substring(0, 300);
+      console.warn(`[WEBHOOK] Nenhuma mensagem normalizada do payload. event=${event} data=${dataSnippet}`);
+    }
+
     // --- APLICAÇÃO DO FILTRO DE TEMPO: Bloqueia mensagens mais velhas que 24h ---
     const messages = rawMessages.filter(
       (msg) =>
@@ -722,16 +730,25 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
 
     // Se o webhook veio com mensagens, mas TODAS eram antigas e foram filtradas, descartamos o evento.
     if (rawMessages.length > 0 && messages.length === 0) {
-      console.warn(
-        `[WEBHOOK] Ignorado: histórico/backlog descartado. ${rawMessages.length} mensagens fora da janela ativa.`
-      );
+      for (const m of rawMessages) {
+        logWebhook({
+          schema_source: "public", event, status: "ignored",
+          reason: isMessageOlderThan24Hours(m.messageTimestamp) ? "older_than_24h" : "before_ingestion_start",
+          remote_jid: m.key?.remoteJid, phone: extractPhoneFromRemoteJid(m.key?.remoteJid) || undefined,
+          message_type: m.messageType, push_name: m.pushName, wpp_id: m.key?.id,
+          resolver_info: { ts: m.messageTimestamp, ingestionStart: INGESTION_START_TS_MS },
+        });
+      }
+      console.warn(`[WEBHOOK] Ignorado: ${rawMessages.length} msgs fora da janela.`);
       return NextResponse.json({ status: "ignored", reason: "messages_outside_live_window" });
     }
 
     if (messages.length === 0) {
-      console.warn("[WEBHOOK] Ignorado: nenhum payload normalizado", {
-        event: eventUpper || event || "unknown",
+      logWebhook({
+        schema_source: "public", event, status: "ignored",
+        reason: "no_messages_normalized", payload: body,
       });
+      console.warn("[WEBHOOK] Ignorado: nenhum payload normalizado", { event: eventUpper || event || "unknown" });
       return NextResponse.json({ status: "ignored", reason: "no_messages_normalized" });
     }
 
@@ -772,6 +789,20 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
           },
         }
       );
+
+      // Log de resultado da ingestão
+      const wasDropped = !ingestionResult.should_continue || !ingestionResult.chat_id;
+      logWebhook({
+        schema_source: "public", event, status: wasDropped ? "ignored" : "processed",
+        reason: wasDropped ? `phone_not_resolved(${ingestionResult.resolver_strategy || "unknown"})` : undefined,
+        remote_jid: remoteJid, phone: String(ingestionResult.phone || "") || extractPhoneFromRemoteJid(remoteJid) || undefined,
+        message_type: message.messageType, push_name: message.pushName, wpp_id: wppId,
+        resolver_info: wasDropped ? {
+          source_jid: ingestionResult.source_jid, resolved_jid: ingestionResult.resolved_jid,
+          strategy: ingestionResult.resolver_strategy, error: ingestionResult.resolver_error,
+          senderPn: message.key?.senderPn, remoteJidAlt: message.key?.remoteJidAlt,
+        } : undefined,
+      });
 
       // ── AUTO-RESPOSTA DE PAUSA (server-side) ──────────────────────────────
       // Quando o atendimento está pausado, agenda auto-resposta 1 min após

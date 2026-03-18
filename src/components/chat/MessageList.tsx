@@ -2,7 +2,6 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { ChevronDown, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { scrollButtonVariants } from '@/lib/animations';
@@ -541,11 +540,10 @@ export default function MessageList({
         {renderedMessages}
 
         {/* Indicador animado de status da Clara */}
-        {isAIChat && claraStatus && typeof window !== 'undefined' && createPortal(
-          <div className="fixed bottom-20 left-4 z-[10000] pointer-events-none">
+        {isAIChat && claraStatus && (
+          <div className="mt-2">
             <ClaraStatusIndicator status={claraStatus} />
-          </div>,
-          document.body
+          </div>
         )}
 
         <div ref={bottomRef} className="h-4" />

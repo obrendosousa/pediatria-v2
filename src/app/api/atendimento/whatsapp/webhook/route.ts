@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { createSchemaAdminClient } from '@/lib/supabase/schemaServer';
 import { EvolutionWebhookData } from '@/ai/ingestion/state';
 import { handleMediaUpload, normalizeJidToPhone, isLidJid, resolveLidToPhone, fetchProfilePictureFromEvolution } from '@/ai/ingestion/services';
+import { logWebhook } from '@/lib/webhookLogger';
 
 const SCHEMA = 'atendimento';
 
@@ -492,9 +493,19 @@ async function processWebhookBody(body: Record<string, unknown>, requestUrl = ''
     );
 
     if (rawMessages.length > 0 && messages.length === 0) {
+      for (const m of rawMessages) {
+        logWebhook({
+          schema_source: 'atendimento', event, status: 'ignored',
+          reason: isMessageOlderThan24Hours(m.messageTimestamp) ? 'older_than_24h' : 'before_ingestion_start',
+          remote_jid: m.key?.remoteJid, phone: extractPhoneFromRemoteJid(m.key?.remoteJid) || undefined,
+          message_type: m.messageType, push_name: m.pushName, wpp_id: m.key?.id,
+          resolver_info: { ts: m.messageTimestamp, ingestionStart: INGESTION_START_TS_MS },
+        });
+      }
       return NextResponse.json({ status: 'ignored', reason: 'messages_outside_live_window' });
     }
     if (messages.length === 0) {
+      logWebhook({ schema_source: 'atendimento', event, status: 'ignored', reason: 'no_messages_normalized', payload: body });
       return NextResponse.json({ status: 'ignored', reason: 'no_messages_normalized' });
     }
 
@@ -661,13 +672,25 @@ async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
           phone = resolved.phone;
         } else {
           console.warn('[ATD/Ingest] LID JID não resolvido:', jid);
+          logWebhook({
+            schema_source: 'atendimento', status: 'ignored', reason: 'lid_unresolved',
+            remote_jid: jid, message_type: message.messageType, push_name: message.pushName,
+            wpp_id: message.key?.id, resolver_info: { senderPn: message.key?.senderPn, remoteJidAlt: message.key?.remoteJidAlt },
+          });
           return;
         }
       }
     } else {
       phone = normalizeJidToPhone(jid);
     }
-    if (!phone || !/^\d{8,15}$/.test(phone)) return;
+    if (!phone || !/^\d{8,15}$/.test(phone)) {
+      logWebhook({
+        schema_source: 'atendimento', status: 'ignored', reason: 'invalid_phone',
+        remote_jid: jid, phone: phone || undefined, message_type: message.messageType,
+        push_name: message.pushName, wpp_id: message.key?.id,
+      });
+      return;
+    }
 
     const isMe = message.key?.fromMe === true;
     const pushName = message.pushName || phone;
