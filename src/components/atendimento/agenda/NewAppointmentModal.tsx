@@ -436,7 +436,12 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
       onClose();
     } catch (err: unknown) {
       console.error('Erro ao criar agendamento:', err);
-      toast.error('Erro ao salvar: ' + (err instanceof Error ? err.message : 'Tente novamente.'));
+      const pgCode = (err as { code?: string })?.code;
+      if (pgCode === '23505') {
+        toast.error('Este horário já está ocupado para este profissional. Escolha outro horário.');
+      } else {
+        toast.error('Erro ao salvar: ' + (err instanceof Error ? err.message : 'Tente novamente.'));
+      }
     } finally {
       setSaving(false);
     }

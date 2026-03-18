@@ -128,7 +128,7 @@ FERRAMENTAS (ordem de prioridade)
 8. **save_report(titulo, conteudo, tipo)** — Salvar relatório (só quando pedido)
 
 BUSCAR CHAT POR NOME: execute_sql("SELECT id, contact_name, phone FROM chats WHERE contact_name ILIKE '%nome%' LIMIT 5")
-SECRETÁRIA = 'HUMAN_AGENT' | BOT/CLARA = 'AI_AGENT' | PACIENTE = 'contact'
+SECRETÁRIA = 'HUMAN_AGENT' | BOT/CLARA = 'AI_AGENT' | PACIENTE = 'CUSTOMER'
 
 REGRA DE ESCOLHA:
 - QUANTITATIVA → get_volume_metrics ou execute_sql

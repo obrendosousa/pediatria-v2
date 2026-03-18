@@ -34,6 +34,13 @@ function sanitizeCidQuery(q: string): string {
   return q.replace(/[%_(),.\\]/g, '');
 }
 
+// Parse seguro de datas YYYY-MM-DD — retorna null se inválida
+function safeParseDate(dateStr: unknown): Date | null {
+  if (typeof dateStr !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+  const d = new Date(dateStr + 'T12:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+
 // ── CID Search ──
 function CidSearch({ selected, onChange }: { selected: string[]; onChange: (cids: string[]) => void }) {
   const [query, setQuery] = useState('');
@@ -385,11 +392,13 @@ export function ProntuarioAnamnese({ patientId, patientData }: ProntuarioScreenP
       if (q.answer == null) return '<em style="color:#999">Sem resposta</em>';
       if (q.type === 'checkbox' && Array.isArray(q.answer)) return q.answer.join(', ');
       if (q.type === 'gestational_calculator') {
-        const diffMs = Date.now() - new Date((q.answer as string) + 'T00:00:00').getTime();
-        if (diffMs < 0) return `DUM: ${new Date((q.answer as string) + 'T00:00:00').toLocaleDateString('pt-BR')} (data futura)`;
+        const dum = safeParseDate(q.answer);
+        if (!dum) return 'Data inválida';
+        const diffMs = Date.now() - dum.getTime();
+        if (diffMs < 0) return `DUM: ${dum.toLocaleDateString('pt-BR')} (data futura)`;
         const weeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
         const days = Math.floor((diffMs % (7 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
-        return `DUM: ${new Date((q.answer as string) + 'T00:00:00').toLocaleDateString('pt-BR')} — ${weeks}s ${days}d`;
+        return `DUM: ${dum.toLocaleDateString('pt-BR')} — ${weeks}s ${days}d`;
       }
       return String(q.answer);
     };
@@ -652,7 +661,8 @@ export function ProntuarioAnamnese({ patientId, patientData }: ProntuarioScreenP
                       {q.answer && (
                         <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                           {(() => {
-                            const dum = new Date((q.answer as string) + 'T00:00:00');
+                            const dum = safeParseDate(q.answer);
+                            if (!dum) return 'Data inválida';
                             const diffMs = Date.now() - dum.getTime();
                             if (diffMs < 0) return 'Data futura — verifique a DUM';
                             const weeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));

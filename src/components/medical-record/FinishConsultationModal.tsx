@@ -9,9 +9,6 @@ import {
   Search, Plus, Minus, FileText,
   Loader2, Package
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { saveAppointmentDateTime } from '@/utils/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
 
 interface FinishConsultationModalProps {
@@ -181,137 +178,26 @@ export default function FinishConsultationModal({
         chatId = await getChatId();
       } catch { /* ignore */ }
 
-      // 3. Check what we need to create
-      const hasProducts = selectedProducts.length > 0;
-      const hasReturn = !!returnDate;
-      const hasNotes = !!notes;
-
-      let checkoutId: number | null = null;
-
-      // 4. Create medical_checkout
-      if (hasProducts || hasReturn || hasNotes) {
-        const secretaryNotesText = [notes, returnObs ? `Retorno: ${returnObs}` : ''].filter(Boolean).join(' • ') || null;
-
-        const checkoutData: Record<string, unknown> = {
-          secretary_notes: secretaryNotesText,
-          status: 'pending',
+      // 3. Finalizar consulta atomicamente via API
+      const res = await fetch('/api/medical-record/finish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           patient_id: patientId,
-        };
-        if (appointmentId) checkoutData.appointment_id = appointmentId;
-        if (chatId != null) checkoutData.chat_id = chatId;
-        if (returnDate) checkoutData.return_date = returnDate;
-        if (returnObs) checkoutData.return_obs = returnObs;
+          appointment_id: appointmentId || null,
+          chat_id: chatId,
+          notes: notes || null,
+          return_date: returnDate || null,
+          return_obs: returnObs || null,
+          products: selectedProducts.length > 0
+            ? selectedProducts.map(p => ({ product_id: p.id, quantity: p.quantity }))
+            : null,
+        }),
+      });
 
-        const { data: checkout, error: checkoutError } = await supabase
-          .from('medical_checkouts')
-          .insert(checkoutData)
-          .select()
-          .single();
-
-        if (checkoutError) {
-          console.error('[Finalizar] Erro ao criar checkout:', checkoutError);
-          throw new Error('Erro ao criar checkout: ' + extractErrorMsg(checkoutError));
-        }
-
-        checkoutId = checkout?.id ?? null;
-
-        // 5. Insert checkout items (products)
-        if (hasProducts && checkoutId) {
-          const itemsPayload = selectedProducts.map(p => ({
-            checkout_id: checkoutId,
-            product_id: p.id,
-            quantity: p.quantity,
-            type: 'product' as const
-          }));
-
-          const { error: itemsError } = await supabase.from('checkout_items').insert(itemsPayload);
-          if (itemsError) {
-            console.error('[Finalizar] Erro ao inserir itens:', itemsError);
-            throw new Error('Erro ao adicionar produtos: ' + extractErrorMsg(itemsError));
-          }
-        }
-      }
-
-      // 6. Create return appointment if needed
-      if (hasReturn && returnDate && appointmentId) {
-        try {
-          const { data: currentAppointment } = await supabase
-            .from('appointments')
-            .select('doctor_id, doctor_name, patient_name, patient_phone')
-            .eq('id', appointmentId)
-            .single();
-
-          if (currentAppointment) {
-            const start_time = saveAppointmentDateTime(returnDate, '09:00');
-
-            const { error: returnAptError } = await supabase
-              .from('appointments')
-              .insert({
-                doctor_id: currentAppointment.doctor_id,
-                doctor_name: currentAppointment.doctor_name,
-                patient_name: currentAppointment.patient_name,
-                patient_phone: currentAppointment.patient_phone,
-                patient_id: patientId,
-                start_time: start_time,
-                status: 'scheduled',
-                appointment_type: 'retorno',
-                notes: returnObs || `Retorno agendado na consulta de ${format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}`
-              });
-
-            if (returnAptError) {
-              console.error('[Finalizar] Erro ao criar retorno:', returnAptError);
-            }
-          }
-        } catch (e) {
-          console.error('[Finalizar] Erro ao agendar retorno:', e);
-        }
-      }
-
-      // 7. Update appointment status to 'waiting_payment'
-      if (appointmentId) {
-        const { error: aptError } = await supabase
-          .from('appointments')
-          .update({ status: 'waiting_payment', finished_at: new Date().toISOString() })
-          .eq('id', appointmentId);
-
-        if (aptError) {
-          console.error('[Finalizar] Erro ao atualizar agendamento:', aptError);
-          throw new Error('Erro ao atualizar agendamento: ' + extractErrorMsg(aptError));
-        }
-      }
-
-      // 8. Update medical_records to 'signed'
-      const { data: currentRecord } = await supabase
-        .from('medical_records')
-        .select('id')
-        .eq('patient_id', patientId)
-        .eq('status', 'draft')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (currentRecord?.id) {
-        const { error: recordError } = await supabase
-          .from('medical_records')
-          .update({
-            status: 'signed',
-            finished_at: new Date().toISOString()
-          })
-          .eq('id', currentRecord.id);
-
-        if (recordError) {
-          console.error('[Finalizar] Erro ao assinar prontuario:', recordError);
-          throw new Error('Erro ao assinar prontuario: ' + extractErrorMsg(recordError));
-        }
-      }
-
-      // 9. Update chat (non-critical)
-      if (chatId) {
-        await supabase
-          .from('chats')
-          .update({ last_interaction_at: new Date().toISOString() })
-          .eq('id', chatId)
-          .then(() => {});
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Erro ao finalizar consulta.' }));
+        throw new Error(errorData.error || 'Erro ao finalizar consulta.');
       }
 
       onSuccess();

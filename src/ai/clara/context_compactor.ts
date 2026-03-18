@@ -25,7 +25,7 @@ export async function compactMessages(
   const oldContent = oldMessages
     .map((m) => {
       const type = m._getType();
-      const content = typeof m.content === "string" ? m.content.slice(0, 200) : "[tool_call]";
+      const content = typeof m.content === "string" ? m.content.slice(0, 500) : "[tool_call]";
       return `${type}: ${content}`;
     })
     .join("\n");

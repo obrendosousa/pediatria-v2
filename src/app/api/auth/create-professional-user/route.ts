@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { randomInt } from 'node:crypto';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -140,9 +141,8 @@ function generatePassword(): string {
   const special = '!@#$%';
   let pwd = '';
   for (let i = 0; i < 10; i++) {
-    pwd += chars[Math.floor(Math.random() * chars.length)];
+    pwd += chars[randomInt(chars.length)];
   }
-  // Add one special char
-  pwd += special[Math.floor(Math.random() * special.length)];
+  pwd += special[randomInt(special.length)];
   return pwd;
 }

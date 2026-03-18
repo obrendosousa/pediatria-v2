@@ -139,62 +139,28 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    const { error: updateError } = await supabase
-      .from('financial_transactions')
-      .update({
-        amount,
-        origin: normalizedOrigin,
-        occurred_at: occurredAt,
-        notes
-      })
-      .eq('id', transactionId);
-
-    if (updateError) {
-      throw new Error(updateError.message || 'Erro ao atualizar lançamento.');
-    }
-
-    const { error: deletePaymentsError } = await supabase
-      .from('financial_transaction_payments')
-      .delete()
-      .eq('transaction_id', transactionId);
-
-    if (deletePaymentsError) {
-      throw new Error(deletePaymentsError.message || 'Erro ao limpar formas de pagamento antigas.');
-    }
-
-    const { error: insertPaymentsError } = await supabase
-      .from('financial_transaction_payments')
-      .insert(
-        normalizedPayments.map((payment) => ({
-          transaction_id: transactionId,
+    const { data: rpcResult, error: rpcError } = await supabase.rpc(
+      'update_transaction_with_payments',
+      {
+        p_transaction_id: transactionId,
+        p_updates: {
+          amount,
+          origin: normalizedOrigin,
+          occurred_at: occurredAt,
+          notes
+        },
+        p_payments: normalizedPayments.map((payment) => ({
           payment_method: payment.payment_method,
           amount: payment.amount
         }))
-      );
+      }
+    );
 
-    if (insertPaymentsError) {
-      throw new Error(insertPaymentsError.message || 'Erro ao salvar novas formas de pagamento.');
+    if (rpcError) {
+      throw new Error(rpcError.message || 'Erro ao atualizar lançamento e pagamentos.');
     }
 
-    const { data: afterTransaction, error: afterError } = await supabase
-      .from('financial_transactions')
-      .select(`
-        id,
-        amount,
-        origin,
-        occurred_at,
-        notes,
-        financial_transaction_payments (
-          payment_method,
-          amount
-        )
-      `)
-      .eq('id', transactionId)
-      .maybeSingle();
-
-    if (afterError || !afterTransaction) {
-      throw new Error(afterError?.message || 'Erro ao confirmar lançamento atualizado.');
-    }
+    const afterTransaction = rpcResult;
 
     await supabase.from('audit_log').insert({
       user_id: userId,

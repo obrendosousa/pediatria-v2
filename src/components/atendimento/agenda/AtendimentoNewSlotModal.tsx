@@ -191,7 +191,12 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
       toast.success(slotType === 'booked' ? 'Agendamento criado!' : 'Horario bloqueado!');
     } catch (error: unknown) {
       console.error('Erro ao salvar:', error);
-      toast.error('Erro ao salvar: ' + (error instanceof Error ? error.message : 'Tente novamente.'));
+      const pgCode = (error as { code?: string })?.code;
+      if (pgCode === '23505') {
+        toast.error('Este horário já está ocupado para este profissional. Escolha outro horário.');
+      } else {
+        toast.error('Erro ao salvar: ' + (error instanceof Error ? error.message : 'Tente novamente.'));
+      }
     } finally {
       setLoading(false);
     }

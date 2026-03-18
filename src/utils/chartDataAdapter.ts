@@ -1,11 +1,12 @@
 import { AnthropometryEntry } from '@/types/anthropometry';
 import { ChartRegistryConfig } from '@/config/growthChartsRegistry';
-import { calculateAgeInMonths } from '@/utils/growthChartUtils';
+import { calculateAgeInMonths, calculateCorrectedAge } from '@/utils/growthChartUtils';
 
 interface PrepareDataProps {
   entries: AnthropometryEntry[];
   chartConfig: ChartRegistryConfig;
   patientBirthDate: string; // ISO Date (YYYY-MM-DD)
+  patientGestationalAgeWeeks?: number | null; // Idade gestacional para prematuros
 }
 
 /**
@@ -13,10 +14,12 @@ interface PrepareDataProps {
  * em pontos X/Y que o gráfico entende.
  */
 export function preparePatientPoints(props: PrepareDataProps) {
-  const { entries, chartConfig, patientBirthDate } = props;
+  const { entries, chartConfig, patientBirthDate, patientGestationalAgeWeeks } = props;
 
   // Se não houver data de nascimento, não dá para calcular idade
   if (!patientBirthDate) return [];
+
+  const isPremature = patientGestationalAgeWeeks != null && patientGestationalAgeWeeks < 37;
 
   return entries
     .map(entry => {
@@ -29,7 +32,13 @@ export function preparePatientPoints(props: PrepareDataProps) {
         xValue = entry.height_cm || null;
       } else {
         // Gráficos de Tempo: O X é a idade em meses
-        xValue = calculateAgeInMonths(patientBirthDate, entry.measurement_date);
+        // Para prematuros, usar idade corrigida (até 2 anos)
+        if (isPremature) {
+          xValue = calculateCorrectedAge(patientBirthDate, patientGestationalAgeWeeks!, entry.measurement_date)
+            ?? calculateAgeInMonths(patientBirthDate, entry.measurement_date);
+        } else {
+          xValue = calculateAgeInMonths(patientBirthDate, entry.measurement_date);
+        }
       }
 
       // 2. CALCULAR O EIXO Y (Vertical)

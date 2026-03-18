@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { resolveFinanceRange } from '@/lib/financePeriod';
-import { normalizeFinancialOrigin, resolveFinancialType } from '@/lib/finance';
+import { normalizeFinancialOrigin, resolveFinancialType, round2 } from '@/lib/finance';
 import { requireApprovedProfile } from '@/lib/auth/requireApprovedProfile';
 import { logAuditServer } from '@/lib/auditServer';
 
@@ -65,7 +65,7 @@ function buildDailyTotals(transactions: TransactionRow[]) {
   };
 
   for (const transaction of transactions) {
-    const amount = Number(transaction.amount || 0);
+    const amount = round2(Number(transaction.amount || 0));
     const normalizedOrigin = normalizeFinancialOrigin(transaction.origin);
     const appointment = firstAppointment(transaction);
     const financialType = resolveFinancialType({
@@ -73,27 +73,23 @@ function buildDailyTotals(transactions: TransactionRow[]) {
       appointmentType: appointment?.appointment_type ?? null
     });
 
-    totalsByOrigin[normalizedOrigin] += amount;
-    totalsByType[financialType] += amount;
+    totalsByOrigin[normalizedOrigin] = round2(totalsByOrigin[normalizedOrigin] + amount);
+    totalsByType[financialType] = round2(totalsByType[financialType] + amount);
     for (const payment of transaction.financial_transaction_payments || []) {
-      totalsByMethod[payment.payment_method] += Number(payment.amount || 0);
+      totalsByMethod[payment.payment_method] = round2(
+        totalsByMethod[payment.payment_method] + round2(Number(payment.amount || 0))
+      );
     }
   }
 
-  const totalAmount = Number(
-    Object.values(totalsByMethod).reduce((acc, amount) => acc + amount, 0).toFixed(2)
+  const totalAmount = round2(
+    Object.values(totalsByMethod).reduce((acc, amount) => acc + amount, 0)
   );
 
   return {
-    totalsByMethod: Object.fromEntries(
-      Object.entries(totalsByMethod).map(([key, value]) => [key, Number(value.toFixed(2))])
-    ),
-    totalsByOrigin: Object.fromEntries(
-      Object.entries(totalsByOrigin).map(([key, value]) => [key, Number(value.toFixed(2))])
-    ),
-    totalsByType: Object.fromEntries(
-      Object.entries(totalsByType).map(([key, value]) => [key, Number(value.toFixed(2))])
-    ),
+    totalsByMethod: { ...totalsByMethod },
+    totalsByOrigin: { ...totalsByOrigin },
+    totalsByType: { ...totalsByType },
     totalAmount
   };
 }

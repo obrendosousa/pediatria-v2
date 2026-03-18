@@ -903,7 +903,42 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
   }
 }
 
+async function verifyWebhookSignature(req: Request): Promise<{ body: Record<string, unknown>; error?: string }> {
+  const secret = process.env.EVOLUTION_WEBHOOK_SECRET;
+
+  const rawBody = await req.text();
+  const body = JSON.parse(rawBody) as Record<string, unknown>;
+
+  // Se não há secret configurado, aceitar (backward-compatible, mas logar warning)
+  if (!secret) {
+    return { body };
+  }
+
+  const signature = req.headers.get("x-webhook-signature") || req.headers.get("x-hub-signature-256");
+  if (!signature) {
+    return { body, error: "Missing webhook signature header" };
+  }
+
+  const { createHmac } = await import("node:crypto");
+  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+  const signatureHex = signature.replace("sha256=", "");
+
+  if (expected !== signatureHex) {
+    return { body, error: "Invalid webhook signature" };
+  }
+
+  return { body };
+}
+
 export async function POST(req: Request) {
-  const body = (await req.json()) as Record<string, unknown>;
-  return processWebhookBody(body, req.url);
+  try {
+    const { body, error } = await verifyWebhookSignature(req);
+    if (error) {
+      console.warn("[Webhook] Signature verification failed:", error);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return processWebhookBody(body, req.url);
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
 }

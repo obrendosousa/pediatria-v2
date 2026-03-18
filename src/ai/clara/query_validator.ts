@@ -41,9 +41,51 @@ export function preValidateQuery(
   if (!upper.startsWith("SELECT") && !upper.startsWith("WITH")) {
     return {
       is_valid: false,
-      issues: ["Apenas SELECT/WITH são permitidos."],
+      issues: ["Apenas SELECT/WITH são permitidos. Query rejeitada por segurança."],
       expected_behavior: "Query rejeitada por segurança.",
     };
+  }
+
+  // 1b. Bloquear multi-statement (ponto-e-vírgula seguido de comando)
+  if (/;\s*\S/.test(sql)) {
+    return {
+      is_valid: false,
+      issues: ["Multi-statement detectado (';' seguido de outro comando). Query rejeitada por segurança."],
+      expected_behavior: "Query rejeitada por segurança.",
+    };
+  }
+
+  // 1c. Bloquear DML/DDL keywords em qualquer posição (subqueries, CTEs etc.)
+  const DML_BLOCKLIST = [
+    "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE",
+    "CREATE", "GRANT", "REVOKE", "COPY", "EXECUTE", "PREPARE",
+    "DO ", "CALL ", "SET ", "NOTIFY", "LISTEN", "UNLISTEN",
+  ];
+  for (const keyword of DML_BLOCKLIST) {
+    if (upper.includes(keyword)) {
+      return {
+        is_valid: false,
+        issues: [`Keyword proibido detectado: ${keyword.trim()}. Query rejeitada por segurança.`],
+        expected_behavior: "Query rejeitada por segurança.",
+      };
+    }
+  }
+
+  // 1d. Bloquear funções perigosas do PostgreSQL
+  const DANGEROUS_FUNCTIONS = [
+    "SET_CONFIG", "PG_READ_FILE", "PG_WRITE_FILE", "PG_READ_BINARY_FILE",
+    "LO_EXPORT", "LO_IMPORT", "LO_GET", "LO_PUT",
+    "PG_TERMINATE_BACKEND", "PG_CANCEL_BACKEND", "PG_RELOAD_CONF",
+    "PG_SLEEP", "DBLINK", "DBLINK_EXEC",
+  ];
+  for (const fn of DANGEROUS_FUNCTIONS) {
+    if (upper.includes(fn)) {
+      return {
+        is_valid: false,
+        issues: [`Função proibida detectada: ${fn}. Query rejeitada por segurança.`],
+        expected_behavior: "Query rejeitada por segurança.",
+      };
+    }
   }
 
   // 2. Se tem temporal anchor, deve ter filtro de data

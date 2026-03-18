@@ -21,24 +21,26 @@ interface SchedulerState {
 async function ensureChatId(phoneRaw: string, contactName?: string): Promise<number | null> {
   const supabase: SupabaseClient = getSupabaseAdminClient();
   const phone = phoneRaw.replace(/\D/g, "");
-  const existing = await supabase.from("chats").select("id").eq("phone", phone).maybeSingle();
-  if (existing.error) throw existing.error;
-  const existingChat = (existing.data as { id?: number } | null) ?? null;
-  if (existingChat?.id) return existingChat.id;
 
-  const created = await supabase
+  // Upsert para evitar race condition: se dois runs paralelos tentarem criar
+  // o mesmo chat, o ON CONFLICT garante que apenas um é criado.
+  const { data, error } = await supabase
     .from("chats")
-    .insert({
-      phone,
-      contact_name: contactName || "Paciente",
-      status: "ACTIVE",
-    })
+    .upsert(
+      { phone, contact_name: contactName || "Paciente", status: "ACTIVE" },
+      { onConflict: "phone", ignoreDuplicates: true }
+    )
     .select("id")
     .single();
 
-  if (created.error) throw created.error;
-  const createdChat = (created.data as { id?: number } | null) ?? null;
-  return createdChat?.id || null;
+  if (error) {
+    // Se ignoreDuplicates retornou vazio, buscar o existente
+    const existing = await supabase.from("chats").select("id").eq("phone", phone).maybeSingle();
+    if (existing.error) throw existing.error;
+    return (existing.data as { id?: number } | null)?.id || null;
+  }
+
+  return (data as { id?: number } | null)?.id || null;
 }
 
 async function enqueueSequence(params: {
@@ -169,8 +171,10 @@ async function getCompiledSchedulerGraph() {
       graph.addNode("evaluate_and_enqueue", async (state: SchedulerState) => {
         let createdCount = 0;
         const now = new Date(state.nowIso);
-        const currentHH = String(now.getHours()).padStart(2, "0");
-        const currentMM = String(now.getMinutes()).padStart(2, "0");
+        // Converter para BRT (America/Sao_Paulo) — trigger_time é armazenado em horário local
+        const nowBRT = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+        const currentHH = String(nowBRT.getHours()).padStart(2, "0");
+        const currentMM = String(nowBRT.getMinutes()).padStart(2, "0");
         const currentTime = `${currentHH}:${currentMM}`;
 
         // Milestones: dispara a partir do horário configurado (deduplicado por hasSentMilestoneAutomation)

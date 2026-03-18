@@ -284,7 +284,12 @@
       "Bash(findstr \":3000\")",
       "Bash(findstr LISTEN)",
       "Bash(taskkill //F //PID 57872)",
-      "Bash(taskkill //F //IM node.exe)"
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 node -e \":*)",
+      "Bash(grep -v \"^$\")",
+      "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 node --experimental-specifier-resolution=node -e \":*)",
+      "Bash(rm -rf .next/dev)",
+      "Bash(grep -l \"appointments\" \"C:/Users/brend/Documents/pediatria-v2/database\"/*.sql)"
     ]
   },
   "hooks": {

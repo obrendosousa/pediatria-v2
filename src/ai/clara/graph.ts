@@ -120,18 +120,21 @@ async function loadDynamicPromptParts(): Promise<{
 }
 
 /**
- * Gemini exige que todas as function responses de tool calls paralelas
- * estejam em um único turn. O @langchain/google-genai pode não fazer esse
- * merge, causando 400 "function response turn comes immediately after a
- * function call turn". Esta função colapsa parallel tool calls em pares 1:1.
+ * Sanitiza mensagens para conformidade com a API do Gemini:
+ * 1. Colapsa parallel tool calls (N tool_calls + N ToolMessages) em par 1:1
+ * 2. Remove ToolMessages órfãos (sem AIMessage com tool_calls precedente)
+ * 3. Converte AIMessage com tool_calls sem ToolMessages seguintes em texto
+ * 4. Insere AIMessage ponte entre ToolMessage→HumanMessage para manter
+ *    alternância user↔model (Gemini não aceita 2 user turns consecutivos)
  */
-function fixParallelToolCalls(messages: BaseMessage[]): BaseMessage[] {
+function sanitizeMessagesForGemini(messages: BaseMessage[]): BaseMessage[] {
   const result: BaseMessage[] = [];
 
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
+    const type = msg._getType();
 
-    if (msg._getType() === "ai" && (msg as AIMessage).tool_calls && (msg as AIMessage).tool_calls!.length > 1) {
+    if (type === "ai" && (msg as AIMessage).tool_calls?.length) {
       const aiMsg = msg as AIMessage;
       const toolMsgs: ToolMessage[] = [];
       let j = i + 1;
@@ -140,7 +143,8 @@ function fixParallelToolCalls(messages: BaseMessage[]): BaseMessage[] {
         j++;
       }
 
-      if (toolMsgs.length > 1) {
+      if (toolMsgs.length > 0) {
+        // Merge todas as tool responses em um par 1:1
         const firstCall = aiMsg.tool_calls![0];
         const mergedContent = toolMsgs
           .map((tm) => {
@@ -150,18 +154,29 @@ function fixParallelToolCalls(messages: BaseMessage[]): BaseMessage[] {
           })
           .join("\n\n---\n\n");
 
-        result.push(
-          new AIMessage({ content: aiMsg.content, tool_calls: [firstCall] })
-        );
-        result.push(
-          new ToolMessage({ content: mergedContent, tool_call_id: firstCall.id || "", name: firstCall.name })
-        );
-        i = j - 1;
-        continue;
-      }
-    }
+        result.push(new AIMessage({ content: aiMsg.content, tool_calls: [firstCall] }));
+        result.push(new ToolMessage({ content: mergedContent, tool_call_id: firstCall.id || "", name: firstCall.name }));
 
-    result.push(msg);
+        // Ponte: se próximo é HumanMessage, Gemini veria 2 user turns
+        // (ToolMessage=user/functionResponse + HumanMessage=user/text). Inserir AI ponte.
+        if (j < messages.length && messages[j]._getType() === "human") {
+          result.push(new AIMessage({ content: "Certo, prosseguindo." }));
+        }
+
+        i = j - 1;
+      } else {
+        // AIMessage com tool_calls mas sem ToolMessages → órfão, converte p/ texto
+        const text = typeof aiMsg.content === "string" && aiMsg.content.trim()
+          ? aiMsg.content
+          : "Processando...";
+        result.push(new AIMessage({ content: text }));
+      }
+    } else if (type === "tool") {
+      // ToolMessage órfão (sem AIMessage com tool_calls antes) → pular
+      continue;
+    } else {
+      result.push(msg);
+    }
   }
 
   return result;
@@ -434,12 +449,31 @@ claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
   );
 
   // Fix: Gemini não suporta parallel tool calls com múltiplos ToolMessages separados
-  const sanitizedMessages = fixParallelToolCalls(compactedMessages);
+  const sanitizedMessages = sanitizeMessagesForGemini(compactedMessages);
 
-  const response = (await modelWithTools.invoke([
-    new SystemMessage(systemPrompt),
-    ...sanitizedMessages,
-  ])) as AIMessage;
+  // Debug: log types para diagnóstico de erros Gemini
+  console.log("[simple_agent] msgs:", sanitizedMessages.map((m) => m._getType?.() || (m as Record<string, unknown>).type || "unknown").join(" → "));
+
+  let response: AIMessage;
+  try {
+    response = (await modelWithTools.invoke([
+      new SystemMessage(systemPrompt),
+      ...sanitizedMessages,
+    ])) as AIMessage;
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    // Se Gemini recusar o formato, tenta com apenas a última HumanMessage (sem histórico)
+    if (errMsg.includes("function call turn") || errMsg.includes("function response turn")) {
+      console.warn("[simple_agent] Gemini rejeitou histórico, tentando sem contexto anterior...");
+      const lastHuman = [...compactedMessages].reverse().find((m) => m._getType?.() === "human") || new HumanMessage("Olá.");
+      response = (await modelWithTools.invoke([
+        new SystemMessage(systemPrompt),
+        lastHuman,
+      ])) as AIMessage;
+    } else {
+      throw err;
+    }
+  }
 
   // Limita a 1 tool call por turno para evitar o mesmo problema no próximo ciclo
   if (response.tool_calls && response.tool_calls.length > 1) {
@@ -514,7 +548,7 @@ Hoje: ${today} | Ontem: ${yesterday}${temporalInfo}
 BANCO DE DADOS:
 • chats: id, phone, contact_name, stage, ai_sentiment, last_interaction_at, is_archived
 • chat_messages: id, chat_id, sender, message_text, created_at
-  - sender: 'AI_AGENT'=bot | 'HUMAN_AGENT'=secretária | 'contact'=paciente
+  - sender: 'AI_AGENT'=bot | 'HUMAN_AGENT'=secretária | 'CUSTOMER'=paciente
 • patients, appointments, sales, financial_transactions, medical_records
 
 FERRAMENTAS:

@@ -58,6 +58,7 @@ Retorna análise estruturada com citações reais das conversas.`,
   }),
 
   func: async ({ start_date, end_date, analysis_goals, sender_filter, include_metadata }) => {
+   try {
     const supabase = getSupabaseAdminClient();
 
     const startTs = `${start_date}T00:00:00-03:00`;
@@ -79,7 +80,7 @@ Retorna análise estruturada com citações reais das conversas.`,
         .range(offset, offset + BATCH - 1);
 
       if (sender_filter && sender_filter !== "ALL") {
-        query = query.eq("sender", sender_filter === "CUSTOMER" ? "contact" : sender_filter);
+        query = query.eq("sender", sender_filter);
       }
 
       const { data, error } = await query;
@@ -91,11 +92,19 @@ Retorna análise estruturada com citações reais das conversas.`,
       offset += BATCH;
     }
 
+    console.log(`[analyze_raw] Params: ${start_date} → ${end_date} | sender=${sender_filter || 'ALL'} | found=${allMessages.length} msgs`);
+
     if (allMessages.length === 0) {
+      // Diagnóstico: query de contagem para verificar se o problema é na query
+      const { count } = await supabase
+        .from("chat_messages")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", startTs)
+        .lte("created_at", endTs);
       return (
-        `Nenhuma mensagem encontrada no período ${start_date} a ${end_date}` +
-        (sender_filter && sender_filter !== "ALL" ? ` com filtro sender=${sender_filter}` : "") +
-        ". Verifique se as datas estão corretas."
+        `DEBUG: 0 msgs com filtros atuais, mas count sem filtro sender = ${count ?? "null"}. ` +
+        `Params: start=${startTs}, end=${endTs}, sender_filter=${sender_filter || "ALL"}. ` +
+        `Verifique se as datas estão corretas.`
       );
     }
 
@@ -128,7 +137,7 @@ Retorna análise estruturada com citações reais das conversas.`,
     const SINGLE_PASS_LIMIT = 200_000;
 
     const model = new ChatGoogleGenerativeAI({
-      model: "gemini-2.5-flash-preview-05-20",
+      model: "gemini-2.0-flash",
       apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       temperature: 0.1,
     });
@@ -167,14 +176,20 @@ TOTAL DE CHATS ÚNICOS: ${uniqueChatsCount}
       method = "single_pass";
       const transcript = allMessages.map(formatMessage).join("\n");
 
-      const response = await model.invoke([
-        { role: "system", content: ANALYSIS_PROMPT },
-        {
-          role: "user",
-          content: `TRANSCRIÇÃO COMPLETA (${allMessages.length} mensagens):\n\n${transcript}\n\nAnalise conforme os objetivos.`,
-        },
-      ]);
-      analysisResult = typeof response.content === "string" ? response.content : "";
+      try {
+        const response = await model.invoke([
+          { role: "system", content: ANALYSIS_PROMPT },
+          {
+            role: "user",
+            content: `TRANSCRIÇÃO COMPLETA (${allMessages.length} mensagens):\n\n${transcript}\n\nAnalise conforme os objetivos.`,
+          },
+        ]);
+        analysisResult = typeof response.content === "string" ? response.content : "";
+      } catch (geminiErr: unknown) {
+        const errMsg = geminiErr instanceof Error ? geminiErr.message : String(geminiErr);
+        console.error(`[analyze_raw] Erro no Gemini (single_pass): ${errMsg}`);
+        return `Erro na análise interna: ${errMsg.slice(0, 200)}. Base de dados contém ${allMessages.length} mensagens de ${uniqueChatsCount} chats no período.`;
+      }
     } else {
       // ── MAP-REDUCE por chat_id ──
       method = "chunked_map_reduce";
@@ -281,5 +296,10 @@ ${analysisResult}
 
 ---
 __SPOT_CHECK_DATA__: ${JSON.stringify(citations.slice(0, 5))}`;
+   } catch (outerErr: unknown) {
+     const msg = outerErr instanceof Error ? outerErr.message : String(outerErr);
+     console.error(`[analyze_raw] ERRO FATAL: ${msg}`);
+     return `ERRO na ferramenta analyze_raw_conversations: ${msg.slice(0, 500)}`;
+   }
   },
 });

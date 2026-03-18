@@ -98,16 +98,20 @@ export const updateBrainFileTool = new DynamicStructuredTool({
   }),
   func: async ({ module, new_content }) => {
     try {
+      // Salvar como pending_review para exigir aprovação de admin antes de entrar em vigor.
+      // Isso previne prompt injection onde um usuário pede para Clara alterar suas próprias regras.
       const { error } = await supabase
         .from("agent_config")
-        .upsert(
-          { agent_id: "clara", config_key: module, content: new_content, updated_at: new Date().toISOString() },
-          { onConflict: "agent_id,config_key" }
-        );
+        .insert({
+          agent_id: "clara",
+          config_key: `${module}_pending`,
+          content: new_content,
+          updated_at: new Date().toISOString(),
+        });
       if (error) throw error;
-      return `Sucesso! O módulo '${MODULE_LABELS[module]}' foi atualizado no banco de dados. As alterações já estão ativas.`;
+      return `O módulo '${MODULE_LABELS[module]}' foi salvo para revisão. Um administrador precisa aprovar a alteração no painel antes que entre em vigor.`;
     } catch (error: unknown) {
-      return `Erro ao atualizar configuração: ${error instanceof Error ? error.message : String(error)}`;
+      return `Erro ao salvar configuração para revisão: ${error instanceof Error ? error.message : String(error)}`;
     }
   },
 });
@@ -496,7 +500,10 @@ export const executeSqlTool = new DynamicStructuredTool({
 
       const client = await dbPool.connect();
       try {
+        await client.query("BEGIN READ ONLY");
+        await client.query("SET LOCAL statement_timeout TO '10000'");
         const result = await client.query(effectiveSql);
+        await client.query("COMMIT");
         const rows = result.rows;
 
         if (rows.length === 0) {
@@ -516,6 +523,9 @@ export const executeSqlTool = new DynamicStructuredTool({
         const displayed = rows.slice(0, 500);
         const truncNote = rows.length > 500 ? ` (mostrando 500 de ${rows.length})` : "";
         return `${preWarnings}✅ ${rows.length} registro(s)${truncNote}.${postSummary}${postWarnings}${retryHint}\nSQL: ${effectiveSql}\n${JSON.stringify(displayed, null, 2)}`;
+      } catch (queryErr) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw queryErr;
       } finally {
         client.release();
       }
@@ -634,7 +644,7 @@ export const getVolumeMetricsTool = new DynamicStructuredTool({
         if (!msgsByDay[day]) msgsByDay[day] = { total: 0, pacientes: 0, bot: 0, secretaria: 0 };
         msgsByDay[day].total++;
         const s = String(msg.sender ?? "");
-        if (s === "contact") msgsByDay[day].pacientes++;
+        if (s === "contact" || s === "CUSTOMER") msgsByDay[day].pacientes++;
         else if (s === "AI_AGENT") msgsByDay[day].bot++;
         else if (s === "HUMAN_AGENT") msgsByDay[day].secretaria++;
       }

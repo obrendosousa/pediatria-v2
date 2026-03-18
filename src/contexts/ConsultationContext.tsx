@@ -9,9 +9,9 @@ interface ConsultationContextType {
   record: MedicalRecordData | null;
   isLoading: boolean;
   error: string | null;
-  saveRecord: (data: Partial<MedicalRecordData>) => Promise<any>;
-  finishRecord: () => Promise<any>;
-  startConsultationTimer: () => Promise<any>;
+  saveRecord: (data: Partial<MedicalRecordData>) => Promise<unknown>;
+  finishRecord: () => Promise<unknown>;
+  startConsultationTimer: () => Promise<unknown>;
   saveAllData: () => Promise<boolean>;
   reload: () => void;
   registerSaveHandler: (key: string, handler: SaveHandler) => void;
@@ -45,11 +45,18 @@ export function ConsultationProvider({
 
   const saveAllScreens = useCallback(async () => {
     const handlers = Array.from(saveHandlersRef.current.values());
+    const errors: Error[] = [];
     await Promise.all(
       handlers.map((h) =>
-        h().catch((err) => console.error('Erro ao salvar tela:', err))
+        h().catch((err) => {
+          console.error('Erro ao salvar tela:', err);
+          errors.push(err instanceof Error ? err : new Error(String(err)));
+        })
       )
     );
+    if (errors.length > 0) {
+      throw new Error(`${errors.length} tela(s) falharam ao salvar.`);
+    }
   }, []);
 
   return (

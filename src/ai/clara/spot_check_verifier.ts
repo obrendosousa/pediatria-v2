@@ -67,7 +67,7 @@ export async function spotCheckCitations(
   const results: SpotCheckResult["details"] = [];
 
   for (const citation of toCheck) {
-    const searchText = sanitizeForIlike(citation.text.slice(0, 50));
+    const searchText = sanitizeForIlike(citation.text.slice(0, 100));
 
     // Busca primária: chat_id + sender + trecho
     const { data } = await supabase
@@ -90,7 +90,7 @@ export async function spotCheckCitations(
         .from("chat_messages")
         .select("message_text, sender")
         .eq("chat_id", citation.chat_id)
-        .ilike("message_text", `%${sanitizeForIlike(citation.text.slice(0, 30))}%`)
+        .ilike("message_text", `%${sanitizeForIlike(citation.text.slice(0, 60))}%`)
         .limit(1);
 
       results.push({
