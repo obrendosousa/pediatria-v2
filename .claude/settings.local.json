@@ -290,7 +290,8 @@
       "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 node --experimental-specifier-resolution=node -e \":*)",
       "Bash(rm -rf .next/dev)",
       "Bash(grep -l \"appointments\" \"C:/Users/brend/Documents/pediatria-v2/database\"/*.sql)",
-      "Bash(findstr \":3001\")"
+      "Bash(findstr \":3001\")",
+      "Bash(node scripts/validate-clara.js)"
     ]
   },
   "hooks": {
