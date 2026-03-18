@@ -223,7 +223,8 @@ export async function POST(req: Request) {
           console.log(`💾 [Clara] Salvando resposta final no banco... (finalMessages: ${finalMessages.length}, chars: ${aiResponseText.length})`);
 
           // Parse síncrono — identifica segmentos <voice> e <text>
-          const segments = parseVoiceSegments(aiResponseText);
+          // TEMP: força tudo como texto (ElevenLabs sem créditos)
+          const segments = [{ type: 'text' as const, content: aiResponseText.replace(/<\/?voice>/g, '') }];
           const baseTs = Date.now();
 
           // Pré-gera todos os áudios SEQUENCIALMENTE antes de inserir no banco.
