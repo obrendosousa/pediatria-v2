@@ -149,9 +149,11 @@ export default function FinishConsultationModal({
     if (typeof err === 'string') return err;
     if (err instanceof Error) return err.message;
     if (typeof err === 'object') {
-      const e = err as Record<string, any>;
-      return e.message || e.error_description || e.msg || e.details || e.hint ||
-        (JSON.stringify(err) !== '{}' ? JSON.stringify(err) : 'Erro desconhecido');
+      const e = err as Record<string, unknown>;
+      const val = e.message ?? e.error_description ?? e.msg ?? e.details ?? e.hint;
+      if (typeof val === 'string') return val;
+      const json = JSON.stringify(err);
+      return json !== '{}' ? json : 'Erro desconhecido';
     }
     return String(err);
   };
@@ -198,6 +200,7 @@ export default function FinishConsultationModal({
         if (appointmentId) checkoutData.appointment_id = appointmentId;
         if (chatId != null) checkoutData.chat_id = chatId;
         if (returnDate) checkoutData.return_date = returnDate;
+        if (returnObs) checkoutData.return_obs = returnObs;
 
         const { data: checkout, error: checkoutError } = await supabase
           .from('medical_checkouts')
@@ -251,6 +254,7 @@ export default function FinishConsultationModal({
                 patient_id: patientId,
                 start_time: start_time,
                 status: 'scheduled',
+                appointment_type: 'retorno',
                 notes: returnObs || `Retorno agendado na consulta de ${format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}`
               });
 
@@ -313,7 +317,7 @@ export default function FinishConsultationModal({
       onSuccess();
       onClose();
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[Finalizar] Erro completo:', error);
       const message = error instanceof Error ? error.message : extractErrorMsg(error);
       toast.error(message);

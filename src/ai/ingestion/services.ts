@@ -354,7 +354,9 @@ export async function saveMessageToDb(payload: {
             ? "Figurinha"
             : payload.type === "document"
               ? "Documento"
-              : (payload.content || "").trim();
+              : payload.type === "contact"
+                ? "Contato"
+                : (payload.content || "").trim();
 
   const chatUpdatePayload: Record<string, unknown> = {};
 

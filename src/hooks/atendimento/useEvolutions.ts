@@ -18,6 +18,7 @@ export type ClinicalEvolution = {
   digital_signature: boolean;
   show_date: boolean;
   evolution_date: string | null;
+  blocked: boolean;
   created_at: string;
 };
 
@@ -34,6 +35,7 @@ type EvolutionInput = {
   show_date?: boolean;
   evolution_date?: string | null;
   appointment_id?: number | null;
+  blocked?: boolean;
 };
 
 export function useEvolutions(patientId: number) {

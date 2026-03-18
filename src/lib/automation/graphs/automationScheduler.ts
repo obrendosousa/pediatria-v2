@@ -52,6 +52,7 @@ async function enqueueSequence(params: {
   patientId?: number;
   appointmentId?: number;
   dryRun: boolean;
+  idempotencyPrefix?: string;
 }) {
   const supabase: SupabaseClient = getSupabaseAdminClient();
   let delaySeconds = 0;
@@ -68,22 +69,30 @@ async function enqueueSequence(params: {
     }
 
     if (!params.dryRun) {
-      const idempotencyKey = `${params.rule.id}:${params.chatId}:${scheduledFor.toISOString()}:${created}`;
-      const ins = await supabase.from("scheduled_messages").insert({
-        chat_id: params.chatId,
-        item_type: "adhoc",
-        title: `${params.titlePrefix}: ${params.rule.name}`,
-        content: {
-          type: message.type,
-          content,
-          caption,
+      // Se tiver prefix customizado (appointment/return), usa ele para idempotência estável
+      const idempotencyKey = params.idempotencyPrefix
+        ? `${params.idempotencyPrefix}:${created}`
+        : `${params.rule.id}:${params.chatId}:${scheduledFor.toISOString()}:${created}`;
+
+      // Usa upsert com ON CONFLICT para evitar crash por duplicata
+      const ins = await supabase.from("scheduled_messages").upsert(
+        {
+          chat_id: params.chatId,
+          item_type: "adhoc",
+          title: `${params.titlePrefix}: ${params.rule.name}`,
+          content: {
+            type: message.type,
+            content,
+            caption,
+          },
+          scheduled_for: scheduledFor.toISOString(),
+          status: "pending",
+          automation_rule_id: params.rule.id,
+          run_id: params.runId,
+          idempotency_key: idempotencyKey,
         },
-        scheduled_for: scheduledFor.toISOString(),
-        status: "pending",
-        automation_rule_id: params.rule.id,
-        run_id: params.runId,
-        idempotency_key: idempotencyKey,
-      });
+        { onConflict: "idempotency_key", ignoreDuplicates: true }
+      );
       if (ins.error) throw ins.error;
 
       const logIns = await supabase.from("automation_logs").insert({
@@ -164,10 +173,11 @@ async function getCompiledSchedulerGraph() {
         const currentMM = String(now.getMinutes()).padStart(2, "0");
         const currentTime = `${currentHH}:${currentMM}`;
 
-        // Milestones: dispara quando horário bate (janela de 1 minuto)
+        // Milestones: dispara a partir do horário configurado (deduplicado por hasSentMilestoneAutomation)
         for (const rule of state.milestoneRules) {
           const ruleTime = (rule.trigger_time || "08:00:00").slice(0, 5);
-          if (currentTime !== ruleTime) continue;
+          // Dispara se já passou do horário configurado (não exige match exato do minuto)
+          if (currentTime < ruleTime) continue;
           const patients = await getPatientsReachingMilestone(rule.age_months || 0);
 
           for (const patient of patients) {
@@ -204,7 +214,7 @@ async function getCompiledSchedulerGraph() {
           }
         }
 
-        // Lembretes de consulta: avalia diariamente, agenda para amanhã no horário configurado
+        // Lembretes de consulta: avalia diariamente, envia HOJE (véspera) no horário configurado
         if (state.appointmentRule) {
           const rule = state.appointmentRule;
           const appointments = await getAppointmentsNeedingReminder();
@@ -215,10 +225,17 @@ async function getCompiledSchedulerGraph() {
             const chatId = await ensureChatId(appointment.patient_phone, patient.name);
             if (!chatId) continue;
 
+            // Envia hoje (véspera da consulta), não amanhã (dia da consulta)
             const triggerAt = new Date(now);
-            triggerAt.setDate(triggerAt.getDate() + 1);
             const [h, m] = (rule.trigger_time || "08:00:00").split(":").map(Number);
             triggerAt.setHours(h || 8, m || 0, 0, 0);
+            // Se o horário já passou hoje, dispara imediatamente
+            if (triggerAt.getTime() < now.getTime()) {
+              triggerAt.setTime(now.getTime());
+            }
+
+            // Idempotência: usa appointment.id na chave para evitar duplicatas entre runs
+            const idempotencyPrefix = `apt-${rule.id}:${appointment.id}`;
 
             createdCount += await enqueueSequence({
               runId: state.runId,
@@ -231,6 +248,7 @@ async function getCompiledSchedulerGraph() {
               patientId: patient.id,
               appointmentId: appointment.id,
               dryRun: state.dryRun,
+              idempotencyPrefix,
             });
             await logRunEvent({
               runId: state.runId,
@@ -243,7 +261,7 @@ async function getCompiledSchedulerGraph() {
           }
         }
 
-        // Lembretes de retorno: avalia diariamente, agenda para amanhã no horário configurado
+        // Lembretes de retorno: avalia diariamente, envia HOJE (véspera) no horário configurado
         if (state.returnRule) {
           const rule = state.returnRule;
           const returns = await getReturnsNeedingReminder();
@@ -254,10 +272,17 @@ async function getCompiledSchedulerGraph() {
             const chatId = await ensureChatId(patient.phone, patient.name);
             if (!chatId) continue;
 
+            // Envia hoje (véspera do retorno), não amanhã (dia do retorno)
             const triggerAt = new Date(now);
-            triggerAt.setDate(triggerAt.getDate() + 1);
             const [h, m] = (rule.trigger_time || "08:00:00").split(":").map(Number);
             triggerAt.setHours(h || 8, m || 0, 0, 0);
+            // Se o horário já passou hoje, dispara imediatamente
+            if (triggerAt.getTime() < now.getTime()) {
+              triggerAt.setTime(now.getTime());
+            }
+
+            // Idempotência: usa checkout.id na chave para evitar duplicatas entre runs
+            const idempotencyPrefix = `ret-${rule.id}:${checkout.id}`;
 
             createdCount += await enqueueSequence({
               runId: state.runId,
@@ -269,6 +294,7 @@ async function getCompiledSchedulerGraph() {
               variableContext: { patient, checkout },
               patientId: patient.id,
               dryRun: state.dryRun,
+              idempotencyPrefix,
             });
             await logRunEvent({
               runId: state.runId,

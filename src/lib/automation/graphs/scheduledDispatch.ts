@@ -67,6 +67,7 @@ async function getCompiledDispatchGraph() {
           failedCount: { reducer: (_, y) => y, default: () => 0 },
           deadLetterCount: { reducer: (_, y) => y, default: () => 0 },
         },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }) as any;
 
       graph.addNode("claim_pending", async (state: DispatchState) => {
@@ -125,6 +126,55 @@ async function getCompiledDispatchGraph() {
           }
 
           const payload = parsePayload(item.content);
+
+          // Funis agendados: content contém { steps: [...] } — executa via chatFunnel
+          if (item.item_type === "funnel" && Array.isArray(payload.steps)) {
+            if (state.dryRun) {
+              await releaseClaimedMessage(item.id, { workerId: state.workerId });
+              sentCount += 1;
+              continue;
+            }
+            try {
+              const { runChatFunnelGraph } = await import("@/lib/automation/graphs/chatFunnel");
+              await runChatFunnelGraph({
+                contractVersion: "v1",
+                chatId,
+                phone,
+                title: item.title || "Funil Agendado",
+                steps: payload.steps as Array<{ type: "text" | "audio" | "image" | "document" | "video" | "wait"; content?: string; delay?: number }>,
+                initiatedBy: "system",
+              });
+              sentCount += 1;
+              await markDispatchedSuccess(item.id, {
+                runId: state.runId,
+                workerId: state.workerId,
+                wppId: null,
+              });
+              await logRunEvent({
+                runId: state.runId,
+                threadId: `chat-${item.chat_id}`,
+                graphName: "ScheduledDispatchGraph",
+                nodeName: "dispatch_batch",
+                message: "funnel_executed",
+                metadata: { scheduledMessageId: item.id },
+              });
+            } catch (funnelErr) {
+              failedCount += 1;
+              const retryCount = (item.retry_count || 0) + 1;
+              const retryPolicy = calcRetryWindow(retryCount);
+              const errorMessage = funnelErr instanceof Error ? funnelErr.message : "funnel_execution_failed";
+              await markDispatchedFailure(item.id, {
+                runId: state.runId,
+                workerId: state.workerId,
+                errorMessage,
+                retryCount,
+                nextRetryAt: retryPolicy.nextRetryAt,
+                sendToDeadLetter: retryPolicy.sendToDeadLetter,
+              });
+            }
+            continue;
+          }
+
           const msgTypeRaw = asText(payload.type || "text").toLowerCase();
           const type = (["text", "audio", "image", "video", "document"].includes(msgTypeRaw)
             ? msgTypeRaw

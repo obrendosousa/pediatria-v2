@@ -11,6 +11,7 @@ import {
 } from '@/lib/chatCache';
 import { Chat, Message } from '@/types';
 import { useToast } from '@/contexts/ToastContext';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface ReplyTarget {
   wpp_id?: string;
@@ -114,11 +115,99 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     return setForChat;
   };
 
+  const fetchMessagesRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     if (activeChat) {
       currentChatIdRef.current = activeChat.id;
     }
   }, [activeChat?.id]);
+
+  // Realtime subscription for chat messages — resilient with auto-reconnect
+  const handleMessagesPayload = useCallback((payload: any) => {
+    const chatId = activeChat?.id;
+    if (!chatId) return;
+    const cacheKey = `atd_chat_messages_${chatId}`;
+
+    const updateCache = (next: Message[]) => {
+      const toCache = next.length > MAX_CACHED_MESSAGES_PER_CHAT
+        ? next.slice(-MAX_CACHED_MESSAGES_PER_CHAT)
+        : next;
+      set(cacheKey, toCache, TTL_MESSAGES_MS);
+      touchMessagesCacheKey(chatId);
+    };
+
+    if (payload.eventType === 'INSERT') {
+      const newMsg = payload.new as Message;
+      if (typeof newMsg.tool_data === 'string' && (newMsg.tool_data as string).trim().startsWith('{')) {
+        try { newMsg.tool_data = JSON.parse(newMsg.tool_data as string); } catch (e) { }
+      }
+      setMessages((prev) => {
+        const deleted = getDeletedSetForChat(chatId);
+        if (deleted.has(newMsg.id)) return prev;
+        if (prev.some((m) => m.id === newMsg.id)) return prev;
+        const next = [...prev, newMsg];
+        updateCache(next);
+        return next;
+      });
+    } else if (payload.eventType === 'DELETE') {
+      setMessages((prev) => {
+        const next = prev.filter((msg) => msg.id !== payload.old?.id);
+        updateCache(next);
+        return next;
+      });
+    } else if (payload.eventType === 'UPDATE') {
+      setMessages((prev) => {
+        const next = prev.map((msg) => {
+          if (msg.id !== payload.new?.id) return msg;
+          const incoming = payload.new as Message;
+          if (typeof incoming.tool_data === 'string' && (incoming.tool_data as string).trim().startsWith('{')) {
+            try { incoming.tool_data = JSON.parse(incoming.tool_data as string); } catch (e) { }
+          }
+          const currentUpdatedAt = new Date((msg as any)?.updated_at || msg.created_at || 0).getTime();
+          const incomingUpdatedAt = new Date((incoming as any)?.updated_at || incoming.created_at || 0).getTime();
+          if (incomingUpdatedAt < currentUpdatedAt) return msg;
+          return { ...msg, ...incoming };
+        });
+        updateCache(next);
+        return next;
+      });
+    }
+  }, [activeChat?.id]);
+
+  useRealtimeSubscription({
+    client: supabase,
+    channelName: `atd_chat_messages_realtime_${activeChat?.id ?? 'none'}`,
+    schema: 'atendimento',
+    table: 'chat_messages',
+    filter: activeChat?.id ? `chat_id=eq.${activeChat.id}` : undefined,
+    onPayload: handleMessagesPayload,
+    onRefresh: () => fetchMessagesRef.current(),
+    enabled: !!activeChat?.id && !String(activeChat.id).startsWith('new_'),
+  });
+
+  // Realtime subscription for reactions — resilient with auto-reconnect
+  const handleReactionsPayload = useCallback(async () => {
+    const chatId = activeChat?.id;
+    if (!chatId) return;
+    const { data: reactionsData, error: reactionsError } = await supabase
+      .from('message_reactions')
+      .select('target_wpp_id, emoji, sender_phone, sender_name, from_me, created_at')
+      .eq('chat_id', chatId);
+    if (reactionsError || !Array.isArray(reactionsData)) return;
+    setMessages((prev) => mergeReactionsIntoMessages(prev, reactionsData as MessageReactionRow[]));
+  }, [activeChat?.id]);
+
+  useRealtimeSubscription({
+    client: supabase,
+    channelName: `atd_message_reactions_realtime_${activeChat?.id ?? 'none'}`,
+    schema: 'atendimento',
+    table: 'message_reactions',
+    filter: activeChat?.id ? `chat_id=eq.${activeChat.id}` : undefined,
+    onPayload: handleReactionsPayload,
+    onRefresh: handleReactionsPayload,
+    enabled: !!activeChat?.id && !String(activeChat.id).startsWith('new_'),
+  });
 
   useEffect(() => {
     const ownerChatId = currentChatIdRef.current;
@@ -131,7 +220,7 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     touchMessagesCacheKey(ownerChatId);
   }, [messages]);
 
-  // 1. Carregar Mensagens e Inscrever no Realtime
+  // 1. Carregar Mensagens (realtime é gerenciado por useRealtimeSubscription acima)
   useEffect(() => {
     if (!activeChat) {
       setMessages([]);
@@ -202,90 +291,8 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
       setLoading(false);
     };
 
+    fetchMessagesRef.current = fetchMsgs;
     fetchMsgs();
-
-    const chatMessagesChannel = supabase.channel(`atd_chat_messages_realtime_${activeChat.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'atendimento',
-        table: 'chat_messages',
-        filter: `chat_id=eq.${activeChat.id}`,
-      }, (payload) => {
-        const updateCache = (next: Message[]) => {
-          const toCache = next.length > MAX_CACHED_MESSAGES_PER_CHAT
-            ? next.slice(-MAX_CACHED_MESSAGES_PER_CHAT)
-            : next;
-          set(cacheKey, toCache, TTL_MESSAGES_MS);
-          touchMessagesCacheKey(chatId);
-        };
-        if (payload.eventType === 'INSERT') {
-          const newMsg = payload.new as Message;
-          if (typeof newMsg.tool_data === 'string' && (newMsg.tool_data as string).trim().startsWith('{')) {
-            try { newMsg.tool_data = JSON.parse(newMsg.tool_data as string); } catch (e) { }
-          }
-          setMessages((prev) => {
-            const deleted = getDeletedSetForChat(chatId);
-            if (deleted.has(newMsg.id)) return prev;
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
-            const next = [...prev, newMsg];
-            updateCache(next);
-            return next;
-          });
-        } else if (payload.eventType === 'DELETE') {
-          setMessages((prev) => {
-            const next = prev.filter((msg) => msg.id !== payload.old?.id);
-            updateCache(next);
-            return next;
-          });
-        } else if (payload.eventType === 'UPDATE') {
-          setMessages((prev) => {
-            const next = prev.map((msg) => {
-              if (msg.id !== payload.new?.id) return msg;
-              const incoming = payload.new as Message;
-              if (typeof incoming.tool_data === 'string' && (incoming.tool_data as string).trim().startsWith('{')) {
-                try { incoming.tool_data = JSON.parse(incoming.tool_data as string); } catch (e) { }
-              }
-              const currentUpdatedAt = new Date((msg as any)?.updated_at || msg.created_at || 0).getTime();
-              const incomingUpdatedAt = new Date((incoming as any)?.updated_at || incoming.created_at || 0).getTime();
-              if (incomingUpdatedAt < currentUpdatedAt) return msg;
-              return { ...msg, ...incoming };
-            });
-            updateCache(next);
-            return next;
-          });
-        }
-      })
-      .subscribe();
-
-    let reactionsChannel: ReturnType<typeof supabase.channel> | null = null;
-    void (async () => {
-      const { error: tableCheckError } = await supabase
-        .from('message_reactions')
-        .select('id')
-        .limit(1);
-      if (tableCheckError) return;
-
-      reactionsChannel = supabase.channel(`atd_message_reactions_realtime_${activeChat.id}`)
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'atendimento',
-          table: 'message_reactions',
-          filter: `chat_id=eq.${activeChat.id}`,
-        }, async () => {
-          const { data: reactionsData, error: reactionsError } = await supabase
-            .from('message_reactions')
-            .select('target_wpp_id, emoji, sender_phone, sender_name, from_me, created_at')
-            .eq('chat_id', chatId);
-          if (reactionsError || !Array.isArray(reactionsData)) return;
-          setMessages((prev) => mergeReactionsIntoMessages(prev, reactionsData as MessageReactionRow[]));
-        })
-        .subscribe();
-    })();
-
-    return () => {
-      supabase.removeChannel(chatMessagesChannel);
-      if (reactionsChannel) supabase.removeChannel(reactionsChannel);
-    };
   }, [activeChat?.id]);
 
   // Helper: Garante que o chat existe no banco antes de enviar

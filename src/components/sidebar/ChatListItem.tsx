@@ -6,7 +6,7 @@ import {
   Pin, Trash2, Mail, ChevronDown, 
   CheckCheck, Check, Tag, UserCog, Archive,
   Camera, Mic, Sticker, FileText, Video, Ban, CheckCircle2,
-  Bot, Sparkles // Ícones novos para a IA
+  Bot, Sparkles, User // Ícones novos para a IA
 } from 'lucide-react';
 import { Chat } from '@/types';
 import { TagData, formatTime } from '@/utils/sidebarUtils';
@@ -199,10 +199,18 @@ const ChatListItem = memo(({
                     </div>
                 );
                 break;
+            case 'contact':
+                Content = (
+                    <div className="flex items-center min-w-0">
+                        <User size={16} className={`${mediaIconClass} flex-shrink-0`} />
+                        <span className={`${textClass} truncate`}>{singleLineText || 'Contato'}</span>
+                    </div>
+                );
+                break;
             case 'revoked':
                 Content = (
                     <div className="flex items-center text-[#8696a0] italic">
-                        <Ban size={14} className="mr-1"/> 
+                        <Ban size={14} className="mr-1"/>
                         <span className="text-[13px]">Mensagem apagada</span>
                     </div>
                 );

@@ -1,8 +1,14 @@
 import { getSupabaseAdminClient } from "./supabaseAdmin";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+function getAdmin(): SupabaseClient {
+  return getSupabaseAdminClient();
+}
 
 export interface ClaimedScheduledMessage {
   id: number;
   chat_id: number;
+  title?: string;
   status?: string;
   item_type: "macro" | "funnel" | "adhoc";
   content: Record<string, unknown> | string;
@@ -13,14 +19,14 @@ export interface ClaimedScheduledMessage {
 }
 
 export async function claimScheduledMessages(batchSize: number, workerId: string): Promise<ClaimedScheduledMessage[]> {
-  const supabase = getSupabaseAdminClient() as any;
+  const supabase = getAdmin();
   const nowIso = new Date().toISOString();
   const lockTimeoutSeconds = Math.max(
     Math.floor(Number(process.env.WORKER_DISPATCH_LOCK_TIMEOUT_SECONDS || 180)),
     30
   );
 
-  const rpcRes = await (supabase as any).rpc("claim_scheduled_messages", {
+  const rpcRes = await supabase.rpc("claim_scheduled_messages", {
     p_limit: batchSize,
     p_worker_id: workerId,
     p_now: nowIso,
@@ -34,10 +40,10 @@ export async function claimScheduledMessages(batchSize: number, workerId: string
     if (ids.length === 0) return [];
     const joined = await supabase
       .from("scheduled_messages")
-      .select("id, chat_id, status, item_type, content, automation_rule_id, run_id, retry_count, chats(id, phone)")
+      .select("id, chat_id, title, status, item_type, content, automation_rule_id, run_id, retry_count, chats(id, phone)")
       .in("id", ids);
     if (joined.error) throw joined.error;
-    return (joined.data || []) as ClaimedScheduledMessage[];
+    return (joined.data || []) as unknown as ClaimedScheduledMessage[];
   }
 
   throw new Error(`claim_scheduled_messages_rpc_failed:${rpcRes.error?.message || "unknown_error"}`);
@@ -47,7 +53,7 @@ export async function markDispatchedSuccess(
   messageId: number,
   payload: { runId: string; workerId: string; wppId: string | null }
 ) {
-  const supabase = getSupabaseAdminClient() as any;
+  const supabase = getAdmin();
   const sentAt = new Date().toISOString();
   const res = await supabase
     .from("scheduled_messages")
@@ -78,7 +84,7 @@ export async function markDispatchedFailure(
     sendToDeadLetter: boolean;
   }
 ) {
-  const supabase = getSupabaseAdminClient() as any;
+  const supabase = getAdmin();
   const nextStatus = payload.sendToDeadLetter ? "failed" : "pending";
   const res = await supabase
     .from("scheduled_messages")
@@ -100,7 +106,7 @@ export async function markDispatchedFailure(
 }
 
 export async function releaseClaimedMessage(messageId: number, payload: { workerId: string }) {
-  const supabase = getSupabaseAdminClient() as any;
+  const supabase = getAdmin();
   const res = await supabase
     .from("scheduled_messages")
     .update({
@@ -126,7 +132,7 @@ export async function insertChatAndMemory(params: {
   wppId?: string | null;
   automationRuleId?: number | null;
 }) {
-  const supabase = getSupabaseAdminClient() as any;
+  const supabase = getAdmin();
   const isMediaType = params.type === "audio" || params.type === "image" || params.type === "video" || params.type === "document";
   const mediaUrl = params.mediaUrl || (isMediaType ? params.content : null);
   const messageText = isMediaType ? params.caption || "" : params.caption || params.content || "";
@@ -179,7 +185,7 @@ export async function insertDeadLetter(payload: {
   nextRetryAt: string | null;
   body: Record<string, unknown>;
 }) {
-  const supabase = getSupabaseAdminClient() as any;
+  const supabase = getAdmin();
   const deadLetterIns = await supabase.from("langgraph_dead_letter").insert({
     run_id: payload.runId,
     thread_id: payload.threadId,

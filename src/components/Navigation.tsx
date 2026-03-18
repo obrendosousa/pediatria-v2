@@ -446,7 +446,7 @@ function NavItem({ icon: Icon, label, path, active, color, badge, moduleTheme, s
 
         {badge !== undefined && badge > 0 && (
           <div
-            className={`${isCollapsed ? 'absolute -right-0.5 -top-0.5' : 'ml-auto mr-5'} transition-all duration-500 ease-in-out z-10`}
+            className={`${isCollapsed ? 'absolute -right-0.5 -top-0.5' : 'ml-2'} transition-all duration-500 ease-in-out z-10`}
           >
             <span className="relative flex items-center justify-center">
               {/* Glow pulse */}

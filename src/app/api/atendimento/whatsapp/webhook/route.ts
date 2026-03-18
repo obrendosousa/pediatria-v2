@@ -599,6 +599,7 @@ async function saveMessageInAtendimento(payload: {
     : payload.type === 'video' ? 'Vídeo'
     : payload.type === 'sticker' ? 'Figurinha'
     : payload.type === 'document' ? 'Documento'
+    : payload.type === 'contact' ? 'Contato'
     : (payload.content || '').trim();
 
   const { data: chatRow } = await supabase

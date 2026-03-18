@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps, @typescript-eslint/no-unused-vars */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 const supabase = createClient();
 import {
   get,
@@ -64,7 +66,7 @@ function mergeReactionsIntoMessages(baseMessages: Message[], reactionRows: Messa
     if (typeof msg.tool_data === 'string' && (msg.tool_data as string).trim().startsWith('{')) {
       try {
         safeToolData = JSON.parse(msg.tool_data as string);
-      } catch (e) { }
+      } catch { /* ignore */ }
     }
 
     return {
@@ -118,7 +120,7 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
   };
 
   // Sincroniza o Ref com o activeChat sempre que o componente pai mudar o chat selecionado
-  useEffect(() => {
+  useEffect(() => {  
     if (activeChat) {
       currentChatIdRef.current = activeChat.id;
     }
@@ -136,7 +138,79 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     touchMessagesCacheKey(ownerChatId);
   }, [messages]);
 
-  // 1. Carregar Mensagens e Inscrever no Realtime (com cache)
+  // Ref para fetchMsgs — usado pelo useRealtimeSubscription como onRefresh
+  const fetchMessagesRef = useRef<() => void>(() => {});
+
+  // Handler de payload do realtime para chat_messages (INSERT/UPDATE/DELETE)
+  const handleMessagesPayload = useCallback((payload: Record<string, unknown>) => {
+    const chatId = activeChat?.id;
+    if (!chatId) return;
+    const cacheKey = `chat_messages_${chatId}`;
+
+    const updateCache = (next: Message[]) => {
+      const toCache = next.length > MAX_CACHED_MESSAGES_PER_CHAT
+        ? next.slice(-MAX_CACHED_MESSAGES_PER_CHAT)
+        : next;
+      set(cacheKey, toCache, TTL_MESSAGES_MS);
+      touchMessagesCacheKey(chatId);
+    };
+
+    const eventType = (payload as Record<string, unknown>).eventType as string;
+
+    if (eventType === 'INSERT') {
+      const newMsg = (payload as Record<string, unknown>).new as Message;
+      if (typeof newMsg.tool_data === 'string' && (newMsg.tool_data as string).trim().startsWith('{')) {
+        try { newMsg.tool_data = JSON.parse(newMsg.tool_data as string); } catch { /* ignore */ }
+      }
+      setMessages((prev) => {
+        const deleted = getDeletedSetForChat(chatId);
+        if (deleted.has(newMsg.id)) return prev;
+        if (prev.some((m) => m.id === newMsg.id)) return prev;
+        const next = [...prev, newMsg];
+        updateCache(next);
+        return next;
+      });
+    } else if (eventType === 'DELETE') {
+      const oldRecord = (payload as Record<string, unknown>).old as Record<string, unknown> | undefined;
+      setMessages((prev) => {
+        const next = prev.filter((msg) => msg.id !== oldRecord?.id);
+        updateCache(next);
+        return next;
+      });
+    } else if (eventType === 'UPDATE') {
+      setMessages((prev) => {
+        const next = prev.map((msg) => {
+          const newRecord = (payload as Record<string, unknown>).new as Message | undefined;
+          if (msg.id !== newRecord?.id) return msg;
+          const incoming = newRecord;
+          if (typeof incoming.tool_data === 'string' && (incoming.tool_data as string).trim().startsWith('{')) {
+            try { incoming.tool_data = JSON.parse(incoming.tool_data as string); } catch (_) { /* ignore */ }
+          }
+          const currentUpdatedAt = new Date((msg as Record<string, unknown>)?.updated_at as string || msg.created_at || 0).getTime();
+          const incomingUpdatedAt = new Date((incoming as Record<string, unknown>)?.updated_at as string || incoming.created_at || 0).getTime();
+          // Evita sobrescrever edição local mais nova por update atrasado.
+          if (incomingUpdatedAt < currentUpdatedAt) return msg;
+          return { ...msg, ...incoming };
+        });
+        updateCache(next);
+        return next;
+      });
+    }
+  }, [activeChat?.id]);
+
+  // Realtime resiliente para chat_messages via useRealtimeSubscription
+  useRealtimeSubscription({
+    client: supabase,
+    channelName: `chat_messages_realtime_${activeChat?.id ?? 'none'}`,
+    schema: 'public',
+    table: 'chat_messages',
+    filter: activeChat?.id ? `chat_id=eq.${activeChat.id}` : undefined,
+    onPayload: handleMessagesPayload,
+    onRefresh: () => fetchMessagesRef.current(),
+    enabled: !!activeChat?.id && !String(activeChat.id).startsWith('new_'),
+  });
+
+  // 1. Carregar Mensagens (com cache) + reactionsChannel
   useEffect(() => {
     if (!activeChat) {
       setMessages([]);
@@ -191,7 +265,7 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
         const withReactions = await fetchAndApplyReactions(filtered as Message[]);
         setMessages((prev) => {
           if (String(currentChatIdRef.current) !== String(chatId)) return prev;
-          const prevRevoked = new Map(prev.filter((m) => (m as any).message_type === 'revoked').map((m) => [m.id, m]));
+          const prevRevoked = new Map(prev.filter((m) => (m as Record<string, unknown>).message_type === 'revoked').map((m) => [m.id, m]));
           return withReactions.map((m) => {
             const wasRevoked = prevRevoked.get(m.id);
             if (wasRevoked) return wasRevoked;
@@ -208,60 +282,7 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     };
 
     fetchMsgs();
-
-    const chatMessagesChannel = supabase.channel(`chat_messages_realtime_${activeChat.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'chat_messages',
-        filter: `chat_id=eq.${activeChat.id}`,
-      }, (payload) => {
-        const updateCache = (next: Message[]) => {
-          const toCache = next.length > MAX_CACHED_MESSAGES_PER_CHAT
-            ? next.slice(-MAX_CACHED_MESSAGES_PER_CHAT)
-            : next;
-          set(cacheKey, toCache, TTL_MESSAGES_MS);
-          touchMessagesCacheKey(chatId);
-        };
-        if (payload.eventType === 'INSERT') {
-          const newMsg = payload.new as Message;
-          if (typeof newMsg.tool_data === 'string' && (newMsg.tool_data as string).trim().startsWith('{')) {
-            try { newMsg.tool_data = JSON.parse(newMsg.tool_data as string); } catch (e) { }
-          }
-          setMessages((prev) => {
-            const deleted = getDeletedSetForChat(chatId);
-            if (deleted.has(newMsg.id)) return prev;
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
-            const next = [...prev, newMsg];
-            updateCache(next);
-            return next;
-          });
-        } else if (payload.eventType === 'DELETE') {
-          setMessages((prev) => {
-            const next = prev.filter((msg) => msg.id !== payload.old?.id);
-            updateCache(next);
-            return next;
-          });
-        } else if (payload.eventType === 'UPDATE') {
-          setMessages((prev) => {
-            const next = prev.map((msg) => {
-              if (msg.id !== payload.new?.id) return msg;
-              const incoming = payload.new as Message;
-              if (typeof incoming.tool_data === 'string' && (incoming.tool_data as string).trim().startsWith('{')) {
-                try { incoming.tool_data = JSON.parse(incoming.tool_data as string); } catch (e) { }
-              }
-              const currentUpdatedAt = new Date((msg as any)?.updated_at || msg.created_at || 0).getTime();
-              const incomingUpdatedAt = new Date((incoming as any)?.updated_at || incoming.created_at || 0).getTime();
-              // Evita sobrescrever edição local mais nova por update atrasado.
-              if (incomingUpdatedAt < currentUpdatedAt) return msg;
-              return { ...msg, ...incoming };
-            });
-            updateCache(next);
-            return next;
-          });
-        }
-      })
-      .subscribe();
+    fetchMessagesRef.current = fetchMsgs;
 
     let reactionsChannel: ReturnType<typeof supabase.channel> | null = null;
     void (async () => {
@@ -289,7 +310,6 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     })();
 
     return () => {
-      supabase.removeChannel(chatMessagesChannel);
       if (reactionsChannel) supabase.removeChannel(reactionsChannel);
     };
   }, [activeChat?.id]);

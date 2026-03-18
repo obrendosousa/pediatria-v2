@@ -247,7 +247,17 @@
       "Bash(grep -r \"contact.*UI\\\\|contact.*info\\\\|sender.*contact\" /c/Users/brend/Documents/pediatria-v2/src/components/chat --include=*.tsx -l)",
       "Bash(grep -n \"onSendSticker\\\\|message_type.*sticker\" /c/Users/brend/Documents/pediatria-v2/src/components/chat/*.tsx)",
       "Bash(sed -i -e 's/dark:bg-\\\\[#111118\\\\]/dark:bg-[#050507]/g' \"$f\")",
-      "Bash(echo \"Fixed background: $f\")"
+      "Bash(echo \"Fixed background: $f\")",
+      "Bash(grep -E \"\\\\.\\(sql|ts\\)$\")",
+      "Bash(grep -r clinical_evolutions /c/Users/brend/Documents/pediatria-v2/database --include=*.sql)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2 -type f -path *app*atendimento*modelos*evolucao*)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2/src -type f -path *app/atendimento* -name *page*)",
+      "Bash(grep -r \"ClinicalEvolution\\\\|EvolutionTemplate\" /c/Users/brend/Documents/pediatria-v2/src --include=*.ts --include=*.tsx -l)",
+      "Bash(find . -type f \\\\\\(-name *.tsx -o -name *.ts \\\\\\) -path *evolution* -o -path *evoluc*)",
+      "Bash(git status:*)",
+      "Bash(npm list:*)",
+      "Bash(grep -r \"tv_panel\\\\|TVPanel\" c:/Users/brend/Documents/pediatria-v2/src --include=*.ts --include=*.tsx --include=*.sql)",
+      "Bash(grep -r \"appointments\\\\|tv\" c:/Users/brend/Documents/pediatria-v2/database --include=*.sql)"
     ]
   },
   "hooks": {

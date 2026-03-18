@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
 const supabase = createSchemaClient('atendimento');
 import { get, set, TTL_CHATS_LIST_MS, TTL_TAGS_MS } from '@/lib/chatCache';
 import { Chat } from '@/types';
 import { TagData } from '@/utils/sidebarUtils';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 
 export interface UseChatListOptions {
@@ -14,6 +16,10 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
   const [chats, setChats] = useState<Chat[]>([]);
   const [tags, setTags] = useState<TagData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Refs to track values for use in realtime callbacks without re-subscribing
+  const isViewingArchivedRef = useRef(isViewingArchived);
+  useEffect(() => { isViewingArchivedRef.current = isViewingArchived; }, [isViewingArchived]);
 
   const sortChats = (chatsList: Chat[]): Chat[] => {
     return [...chatsList].sort((a, b) => {
@@ -46,7 +52,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
   }, [tags]);
 
   // --- BUSCA INICIAL E FILTROS ---
-  const fetchChats = async (showLoading = true) => {
+  const fetchChats = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setIsLoading(true);
 
@@ -61,7 +67,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
 
       const { data, error } = await query;
       if (error) throw error;
-      let fetchedData = data || [];
+      const fetchedData = data || [];
 
       // --- AUTO-CRIAÇÃO DO CHAT DA IA (Atendimento) ---
       if (!isViewingArchived && !searchTerm) {
@@ -88,23 +94,153 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
 
       const sortedChats = sortChats(fetchedData);
       setChats(sortedChats);
-      set(chatsListCacheKey, sortedChats, TTL_CHATS_LIST_MS);
+      set(`atd_chats_list_${isViewingArchived}_${searchTerm || ''}`, sortedChats, TTL_CHATS_LIST_MS);
     } catch (e) {
       console.error(e);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isViewingArchived, searchTerm]);
 
-  const fetchTags = async () => {
+  const fetchTags = useCallback(async () => {
     const { data } = await supabase.from('tags').select('*').order('name');
     if (data) {
       setTags(data);
       set(tagsCacheKey, data, TTL_TAGS_MS);
     }
-  };
+  }, []);
+
+  // --- REALTIME CALLBACKS ---
+  const handleMessagesPayload = useCallback((payload: any) => {
+    const newMessage = payload.new as any;
+    const chatId = newMessage.chat_id;
+    const sender = newMessage.sender;
+
+    const isFromUs = sender === 'HUMAN_AGENT' || sender === 'AI_AGENT' || sender === 'me';
+    if (isFromUs) {
+      setChats(currentChats => {
+        const chatIndex = currentChats.findIndex(c => c.id === chatId);
+        if (chatIndex === -1) return currentChats;
+        const updatedChats = [...currentChats];
+        updatedChats[chatIndex] = {
+          ...updatedChats[chatIndex],
+          last_message: newMessage.message_text || (newMessage.message_type === 'audio' ? 'Áudio' : 'Mídia'),
+          last_message_type: newMessage.message_type || 'text',
+          last_message_sender: sender,
+          last_message_status: (newMessage.status as 'sent' | 'delivered' | 'read') || 'sent',
+          last_interaction_at: newMessage.created_at || new Date().toISOString(),
+        };
+        return sortChats(updatedChats);
+      });
+      return;
+    }
+
+    setChats(currentChats => {
+      const chatIndex = currentChats.findIndex(c => c.id === chatId);
+      if (chatIndex === -1) return currentChats;
+
+      const updatedChats = [...currentChats];
+      const chat = updatedChats[chatIndex];
+
+      updatedChats[chatIndex] = {
+        ...chat,
+        last_interaction_at: newMessage.created_at || new Date().toISOString(),
+        last_message: newMessage.message_text || '',
+        last_message_type: newMessage.message_type || 'text',
+        last_message_sender: sender
+      };
+
+      return sortChats(updatedChats);
+    });
+  }, []);
+
+  const handleChatsPayload = useCallback((payload: any) => {
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+
+    setChats(currentChats => {
+      if (eventType === 'DELETE') {
+        return currentChats.filter(chat => chat.id !== oldRecord.id);
+      }
+
+      if (eventType === 'INSERT') {
+        const typedRecord = newRecord as Chat;
+
+        if (!!typedRecord.is_archived !== isViewingArchivedRef.current) return currentChats;
+
+        if (currentChats.some(c => c.id === typedRecord.id)) {
+          const updatedList = currentChats.map(c => c.id === typedRecord.id ? typedRecord : c);
+          return sortChats(updatedList);
+        }
+
+        const tempChatIndex = currentChats.findIndex(c =>
+          String(c.id).startsWith('new_') && c.phone === typedRecord.phone
+        );
+
+        if (tempChatIndex !== -1) {
+          const updatedList = [...currentChats];
+          updatedList[tempChatIndex] = typedRecord;
+          return sortChats(updatedList);
+        }
+
+        const newList = [typedRecord, ...currentChats];
+        return sortChats(newList);
+      }
+
+      if (eventType === 'UPDATE') {
+        const typedRecord = newRecord as Chat;
+
+        if (!!typedRecord.is_archived !== isViewingArchivedRef.current) {
+          return currentChats.filter(chat => chat.id !== typedRecord.id);
+        }
+
+        const exists = currentChats.some(c => c.id === typedRecord.id);
+        if (exists) {
+          const updatedList = currentChats.map(chat => chat.id === typedRecord.id ? typedRecord : chat);
+          return sortChats(updatedList);
+        } else {
+          const newList = [typedRecord, ...currentChats];
+          return sortChats(newList);
+        }
+      }
+      return currentChats;
+    });
+  }, []);
+
+  const handleChatsRefresh = useCallback(() => fetchChats(false), [fetchChats]);
 
   // --- REALTIME SUBSCRIPTIONS ---
+  useRealtimeSubscription({
+    client: supabase,
+    channelName: 'atd:tags',
+    schema: 'atendimento',
+    table: 'tags',
+    onPayload: fetchTags,
+    onRefresh: fetchTags,
+    enabled: true,
+  });
+
+  useRealtimeSubscription({
+    client: supabase,
+    channelName: 'atd:chat_messages_for_list',
+    schema: 'atendimento',
+    table: 'chat_messages',
+    event: 'INSERT',
+    onPayload: handleMessagesPayload,
+    onRefresh: handleChatsRefresh,
+    enabled: true,
+  });
+
+  useRealtimeSubscription({
+    client: supabase,
+    channelName: 'atd:chats',
+    schema: 'atendimento',
+    table: 'chats',
+    onPayload: handleChatsPayload,
+    onRefresh: handleChatsRefresh,
+    enabled: true,
+  });
+
+  // --- INITIAL DATA FETCH ---
   useEffect(() => {
     const cachedChats = get<Chat[]>(chatsListCacheKey);
     const cachedTags = get<TagData[]>(tagsCacheKey);
@@ -114,120 +250,7 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
 
     fetchChats(!hasValidChatsCache);
     fetchTags();
-
-    const tagsSub = supabase.channel('atd:tags')
-      .on('postgres_changes', { event: '*', schema: 'atendimento', table: 'tags' }, () => fetchTags())
-      .subscribe();
-
-    const messagesSub = supabase.channel('atd:chat_messages_for_list')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'atendimento',
-        table: 'chat_messages'
-      }, async (payload) => {
-        const newMessage = payload.new as any;
-        const chatId = newMessage.chat_id;
-        const sender = newMessage.sender;
-
-        const isFromUs = sender === 'HUMAN_AGENT' || sender === 'AI_AGENT' || sender === 'me';
-        if (isFromUs) {
-          setChats(currentChats => {
-            const chatIndex = currentChats.findIndex(c => c.id === chatId);
-            if (chatIndex === -1) return currentChats;
-            const updatedChats = [...currentChats];
-            updatedChats[chatIndex] = {
-              ...updatedChats[chatIndex],
-              last_message: newMessage.message_text || (newMessage.message_type === 'audio' ? 'Áudio' : 'Mídia'),
-              last_message_type: newMessage.message_type || 'text',
-              last_message_sender: sender,
-              last_message_status: (newMessage.status as 'sent' | 'delivered' | 'read') || 'sent',
-              last_interaction_at: newMessage.created_at || new Date().toISOString(),
-            };
-            return sortChats(updatedChats);
-          });
-          return;
-        }
-
-        setChats(currentChats => {
-          const chatIndex = currentChats.findIndex(c => c.id === chatId);
-          if (chatIndex === -1) return currentChats;
-
-          const updatedChats = [...currentChats];
-          const chat = updatedChats[chatIndex];
-
-          updatedChats[chatIndex] = {
-            ...chat,
-            last_interaction_at: newMessage.created_at || new Date().toISOString(),
-            last_message: newMessage.message_text || '',
-            last_message_type: newMessage.message_type || 'text',
-            last_message_sender: sender
-          };
-
-          return sortChats(updatedChats);
-        });
-      })
-      .subscribe();
-
-    const chatsSub = supabase.channel('atd:chats')
-      .on('postgres_changes', { event: '*', schema: 'atendimento', table: 'chats' }, (payload) => {
-        const { eventType, new: newRecord, old: oldRecord } = payload;
-
-        setChats(currentChats => {
-          if (eventType === 'DELETE') {
-            return currentChats.filter(chat => chat.id !== oldRecord.id);
-          }
-
-          if (eventType === 'INSERT') {
-            const typedRecord = newRecord as Chat;
-
-            if (!!typedRecord.is_archived !== isViewingArchived) return currentChats;
-
-            if (currentChats.some(c => c.id === typedRecord.id)) {
-              const updatedList = currentChats.map(c => c.id === typedRecord.id ? typedRecord : c);
-              return sortChats(updatedList);
-            }
-
-            const tempChatIndex = currentChats.findIndex(c =>
-              String(c.id).startsWith('new_') && c.phone === typedRecord.phone
-            );
-
-            if (tempChatIndex !== -1) {
-              const updatedList = [...currentChats];
-              updatedList[tempChatIndex] = typedRecord;
-              return sortChats(updatedList);
-            }
-
-            const newList = [typedRecord, ...currentChats];
-            return sortChats(newList);
-          }
-
-          if (eventType === 'UPDATE') {
-            const typedRecord = newRecord as Chat;
-
-            if (!!typedRecord.is_archived !== isViewingArchived) {
-              return currentChats.filter(chat => chat.id !== typedRecord.id);
-            }
-
-            const exists = currentChats.some(c => c.id === typedRecord.id);
-            if (exists) {
-              const updatedList = currentChats.map(chat => chat.id === typedRecord.id ? typedRecord : chat);
-              return sortChats(updatedList);
-            } else {
-              const newList = [typedRecord, ...currentChats];
-              return sortChats(newList);
-            }
-          }
-          return currentChats;
-        });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(chatsSub);
-      supabase.removeChannel(tagsSub);
-      supabase.removeChannel(messagesSub);
-    };
-  }, [isViewingArchived, searchTerm]);
+  }, [chatsListCacheKey, fetchChats, fetchTags]);
 
   // --- AÇÕES ---
 
