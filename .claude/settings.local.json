@@ -264,7 +264,20 @@
       "Bash(cat /c/Users/brend/Documents/pediatria-v2/database/*.sql)",
       "Bash(grep -r \"CREATE SCHEMA\\\\|CREATE TABLE\" /c/Users/brend/Documents/pediatria-v2/database --include=*.sql)",
       "Bash(grep -r \"CREATE TABLE.*tasks\\\\|atendimento.tasks\" /c/Users/brend/Documents/pediatria-v2/database --include=*.sql -A 30)",
-      "Bash(grep -r .from\\\\\\(''tasks''\\\\\\) /c/Users/brend/Documents/pediatria-v2/src --include=*.tsx --include=*.ts)"
+      "Bash(grep -r .from\\\\\\(''tasks''\\\\\\) /c/Users/brend/Documents/pediatria-v2/src --include=*.tsx --include=*.ts)",
+      "Bash(grep -r patient_allergies /c/Users/brend/Documents/pediatria-v2/database --include=*.sql)",
+      "Bash(grep -r \"blocked\\\\|allowed_professionals\\\\|alert_system\" /c/Users/brend/Documents/pediatria-v2/database --include=*.sql)",
+      "Bash(SUPABASE_URL=\"https://juctfolupehtaoehjkwl.supabase.co\")",
+      "Bash(SERVICE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\")",
+      "Bash(__NEW_LINE_7bc534066715e70e__ curl:*)",
+      "Bash(grep -n \"alter.*patient_allergies\" /c/Users/brend/Documents/pediatria-v2/database/*.sql -i)",
+      "Bash(grep -r \"alergias.*AllergyManager\\\\|alergias\" /c/Users/brend/Documents/pediatria-v2/src/config --include=*.ts)",
+      "Bash(curl -s \"https://juctfolupehtaoehjkwl.supabase.co/rest/v1/patient_allergies?limit=5\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\" -H \"Accept-Profile: atendimento\")",
+      "Bash(curl -s \"https://juctfolupehtaoehjkwl.supabase.co/rest/v1/patient_allergies\" -X POST -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\" -H \"Content-Profile: atendimento\" -H \"Content-Type: application/json\" -H \"Prefer: return=representation\" -d '{\"\"patient_id\"\": 99999, \"\"answers\"\": [1], \"\"notes\"\": {}, \"\"blocked\"\": false, \"\"alert_system\"\": false}')",
+      "Bash(curl -s \"https://juctfolupehtaoehjkwl.supabase.co/rest/v1/\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\" -H \"Accept-Profile: atendimento\")",
+      "Bash(node -e \":*)",
+      "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(Object.keys\\(p.dependencies || {}\\).filter\\(d => d.includes\\(''supabase''\\) || d.includes\\(''pg''\\) || d.includes\\(''postgres''\\)\\).join\\(''\\\\n''\\)\\)\")",
+      "Bash(node scripts/migrate-allergies.mjs)"
     ]
   },
   "hooks": {

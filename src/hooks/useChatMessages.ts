@@ -186,8 +186,8 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
           if (typeof incoming.tool_data === 'string' && (incoming.tool_data as string).trim().startsWith('{')) {
             try { incoming.tool_data = JSON.parse(incoming.tool_data as string); } catch (_) { /* ignore */ }
           }
-          const currentUpdatedAt = new Date((msg as Record<string, unknown>)?.updated_at as string || msg.created_at || 0).getTime();
-          const incomingUpdatedAt = new Date((incoming as Record<string, unknown>)?.updated_at as string || incoming.created_at || 0).getTime();
+          const currentUpdatedAt = new Date((msg as unknown as Record<string, unknown>)?.updated_at as string || msg.created_at || 0).getTime();
+          const incomingUpdatedAt = new Date((incoming as unknown as Record<string, unknown>)?.updated_at as string || incoming.created_at || 0).getTime();
           // Evita sobrescrever edição local mais nova por update atrasado.
           if (incomingUpdatedAt < currentUpdatedAt) return msg;
           return { ...msg, ...incoming };
@@ -265,7 +265,7 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
         const withReactions = await fetchAndApplyReactions(filtered as Message[]);
         setMessages((prev) => {
           if (String(currentChatIdRef.current) !== String(chatId)) return prev;
-          const prevRevoked = new Map(prev.filter((m) => (m as Record<string, unknown>).message_type === 'revoked').map((m) => [m.id, m]));
+          const prevRevoked = new Map(prev.filter((m) => (m as unknown as Record<string, unknown>).message_type === 'revoked').map((m) => [m.id, m]));
           return withReactions.map((m) => {
             const wasRevoked = prevRevoked.get(m.id);
             if (wasRevoked) return wasRevoked;

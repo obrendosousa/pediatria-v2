@@ -8,6 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 const supabase = createSchemaClient('atendimento');
+const supabasePublic = createSchemaClient('public');
 
 // ── Tipos ──
 
@@ -90,9 +91,8 @@ const ALLERGY_SECTIONS: AllergySection[] = [
       { id: 27, label: 'Alergia a soja' },
       { id: 28, label: 'Alergia/intolerância frutos do mar' },
       { id: 29, label: 'Alergia a corantes' },
-      { id: 30, label: 'Outras' },
+      { id: 30, label: 'Outras', fieldType: 'textarea' },
     ],
-    sectionNote: { placeholder: 'Detalhar outras alergias alimentares...' },
   },
   // SEÇÃO 3: Reações a Medicamento
   {
@@ -238,10 +238,9 @@ export function AllergyManager({ patientId }: ProntuarioScreenProps) {
           .select('*')
           .eq('patient_id', patientId)
           .single(),
-        supabase
-          .from('professionals')
+        supabasePublic
+          .from('doctors')
           .select('id, name')
-          .eq('status', 'active')
           .order('name'),
       ]);
 

@@ -124,12 +124,13 @@ CREATE POLICY "Approved users full access" ON atendimento.medical_reports
 CREATE TABLE IF NOT EXISTS atendimento.patient_allergies (
   id BIGSERIAL PRIMARY KEY,
   patient_id BIGINT NOT NULL REFERENCES atendimento.patients(id) ON DELETE CASCADE,
-  allergy_type TEXT NOT NULL CHECK (allergy_type IN ('medicamento', 'alimento', 'substancia', 'outro')),
-  substance TEXT NOT NULL,
-  reaction TEXT,
-  severity TEXT CHECK (severity IS NULL OR severity IN ('leve', 'moderada', 'grave')),
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
+  answers BIGINT[] DEFAULT '{}',
+  notes JSONB DEFAULT '{}'::jsonb,
+  blocked BOOLEAN DEFAULT false,
+  allowed_professionals BIGINT[] DEFAULT NULL,
+  alert_system BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT patient_allergies_patient_unique UNIQUE (patient_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_allergies_patient ON atendimento.patient_allergies(patient_id);

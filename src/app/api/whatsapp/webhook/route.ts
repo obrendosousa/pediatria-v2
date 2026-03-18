@@ -773,6 +773,9 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
         }
       );
 
+      // ── AUTO-RESPOSTA DE PAUSA (server-side) ──────────────────────────────
+      // Quando o atendimento está pausado, agenda auto-resposta 1 min após
+      // a primeira mensagem do paciente. Deduplicado por sessão de pausa.
       // ── COPILOTO PROATIVO ────────────────────────────────────────────────
       // Dispara automaticamente quando detecta momento crítico na conversa.
       // Requisitos: (1) mensagem do paciente, (2) IA pausada (Joana atuando),
@@ -785,12 +788,31 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
             try {
               const { data: chatRow } = await getSupabase()
                 .from("chats")
-                .select("id, is_ai_paused, contact_name")
+                .select("id, is_ai_paused, contact_name, pause_auto_message, pause_session_id")
                 .eq("phone", phone)
                 .maybeSingle();
 
-              // Só dispara se a Joana está atuando (IA pausada)
               if (!chatRow?.id || !chatRow.is_ai_paused) return;
+
+              // ── Auto-resposta de pausa ──
+              if (chatRow.pause_auto_message && chatRow.pause_session_id) {
+                const idempotencyKey = `pause:${chatRow.id}:${chatRow.pause_session_id}`;
+                const scheduledFor = new Date(Date.now() + 60_000).toISOString();
+                await getSupabase().from("scheduled_messages").upsert(
+                  {
+                    chat_id: chatRow.id,
+                    item_type: "adhoc" as const,
+                    title: "Auto-resposta (Pausa)",
+                    content: { type: "text", content: chatRow.pause_auto_message },
+                    scheduled_for: scheduledFor,
+                    status: "pending",
+                    idempotency_key: idempotencyKey,
+                  },
+                  { onConflict: "idempotency_key", ignoreDuplicates: true }
+                );
+              }
+
+              // ── Copiloto proativo ──
 
               const text = extractTextFromAnyMessage(message.message) || "";
               const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
