@@ -137,7 +137,7 @@ Retorna análise estruturada com citações reais das conversas.`,
     const SINGLE_PASS_LIMIT = 200_000;
 
     const model = new ChatGoogleGenerativeAI({
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       temperature: 0.1,
     });

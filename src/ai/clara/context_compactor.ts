@@ -6,12 +6,13 @@
 import { BaseMessage, SystemMessage } from "@langchain/core/messages";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
-const MAX_FULL_MESSAGES = 6;
-const COMPACTION_TRIGGER = 12;
+const MAX_FULL_MESSAGES = 8;
+const COMPACTION_TRIGGER = 14;
 
 /**
  * Compacta mensagens quando o histórico excede COMPACTION_TRIGGER.
  * Mantém as últimas MAX_FULL_MESSAGES inteiras e resume as anteriores.
+ * SEMPRE preserva a primeira HumanMessage para manter contexto da pergunta original.
  */
 export async function compactMessages(
   messages: BaseMessage[]
@@ -21,6 +22,10 @@ export async function compactMessages(
   const cutoff = messages.length - MAX_FULL_MESSAGES;
   const oldMessages = messages.slice(0, cutoff);
   const recentMessages = messages.slice(cutoff);
+
+  // Garantir que a primeira HumanMessage esteja sempre presente
+  const firstHuman = messages.find((m) => m._getType() === "human");
+  const recentHasHuman = recentMessages.some((m) => m._getType() === "human");
 
   const oldContent = oldMessages
     .map((m) => {
@@ -32,7 +37,7 @@ export async function compactMessages(
 
   try {
     const compactModel = new ChatGoogleGenerativeAI({
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       temperature: 0,
       maxOutputTokens: 300,
@@ -49,12 +54,22 @@ export async function compactMessages(
 
     const summary = typeof summaryResponse.content === "string" ? summaryResponse.content : "";
 
-    return [
+    const result: BaseMessage[] = [
       new SystemMessage(`[RESUMO DA CONVERSA ANTERIOR]\n${summary}`),
-      ...recentMessages,
     ];
+
+    // Se recentMessages não contém HumanMessage, inserir a original
+    if (!recentHasHuman && firstHuman) {
+      result.push(firstHuman);
+    }
+
+    result.push(...recentMessages);
+    return result;
   } catch {
-    // Se falhar, manter últimas mensagens sem resumo
+    // Se falhar, manter últimas mensagens com a HumanMessage original
+    if (!recentHasHuman && firstHuman) {
+      return [firstHuman, ...recentMessages];
+    }
     return recentMessages;
   }
 }

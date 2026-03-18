@@ -384,14 +384,17 @@ REGRA FUNDAMENTAL:
   • "Volume de chats dia a dia" → simple
   • "Quais os principais gargalos de atendimento?" → simple (usa analyze_raw_conversations)
   • "Relatório de qualidade desta semana" → simple (usa analyze_raw_conversations)
+  • "Quais as principais objeções dos clientes?" → simple (usa analyze_raw_conversations)
+  • "Como os clientes reagiram ao preço?" → simple (usa analyze_raw_conversations)
+  • "Porcentagem de agendamentos confirmados" → simple (execute_sql)
+  • "Como estão os atendimentos?" → simple (get_volume_metrics)
   • "Me mostra a conversa da Karol" → simple
   • "Faz uma mensagem de confirmação de consulta" → simple
 
-→ EXEMPLOS "research" — pipeline completo com múltiplos researchers:
-  • "Leia as conversas e me diga o que os pacientes mais reclamam" → research
-  • "Analise o tom e linguagem das conversas desta semana" → research
-  • "Quais argumentos de vendas funcionaram melhor?" → research
-  • "Analise o script que a secretária usa nas conversas" → research
+→ EXEMPLOS "research" — pipeline completo com múltiplos researchers (RARO, só quando pedido explicitamente):
+  • "Faça uma pesquisa profunda sobre o tom das conversas" → research
+  • "Analise detalhadamente o script que a secretária usa em cada conversa" → research
+  • "Quero um relatório aprofundado comparando argumentos de venda" → research
 
 REGRA DE OURO: Verificar UM chat, consultar memória = SEMPRE "simple". "research" é APENAS para padrões em MÚLTIPLAS conversas.`;
 

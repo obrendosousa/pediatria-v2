@@ -289,7 +289,8 @@
       "Bash(grep -v \"^$\")",
       "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 node --experimental-specifier-resolution=node -e \":*)",
       "Bash(rm -rf .next/dev)",
-      "Bash(grep -l \"appointments\" \"C:/Users/brend/Documents/pediatria-v2/database\"/*.sql)"
+      "Bash(grep -l \"appointments\" \"C:/Users/brend/Documents/pediatria-v2/database\"/*.sql)",
+      "Bash(findstr \":3001\")"
     ]
   },
   "hooks": {

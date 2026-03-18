@@ -1,4 +1,4 @@
-import { AIMessage, BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { AIMessage, BaseMessage, SystemMessage } from "@langchain/core/messages";
 import { START, StateGraph } from "@langchain/langgraph";
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
@@ -40,7 +40,7 @@ const copilotChatWorkflow = new StateGraph<CopilotChatState>({
 
 copilotChatWorkflow.addNode("agent", async (state: CopilotChatState) => {
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-2.0-flash",
+    model: "gemini-3-flash-preview",
     apiKey: process.env.GOOGLE_API_KEY,
     temperature: 0.3,
     streaming: true,
