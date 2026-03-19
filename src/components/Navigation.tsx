@@ -362,12 +362,6 @@ export default function Navigation() {
             <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-200 ${theme === 'dark' ? 'translate-x-4' : 'translate-x-0'}`} />
           </div>
 
-          {isCollapsed && (
-            <div className="absolute left-full ml-2 px-3 py-2 bg-[#252530] text-[#fafafa] text-xs font-medium rounded-lg border border-[#3d3d48] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
-              {theme === 'light' ? 'Modo Claro' : 'Modo Escuro'}
-              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#252530]"></div>
-            </div>
-          )}
         </button>
 
         {/* Botão de Sair */}
@@ -386,12 +380,6 @@ export default function Navigation() {
               Sair
             </span>
           </div>
-          {isCollapsed && (
-            <div className="absolute left-full ml-2 px-3 py-2 bg-[#252530] text-[#fafafa] text-xs font-medium rounded-lg border border-[#3d3d48] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
-              Sair
-              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#252530]"></div>
-            </div>
-          )}
         </button>
       </div>
     </div>
@@ -453,28 +441,28 @@ function NavItem({ icon: Icon, label, path, active, badge }: NavItemProps) {
           {label}
         </span>
 
-        {badge !== undefined && badge > 0 && (
-          <div
-            className={`${isCollapsed ? 'absolute -right-0.5 -top-0.5' : 'ml-2'} transition-all duration-500 ease-in-out z-10`}
-          >
+        {!isCollapsed && badge !== undefined && badge > 0 && (
+          <div className="ml-2 transition-all duration-500 ease-in-out z-10">
             <span className="relative flex items-center justify-center">
-              {/* Glow pulse */}
               <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" style={{ animationDuration: '2s' }} />
-              {/* Badge */}
               <span className={`relative flex ${badge > 99 ? 'min-w-[24px] px-1.5' : 'h-[22px] w-[22px]'} items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-[10px] font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.4)]`}>
                 {badge > 99 ? '99+' : badge}
               </span>
             </span>
           </div>
         )}
-
-        {isCollapsed && (
-          <div className="absolute left-full ml-2 px-3 py-2 bg-[#252530] text-[#fafafa] text-xs font-medium rounded-lg border border-[#3d3d48] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 shadow-xl">
-            {label}
-            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#252530]"></div>
-          </div>
-        )}
       </div>
+
+      {isCollapsed && badge !== undefined && badge > 0 && (
+        <div className="absolute right-0 top-0 z-10 transition-all duration-500 ease-in-out">
+          <span className="relative flex items-center justify-center">
+            <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" style={{ animationDuration: '2s' }} />
+            <span className={`relative flex ${badge > 99 ? 'min-w-[20px] px-1' : 'h-[18px] w-[18px]'} items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-[9px] font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.4)]`}>
+              {badge > 99 ? '99+' : badge}
+            </span>
+          </span>
+        </div>
+      )}
     </Link>
   );
 }
