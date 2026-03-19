@@ -296,6 +296,7 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
     const remoteJidAlt = (keyRaw.remoteJidAlt ?? item.remoteJidAlt) as string | undefined;
     const addressingMode = (keyRaw.addressingMode ?? item.addressingMode) as string | undefined;
     const participant = (keyRaw.participant ?? item.participant) as string | undefined;
+    const rawRemoteJid = remoteJid; // Preservar JID original antes da resolução LID
 
     if (remoteJid.endsWith('@lid')) {
       if (senderPn && senderPn.includes('@s.whatsapp.net')) {
@@ -325,6 +326,7 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
         remoteJid, fromMe: Boolean(keyRaw.fromMe), id: String(keyRaw.id ?? ''),
         senderPn: senderPn || undefined, remoteJidAlt: remoteJidAlt || undefined,
         addressingMode: addressingMode || undefined, participant: participant || undefined,
+        rawRemoteJid: rawRemoteJid !== remoteJid ? rawRemoteJid : undefined,
       },
       pushName: typeof item.pushName === 'string' ? item.pushName : undefined,
       messageType: messageTypeValue,
@@ -729,7 +731,14 @@ async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
       const fileName = msg?.documentMessage?.fileName || msg?.documentMessage?.title || '';
       content = content || (fileName ? `📄 ${fileName}` : '📄 Documento recebido');
       mediaUrl = (await handleMediaUpload(msg, message.key as any, message.base64, instanceKey)) ?? undefined;
-    } else if (message.messageType === 'contactMessage') {
+    }
+
+    // Log resultado do upload de mídia
+    if (type !== 'text' && type !== 'contact' && !mediaUrl) {
+      console.warn(`[ATD/Media] Upload falhou: type=${type} msgId=${message.key?.id} jid=${message.key?.remoteJid} rawJid=${message.key?.rawRemoteJid || 'n/a'} hasBase64=${!!message.base64}`);
+    }
+
+    if (message.messageType === 'contactMessage') {
       type = 'contact';
       content = `📇 Contato: ${msg?.contactMessage?.displayName || 'Contato'}`;
     } else if (message.messageType === 'contactsArrayMessage') {

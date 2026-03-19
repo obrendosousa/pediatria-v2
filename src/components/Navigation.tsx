@@ -20,8 +20,9 @@ export default function Navigation() {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const { signOut, profile, modules } = useAuth();
   const navRef = useRef<HTMLElement>(null);
-  const [indicatorStyle, setIndicatorStyle] = useState<{ top: number; height: number } | null>(null);
-  const [enableTransition, setEnableTransition] = useState(false);
+  const [indicatorStyle, setIndicatorStyle] = useState<{ top: number; height: number; animate: boolean } | null>(null);
+  const prevCollapsedRef = useRef(isCollapsed);
+  const isFirstRender = useRef(true);
 
   const isDoctor = modules.length > 0 &&
     modules.every(m => m.role === 'doctor') &&
@@ -39,35 +40,55 @@ export default function Navigation() {
 
   const hasMultipleModules = modules.length > 1;
 
-  // Floating indicator measurement
+  // Measure indicator position
   useEffect(() => {
-    if (!navRef.current) return;
+    const nav = navRef.current;
+    if (!nav) return;
 
-    const measure = () => {
-      const nav = navRef.current;
-      if (!nav) return;
+    const measure = (animate: boolean) => {
       const activeEl = nav.querySelector('[data-nav-active="true"]') as HTMLElement | null;
       if (!activeEl) { setIndicatorStyle(null); return; }
-
       const navRect = nav.getBoundingClientRect();
       const itemRect = activeEl.getBoundingClientRect();
       setIndicatorStyle({
         top: itemRect.top - navRect.top + nav.scrollTop,
         height: itemRect.height,
+        animate,
       });
     };
 
-    // Measure after paint
-    const raf = requestAnimationFrame(() => {
-      measure();
-      // Enable transitions after first paint so indicator doesn't animate from 0,0
-      if (!enableTransition) {
-        requestAnimationFrame(() => setEnableTransition(true));
-      }
-    });
+    const collapseChanged = prevCollapsedRef.current !== isCollapsed;
+    prevCollapsedRef.current = isCollapsed;
 
-    return () => cancelAnimationFrame(raf);
-  }, [pathname, isCollapsed, enableTransition]);
+    if (isFirstRender.current) {
+      // First render: measure without transition, then enable
+      isFirstRender.current = false;
+      requestAnimationFrame(() => {
+        measure(false);
+        requestAnimationFrame(() => measure(true));
+      });
+      return;
+    }
+
+    if (collapseChanged) {
+      // Sidebar toggled: poll positions during layout shift (no CSS transition)
+      let rafId: number;
+      const start = performance.now();
+      const poll = () => {
+        measure(false);
+        if (performance.now() - start < 500) {
+          rafId = requestAnimationFrame(poll);
+        } else {
+          measure(true);
+        }
+      };
+      rafId = requestAnimationFrame(poll);
+      return () => cancelAnimationFrame(rafId);
+    }
+
+    // Route change: just measure (CSS transition will animate)
+    requestAnimationFrame(() => measure(true));
+  }, [pathname, isCollapsed]);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'light';
@@ -241,7 +262,16 @@ export default function Navigation() {
       </div>
 
       {/* --- NAVEGAÇÃO --- */}
-      <nav ref={navRef} className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-6 py-4 relative">
+      <nav
+        ref={navRef}
+        className="flex-1 overflow-y-auto custom-scrollbar px-3 py-4 relative"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: isCollapsed ? '8px' : '24px',
+          transition: 'gap 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+        }}
+      >
 
         {/* ── Floating Indicator ── */}
         {indicatorStyle && (
@@ -250,33 +280,43 @@ export default function Navigation() {
             style={{
               top: indicatorStyle.top,
               height: indicatorStyle.height,
-              transition: enableTransition
-                ? 'top 0.4s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s ease, opacity 0.3s ease'
+              transition: indicatorStyle.animate
+                ? 'top 0.4s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s ease, opacity 0.3s ease, background 0.4s ease'
                 : 'none',
-              background: isAtendimento
-                ? 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.08) 70%, rgba(255,255,255,0.15) 100%)'
-                : 'linear-gradient(90deg, transparent 0%, rgba(255,228,237,0.03) 30%, rgba(255,228,237,0.08) 70%, rgba(255,228,237,0.16) 100%)',
-              border: isAtendimento
-                ? '1px solid rgba(255,255,255,0.08)'
-                : '1px solid rgba(255,228,237,0.10)',
+              background: isCollapsed
+                ? (isAtendimento
+                  ? 'radial-gradient(ellipse at center, rgba(255,255,255,0.10) 0%, transparent 70%)'
+                  : 'radial-gradient(ellipse at center, rgba(255,228,237,0.12) 0%, transparent 70%)')
+                : (isAtendimento
+                  ? 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.08) 70%, rgba(255,255,255,0.15) 100%)'
+                  : 'linear-gradient(90deg, transparent 0%, rgba(255,228,237,0.03) 30%, rgba(255,228,237,0.08) 70%, rgba(255,228,237,0.16) 100%)'),
+              border: isCollapsed
+                ? '1px solid transparent'
+                : (isAtendimento
+                  ? '1px solid rgba(255,255,255,0.08)'
+                  : '1px solid rgba(255,228,237,0.10)'),
             }}
           >
             {isAtendimento ? (
               <div
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-[3px] rounded-full bg-white"
+                className="absolute top-1/2 -translate-y-1/2 w-[3px] rounded-full bg-white"
                 style={{
                   height: '55%',
                   boxShadow: '0 0 8px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.15)',
+                  right: isCollapsed ? '4px' : '8px',
+                  opacity: isCollapsed ? 0.7 : 1,
+                  transition: 'right 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease',
                 }}
               />
             ) : (
               <Heart
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 fill-pink-200 text-pink-200"
+                className="absolute top-1/2 w-3.5 h-3.5 fill-pink-200 text-pink-200"
                 style={{
                   filter: 'drop-shadow(0 0 6px rgba(255,228,237,0.6)) drop-shadow(0 0 12px rgba(255,228,237,0.25))',
                   opacity: isCollapsed ? 0 : 1,
-                  transform: `translateY(-50%) scale(${isCollapsed ? 0.5 : 1})`,
-                  transition: 'opacity 0.25s ease, transform 0.25s ease',
+                  right: '10px',
+                  transform: `translateY(-50%) scale(${isCollapsed ? 0 : 1})`,
+                  transition: 'opacity 0.2s ease, transform 0.2s ease',
                 }}
               />
             )}
@@ -285,7 +325,7 @@ export default function Navigation() {
 
         {isAtendimento && isDoctor ? (
           <>
-            <MenuGroup title="Clínico" moduleTheme={mt}>
+            <MenuGroup title="Clínico" moduleTheme={mt} isFirst>
               <NavItem icon={Stethoscope} label="Painel Médico" path="/atendimento/doctor" active={isActive('/atendimento/doctor')} color="teal" moduleTheme={mt} />
               <NavItem icon={CalendarDays} label="Minha Agenda" path="/atendimento/agenda" active={pathname === '/atendimento/agenda'} color="blue" moduleTheme={mt} />
               <NavItem icon={Users} label="Meus Pacientes" path="/atendimento/clients" active={isActive('/atendimento/clients')} color="blue" moduleTheme={mt} />
@@ -298,7 +338,7 @@ export default function Navigation() {
           </>
         ) : isAtendimento ? (
           <>
-            <MenuGroup title="Operacional" moduleTheme={mt}>
+            <MenuGroup title="Operacional" moduleTheme={mt} isFirst>
               <NavItem icon={LayoutDashboard} label="Dashboard" path="/atendimento/dashboard" active={isActive('/atendimento/dashboard')} color="blue" moduleTheme={mt} />
               <NavItem icon={MessageSquare} label="Chat" path="/atendimento" active={pathname === '/atendimento'} badge={unreadCount > 0 ? unreadCount : undefined} color="teal" moduleTheme={mt} />
               <NavItem icon={Trello} label="CRM" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} />
@@ -307,10 +347,45 @@ export default function Navigation() {
 
             <MenuGroup title="Clínico" moduleTheme={mt}>
               <NavItem icon={Stethoscope} label="Painel Médico" path="/atendimento/doctor" active={isActive('/atendimento/doctor')} color="teal" moduleTheme={mt} />
-              <a href="/atendimento/tv" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-1.5 mx-1 rounded-lg text-[11px] font-medium text-slate-400 dark:text-[#52525b] hover:text-slate-600 dark:hover:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer" title="Abrir Painel TV em tela cheia">
-                <Monitor className="w-3.5 h-3.5" />
-                <span>Abrir Painel TV</span>
-                <ExternalLink className="w-3 h-3 ml-auto opacity-50" />
+              <a
+                href="/atendimento/tv"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center py-1.5 mx-1 rounded-lg text-[11px] font-medium text-slate-400 dark:text-[#52525b] hover:text-slate-600 dark:hover:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                style={{
+                  justifyContent: isCollapsed ? 'center' : 'flex-start',
+                  paddingLeft: isCollapsed ? '0px' : '12px',
+                  paddingRight: isCollapsed ? '0px' : '12px',
+                  transition: 'padding 0.4s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease, color 0.2s ease',
+                }}
+                title={isCollapsed ? 'Abrir Painel TV' : 'Abrir Painel TV em tela cheia'}
+              >
+                <Monitor className="w-3.5 h-3.5 shrink-0" />
+                <span
+                  className="whitespace-nowrap overflow-hidden"
+                  style={{
+                    opacity: isCollapsed ? 0 : 1,
+                    maxWidth: isCollapsed ? '0px' : '120px',
+                    marginLeft: isCollapsed ? '0px' : '12px',
+                    transition: isCollapsed
+                      ? 'opacity 0.12s ease, max-width 0.25s cubic-bezier(0.22, 1, 0.36, 1) 0.03s, margin-left 0.25s cubic-bezier(0.22, 1, 0.36, 1) 0.03s'
+                      : 'max-width 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s, margin-left 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s, opacity 0.25s ease 0.18s',
+                  }}
+                >
+                  Abrir Painel TV
+                </span>
+                <ExternalLink
+                  className="w-3 h-3 shrink-0"
+                  style={{
+                    opacity: isCollapsed ? 0 : 0.5,
+                    maxWidth: isCollapsed ? '0px' : '12px',
+                    marginLeft: isCollapsed ? '0px' : 'auto',
+                    transition: isCollapsed
+                      ? 'opacity 0.1s ease, max-width 0.2s ease'
+                      : 'max-width 0.3s ease 0.15s, opacity 0.25s ease 0.2s',
+                    overflow: 'hidden',
+                  }}
+                />
               </a>
             </MenuGroup>
 
@@ -340,7 +415,7 @@ export default function Navigation() {
         ) : (
           <>
             {/* Menu da PEDIATRIA — igual à VPS */}
-            <MenuGroup title="Operacional" moduleTheme={mt}>
+            <MenuGroup title="Operacional" moduleTheme={mt} isFirst>
               <NavItem icon={LayoutDashboard} label="Dashboard" path="/dashboard" active={isActive('/dashboard')} color="blue" moduleTheme={mt} />
               <NavItem
                 icon={MessageSquare}
@@ -453,11 +528,12 @@ export default function Navigation() {
 }
 
 // ─── MenuGroup com Sparkles ───
-function MenuGroup({ title, children, moduleTheme }: { title: string; children: React.ReactNode; moduleTheme: ModuleTheme }) {
+function MenuGroup({ title, children, moduleTheme, isFirst = false }: { title: string; children: React.ReactNode; moduleTheme: ModuleTheme; isFirst?: boolean }) {
   const { isCollapsed } = useSidebar();
 
   return (
     <div>
+      {/* Título expandido */}
       <p
         className="px-3 text-[10px] font-bold text-white/40 uppercase tracking-wider flex items-center gap-1 whitespace-nowrap overflow-hidden"
         style={{
@@ -472,6 +548,26 @@ function MenuGroup({ title, children, moduleTheme }: { title: string; children: 
         <Sparkles className={`w-3 h-3 ${moduleTheme.sparkleColor} shrink-0`} />
         <span className="overflow-hidden">{title}</span>
       </p>
+      {/* Separador colapsado (pontinho sutil entre seções) */}
+      {!isFirst && (
+        <div
+          className="flex justify-center"
+          style={{
+            opacity: isCollapsed ? 1 : 0,
+            maxHeight: isCollapsed ? '12px' : '0px',
+            marginBottom: isCollapsed ? '4px' : '0px',
+            transition: isCollapsed
+              ? 'opacity 0.25s ease 0.15s, max-height 0.3s ease 0.1s, margin-bottom 0.3s ease 0.1s'
+              : 'opacity 0.1s ease, max-height 0.2s ease 0.05s, margin-bottom 0.2s ease 0.05s',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            className={`rounded-full ${moduleTheme.sparkleColor === 'text-blue-400' ? 'bg-white/10' : 'bg-white/10'}`}
+            style={{ width: '20px', height: '2px' }}
+          />
+        </div>
+      )}
       <div className="space-y-0.5">
         {children}
       </div>
@@ -492,30 +588,84 @@ interface NavItemProps {
 
 function NavItem({ icon: Icon, label, path, active, badge }: NavItemProps) {
   const { isCollapsed } = useSidebar();
+  const hasBadge = badge !== undefined && badge > 0;
 
   return (
-    <Link href={path} className="block group relative cursor-pointer" title={isCollapsed ? label : undefined}>
+    <Link href={path} className="block group cursor-pointer" title={isCollapsed ? label : undefined}>
       <div
         data-nav-active={active ? 'true' : undefined}
         className={`
-          relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium overflow-hidden
+          relative flex items-center py-2.5 rounded-xl text-sm font-medium
           ${active
             ? 'text-[#fafafa] z-[1]'
             : 'text-white/50 hover:text-white/90 hover:bg-white/[0.04]'}
         `}
+        style={{
+          justifyContent: isCollapsed ? 'center' : 'flex-start',
+          paddingLeft: isCollapsed ? '0px' : '12px',
+          paddingRight: isCollapsed ? '0px' : '12px',
+          transition: 'padding 0.4s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease, color 0.2s ease',
+        }}
       >
-        <Icon
-          className={`w-5 h-5 transition-colors shrink-0 ${active ? 'text-[#fafafa]' : 'text-white/40'}`}
-        />
+        {/* Ícone com badge colapsado como wrapper relativo */}
+        <div className="relative shrink-0">
+          <Icon
+            className={`w-5 h-5 ${active ? 'text-[#fafafa]' : 'text-white/40'}`}
+            style={{ transition: 'color 0.2s ease' }}
+          />
+          {/* Badge posicionado sobre o ícone quando colapsado */}
+          {hasBadge && (
+            <div
+              className="absolute z-10"
+              style={{
+                top: '-6px',
+                right: '-8px',
+                opacity: isCollapsed ? 1 : 0,
+                transform: `scale(${isCollapsed ? 1 : 0})`,
+                transition: isCollapsed
+                  ? 'opacity 0.25s ease 0.15s, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s'
+                  : 'opacity 0.12s ease, transform 0.12s ease',
+                pointerEvents: isCollapsed ? 'auto' : 'none',
+              }}
+            >
+              <span className="relative flex items-center justify-center">
+                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" style={{ animationDuration: '2s' }} />
+                <span className={`relative flex ${badge > 99 ? 'min-w-[16px] px-0.5' : 'h-[16px] w-[16px]'} items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-[8px] font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.4)]`}>
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              </span>
+            </div>
+          )}
+        </div>
+
         <span
-          className={`sidebar-content-transition whitespace-nowrap overflow-hidden inline-block ${isCollapsed ? 'opacity-0 w-0 ml-0' : 'opacity-100 w-auto ml-3'}`}
-          style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
+          className="whitespace-nowrap overflow-hidden inline-block"
+          style={{
+            opacity: isCollapsed ? 0 : 1,
+            maxWidth: isCollapsed ? '0px' : '180px',
+            marginLeft: isCollapsed ? '0px' : '12px',
+            transition: isCollapsed
+              ? 'opacity 0.12s ease, max-width 0.25s cubic-bezier(0.22, 1, 0.36, 1) 0.03s, margin-left 0.25s cubic-bezier(0.22, 1, 0.36, 1) 0.03s'
+              : 'max-width 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s, margin-left 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s, opacity 0.25s ease 0.18s',
+          }}
         >
           {label}
         </span>
 
-        {!isCollapsed && badge !== undefined && badge > 0 && (
-          <div className="ml-2 transition-all duration-500 ease-in-out z-10">
+        {/* Badge inline quando expandido */}
+        {hasBadge && (
+          <div
+            className="z-10"
+            style={{
+              opacity: isCollapsed ? 0 : 1,
+              maxWidth: isCollapsed ? '0px' : '40px',
+              marginLeft: isCollapsed ? '0px' : '8px',
+              transition: isCollapsed
+                ? 'opacity 0.1s ease, max-width 0.2s ease, margin-left 0.2s ease'
+                : 'max-width 0.3s ease 0.15s, margin-left 0.3s ease 0.15s, opacity 0.25s ease 0.2s',
+              overflow: 'hidden',
+            }}
+          >
             <span className="relative flex items-center justify-center">
               <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" style={{ animationDuration: '2s' }} />
               <span className={`relative flex ${badge > 99 ? 'min-w-[24px] px-1.5' : 'h-[22px] w-[22px]'} items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-[10px] font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.4)]`}>
@@ -525,17 +675,6 @@ function NavItem({ icon: Icon, label, path, active, badge }: NavItemProps) {
           </div>
         )}
       </div>
-
-      {isCollapsed && badge !== undefined && badge > 0 && (
-        <div className="absolute right-0 top-0 z-10 transition-all duration-500 ease-in-out">
-          <span className="relative flex items-center justify-center">
-            <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" style={{ animationDuration: '2s' }} />
-            <span className={`relative flex ${badge > 99 ? 'min-w-[20px] px-1' : 'h-[18px] w-[18px]'} items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-[9px] font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.4)]`}>
-              {badge > 99 ? '99+' : badge}
-            </span>
-          </span>
-        </div>
-      )}
     </Link>
   );
 }

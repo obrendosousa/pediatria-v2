@@ -472,6 +472,7 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
     const remoteJidAlt = (keyRaw.remoteJidAlt ?? item.remoteJidAlt) as string | undefined;
     const addressingMode = (keyRaw.addressingMode ?? item.addressingMode) as string | undefined;
     const participant = (keyRaw.participant ?? item.participant) as string | undefined;
+    const rawRemoteJid = remoteJid;
 
     if (remoteJid.endsWith("@lid")) {
       if (senderPn && senderPn.includes("@s.whatsapp.net")) {
@@ -507,6 +508,7 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
         remoteJidAlt: remoteJidAlt || undefined,
         addressingMode: addressingMode || undefined,
         participant: participant || undefined,
+        rawRemoteJid: rawRemoteJid !== remoteJid ? rawRemoteJid : undefined,
       },
       pushName: typeof item.pushName === "string" ? item.pushName : undefined,
       messageType: messageTypeValue,

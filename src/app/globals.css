@@ -108,7 +108,7 @@
     --chat-text-muted: #64748B;
     --chat-text-secondary: #475569;
     --chat-wallpaper-stroke: #94A3B8;
-    --chat-wallpaper-opacity: 0.06;
+    --chat-wallpaper-opacity: 0.18;
   }
 
   /* --- Módulo Atendimento: Dark Mode (Black + Blue) --- */
@@ -125,7 +125,7 @@
     --chat-text-muted: #71717a;
     --chat-text-secondary: #a1a1aa;
     --chat-wallpaper-stroke: #2d2d36;
-    --chat-wallpaper-opacity: 0.05;
+    --chat-wallpaper-opacity: 0.15;
   }
   
   body {

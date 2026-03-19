@@ -13,6 +13,8 @@ export interface EvolutionWebhookData {
     addressingMode?: string;
     /** Group message sender JID */
     participant?: string;
+    /** Original remoteJid before LID resolution — used for media API calls */
+    rawRemoteJid?: string;
   };
   pushName?: string;
   messageType: string;

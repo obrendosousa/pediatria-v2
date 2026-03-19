@@ -2,6 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { ChevronDown, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { scrollButtonVariants } from '@/lib/animations';
@@ -46,7 +47,28 @@ export default function MessageList({
   onSaveSticker
 }: MessageListProps) {
   const { toast } = useToast();
-  const pediatricWallpaper = useMemo(() => {
+  const pathname = usePathname();
+  const isAtendimento = pathname?.startsWith('/atendimento');
+
+  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+
+  const chatWallpaper = useMemo(() => {
+    if (isAtendimento) {
+      const stroke = isDark ? '#363645' : '#7B8FA0';
+      const lineOpacity = isDark ? '0.25' : '0.28';
+      const dotOpacity = isDark ? '0.30' : '0.40';
+      // Grade clínica sutil - padrão quadriculado profissional
+      const gridTile = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+          <rect width="40" height="40" fill="none"/>
+          <path d="M40 0L0 0 0 40" fill="none" stroke="${stroke}" stroke-width="0.5" opacity="${lineOpacity}"/>
+          <circle cx="0" cy="0" r="0.8" fill="${stroke}" opacity="${dotOpacity}"/>
+        </svg>
+      `.trim();
+      return `url("data:image/svg+xml;utf8,${encodeURIComponent(gridTile)}")`;
+    }
+
+    // Pediatria - ícones infantis
     const tile = `
       <svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
         <g stroke="#7f96a1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.13">
@@ -127,7 +149,7 @@ export default function MessageList({
     `.trim();
 
     return `url("data:image/svg+xml;utf8,${encodeURIComponent(tile)}")`;
-  }, []);
+  }, [isAtendimento, isDark]);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -495,9 +517,9 @@ export default function MessageList({
         ref={containerRef}
         className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:px-[5%] space-y-0 scrollbar-thin scrollbar-thumb-[var(--chat-accent)]/20 hover:scrollbar-thumb-[var(--chat-accent)]/40 transition-colors relative z-[1]"
         style={{
-          backgroundImage: pediatricWallpaper,
+          backgroundImage: chatWallpaper,
           backgroundRepeat: 'repeat',
-          backgroundSize: '180px',
+          backgroundSize: isAtendimento ? '40px' : '180px',
         }}
       >
         <AnimatePresence>

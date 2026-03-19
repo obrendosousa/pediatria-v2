@@ -559,7 +559,7 @@ async function fetchMediaFromEvolutionApi(
     return null;
   }
 
-  const endpoint = `${baseUrl}/chat/getBase64FromMediaMessage/${instance}`;
+  const endpoint = `${baseUrl}/chat/getBase64FromMediaMessage/${encodeURIComponent(instance)}`;
   const requestBody = JSON.stringify({
     message: { key: { id: messageId, remoteJid } },
     convertToMp4: false,
@@ -643,31 +643,38 @@ async function uploadToSupabase(
 
 export async function handleMediaUpload(
   messageData: Record<string, unknown>,
-  key: { id: string; remoteJid?: string },
+  key: { id: string; remoteJid?: string; rawRemoteJid?: string; senderPn?: string; remoteJidAlt?: string },
   bodyBase64?: string | null,
   instanceEnvKey = 'EVOLUTION_INSTANCE'
 ): Promise<string | null> {
   const ctx: MediaUploadContext = { message: messageData, key, bodyBase64 };
 
   const extracted = extractMediaFromMessage(ctx);
-  let base64: string;
-  let mimeType: string;
-  let fileName: string;
-
   if (extracted) {
-    ({ base64, mimeType, fileName } = extracted);
-  } else {
-    const remoteJid = key?.remoteJid;
-    if (!remoteJid) {
-      console.warn("[handleMediaUpload] remoteJid ausente para buscar mídia na API");
-      return null;
-    }
-    const apiData = await fetchMediaFromEvolutionApi(key.id, remoteJid, instanceEnvKey);
-    if (!apiData) return null;
-    base64 = apiData.base64;
-    mimeType = apiData.mimeType ?? "audio/ogg";
-    fileName = apiData.fileName ?? `audio_${key.id}.ogg`;
+    return uploadToSupabase(extracted.base64, extracted.mimeType, extracted.fileName);
   }
 
-  return uploadToSupabase(base64, mimeType, fileName);
+  // Build list of JIDs to try — raw (pre-LID-resolution) first, then resolved, then alternatives
+  const jidsToTry = [
+    key.rawRemoteJid,
+    key.remoteJid,
+    key.senderPn,
+    key.remoteJidAlt,
+  ].filter((jid): jid is string => !!jid && jid.includes('@'));
+  const uniqueJids = [...new Set(jidsToTry)];
+
+  if (uniqueJids.length === 0) {
+    console.warn("[handleMediaUpload] Nenhum JID disponível para buscar mídia na API");
+    return null;
+  }
+
+  for (const jid of uniqueJids) {
+    const apiData = await fetchMediaFromEvolutionApi(key.id, jid, instanceEnvKey);
+    if (apiData) {
+      return uploadToSupabase(apiData.base64, apiData.mimeType ?? "audio/ogg", apiData.fileName ?? `media_${key.id}.ogg`);
+    }
+  }
+
+  console.warn(`[handleMediaUpload] Falha ao buscar mídia para msg ${key.id} com JIDs: ${uniqueJids.join(', ')}`);
+  return null;
 }
