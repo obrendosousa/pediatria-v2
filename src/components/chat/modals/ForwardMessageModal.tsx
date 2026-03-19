@@ -1,6 +1,7 @@
 'use client';
+/* eslint-disable react-hooks/set-state-in-effect */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Search, Loader2, Send } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -21,6 +22,10 @@ interface ForwardMessageModalProps {
   initialChats?: Chat[] | null;
 }
 
+function escapeIlikeLocal(term: string): string {
+  return term.replace(/[%_\\]/g, '\\$&');
+}
+
 export default function ForwardMessageModal({
   isOpen,
   onClose,
@@ -36,15 +41,25 @@ export default function ForwardMessageModal({
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [mounted, setMounted] = useState(false);
   const [failedAvatarIds, setFailedAvatarIds] = useState<Set<number>>(new Set());
+  const prevIsOpenRef = useRef(false);
 
-  useEffect(() => setMounted(true), []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true); }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
+  // Reset ao abrir o modal
+  const handleOpen = useCallback(() => {
     setSearchInput('');
     setSelectedChat(null);
     setFailedAvatarIds(new Set());
-  }, [isOpen]);
+  }, []);
+
+   
+  useEffect(() => {
+    if (isOpen && !prevIsOpenRef.current) {
+      handleOpen();
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, handleOpen]);
 
   // Debounce do termo de busca
   useEffect(() => {
@@ -76,12 +91,13 @@ export default function ForwardMessageModal({
     }
     let cancelled = false;
     setLoading(true);
+    const escaped = escapeIlikeLocal(searchTerm);
     supabase
       .from('chats')
       .select(FORWARD_CHATS_SELECT)
       .eq('is_archived', false)
       .neq('id', currentChatId)
-      .or(`contact_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
+      .or(`contact_name.ilike.%${escaped}%,phone.ilike.%${escaped}%`)
       .order('last_interaction_at', { ascending: false })
       .limit(50)
       .then(
@@ -196,11 +212,12 @@ export default function ForwardMessageModal({
                         : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-900 dark:text-[#fafafa]'
                     }`}
                   >
-                    <div 
+                    <div
                       className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
                       style={!c.profile_pic || failedAvatarIds.has(c.id) ? { backgroundColor: getAvatarColorHex(c.id) } : {}}
                     >
                       {c.profile_pic && !failedAvatarIds.has(c.id) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={c.profile_pic}
                           alt=""

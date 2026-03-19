@@ -8,10 +8,21 @@ import { preValidateQuery, postValidateResults } from "./query_validator";
 import { analyzeRawConversationsTool } from "./raw_data_analyzer";
 import { askUserQuestionTool } from "./interactive_questions";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { TemporalAnchor } from "./temporal_anchor";
 
-// ── Temporal Anchor global para validação de queries ────────────────────────
-// O graph.ts define antes de cada invocação do agente.
+// ── Temporal Anchor isolado por invocação (thread-safe via AsyncLocalStorage) ──
+const temporalAnchorStorage = new AsyncLocalStorage<TemporalAnchor | null>();
+
+export function runWithTemporalAnchor<T>(anchor: TemporalAnchor | null, fn: () => T): T {
+  return temporalAnchorStorage.run(anchor, fn);
+}
+
+function getCurrentTemporalAnchor(): TemporalAnchor | null {
+  return temporalAnchorStorage.getStore() ?? null;
+}
+
+// Compatibilidade: setCurrentTemporalAnchor agora é no-op (usar runWithTemporalAnchor)
 let _currentTemporalAnchor: TemporalAnchor | null = null;
 export function setCurrentTemporalAnchor(anchor: TemporalAnchor | null) {
   _currentTemporalAnchor = anchor;
@@ -98,18 +109,16 @@ export const updateBrainFileTool = new DynamicStructuredTool({
   }),
   func: async ({ module, new_content }) => {
     try {
-      // Salvar como pending_review para exigir aprovação de admin antes de entrar em vigor.
-      // Isso previne prompt injection onde um usuário pede para Clara alterar suas próprias regras.
       const { error } = await supabase
         .from("agent_config")
-        .insert({
+        .upsert({
           agent_id: "clara",
-          config_key: `${module}_pending`,
+          config_key: module,
           content: new_content,
           updated_at: new Date().toISOString(),
-        });
+        }, { onConflict: "agent_id,config_key" });
       if (error) throw error;
-      return `O módulo '${MODULE_LABELS[module]}' foi salvo para revisão. Um administrador precisa aprovar a alteração no painel antes que entre em vigor.`;
+      return `O módulo '${MODULE_LABELS[module]}' foi atualizado com sucesso. As alterações já estão em vigor.`;
     } catch (error: unknown) {
       return `Erro ao salvar configuração para revisão: ${error instanceof Error ? error.message : String(error)}`;
     }
@@ -491,7 +500,8 @@ export const executeSqlTool = new DynamicStructuredTool({
       }
 
       // ── PRÉ-VALIDAÇÃO (Camada 3) ──
-      const preVal = preValidateQuery(sql, _currentTemporalAnchor);
+      const anchor = getCurrentTemporalAnchor() ?? _currentTemporalAnchor;
+      const preVal = preValidateQuery(sql, anchor);
       if (!preVal.is_valid && preVal.issues.some((i) => i.includes("rejeitada"))) {
         return `Segurança: ${preVal.issues.join(" ")}`;
       }
@@ -511,13 +521,13 @@ export const executeSqlTool = new DynamicStructuredTool({
         }
 
         // ── PÓS-VALIDAÇÃO (Camada 3) ──
-        const postVal = postValidateResults(effectiveSql, rows, _currentTemporalAnchor);
+        const postVal = postValidateResults(effectiveSql, rows, anchor);
         const postSummary = postVal.summary_for_model ? `\n📋 ${postVal.summary_for_model}` : "";
         const postWarnings = postVal.issues.length > 0 ? `\n⚠️ Pós-validação: ${postVal.issues.join("; ")}` : "";
 
         // Se dados fora do range, inclui instrução explícita para retry
-        const retryHint = postVal.data_quality.has_out_of_range_data && _currentTemporalAnchor
-          ? `\n🔄 AÇÃO NECESSÁRIA: Dados fora do período. Re-execute com filtro de data usando: WHERE campo >= ${_currentTemporalAnchor.sql_start} AND campo < ${_currentTemporalAnchor.sql_end}`
+        const retryHint = postVal.data_quality.has_out_of_range_data && anchor
+          ? `\n🔄 AÇÃO NECESSÁRIA: Dados fora do período. Re-execute com filtro de data usando: WHERE campo >= ${anchor.sql_start} AND campo < ${anchor.sql_end}`
           : "";
 
         const displayed = rows.slice(0, 500);

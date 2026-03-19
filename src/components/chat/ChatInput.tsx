@@ -122,6 +122,7 @@ export default function ChatInput({
   };
 
   // --- LÓGICA DE ÁUDIO ---
+  const recordingCancelledRef = useRef(false);
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -133,6 +134,10 @@ export default function ChatInput({
       };
 
       recorder.onstop = () => {
+        if (recordingCancelledRef.current) {
+          recordingCancelledRef.current = false;
+          return;
+        }
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
         onSendAudio(audioBlob, durationRef.current);
         setRecordingDuration(0);
@@ -140,6 +145,7 @@ export default function ChatInput({
         stream.getTracks().forEach(track => track.stop());
       };
 
+      recordingCancelledRef.current = false;
       recorder.start();
       setMediaRecorder(recorder);
       setIsRecording(true);
@@ -170,6 +176,7 @@ export default function ChatInput({
 
   const cancelRecording = () => {
     if (mediaRecorder && isRecording) {
+      recordingCancelledRef.current = true;
       mediaRecorder.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);

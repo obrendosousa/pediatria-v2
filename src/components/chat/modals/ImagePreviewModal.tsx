@@ -12,7 +12,7 @@ export default function ImagePreviewModal({ src, isOpen, onClose, mediaType = 'i
 
     return (
         <div
-            className="absolute inset-0 z-[120] bg-[#efeae2]/95 dark:bg-[#0b141a]/95 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+            className="fixed inset-0 z-[120] bg-[#efeae2]/95 dark:bg-[#0b141a]/95 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
             onClick={onClose}
         >
             {/* Botão Fechar */}
@@ -45,12 +45,12 @@ export default function ImagePreviewModal({ src, isOpen, onClose, mediaType = 'i
                     onClick={(e) => e.stopPropagation()}
                 />
             ) : (
-                /* Imagem Centralizada */
-                <img 
-                    src={src} 
-                    alt="Preview" 
-                    className="max-w-full max-h-[85%] object-contain shadow-2xl rounded-md animate-in zoom-in-95 duration-200 select-none" 
-                    onClick={(e) => e.stopPropagation()} // Impede fechar ao clicar na imagem
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                    src={src}
+                    alt="Preview"
+                    className="max-w-full max-h-[85%] object-contain shadow-2xl rounded-md animate-in zoom-in-95 duration-200 select-none"
+                    onClick={(e) => e.stopPropagation()}
                 />
             )}
         </div>

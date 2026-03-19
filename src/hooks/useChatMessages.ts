@@ -227,7 +227,7 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     const chatId = activeChat.id;
     const cacheKey = `chat_messages_${chatId}`;
     const cached = get<Message[]>(cacheKey);
-    const hasValidCache = Array.isArray(cached) && cached.length >= 0;
+    const hasValidCache = Array.isArray(cached) && cached.length > 0;
     const deletedForChat = getDeletedSetForChat(chatId);
     if (hasValidCache && cached) {
       const cachedFiltered = deletedForChat.size > 0
@@ -285,14 +285,15 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     fetchMessagesRef.current = fetchMsgs;
 
     let reactionsChannel: ReturnType<typeof supabase.channel> | null = null;
+    let cleanedUp = false;
     void (async () => {
       const { error: tableCheckError } = await supabase
         .from('message_reactions')
         .select('id')
         .limit(1);
-      if (tableCheckError) return;
+      if (tableCheckError || cleanedUp) return;
 
-      reactionsChannel = supabase.channel(`message_reactions_realtime_${activeChat.id}`)
+      const ch = supabase.channel(`message_reactions_realtime_${activeChat.id}`)
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
@@ -307,9 +308,13 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
           setMessages((prev) => mergeReactionsIntoMessages(prev, reactionsData as MessageReactionRow[]));
         })
         .subscribe();
+
+      if (cleanedUp) { supabase.removeChannel(ch); return; }
+      reactionsChannel = ch;
     })();
 
     return () => {
+      cleanedUp = true;
       if (reactionsChannel) supabase.removeChannel(reactionsChannel);
     };
   }, [activeChat?.id]);

@@ -41,7 +41,7 @@ export function logWebhook(entry: WebhookLogEntry): void {
   if (entry.payload) {
     const raw = JSON.stringify(entry.payload);
     if (raw.length > 10000) {
-      payloadTruncated = JSON.parse(raw.substring(0, 10000) + '..."}}');
+      payloadTruncated = { _truncated: true, preview: raw.substring(0, 10000) };
     } else {
       payloadTruncated = entry.payload;
     }

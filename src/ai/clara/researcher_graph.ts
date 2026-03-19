@@ -73,12 +73,7 @@ GUIA COMPLETO DE FERRAMENTAS:
    → Volume de chats/mensagens por dia, totais, breakdown por stage/sentimento.
    → Use para: "quantas conversas", "volume dia a dia", "picos de demanda".
 
-2. gerar_relatorio_qualidade_chats(dias_retroativos)
-   → USE PRIMEIRO para: "objeções", "gargalos", "nota de atendimento", "qualidade"
-   → Lê tabela chat_insights — MUITO MAIS RÁPIDO que ler mensagens
-   → Exemplo: gerar_relatorio_qualidade_chats(dias_retroativos=7)
-
-3. get_aggregated_insights(start_date, end_date)
+2. get_aggregated_insights(start_date, end_date)
    → Insights agregados da tabela chat_insights: tópicos, decisões, objeções mais frequentes
    → Use para análises de período específico com datas definidas
 
@@ -89,11 +84,10 @@ GUIA COMPLETO DE FERRAMENTAS:
 
 5. BUSCA EM MENSAGENS — SEQUÊNCIA OBRIGATÓRIA (2 passos no loop ReAct):
    → Passo 1: get_filtered_chats_list(start_date='...', end_date='...', limit=30) → obtém IDs dos chats
-   → Passo 2: deep_research_chats(chat_ids=[IDs do Passo 1], objetivo_da_analise='...') → analisa o conteúdo
+   → Passo 2: get_chat_cascade_history(chat_id=ID) para cada chat relevante → lê o histórico completo
    → Use SOMENTE quando precisar LER o texto das mensagens (padrões de linguagem, argumentos, tom)
 
-6. get_chat_cascade_history(chat_id) → Histórico completo de UM chat específico (use com chat_id preciso)
-7. save_report(titulo, conteudo, tipo) → Salvar relatório (apenas se o brief pedir explicitamente)
+6. save_report(titulo, conteudo, tipo) → Salvar relatório (apenas se o brief pedir explicitamente)
 
 SCHEMA E MAPEAMENTO DE REMETENTES (CRÍTICO — leia antes de escrever qualquer SQL):
 • chats: id, contact_name, phone, stage (new|em_triagem|agendando|fila_espera|qualified|lost|won|done), ai_sentiment (positive|negative|neutral), last_interaction_at, status

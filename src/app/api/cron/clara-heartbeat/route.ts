@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }
 });
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     // Busca o ID do chat oficial da Clara no painel (telefone fictício '00000000000')
     const { data: claraChat } = await supabase
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     const studyCommand = `[COMANDO INTERNO DE SISTEMA - HEARTBEAT CRON]
 Olá Clara! Este é o seu pulso de vida. Ninguém está digitando isso para você na tela, o sistema te acordou.
 Sua missão agora é:
-1. Use 'query_database_table' na tabela 'chat_messages'. Procure mensagens enviadas por humanos (sender = 'HUMAN_AGENT' ou sender = 'me') nas últimas 24 horas.
+1. Use 'execute_sql' com um SELECT na tabela 'chat_messages'. Procure mensagens enviadas por humanos (sender = 'HUMAN_AGENT' ou sender = 'me') nas últimas 24 horas.
 2. Identifique quais foram as perguntas dos pacientes antes dessas respostas.
 3. Se você identificar um padrão bom (uma explicação clara sobre valores, regras ou procedimentos médicos), USE a ferramenta 'extract_and_save_knowledge' para salvar esse gabarito na sua knowledge_base.
 4. Ao final, mande um pequeno relatório neste chat interno dizendo o que você analisou e o que aprendeu hoje.`;
@@ -75,7 +75,7 @@ Sua missão agora é:
     })();
 
     return NextResponse.json({ success: true, message: "Heartbeat acionado. Clara está estudando em background." });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }

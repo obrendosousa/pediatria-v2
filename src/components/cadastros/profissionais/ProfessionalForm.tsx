@@ -98,6 +98,7 @@ interface ProfessionalFormProps {
   title: string;
   subtitle: string;
   showCreateLogin?: boolean;
+  hideHeader?: boolean;
 }
 
 // --- Helpers ---
@@ -153,7 +154,7 @@ function professionalToForm(p: Professional): ProfessionalFormData {
 
 // --- Componente ---
 
-export default function ProfessionalForm({ initialData, onSubmit, title, subtitle, showCreateLogin }: ProfessionalFormProps) {
+export default function ProfessionalForm({ initialData, onSubmit, title, subtitle, showCreateLogin, hideHeader }: ProfessionalFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
@@ -229,21 +230,23 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
-        <button
-          onClick={() => router.push('/atendimento/cadastros/profissionais')}
-          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-slate-500" />
-        </button>
-        <div>
-          <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-teal-600" />
-            {title}
-          </h1>
-          <p className="text-xs text-slate-400 dark:text-[#71717a]">{subtitle}</p>
+      {!hideHeader && (
+        <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
+          <button
+            onClick={() => router.push('/atendimento/cadastros/profissionais')}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-slate-500" />
+          </button>
+          <div>
+            <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-teal-600" />
+              {title}
+            </h1>
+            <p className="text-xs text-slate-400 dark:text-[#71717a]">{subtitle}</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Conteúdo scrollável */}
       <div className="flex-1 overflow-y-auto px-6 py-6">

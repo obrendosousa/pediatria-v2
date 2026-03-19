@@ -49,7 +49,7 @@ export default function EditContactModal({ isOpen, onClose, chat, onUpdate }: Ed
       onClose();
     } catch (err) {
       console.error('Erro ao atualizar:', err);
-      toast.toast.error('Erro ao atualizar contato.');
+      toast.error('Erro ao atualizar contato.');
     } finally {
       setLoading(false);
     }

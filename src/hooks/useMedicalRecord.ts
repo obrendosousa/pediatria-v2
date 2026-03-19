@@ -205,7 +205,7 @@ export interface MedicalRecordData {
     imc?: number;
     pe?: number;
   };
-  prescription?: any[];
+  prescription?: Record<string, unknown>[];
   routine_consultation?: RoutineConsultationData | null;
   adolescent_consultation?: AdolescentConsultationData | null;
   exam_results_data?: ExamResultsData | null;
@@ -229,7 +229,8 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
     if (patientId) {
       loadRecord();
     }
-  }, [patientId, appointmentId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId, appointmentId, currentDoctorId]);
 
   async function loadRecord() {
     setIsLoading(true);
@@ -303,9 +304,9 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
         };
         setRecord(newRecord);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao carregar prontuário:', err);
-      setError(err.message || 'Erro ao carregar prontuário');
+      setError(err instanceof Error ? err.message : 'Erro ao carregar prontuário');
     } finally {
       setIsLoading(false);
     }
@@ -343,7 +344,7 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
         setRecord(data);
         return data;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao salvar prontuário:', err);
       throw err;
     }
@@ -368,7 +369,7 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
       if (updateError) throw updateError;
       setRecord(data);
       return data;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao finalizar prontuário:', err);
       throw err;
     }
@@ -410,7 +411,7 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
       if (createError) throw createError;
       setRecord(data);
       return data;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao iniciar cronometro do atendimento:', err);
       throw err;
     }
@@ -440,7 +441,7 @@ export function useMedicalRecord(patientId: number, appointmentId?: number | nul
         return true;
       }
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao salvar todos os dados:', err);
       return false;
     }

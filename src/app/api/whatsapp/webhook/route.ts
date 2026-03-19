@@ -556,14 +556,14 @@ async function upsertReactionMessage(message: EvolutionWebhookData) {
   if (!targetMessage?.chat_id) return;
 
   if (!emoji) {
-    const deleteQuery = supabase
+    let deleteQuery = supabase
       .from("message_reactions")
       .delete()
       .eq("target_wpp_id", targetWppId)
       .eq("from_me", fromMe);
 
-    if (senderPhone) deleteQuery.eq("sender_phone", senderPhone);
-    else deleteQuery.is("sender_phone", null);
+    if (senderPhone) deleteQuery = deleteQuery.eq("sender_phone", senderPhone);
+    else deleteQuery = deleteQuery.is("sender_phone", null);
 
     await deleteQuery;
     return;
@@ -885,7 +885,7 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
               console.log(`🤖 [Copiloto Proativo] Momento crítico detectado no chat ${chatRow.id}: "${text.slice(0, 60)}..."`);
 
               // Dispara o copiloto via API interna (fire-and-forget)
-              fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL ? 'http://localhost:3000' : ''}/api/ai/copilot/trigger`, {
+              fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai/copilot/trigger`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatRow.id }),
@@ -921,11 +921,13 @@ async function verifyWebhookSignature(req: Request): Promise<{ body: Record<stri
     return { body, error: "Missing webhook signature header" };
   }
 
-  const { createHmac } = await import("node:crypto");
+  const { createHmac, timingSafeEqual } = await import("node:crypto");
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
   const signatureHex = signature.replace("sha256=", "");
 
-  if (expected !== signatureHex) {
+  const expectedBuf = Buffer.from(expected, "hex");
+  const signatureBuf = Buffer.from(signatureHex, "hex");
+  if (expectedBuf.length !== signatureBuf.length || !timingSafeEqual(expectedBuf, signatureBuf)) {
     return { body, error: "Invalid webhook signature" };
   }
 

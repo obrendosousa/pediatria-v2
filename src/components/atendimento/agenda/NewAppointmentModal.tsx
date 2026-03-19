@@ -24,7 +24,7 @@ type PatientOption = {
   birth_date: string | null;
 };
 
-type DoctorOption = { id: number; name: string; isProfessionalOnly?: boolean };
+type DoctorOption = { id: number; name: string; isProfessionalOnly?: boolean; professionalUuid?: string };
 
 type ProcedureOption = {
   id: string;
@@ -125,6 +125,9 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
   const [selectedPatient, setSelectedPatient] = useState<PatientOption | null>(null);
   const patientRef = useRef<HTMLDivElement>(null);
 
+  // Profissional selecionado (UUID para buscar procedimentos)
+  const [selectedProfessionalUuid, setSelectedProfessionalUuid] = useState<string | null>(null);
+
   // Busca de procedimentos
   const [procSearch, setProcSearch] = useState('');
   const [procResults, setProcResults] = useState<ProcedureOption[]>([]);
@@ -167,12 +170,17 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
       ]);
 
       // Merge doctors + professionals (sem duplicar linkados)
-      const list: DoctorOption[] = (doctorsRes.data || []).map(d => ({ id: d.id, name: d.name }));
+      const doctorsData = (doctorsRes.data || []) as { id: number; name: string; professional_id: string | null }[];
+      const list: DoctorOption[] = doctorsData.map(d => ({
+        id: d.id,
+        name: d.name,
+        professionalUuid: d.professional_id || undefined,
+      }));
       if (profsRes.data) {
-        const linkedIds = new Set((doctorsRes.data || []).map((d: Record<string, unknown>) => d.professional_id).filter(Boolean));
+        const linkedIds = new Set(doctorsData.map(d => d.professional_id).filter(Boolean));
         for (const prof of profsRes.data) {
           if (!linkedIds.has(prof.id)) {
-            list.push({ id: prof.id, name: prof.name, isProfessionalOnly: true });
+            list.push({ id: prof.id, name: prof.name, isProfessionalOnly: true, professionalUuid: prof.id });
           }
         }
       }
@@ -202,6 +210,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
     setSelectedPatient(null);
     setPatientSearch('');
     setProcSearch('');
+    setSelectedProfessionalUuid(null);
   }, [isOpen, initialDate, initialTime, reset]);
 
   // ── Busca de pacientes (debounce) ──────────────────────
@@ -226,17 +235,17 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
     return () => clearTimeout(t);
   }, [patientSearch]);
 
-  // ── Busca de procedimentos da clínica (debounce) ─────────────
+  // ── Busca de procedimentos do profissional selecionado (debounce) ──
   useEffect(() => {
     const trimmed = procSearch.trim();
-    if (!trimmed || trimmed.length < 2) {
+    if (!trimmed || trimmed.length < 2 || !selectedProfessionalUuid) {
       setProcResults([]);
       return;
     }
     setProcLoading(true);
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/atendimento/procedures/search?q=${encodeURIComponent(trimmed)}&limit=15`);
+        const res = await fetch(`/api/atendimento/procedures/search?q=${encodeURIComponent(trimmed)}&limit=15&professional_id=${selectedProfessionalUuid}`);
         const data = await res.json();
         setProcResults(Array.isArray(data) ? data : []);
       } catch {
@@ -246,7 +255,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
       setProcDropdownOpen(true);
     }, 300);
     return () => clearTimeout(t);
-  }, [procSearch]);
+  }, [procSearch, selectedProfessionalUuid]);
 
   // ── Click outside para fechar dropdowns ────────────────
   useEffect(() => {
@@ -537,7 +546,14 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                     <Stethoscope className="w-4 h-4 text-gray-400 absolute left-3 top-3"/>
                     <select
                       value={field.value ?? ''}
-                      onChange={e => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                      onChange={e => {
+                        const val = e.target.value ? Number(e.target.value) : null;
+                        field.onChange(val);
+                        const doc = val ? doctors.find(d => d.id === val) : null;
+                        setSelectedProfessionalUuid(doc?.professionalUuid || null);
+                        setValue('procedures', []);
+                        setProcSearch('');
+                      }}
                       className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none"
                     >
                       <option value="">Selecione o profissional...</option>
@@ -711,9 +727,10 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                   type="text"
                   value={procSearch}
                   onChange={e => setProcSearch(e.target.value)}
-                  onFocus={() => procSearch.trim().length >= 2 && setProcDropdownOpen(true)}
-                  placeholder="Buscar procedimento por nome..."
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
+                  onFocus={() => procSearch.trim().length >= 2 && selectedProfessionalUuid && setProcDropdownOpen(true)}
+                  disabled={!selectedProfessionalUuid}
+                  placeholder={selectedProfessionalUuid ? 'Buscar procedimento por nome...' : 'Selecione um profissional primeiro'}
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               {procDropdownOpen && (

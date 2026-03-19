@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Briefcase, User, Stethoscope } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { useProfessionals } from '@/hooks/useProfessionals';
 import { createClient } from '@/lib/supabase/client';
 import ProfessionalForm from '@/components/cadastros/profissionais/ProfessionalForm';
+import ProfessionalProceduresTab from '@/components/cadastros/profissionais/ProfessionalProceduresTab';
 import type { ProfessionalFormData } from '@/components/cadastros/profissionais/ProfessionalForm';
 import type { Professional } from '@/types/cadastros';
+
+type TabKey = 'dados' | 'procedimentos';
 
 async function uploadAttachments(files: File[]): Promise<{ name: string; url: string }[]> {
   if (files.length === 0) return [];
@@ -37,6 +40,7 @@ export default function EditarProfissionalPage() {
 
   const [professional, setProfessional] = useState<Professional | null>(null);
   const [loadingData, setLoadingData] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabKey>('dados');
 
   const id = params.id as string;
 
@@ -55,7 +59,6 @@ export default function EditarProfissionalPage() {
   }, [id, getProfessional, toast, router]);
 
   const handleSubmit = async (form: ProfessionalFormData) => {
-    // Upload new files and merge with existing saved attachments
     const newUploaded = await uploadAttachments(form.attachments);
     const existingAttachments = (professional?.attachments as { name: string; url: string }[]) || [];
     const allAttachments = [...existingAttachments, ...newUploaded];
@@ -104,12 +107,63 @@ export default function EditarProfissionalPage() {
     );
   }
 
+  const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+    { key: 'dados', label: 'Dados Cadastrais', icon: <User className="w-4 h-4" /> },
+    { key: 'procedimentos', label: 'Procedimentos', icon: <Stethoscope className="w-4 h-4" /> },
+  ];
+
   return (
-    <ProfessionalForm
-      initialData={professional}
-      title="Editar Profissional"
-      subtitle="Atualize os dados do profissional"
-      onSubmit={handleSubmit}
-    />
+    <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
+      {/* Header com botão voltar */}
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-slate-200 dark:border-[#3d3d48] bg-white dark:bg-[#08080b]">
+        <button
+          onClick={() => router.push('/atendimento/cadastros/profissionais')}
+          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-slate-500" />
+        </button>
+        <div className="flex-1">
+          <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-teal-600" />
+            {professional?.name || 'Editar Profissional'}
+          </h1>
+          <p className="text-xs text-slate-400 dark:text-[#71717a]">Gerencie os dados e procedimentos do profissional</p>
+        </div>
+      </div>
+
+      {/* Abas */}
+      <div className="px-6 py-2 border-b border-slate-200 dark:border-[#252530] bg-white dark:bg-[#08080b] flex gap-1">
+        {TABS.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+              activeTab === tab.key
+                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                : 'text-slate-500 dark:text-[#a1a1aa] hover:text-slate-700 dark:hover:text-gray-200 hover:bg-slate-50 dark:hover:bg-white/5'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Conteúdo da aba */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {activeTab === 'dados' && (
+          <ProfessionalForm
+            initialData={professional}
+            title="Editar Profissional"
+            subtitle="Atualize os dados do profissional"
+            onSubmit={handleSubmit}
+            hideHeader
+          />
+        )}
+        {activeTab === 'procedimentos' && (
+          <ProfessionalProceduresTab professionalId={id} />
+        )}
+      </div>
+    </div>
   );
 }

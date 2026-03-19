@@ -28,8 +28,8 @@ const analystWorkflow = new StateGraph<AnalystAgentState>({
 analystWorkflow.addNode("analyst_agent", async (state: AnalystAgentState) => {
   // 1. INICIALIZAMOS O MODELO AQUI DENTRO (Garante que o .env já foi lido pelo Next.js no runtime)
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-pro-preview", 
-    apiKey: process.env.GOOGLE_API_KEY, 
+    model: "gemini-3.1-pro-preview",
+    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0.1, 
   });
   const modelWithTools = model.bindTools(analystTools);

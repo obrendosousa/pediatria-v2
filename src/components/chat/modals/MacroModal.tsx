@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  X, 
-  Plus, 
-  Edit2, 
-  Loader2, 
-  UploadCloud, 
-  FileText, 
-  Mic, 
+import {
+  X,
+  Plus,
+  Edit2,
+  Loader2,
+  UploadCloud,
+  FileText,
+  Mic,
   Image as ImageIcon,
   Video,
   CheckCircle2,
@@ -19,12 +19,38 @@ import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { useToast } from '@/contexts/ToastContext';
 
+type MacroType = 'text' | 'audio' | 'image' | 'video' | 'document';
+
+interface MacroData {
+  title: string;
+  content: string;
+  type: MacroType;
+  simulation_delay: number;
+  is_script: boolean;
+}
+
+interface MacroInitialData {
+  id?: string;
+  title?: string;
+  content?: string;
+  type?: string;
+  simulation_delay?: number;
+}
+
 interface MacroModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: any) => void;
-  initialData?: any;
+  onSave: (data: MacroData) => void;
+  initialData?: MacroInitialData;
   typeOverride?: string | null;
+}
+
+const VALID_TYPES: MacroType[] = ['text', 'audio', 'image', 'video', 'document'];
+
+function toMacroType(value: string | null | undefined): MacroType {
+    if (value && VALID_TYPES.includes(value as MacroType)) return value as MacroType;
+    if (value === 'ptt') return 'audio';
+    return 'text';
 }
 
 export default function MacroModal({ isOpen, onClose, onSave, initialData, typeOverride }: MacroModalProps) {
@@ -32,8 +58,8 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [delay, setDelay] = useState(3);
-    const [activeType, setActiveType] = useState<'text' | 'audio' | 'image' | 'video' | 'document'>('text');
-    
+    const [activeType, setActiveType] = useState<MacroType>('text');
+
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -47,16 +73,13 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                 setTitle(initialData.title || '');
                 setContent(initialData.content || '');
                 setDelay(initialData.simulation_delay || 3);
-                
-                let t = initialData.type || typeOverride || 'text';
-                if (t === 'ptt') t = 'audio';
-                setActiveType(t);
+                setActiveType(toMacroType(initialData.type || typeOverride));
             } else {
-                setTitle(''); 
-                setContent(''); 
+                setTitle('');
+                setContent('');
                 setDelay(3);
                 // Se typeOverride for 'script', o padrão é texto, senão usa o override ou texto
-                setActiveType(typeOverride === 'script' ? 'text' : (typeOverride as any) || 'text');
+                setActiveType(typeOverride === 'script' ? 'text' : toMacroType(typeOverride));
             }
         }
     }, [isOpen, initialData, typeOverride]);
@@ -67,10 +90,10 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
         try {
             const fileExt = file.name.split('.').pop();
             const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-            const filePath = `${activeType}s/${fileName}`; 
+            const filePath = `${activeType}s/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('midia') 
+                .from('midia')
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
@@ -80,8 +103,9 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                 .getPublicUrl(filePath);
 
             setContent(publicUrl);
-        } catch (error: any) {
-            toast.error('Erro no upload: ' + error.message);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Erro desconhecido';
+            toast.error('Erro no upload: ' + msg);
         } finally {
             setIsUploading(false);
         }
@@ -99,9 +123,9 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
         if (!title || !content) return toast.error("Preencha título e conteúdo/mídia");
         setIsSaving(true);
         try {
-            await onSave({ 
-                title, 
-                content, 
+            await onSave({
+                title,
+                content,
                 type: activeType,
                 simulation_delay: delay,
                 is_script: false // Macros são itens individuais
@@ -122,26 +146,26 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                 <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
                     <div>
                         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            {initialData?.id ? <Edit2 size={18} className="text-blue-600"/> : <Plus size={18} className="text-green-600"/>} 
+                            {initialData?.id ? <Edit2 size={18} className="text-blue-600"/> : <Plus size={18} className="text-green-600"/>}
                             {initialData?.id ? 'Editar Mensagem Padrão' : 'Nova Mensagem Padrão'}
                         </h3>
                         <p className="text-xs text-gray-500">Configure respostas rápidas para sua equipe.</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={20} className="text-gray-500"/></button>
                 </div>
-                
+
                 <div className="p-6 overflow-y-auto custom-scrollbar space-y-5">
                     <div className="flex p-1 bg-gray-100 rounded-lg">
-                        {[
-                            { id: 'text', label: 'Texto', icon: FileText },
-                            { id: 'audio', label: 'Áudio', icon: Mic },
-                            { id: 'image', label: 'Imagem', icon: ImageIcon },
-                            { id: 'video', label: 'Vídeo', icon: Video },
-                            { id: 'document', label: 'PDF/Doc', icon: FileText },
-                        ].map((t) => (
-                            <button 
+                        {([
+                            { id: 'text' as MacroType, label: 'Texto', icon: FileText },
+                            { id: 'audio' as MacroType, label: 'Áudio', icon: Mic },
+                            { id: 'image' as MacroType, label: 'Imagem', icon: ImageIcon },
+                            { id: 'video' as MacroType, label: 'Vídeo', icon: Video },
+                            { id: 'document' as MacroType, label: 'PDF/Doc', icon: FileText },
+                        ]).map((t) => (
+                            <button
                                 key={t.id}
-                                onClick={() => setActiveType(t.id as any)}
+                                onClick={() => setActiveType(t.id)}
                                 className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all ${activeType === t.id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 <t.icon size={14}/> {t.label}
@@ -151,10 +175,10 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
 
                     <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wide">Nome do Atalho (Botão)</label>
-                        <input 
-                            value={title} 
-                            onChange={e=>setTitle(e.target.value)} 
-                            className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all" 
+                        <input
+                            value={title}
+                            onChange={e=>setTitle(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                             placeholder="Ex: Saudação Manhã, Preços Tabela..."
                             autoFocus
                         />
@@ -164,17 +188,17 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wide">
                             {activeType === 'text' ? 'Mensagem' : `Arquivo de ${activeType === 'image' ? 'Imagem' : activeType === 'audio' ? 'Áudio' : activeType === 'video' ? 'Vídeo' : 'Documento'}`}
                         </label>
-                        
+
                         {activeType === 'text' ? (
-                            <textarea 
-                                value={content} 
-                                onChange={e=>setContent(e.target.value)} 
-                                className="w-full border border-gray-300 rounded-lg p-3 text-sm h-32 resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all" 
+                            <textarea
+                                value={content}
+                                onChange={e=>setContent(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg p-3 text-sm h-32 resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                                 placeholder="Digite a mensagem aqui... Use *negrito* para destaque."
                             />
                         ) : (
                             <div className="space-y-3">
-                                <div 
+                                <div
                                     className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}`}
                                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                                     onDragLeave={() => setIsDragging(false)}
@@ -188,7 +212,7 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                                       onChange={(e) => e.target.files && handleFileUpload(e.target.files[0])}
                                       accept={activeType === 'image' ? 'image/*' : activeType === 'audio' ? 'audio/*' : activeType === 'video' ? 'video/*' : 'application/pdf,application/*'}
                                     />
-                                    
+
                                     {isUploading ? (
                                         <div className="py-4"><Loader2 size={32} className="animate-spin text-blue-500 mb-2"/> <span className="text-sm font-medium text-gray-600">Enviando arquivo...</span></div>
                                     ) : (
@@ -204,10 +228,10 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
 
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs text-gray-400 font-bold">OU URL:</span>
-                                    <input 
-                                        value={content} 
-                                        onChange={e=>setContent(e.target.value)} 
-                                        className="flex-1 border border-gray-200 rounded p-1.5 text-xs focus:border-blue-500 outline-none text-gray-600" 
+                                    <input
+                                        value={content}
+                                        onChange={e=>setContent(e.target.value)}
+                                        className="flex-1 border border-gray-200 rounded p-1.5 text-xs focus:border-blue-500 outline-none text-gray-600"
                                         placeholder="https://..."
                                     />
                                 </div>
@@ -215,6 +239,7 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                                 {content && (
                                     <div className="mt-2 p-2 bg-gray-50 border rounded-lg">
                                         <p className="text-[10px] font-bold text-gray-500 mb-1 uppercase">Preview</p>
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         {activeType === 'image' && <img src={content} alt="Preview" className="h-32 object-contain rounded border bg-white"/>}
                                         {activeType === 'audio' && <audio src={content} controls className="w-full h-8"/>}
                                         {activeType === 'video' && <video src={content} controls className="w-full max-h-32 rounded bg-black"/>}
@@ -234,16 +259,16 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><Clock size={16}/></div>
                             <div>
                                 <p className="text-xs font-bold text-blue-900">Simulação de Digitação</p>
-                                <p className="text-[10px] text-blue-700">Tempo que o robô fica "digitando..." antes de enviar.</p>
+                                <p className="text-[10px] text-blue-700">Tempo que o robô fica &quot;digitando...&quot; antes de enviar.</p>
                             </div>
                          </div>
                          <div className="flex items-center gap-2 bg-white px-2 py-1 rounded border border-blue-200 shadow-sm">
-                             <input 
-                                type="number" 
-                                min="0" 
-                                max="60" 
-                                value={delay} 
-                                onChange={e=>setDelay(parseInt(e.target.value))} 
+                             <input
+                                type="number"
+                                min="0"
+                                max="60"
+                                value={delay}
+                                onChange={e=>setDelay(parseInt(e.target.value, 10) || 0)}
                                 className="w-12 text-center text-sm font-bold text-gray-700 outline-none"
                              />
                              <span className="text-xs text-gray-500 font-medium">seg</span>
@@ -256,7 +281,7 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
                         Cancelar
                     </button>
                     <button onClick={handleSave} disabled={isSaving || !title || !content} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 flex justify-center items-center gap-2 transition-all transform active:scale-[0.98]">
-                        {isSaving ? <Loader2 size={18} className="animate-spin"/> : <CheckCircle2 size={18}/>} 
+                        {isSaving ? <Loader2 size={18} className="animate-spin"/> : <CheckCircle2 size={18}/>}
                         {isSaving ? 'Salvando...' : 'Salvar Mensagem'}
                     </button>
                 </div>
@@ -267,4 +292,4 @@ export default function MacroModal({ isOpen, onClose, onSave, initialData, typeO
     return mounted && typeof document !== 'undefined'
         ? createPortal(modalContent, document.body)
         : null;
-};
+}

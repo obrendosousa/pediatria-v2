@@ -1083,6 +1083,9 @@ export default React.memo(MessageBubble, (prev, next) => {
     prev.isSelectionMode === next.isSelectionMode &&
     prev.sequencePosition === next.sequencePosition &&
     prev.showAvatar === next.showAvatar &&
+    prev.chatPhoto === next.chatPhoto &&
+    prev.isAIChat === next.isAIChat &&
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     JSON.stringify((prev.message as any).reactions) === JSON.stringify((next.message as any).reactions)
   );
 });

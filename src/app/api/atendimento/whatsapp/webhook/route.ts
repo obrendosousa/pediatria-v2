@@ -369,8 +369,8 @@ async function upsertReactionMessage(message: EvolutionWebhookData) {
   if (!targetMessage?.chat_id) return;
 
   if (!emoji) {
-    const q = supabase.from('message_reactions').delete().eq('target_wpp_id', targetWppId).eq('from_me', fromMe);
-    if (senderPhone) q.eq('sender_phone', senderPhone); else q.is('sender_phone', null);
+    let q = supabase.from('message_reactions').delete().eq('target_wpp_id', targetWppId).eq('from_me', fromMe);
+    if (senderPhone) q = q.eq('sender_phone', senderPhone); else q = q.is('sender_phone', null);
     await q;
     return;
   }

@@ -123,6 +123,25 @@ export interface ProcedureComposition {
   created_at: string;
 }
 
+// --- Procedimentos por Profissional ---
+
+export type SplitType = 'percentage' | 'fixed';
+
+export interface ProfessionalProcedure {
+  id: string;
+  professional_id: string;
+  name: string;
+  procedure_type: ProcedureType;
+  custom_type: string | null;
+  duration_minutes: number;
+  value: number;
+  split_type: SplitType;
+  split_value: number;
+  status: RecordStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ClinicalProtocol {
   id: string;
   name: string;

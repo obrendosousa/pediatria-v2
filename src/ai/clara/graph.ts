@@ -358,14 +358,13 @@ claraWorkflow.addNode("classify_node", async (state: ClaraState) => {
   }
 
   const lower = userText.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const wordCount = lower.split(/\s+/).filter(Boolean).length;
   const isGreeting = SIMPLE_KEYWORDS.some(
     (kw) => lower === kw || lower.startsWith(kw + " ") || lower.endsWith(" " + kw)
   );
   const isActionRequest = ACTION_VERBS.some(
     (v) => lower.startsWith(v + " ") || lower.startsWith(v + ",")
   );
-  if (isGreeting || isActionRequest || wordCount <= 4) {
+  if (isGreeting || isActionRequest) {
     return { ...researchStateReset, is_deep_research: false };
   }
 

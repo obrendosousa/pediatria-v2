@@ -56,19 +56,17 @@ export function preValidateQuery(
   }
 
   // 1c. Bloquear DML/DDL keywords em qualquer posição (subqueries, CTEs etc.)
-  const DML_BLOCKLIST = [
-    "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE",
-    "CREATE", "GRANT", "REVOKE", "COPY", "EXECUTE", "PREPARE",
-    "DO ", "CALL ", "SET ", "NOTIFY", "LISTEN", "UNLISTEN",
-  ];
-  for (const keyword of DML_BLOCKLIST) {
-    if (upper.includes(keyword)) {
-      return {
-        is_valid: false,
-        issues: [`Keyword proibido detectado: ${keyword.trim()}. Query rejeitada por segurança.`],
-        expected_behavior: "Query rejeitada por segurança.",
-      };
-    }
+  // Usa word-boundary (\b) para evitar falsos positivos com nomes de colunas
+  // como created_at (CREATE), updated_at (UPDATE), OFFSET (SET)
+  const DML_KEYWORD_RE = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|COPY|EXECUTE|PREPARE)\b/;
+  const DML_SPACE_RE = /\b(DO|CALL|SET|NOTIFY|LISTEN|UNLISTEN)\s/;
+  const dmlMatch = upper.match(DML_KEYWORD_RE) || upper.match(DML_SPACE_RE);
+  if (dmlMatch) {
+    return {
+      is_valid: false,
+      issues: [`Keyword proibido detectado: ${dmlMatch[1]}. Query rejeitada por segurança.`],
+      expected_behavior: "Query rejeitada por segurança.",
+    };
   }
 
   // 1d. Bloquear funções perigosas do PostgreSQL
