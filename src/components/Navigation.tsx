@@ -384,7 +384,8 @@ export default function Navigation() {
         {/* Botão de Tema */}
         <button
           onClick={toggleTheme}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2.5 rounded-xl hover:bg-white/[0.06] transition-all duration-200 group cursor-pointer relative`}
+          className="w-full flex items-center p-2.5 rounded-xl hover:bg-white/[0.06] transition-all duration-200 group cursor-pointer relative"
+          style={{ justifyContent: isCollapsed ? 'center' : 'space-between', transition: 'justify-content 0.4s ease' }}
           title={isCollapsed ? (theme === 'light' ? 'Modo Claro' : 'Modo Escuro') : undefined}
         >
           <div className="flex items-center gap-2.5">
@@ -394,33 +395,53 @@ export default function Navigation() {
               <Moon className="w-4.5 h-4.5 text-blue-400 shrink-0" />
             )}
             <span
-              className={`text-xs font-bold text-white/50 group-hover:text-white/80 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
-              style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
+              className="text-xs font-bold text-white/50 group-hover:text-white/80 whitespace-nowrap overflow-hidden"
+              style={{
+                opacity: isCollapsed ? 0 : 1,
+                maxWidth: isCollapsed ? '0px' : '120px',
+                transition: isCollapsed
+                  ? 'opacity 0.12s ease, max-width 0.25s cubic-bezier(0.22, 1, 0.36, 1) 0.05s'
+                  : 'max-width 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, opacity 0.25s ease 0.2s',
+              }}
             >
               {theme === 'light' ? 'Modo Claro' : 'Modo Escuro'}
             </span>
           </div>
           <div
-            className={`w-8 h-4 rounded-full p-0.5 sidebar-content-transition ${theme === 'dark' ? 'bg-sky-500' : 'bg-slate-300'} ${isCollapsed ? 'opacity-0 scale-0 w-0' : 'opacity-100 scale-100 w-8'}`}
-            style={{ transitionDelay: isCollapsed ? '0ms' : '250ms' }}
+            className={`h-4 rounded-full p-0.5 ${theme === 'dark' ? 'bg-sky-500' : 'bg-slate-300'}`}
+            style={{
+              opacity: isCollapsed ? 0 : 1,
+              width: isCollapsed ? '0px' : '32px',
+              transform: `scale(${isCollapsed ? 0.5 : 1})`,
+              transition: isCollapsed
+                ? 'opacity 0.12s ease, width 0.2s ease, transform 0.2s ease'
+                : 'width 0.3s ease 0.15s, transform 0.3s ease 0.15s, opacity 0.25s ease 0.2s',
+              overflow: 'hidden',
+            }}
           >
             <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-200 ${theme === 'dark' ? 'translate-x-4' : 'translate-x-0'}`} />
           </div>
-
         </button>
 
         {/* Botão de Sair */}
         <button
           type="button"
           onClick={() => signOut()}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : ''} p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 group cursor-pointer relative`}
+          className="w-full flex items-center p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 group cursor-pointer relative"
+          style={{ justifyContent: isCollapsed ? 'center' : 'flex-start', transition: 'justify-content 0.4s ease' }}
           title={isCollapsed ? 'Sair' : undefined}
         >
           <div className="flex items-center gap-2.5">
             <LogOut className="w-4.5 h-4.5 text-white/40 group-hover:text-red-400 shrink-0" />
             <span
-              className={`text-xs font-bold text-white/50 group-hover:text-red-400 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
-              style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
+              className="text-xs font-bold text-white/50 group-hover:text-red-400 whitespace-nowrap overflow-hidden"
+              style={{
+                opacity: isCollapsed ? 0 : 1,
+                maxWidth: isCollapsed ? '0px' : '60px',
+                transition: isCollapsed
+                  ? 'opacity 0.12s ease, max-width 0.25s cubic-bezier(0.22, 1, 0.36, 1) 0.05s'
+                  : 'max-width 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, opacity 0.25s ease 0.2s',
+              }}
             >
               Sair
             </span>
@@ -438,8 +459,15 @@ function MenuGroup({ title, children, moduleTheme }: { title: string; children: 
   return (
     <div>
       <p
-        className={`px-3 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1 flex items-center gap-1 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mb-0' : 'opacity-100 h-auto mb-1'}`}
-        style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
+        className="px-3 text-[10px] font-bold text-white/40 uppercase tracking-wider flex items-center gap-1 whitespace-nowrap overflow-hidden"
+        style={{
+          opacity: isCollapsed ? 0 : 1,
+          maxHeight: isCollapsed ? '0px' : '20px',
+          marginBottom: isCollapsed ? '0px' : '4px',
+          transition: isCollapsed
+            ? 'opacity 0.12s ease, max-height 0.2s ease 0.05s, margin-bottom 0.2s ease 0.05s'
+            : 'max-height 0.3s ease 0.1s, margin-bottom 0.3s ease 0.1s, opacity 0.25s ease 0.2s',
+        }}
       >
         <Sparkles className={`w-3 h-3 ${moduleTheme.sparkleColor} shrink-0`} />
         <span className="overflow-hidden">{title}</span>
