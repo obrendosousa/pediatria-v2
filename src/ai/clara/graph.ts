@@ -455,7 +455,7 @@ claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
   const sanitizedMessages = sanitizeMessagesForGemini(compactedMessages);
 
   // Debug: log types para diagnóstico de erros Gemini
-  console.log("[simple_agent] msgs:", sanitizedMessages.map((m) => m._getType?.() || (m as Record<string, unknown>).type || "unknown").join(" → "));
+  console.log("[simple_agent] msgs:", sanitizedMessages.map((m) => m._getType?.() || (m as unknown as Record<string, unknown>).type || "unknown").join(" → "));
 
   let response: AIMessage;
   try {

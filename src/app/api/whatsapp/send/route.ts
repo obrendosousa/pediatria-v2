@@ -224,7 +224,7 @@ export async function POST(req: Request) {
 
           // Parse síncrono — identifica segmentos <voice> e <text>
           // TEMP: força tudo como texto (ElevenLabs sem créditos)
-          const segments = [{ type: 'text' as const, content: aiResponseText.replace(/<\/?voice>/g, '') }];
+          const segments: { type: 'text' | 'voice'; content: string }[] = [{ type: 'text', content: aiResponseText.replace(/<\/?voice>/g, '') }];
           const baseTs = Date.now();
 
           // Pré-gera todos os áudios SEQUENCIALMENTE antes de inserir no banco.
