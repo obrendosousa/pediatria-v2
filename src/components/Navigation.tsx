@@ -7,7 +7,7 @@ import {
   MessageSquare, CalendarDays, Settings, LogOut, LucideIcon,
   LayoutDashboard, Trello, Stethoscope, CheckSquare,
   Store, PieChart, Heart, Sparkles, Users, Moon, Sun,
-  ChevronLeft, ChevronRight, Zap, FileText, ArrowLeftRight, Receipt,
+  ChevronRight, Zap, FileText, ArrowLeftRight, Receipt,
   ClipboardList, Ban, DollarSign, BarChart3, BookOpen, Monitor, ExternalLink,
 } from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -151,18 +151,35 @@ export default function Navigation() {
         {/* Botão Toggle */}
         <button
           onClick={toggleSidebar}
-          className={`absolute ${isCollapsed ? 'top-3 right-2' : 'top-3 right-3'} z-50 w-7 h-7 rounded-full ${isAtendimento ? 'bg-[#0B1120]' : 'bg-[#110B18]'} border-2 border-white/10 text-white/60 hover:bg-white/10 shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer`}
+          className={`absolute top-3 z-50 w-7 h-7 rounded-full ${isAtendimento ? 'bg-[#0B1120]' : 'bg-[#110B18]'} border-2 border-white/10 text-white/60 hover:bg-white/10 shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer`}
+          style={{ right: isCollapsed ? '8px' : '12px', transition: 'right 0.4s cubic-bezier(0.22, 1, 0.36, 1)' }}
           aria-label={isCollapsed ? 'Expandir menu' : 'Minimizar menu'}
         >
-          {isCollapsed ? (
-            <ChevronRight className={`w-4 h-4 ${mt.textBold} transition-all duration-300 group-hover:translate-x-0.5`} />
-          ) : (
-            <ChevronLeft className={`w-4 h-4 ${mt.textBold} transition-all duration-300 group-hover:-translate-x-0.5`} />
-          )}
+          <ChevronRight
+            className={`w-4 h-4 ${mt.textBold} transition-all duration-400`}
+            style={{
+              transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
+              transition: 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          />
         </button>
 
-        <div className="flex items-center gap-3 w-full mb-2 transition-all duration-300">
-          <div className={`relative w-10 h-10 flex items-center justify-center bg-white dark:bg-[#1c1c21] rounded-xl shadow-sm border ${isAtendimento ? 'border-slate-200 dark:border-[#2d2d36]' : 'border-pink-100 dark:border-[#2d2d36]'} p-1 transition-colors shrink-0`}>
+        <div
+          className="flex items-center w-full mb-2"
+          style={{
+            justifyContent: isCollapsed ? 'center' : 'flex-start',
+            gap: isCollapsed ? '0px' : '12px',
+            transition: 'gap 0.4s cubic-bezier(0.22, 1, 0.36, 1), justify-content 0.4s ease',
+          }}
+        >
+          <div
+            className={`relative flex items-center justify-center bg-white dark:bg-[#1c1c21] rounded-xl shadow-sm border ${isAtendimento ? 'border-slate-200 dark:border-[#2d2d36]' : 'border-pink-100 dark:border-[#2d2d36]'} p-1 shrink-0`}
+            style={{
+              width: isCollapsed ? '36px' : '40px',
+              height: isCollapsed ? '36px' : '40px',
+              transition: 'width 0.4s cubic-bezier(0.22, 1, 0.36, 1), height 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://i.imgur.com/W5fMxRM.png"
@@ -171,8 +188,14 @@ export default function Navigation() {
             />
           </div>
           <div
-            className={`text-left sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
-            style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
+            className="text-left whitespace-nowrap overflow-hidden"
+            style={{
+              opacity: isCollapsed ? 0 : 1,
+              maxWidth: isCollapsed ? '0px' : '160px',
+              transition: isCollapsed
+                ? 'opacity 0.15s ease, max-width 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
+                : 'max-width 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease 0.15s',
+            }}
           >
             <h2 className="text-sm font-bold leading-tight text-white/90">Centro Médico<br />Aliança</h2>
           </div>
@@ -180,20 +203,39 @@ export default function Navigation() {
 
         {/* Module badge */}
         <span
-          className={`text-[10px] font-bold ${isAtendimento ? `${mt.text} ${mt.bgSubtle}` : 'text-pink-400 bg-pink-950/30'} px-2 py-0.5 rounded-md uppercase tracking-wider w-full text-center sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mt-0' : 'opacity-100 h-auto mt-2'}`}
-          style={{ transitionDelay: isCollapsed ? '0ms' : '250ms' }}
+          className={`text-[10px] font-bold ${isAtendimento ? `${mt.text} ${mt.bgSubtle}` : 'text-pink-400 bg-pink-950/30'} px-2 rounded-md uppercase tracking-wider w-full text-center whitespace-nowrap overflow-hidden`}
+          style={{
+            opacity: isCollapsed ? 0 : 1,
+            maxHeight: isCollapsed ? '0px' : '24px',
+            paddingTop: isCollapsed ? '0px' : '2px',
+            paddingBottom: isCollapsed ? '0px' : '2px',
+            marginTop: isCollapsed ? '0px' : '8px',
+            transition: isCollapsed
+              ? 'opacity 0.12s ease, max-height 0.25s ease 0.05s, padding 0.25s ease 0.05s, margin 0.25s ease 0.05s'
+              : 'max-height 0.3s ease 0.1s, padding 0.3s ease 0.1s, margin 0.3s ease 0.1s, opacity 0.25s ease 0.2s',
+          }}
         >
           {currentModule.sublabel}
         </span>
 
         {/* Switcher de módulo */}
-        {hasMultipleModules && !isCollapsed && !isDoctor && (
+        {hasMultipleModules && !isDoctor && (
           <Link
             href={isAtendimento ? '/' : '/atendimento'}
-            className="mt-2 flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all w-full justify-center cursor-pointer text-white/40 hover:text-white/70 hover:bg-white/5"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium w-full justify-center cursor-pointer text-white/40 hover:text-white/70 hover:bg-white/5"
+            style={{
+              opacity: isCollapsed ? 0 : 1,
+              maxHeight: isCollapsed ? '0px' : '32px',
+              marginTop: isCollapsed ? '0px' : '8px',
+              pointerEvents: isCollapsed ? 'none' : 'auto',
+              transition: isCollapsed
+                ? 'opacity 0.12s ease, max-height 0.2s ease 0.05s, margin 0.2s ease 0.05s'
+                : 'max-height 0.3s ease 0.15s, margin 0.3s ease 0.15s, opacity 0.25s ease 0.25s',
+              overflow: 'hidden',
+            }}
           >
-            <ArrowLeftRight className="w-3 h-3" />
-            {isAtendimento ? 'Ir para Pediatria' : 'Ir para Clínica Geral'}
+            <ArrowLeftRight className="w-3 h-3 shrink-0" />
+            <span className="whitespace-nowrap">{isAtendimento ? 'Ir para Pediatria' : 'Ir para Clínica Geral'}</span>
           </Link>
         )}
       </div>
@@ -232,6 +274,9 @@ export default function Navigation() {
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 fill-pink-200 text-pink-200"
                 style={{
                   filter: 'drop-shadow(0 0 6px rgba(255,228,237,0.6)) drop-shadow(0 0 12px rgba(255,228,237,0.25))',
+                  opacity: isCollapsed ? 0 : 1,
+                  transform: `translateY(-50%) scale(${isCollapsed ? 0.5 : 1})`,
+                  transition: 'opacity 0.25s ease, transform 0.25s ease',
                 }}
               />
             )}

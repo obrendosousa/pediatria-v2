@@ -217,18 +217,42 @@
 
 /* Transição suave de largura para sidebar */
 .sidebar-transition {
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-              min-width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: width;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+              min-width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+              max-width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: width, min-width, max-width;
 }
 
 /* Transições de conteúdo interno da sidebar */
 .sidebar-content-transition {
-  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              margin 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              max-width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              margin 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              padding 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Fade suave para elementos que aparecem/desaparecem na sidebar */
+.sidebar-fade {
+  transition: opacity 0.25s ease, transform 0.25s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+  overflow: hidden;
+}
+.sidebar-fade.collapsed {
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
+  transform: scale(0.95);
+}
+.sidebar-fade.expanded {
+  opacity: 1;
+  max-height: 60px;
+  transform: scale(1);
 }
 
 /* Animação de entrada de mensagens - suave e responsiva */

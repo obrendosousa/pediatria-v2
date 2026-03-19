@@ -10,6 +10,7 @@ const supabase = createClient();
 import EditContactModal from './modals/EditContactModal';
 import { PatientInfoBadge } from './PatientInfoBadge';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { useModuleSafe } from '@/contexts/ModuleContext';
 
 interface ChatHeaderProps {
   chat: Chat;
@@ -24,6 +25,8 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const moduleCtx = useModuleSafe();
+  const schema = moduleCtx?.config?.schema || 'public';
 
   const isAIChat = chat?.phone === '00000000000';
 
@@ -58,10 +61,10 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
       fetch('/api/whatsapp/profile-picture', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId: chat.id }),
+        body: JSON.stringify({ chatId: chat.id, schema }),
       }).catch(() => {});
     }
-  }, [chat?.id, chat?.phone, chat?.profile_pic, isAIChat]);
+  }, [chat?.id, chat?.phone, chat?.profile_pic, isAIChat, schema]);
 
   return (
     <>
