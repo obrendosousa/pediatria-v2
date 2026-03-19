@@ -39,9 +39,9 @@ export default function Navigation() {
 
   const hasMultipleModules = modules.length > 1;
 
-  // Floating indicator measurement (only for atendimento)
+  // Floating indicator measurement
   useEffect(() => {
-    if (!navRef.current || !isAtendimento) return;
+    if (!navRef.current) return;
 
     const measure = () => {
       const nav = navRef.current;
@@ -67,7 +67,7 @@ export default function Navigation() {
     });
 
     return () => cancelAnimationFrame(raf);
-  }, [pathname, isAtendimento, isCollapsed, enableTransition]);
+  }, [pathname, isCollapsed, enableTransition]);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'light';
@@ -99,7 +99,7 @@ export default function Navigation() {
 
   return (
     <div
-      className={`flex shrink-0 flex-col sidebar-slide-in ${isAtendimento ? 'bg-[#0B1120] border-r border-[#1a2744]/60' : `bg-white dark:bg-[#08080b] border-r ${mt.border}`} ${mt.shadow} dark:shadow-none relative z-10 h-screen overflow-hidden sidebar-transition dark:bg-[#08080b] dark:border-r dark:border-[#1c1c21]`}
+      className={`flex shrink-0 flex-col sidebar-slide-in ${isAtendimento ? 'bg-[#0B1120] border-r border-[#1a2744]/60' : 'bg-[#110B18] border-r border-[#2a1538]/60'} dark:shadow-none relative z-10 h-screen overflow-hidden sidebar-transition`}
       style={{
         width: isCollapsed ? '80px' : '260px',
         minWidth: isCollapsed ? '80px' : '260px',
@@ -112,8 +112,8 @@ export default function Navigation() {
         <div className={`absolute top-[-10%] left-[-20%] w-48 h-48 ${mt.bgBlur} rounded-full blur-[60px]`}></div>
       </div>
 
-      {/* --- PARTÍCULAS (só atendimento) --- */}
-      {isAtendimento && (
+      {/* --- PARTÍCULAS --- */}
+      {isAtendimento ? (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-[8%] left-[15%] w-1 h-1 bg-white/15 rounded-full animate-[float_6s_ease-in-out_infinite]" />
           <div className="absolute top-[15%] right-[20%] w-1.5 h-1.5 bg-blue-400/10 rounded-full animate-[float_8s_ease-in-out_infinite_1s]" />
@@ -128,15 +128,30 @@ export default function Navigation() {
           <div className="absolute top-[88%] right-[25%] w-1.5 h-1.5 bg-white/10 rounded-full animate-[float_5s_ease-in-out_infinite_1.2s]" />
           <div className="absolute top-[95%] left-[35%] w-1 h-1 bg-blue-300/15 rounded-full animate-[float_11s_ease-in-out_infinite_4.5s]" />
         </div>
+      ) : (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[8%] left-[15%] w-1 h-1 bg-white/15 rounded-full animate-[float_6s_ease-in-out_infinite]" />
+          <div className="absolute top-[15%] right-[20%] w-1.5 h-1.5 bg-pink-400/10 rounded-full animate-[float_8s_ease-in-out_infinite_1s]" />
+          <div className="absolute top-[25%] left-[60%] w-1 h-1 bg-white/10 rounded-full animate-[float_7s_ease-in-out_infinite_2s]" />
+          <div className="absolute top-[35%] left-[25%] w-1 h-1 bg-rose-300/10 rounded-full animate-[float_9s_ease-in-out_infinite_0.5s]" />
+          <div className="absolute top-[42%] right-[15%] w-1.5 h-1.5 bg-white/10 rounded-full animate-[float_5s_ease-in-out_infinite_3s]" />
+          <div className="absolute top-[50%] left-[40%] w-1 h-1 bg-pink-400/10 rounded-full animate-[float_10s_ease-in-out_infinite_1.5s]" />
+          <div className="absolute top-[58%] left-[10%] w-1 h-1 bg-white/15 rounded-full animate-[float_6s_ease-in-out_infinite_4s]" />
+          <div className="absolute top-[65%] right-[30%] w-1.5 h-1.5 bg-rose-400/10 rounded-full animate-[float_8s_ease-in-out_infinite_2.5s]" />
+          <div className="absolute top-[72%] left-[50%] w-1 h-1 bg-white/10 rounded-full animate-[float_7s_ease-in-out_infinite_0.8s]" />
+          <div className="absolute top-[80%] left-[20%] w-1 h-1 bg-pink-300/10 rounded-full animate-[float_9s_ease-in-out_infinite_3.5s]" />
+          <div className="absolute top-[88%] right-[25%] w-1.5 h-1.5 bg-white/10 rounded-full animate-[float_5s_ease-in-out_infinite_1.2s]" />
+          <div className="absolute top-[95%] left-[35%] w-1 h-1 bg-rose-300/15 rounded-full animate-[float_11s_ease-in-out_infinite_4.5s]" />
+        </div>
       )}
 
       {/* --- HEADER / LOGO --- */}
-      <div className={`relative z-10 flex flex-col items-center pt-14 pb-4 px-4 border-b ${isAtendimento ? 'border-white/[0.06]' : 'border-pink-50 dark:border-[#2d2d36]/60'} overflow-hidden`}>
+      <div className="relative z-10 flex flex-col items-center pt-14 pb-4 px-4 border-b border-white/[0.06] overflow-hidden">
 
         {/* Botão Toggle */}
         <button
           onClick={toggleSidebar}
-          className={`absolute ${isCollapsed ? 'top-3 right-2' : 'top-3 right-3'} z-50 w-7 h-7 rounded-full ${isAtendimento ? 'bg-[#0B1120] border-2 border-white/10 text-white/60 hover:bg-white/10' : `bg-white dark:bg-[#08080b] border-2 ${mt.borderAccent} ${mt.hoverBg}`} shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer dark:bg-[#08080b] dark:border-white/10`}
+          className={`absolute ${isCollapsed ? 'top-3 right-2' : 'top-3 right-3'} z-50 w-7 h-7 rounded-full ${isAtendimento ? 'bg-[#0B1120]' : 'bg-[#110B18]'} border-2 border-white/10 text-white/60 hover:bg-white/10 shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer`}
           aria-label={isCollapsed ? 'Expandir menu' : 'Minimizar menu'}
         >
           {isCollapsed ? (
@@ -159,13 +174,13 @@ export default function Navigation() {
             className={`text-left sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
             style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
           >
-            <h2 className={`text-sm font-bold leading-tight ${isAtendimento ? 'text-white/90' : 'text-slate-700 dark:text-[#fafafa]'}`}>Centro Médico<br />Aliança</h2>
+            <h2 className="text-sm font-bold leading-tight text-white/90">Centro Médico<br />Aliança</h2>
           </div>
         </div>
 
         {/* Module badge */}
         <span
-          className={`text-[10px] font-bold ${mt.text} ${mt.bgSubtle} px-2 py-0.5 rounded-md uppercase tracking-wider w-full text-center sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mt-0' : 'opacity-100 h-auto mt-2'}`}
+          className={`text-[10px] font-bold ${isAtendimento ? `${mt.text} ${mt.bgSubtle}` : 'text-pink-400 bg-pink-950/30'} px-2 py-0.5 rounded-md uppercase tracking-wider w-full text-center sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mt-0' : 'opacity-100 h-auto mt-2'}`}
           style={{ transitionDelay: isCollapsed ? '0ms' : '250ms' }}
         >
           {currentModule.sublabel}
@@ -175,7 +190,7 @@ export default function Navigation() {
         {hasMultipleModules && !isCollapsed && !isDoctor && (
           <Link
             href={isAtendimento ? '/' : '/atendimento'}
-            className={`mt-2 flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all w-full justify-center cursor-pointer ${isAtendimento ? 'text-white/40 hover:text-white/70 hover:bg-white/5' : 'text-slate-400 dark:text-[#71717a] hover:text-slate-600 dark:hover:text-[#d4d4d8] hover:bg-slate-50 dark:hover:bg-white/5'}`}
+            className="mt-2 flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all w-full justify-center cursor-pointer text-white/40 hover:text-white/70 hover:bg-white/5"
           >
             <ArrowLeftRight className="w-3 h-3" />
             {isAtendimento ? 'Ir para Pediatria' : 'Ir para Clínica Geral'}
@@ -186,8 +201,8 @@ export default function Navigation() {
       {/* --- NAVEGAÇÃO --- */}
       <nav ref={navRef} className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-6 py-4 relative">
 
-        {/* ── Floating Indicator (só atendimento) ── */}
-        {isAtendimento && indicatorStyle && (
+        {/* ── Floating Indicator ── */}
+        {indicatorStyle && (
           <div
             className="absolute left-3 right-3 rounded-xl pointer-events-none z-0"
             style={{
@@ -196,45 +211,57 @@ export default function Navigation() {
               transition: enableTransition
                 ? 'top 0.4s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s ease, opacity 0.3s ease'
                 : 'none',
-              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.08) 70%, rgba(255,255,255,0.15) 100%)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: isAtendimento
+                ? 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.08) 70%, rgba(255,255,255,0.15) 100%)'
+                : 'linear-gradient(90deg, transparent 0%, rgba(255,228,237,0.03) 30%, rgba(255,228,237,0.08) 70%, rgba(255,228,237,0.16) 100%)',
+              border: isAtendimento
+                ? '1px solid rgba(255,255,255,0.08)'
+                : '1px solid rgba(255,228,237,0.10)',
             }}
           >
-            {/* Barra branca lateral */}
-            <div
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-[3px] rounded-full bg-white"
-              style={{
-                height: '55%',
-                boxShadow: '0 0 8px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.15)',
-              }}
-            />
+            {isAtendimento ? (
+              <div
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-[3px] rounded-full bg-white"
+                style={{
+                  height: '55%',
+                  boxShadow: '0 0 8px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.15)',
+                }}
+              />
+            ) : (
+              <Heart
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 fill-pink-200 text-pink-200"
+                style={{
+                  filter: 'drop-shadow(0 0 6px rgba(255,228,237,0.6)) drop-shadow(0 0 12px rgba(255,228,237,0.25))',
+                }}
+              />
+            )}
           </div>
         )}
 
         {isAtendimento && isDoctor ? (
           <>
             <MenuGroup title="Clínico" moduleTheme={mt}>
-              <NavItem icon={Stethoscope} label="Painel Médico" path="/atendimento/doctor" active={isActive('/atendimento/doctor')} color="teal" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={CalendarDays} label="Minha Agenda" path="/atendimento/agenda" active={pathname === '/atendimento/agenda'} color="blue" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={Users} label="Meus Pacientes" path="/atendimento/clients" active={isActive('/atendimento/clients')} color="blue" moduleTheme={mt} showHeart={false} />
+              <NavItem icon={Stethoscope} label="Painel Médico" path="/atendimento/doctor" active={isActive('/atendimento/doctor')} color="teal" moduleTheme={mt} />
+              <NavItem icon={CalendarDays} label="Minha Agenda" path="/atendimento/agenda" active={pathname === '/atendimento/agenda'} color="blue" moduleTheme={mt} />
+              <NavItem icon={Users} label="Meus Pacientes" path="/atendimento/clients" active={isActive('/atendimento/clients')} color="blue" moduleTheme={mt} />
             </MenuGroup>
 
             <MenuGroup title="Operacional" moduleTheme={mt}>
-              <NavItem icon={Trello} label="CRM" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={CheckSquare} label="Tarefas" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} showHeart={false} />
+              <NavItem icon={Trello} label="CRM" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} />
+              <NavItem icon={CheckSquare} label="Tarefas" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} />
             </MenuGroup>
           </>
         ) : isAtendimento ? (
           <>
             <MenuGroup title="Operacional" moduleTheme={mt}>
-              <NavItem icon={LayoutDashboard} label="Dashboard" path="/atendimento/dashboard" active={isActive('/atendimento/dashboard')} color="blue" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={MessageSquare} label="Chat" path="/atendimento" active={pathname === '/atendimento'} badge={unreadCount > 0 ? unreadCount : undefined} color="teal" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={Trello} label="CRM" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={CheckSquare} label="Tarefas" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} showHeart={false} />
+              <NavItem icon={LayoutDashboard} label="Dashboard" path="/atendimento/dashboard" active={isActive('/atendimento/dashboard')} color="blue" moduleTheme={mt} />
+              <NavItem icon={MessageSquare} label="Chat" path="/atendimento" active={pathname === '/atendimento'} badge={unreadCount > 0 ? unreadCount : undefined} color="teal" moduleTheme={mt} />
+              <NavItem icon={Trello} label="CRM" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} />
+              <NavItem icon={CheckSquare} label="Tarefas" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} />
             </MenuGroup>
 
             <MenuGroup title="Clínico" moduleTheme={mt}>
-              <NavItem icon={Stethoscope} label="Painel Médico" path="/atendimento/doctor" active={isActive('/atendimento/doctor')} color="teal" moduleTheme={mt} showHeart={false} />
+              <NavItem icon={Stethoscope} label="Painel Médico" path="/atendimento/doctor" active={isActive('/atendimento/doctor')} color="teal" moduleTheme={mt} />
               <a href="/atendimento/tv" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-1.5 mx-1 rounded-lg text-[11px] font-medium text-slate-400 dark:text-[#52525b] hover:text-slate-600 dark:hover:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer" title="Abrir Painel TV em tela cheia">
                 <Monitor className="w-3.5 h-3.5" />
                 <span>Abrir Painel TV</span>
@@ -243,26 +270,26 @@ export default function Navigation() {
             </MenuGroup>
 
             <MenuGroup title="Agenda" moduleTheme={mt}>
-              <NavItem icon={CalendarDays} label="Agenda" path="/atendimento/agenda" active={pathname === '/atendimento/agenda'} color="blue" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={ClipboardList} label="Gerenciar" path="/atendimento/agenda/gerenciar" active={isActive('/atendimento/agenda/gerenciar')} color="slate" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={Ban} label="Bloqueios" path="/atendimento/agenda/bloqueios" active={isActive('/atendimento/agenda/bloqueios')} color="rose" moduleTheme={mt} showHeart={false} />
+              <NavItem icon={CalendarDays} label="Agenda" path="/atendimento/agenda" active={pathname === '/atendimento/agenda'} color="blue" moduleTheme={mt} />
+              <NavItem icon={ClipboardList} label="Gerenciar" path="/atendimento/agenda/gerenciar" active={isActive('/atendimento/agenda/gerenciar')} color="slate" moduleTheme={mt} />
+              <NavItem icon={Ban} label="Bloqueios" path="/atendimento/agenda/bloqueios" active={isActive('/atendimento/agenda/bloqueios')} color="rose" moduleTheme={mt} />
             </MenuGroup>
 
             <MenuGroup title="Gestão" moduleTheme={mt}>
-              <NavItem icon={Users} label="Pacientes" path="/atendimento/clients" active={isActive('/atendimento/clients')} color="blue" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={Receipt} label="Orçamentos" path="/atendimento/orcamentos" active={isActive('/atendimento/orcamentos')} color="orange" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={DollarSign} label="Financeiro" path="/atendimento/financeiro" active={pathname === '/atendimento/financeiro'} color="green" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={FileText} label="NF-e" path="/atendimento/financeiro/nfe" active={isActive('/atendimento/financeiro/nfe')} color="slate" moduleTheme={mt} showHeart={false} />
+              <NavItem icon={Users} label="Pacientes" path="/atendimento/clients" active={isActive('/atendimento/clients')} color="blue" moduleTheme={mt} />
+              <NavItem icon={Receipt} label="Orçamentos" path="/atendimento/orcamentos" active={isActive('/atendimento/orcamentos')} color="orange" moduleTheme={mt} />
+              <NavItem icon={DollarSign} label="Financeiro" path="/atendimento/financeiro" active={pathname === '/atendimento/financeiro'} color="green" moduleTheme={mt} />
+              <NavItem icon={FileText} label="NF-e" path="/atendimento/financeiro/nfe" active={isActive('/atendimento/financeiro/nfe')} color="slate" moduleTheme={mt} />
             </MenuGroup>
 
             <MenuGroup title="Cadastros" moduleTheme={mt}>
-              <NavItem icon={BookOpen} label="Cadastros" path="/atendimento/cadastros" active={isActive('/atendimento/cadastros')} color="indigo" moduleTheme={mt} showHeart={false} />
+              <NavItem icon={BookOpen} label="Cadastros" path="/atendimento/cadastros" active={isActive('/atendimento/cadastros')} color="indigo" moduleTheme={mt} />
             </MenuGroup>
 
             <MenuGroup title="Sistema" moduleTheme={mt}>
-              <NavItem icon={BarChart3} label="Relatórios" path="/atendimento/relatorios" active={isActive('/atendimento/relatorios')} color="indigo" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={Zap} label="Automações" path="/atendimento/automatizacoes" active={isActive('/atendimento/automatizacoes')} color="indigo" moduleTheme={mt} showHeart={false} />
-              <NavItem icon={Settings} label="Configurações" path="/atendimento/configuracoes" active={isActive('/atendimento/configuracoes')} color="slate" moduleTheme={mt} showHeart={false} />
+              <NavItem icon={BarChart3} label="Relatórios" path="/atendimento/relatorios" active={isActive('/atendimento/relatorios')} color="indigo" moduleTheme={mt} />
+              <NavItem icon={Zap} label="Automações" path="/atendimento/automatizacoes" active={isActive('/atendimento/automatizacoes')} color="indigo" moduleTheme={mt} />
+              <NavItem icon={Settings} label="Configurações" path="/atendimento/configuracoes" active={isActive('/atendimento/configuracoes')} color="slate" moduleTheme={mt} />
             </MenuGroup>
           </>
         ) : (
@@ -307,12 +334,12 @@ export default function Navigation() {
       </nav>
 
       {/* --- FOOTER --- */}
-      <div className={`p-3 border-t ${isAtendimento ? 'border-white/[0.06] bg-[#0B1120]' : 'border-pink-50 dark:border-[#2d2d36]/60 bg-white'} dark:bg-[#08080b] dark:border-[#1c1c21] transition-colors space-y-1`}>
+      <div className={`p-3 border-t border-white/[0.06] ${isAtendimento ? 'bg-[#0B1120]' : 'bg-[#110B18]'} transition-colors space-y-1`}>
 
         {/* Botão de Tema */}
         <button
           onClick={toggleTheme}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2.5 rounded-xl ${isAtendimento ? 'hover:bg-white/[0.06]' : 'hover:bg-slate-50 dark:hover:bg-white/[0.06]'} transition-all duration-200 group cursor-pointer relative`}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2.5 rounded-xl hover:bg-white/[0.06] transition-all duration-200 group cursor-pointer relative`}
           title={isCollapsed ? (theme === 'light' ? 'Modo Claro' : 'Modo Escuro') : undefined}
         >
           <div className="flex items-center gap-2.5">
@@ -322,7 +349,7 @@ export default function Navigation() {
               <Moon className="w-4.5 h-4.5 text-blue-400 shrink-0" />
             )}
             <span
-              className={`text-xs font-bold text-slate-500 dark:text-[#a1a1aa] group-hover:text-slate-800 dark:group-hover:text-[#fafafa] sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
+              className={`text-xs font-bold text-white/50 group-hover:text-white/80 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
               style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
             >
               {theme === 'light' ? 'Modo Claro' : 'Modo Escuro'}
@@ -351,9 +378,9 @@ export default function Navigation() {
           title={isCollapsed ? 'Sair' : undefined}
         >
           <div className="flex items-center gap-2.5">
-            <LogOut className="w-4.5 h-4.5 text-slate-400 dark:text-[#71717a] group-hover:text-red-500 dark:group-hover:text-red-400 shrink-0" />
+            <LogOut className="w-4.5 h-4.5 text-white/40 group-hover:text-red-400 shrink-0" />
             <span
-              className={`text-xs font-bold text-slate-500 dark:text-[#a1a1aa] group-hover:text-red-600 dark:group-hover:text-red-400 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
+              className={`text-xs font-bold text-white/50 group-hover:text-red-400 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}
               style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
             >
               Sair
@@ -378,7 +405,7 @@ function MenuGroup({ title, children, moduleTheme }: { title: string; children: 
   return (
     <div>
       <p
-        className={`px-3 text-[10px] font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wider mb-1 flex items-center gap-1 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mb-0' : 'opacity-100 h-auto mb-1'}`}
+        className={`px-3 text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1 flex items-center gap-1 sidebar-content-transition whitespace-nowrap overflow-hidden ${isCollapsed ? 'opacity-0 h-0 mb-0' : 'opacity-100 h-auto mb-1'}`}
         style={{ transitionDelay: isCollapsed ? '0ms' : '200ms' }}
       >
         <Sparkles className={`w-3 h-3 ${moduleTheme.sparkleColor} shrink-0`} />
@@ -400,42 +427,24 @@ interface NavItemProps {
   color: string;
   badge?: number;
   moduleTheme: ModuleTheme;
-  showHeart?: boolean;
 }
 
-const colorMap: Record<string, string> = {
-  pink: 'text-pink-500 dark:text-pink-300',
-  purple: 'text-purple-500 dark:text-purple-300',
-  orange: 'text-orange-500 dark:text-orange-300',
-  teal: 'text-blue-500 dark:text-blue-300',
-  blue: 'text-sky-500 dark:text-sky-300',
-  rose: 'text-rose-500 dark:text-rose-300',
-  green: 'text-emerald-500 dark:text-emerald-300',
-  indigo: 'text-indigo-500 dark:text-indigo-300',
-  slate: 'text-slate-500 dark:text-slate-400',
-};
-
-function NavItem({ icon: Icon, label, path, active, color, badge, moduleTheme, showHeart = true }: NavItemProps) {
+function NavItem({ icon: Icon, label, path, active, badge }: NavItemProps) {
   const { isCollapsed } = useSidebar();
-  const isBlueModule = moduleTheme.primary === 'blue';
 
   return (
     <Link href={path} className="block group relative cursor-pointer" title={isCollapsed ? label : undefined}>
       <div
-        data-nav-active={active && isBlueModule ? 'true' : undefined}
+        data-nav-active={active ? 'true' : undefined}
         className={`
           relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium overflow-hidden
           ${active
-            ? (isBlueModule
-              ? 'text-[#fafafa] z-[1]'
-              : `${moduleTheme.activeGradient} text-white ${moduleTheme.shadowActive}`)
-            : (isBlueModule
-              ? 'text-white/50 hover:text-white/90 hover:bg-white/[0.04]'
-              : `text-slate-600 dark:text-[#a1a1aa] ${moduleTheme.hoverBg} hover:text-slate-900 dark:hover:text-[#fafafa]`)}
+            ? 'text-[#fafafa] z-[1]'
+            : 'text-white/50 hover:text-white/90 hover:bg-white/[0.04]'}
         `}
       >
         <Icon
-          className={`w-5 h-5 transition-colors shrink-0 ${active ? (isBlueModule ? 'text-[#fafafa]' : 'text-white') : (isBlueModule ? 'text-white/40' : (colorMap[color] || 'text-slate-400 dark:text-[#71717a]'))}`}
+          className={`w-5 h-5 transition-colors shrink-0 ${active ? 'text-[#fafafa]' : 'text-white/40'}`}
         />
         <span
           className={`sidebar-content-transition whitespace-nowrap overflow-hidden inline-block ${isCollapsed ? 'opacity-0 w-0 ml-0' : 'opacity-100 w-auto ml-3'}`}
@@ -456,15 +465,6 @@ function NavItem({ icon: Icon, label, path, active, color, badge, moduleTheme, s
                 {badge > 99 ? '99+' : badge}
               </span>
             </span>
-          </div>
-        )}
-
-        {showHeart && active && (!badge || badge === 0) && (
-          <div
-            className={`absolute right-3 transition-all duration-500 ease-in-out ${isCollapsed ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}
-            style={{ transitionDelay: isCollapsed ? '0ms' : '250ms' }}
-          >
-            <Heart className="w-3 h-3 fill-white text-white" />
           </div>
         )}
 
