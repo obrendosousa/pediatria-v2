@@ -419,6 +419,15 @@ export default function ReceptionAppointmentModal({
                   {appointment.patient_name || 'Sem nome'}
                 </h4>
               )}
+              {!isEditing && (
+                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 ${
+                  appointment.appointment_type === 'retorno'
+                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                    : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                }`}>
+                  {appointment.appointment_type === 'retorno' ? 'Retorno' : 'Consulta'}
+                </span>
+              )}
             </div>
           </div>
 

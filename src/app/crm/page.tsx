@@ -23,6 +23,7 @@ import CallMessageModal from '@/components/crm/CallMessageModal';
 import NewSlotModal from '@/components/NewSlotModal';
 import { getLocalDateRange, getTodayDateString, addDaysToDate } from '@/utils/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
+import { useCheckoutNotifications } from '@/contexts/CheckoutNotificationContext';
 import type { CRMMetricsPayload } from '@/lib/crm/metrics';
 import CRMMetricsDashboard from '@/components/crm/CRMMetricsDashboard';
 
@@ -41,6 +42,7 @@ const COLUMNS = [
 
 export default function CRMPage() {
   const { toast } = useToast();
+  const { pendingCount: checkoutPendingCount } = useCheckoutNotifications();
   const [activeTab, setActiveTab] = useState('reception');
   const [chats, setChats] = useState<Chat[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -77,6 +79,7 @@ export default function CRMPage() {
   
   // Appointments para recepção
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [overdueCheckouts, setOverdueCheckouts] = useState<Appointment[]>([]);
   const [calledAppointmentId, setCalledAppointmentId] = useState<number | null>(null);
   const [sendingCallAppointmentId, setSendingCallAppointmentId] = useState<number | null>(null);
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
@@ -182,9 +185,19 @@ export default function CRMPage() {
       });
     }
     
+    // 5. Busca checkouts pendentes de OUTROS dias (waiting_payment fora do dia selecionado)
+    const { startOfDay: todayStart } = getLocalDateRange(selectedDate);
+    const { data: overdueData } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('status', 'waiting_payment')
+      .lt('start_time', todayStart)
+      .order('start_time', { ascending: true });
+
     if (chatsData) setChats(chatsData as Chat[]);
     if (patientsData) setPatients(patientsData);
     if (appointmentsData) setAppointments(appointmentsData as Appointment[]);
+    setOverdueCheckouts((overdueData || []) as Appointment[]);
     setLoading(false);
   }
 
@@ -522,6 +535,14 @@ export default function CRMPage() {
                   }`}
                 >
                   <DollarSign className="w-4 h-4" /> Checkout / Finalização
+                  {checkoutPendingCount > 0 && (
+                    <span className="relative flex items-center justify-center">
+                      <span className="absolute inset-0 rounded-full bg-rose-400 animate-ping opacity-40" style={{ animationDuration: '2s' }} />
+                      <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm">
+                        {checkoutPendingCount > 9 ? '9+' : checkoutPendingCount}
+                      </span>
+                    </span>
+                  )}
                 </button>
                 {TABS.filter(t => t.id === 'analytics').map(tab => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white dark:bg-[#1c1c21] text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 dark:text-[#71717a] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-white/50 dark:hover:bg-white/5'}`}>
@@ -553,6 +574,7 @@ export default function CRMPage() {
                   variant="pediatria"
                   selectedDate={selectedDate}
                   appointments={appointments}
+                  overdueCheckouts={overdueCheckouts}
                   callingAppointmentId={sendingCallAppointmentId}
                   activeTab={receptionFlowTab}
                   onOpenCheckout={(apt) => setReceptionCheckoutAppointmentId(apt.id)}

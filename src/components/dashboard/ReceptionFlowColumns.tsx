@@ -26,6 +26,8 @@ interface DragData {
 interface ReceptionFlowColumnsProps {
   selectedDate: string;
   appointments: Appointment[];
+  /** Checkouts pendentes de dias anteriores */
+  overdueCheckouts?: Appointment[];
   onCallAppointment?: (appointment: Appointment) => void;
   onCheckIn?: (appointment: Appointment) => void;
   onConfirmArrival?: (appointment: Appointment) => void;
@@ -55,6 +57,7 @@ export default function ReceptionFlowColumns({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedDate,
   appointments,
+  overdueCheckouts = [],
   onCallAppointment,
   onCheckIn,
   onConfirmArrival,
@@ -120,8 +123,9 @@ export default function ReceptionFlowColumns({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant, onCallAppointment, onConfirmArrival, onEnter, onFinish, onRevert, onCallWithDestination, onFinishGuiche]);
 
-  /** Verifica se o paciente tem pagamento pendente (total > 0 e restante > 0) */
+  /** Verifica se o paciente tem pagamento pendente (total > 0 e restante > 0). Retorno não cobra. */
   const hasPendingPayment = (apt: Appointment) => {
+    if (apt.appointment_type === 'retorno') return false;
     const total = Number(apt.total_amount || 0);
     const paid = Number(apt.amount_paid || 0);
     return total > 0 && (total - paid) > 0;
@@ -478,7 +482,39 @@ export default function ReceptionFlowColumns({
 
         {activeTab === 'checkout' && (
           <div className="flex-1 flex gap-4 min-w-0 overflow-hidden">
-            <div className="w-[30%] min-w-[280px] max-w-[380px] flex flex-col gap-3 overflow-hidden shrink-0">
+            <div className="w-[30%] min-w-[280px] max-w-[380px] flex flex-col gap-3 overflow-y-auto custom-scrollbar shrink-0">
+              {/* Alerta de checkouts pendentes de dias anteriores */}
+              {overdueCheckouts.length > 0 && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl p-3 space-y-2">
+                  <p className="text-xs font-bold text-amber-800 dark:text-amber-200 uppercase flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2"><span className="animate-ping absolute inset-0 rounded-full bg-amber-400 opacity-75" /><span className="relative rounded-full h-2 w-2 bg-amber-500" /></span>
+                    {overdueCheckouts.length} pendente{overdueCheckouts.length > 1 ? 's' : ''} de dias anteriores
+                  </p>
+                  {overdueCheckouts.map((apt) => {
+                    const dateStr = new Date(apt.start_time).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                    return (
+                      <button
+                        key={apt.id}
+                        type="button"
+                        onClick={() => {
+                          if (onSelectCheckoutAppointment) onSelectCheckoutAppointment(apt);
+                          else if (onOpenCheckout) onOpenCheckout(apt);
+                        }}
+                        className={`w-full text-left p-2.5 rounded-lg border transition-all ${
+                          selectedCheckoutAppointmentId === apt.id
+                            ? 'border-amber-500 bg-amber-100 dark:bg-amber-900/40 ring-2 ring-amber-400'
+                            : 'border-amber-200 dark:border-amber-800 bg-white dark:bg-[#131316] hover:border-amber-400'
+                        }`}
+                      >
+                        <p className="text-sm font-semibold text-slate-800 dark:text-[#fafafa] truncate">{apt.patient_name || 'Sem nome'}</p>
+                        <p className="text-[10px] text-amber-700 dark:text-amber-300 font-bold mt-0.5">
+                          {dateStr} &bull; {apt.doctor_name || 'Sem médico'}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <ReceptionColumn
                 title="Checkout / Pagamento"
                 status="waiting_payment"

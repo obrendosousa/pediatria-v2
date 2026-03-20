@@ -2,7 +2,9 @@ import './globals.css';
 import { Figtree, Noto_Sans } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
+import { CheckoutNotificationProvider } from '@/contexts/CheckoutNotificationContext';
 import AuthLayoutGuard from '@/components/AuthLayoutGuard';
+import CheckoutAlertPopup from '@/components/CheckoutAlertPopup';
 import type { Metadata } from 'next';
 
 // Fonte Principal (Heading - limpa, médica, acessível)
@@ -46,7 +48,10 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ToastProvider>
-            <AuthLayoutGuard>{children}</AuthLayoutGuard>
+            <CheckoutNotificationProvider>
+              <AuthLayoutGuard>{children}</AuthLayoutGuard>
+              <CheckoutAlertPopup />
+            </CheckoutNotificationProvider>
           </ToastProvider>
         </AuthProvider>
       </body>

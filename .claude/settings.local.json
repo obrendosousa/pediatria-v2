@@ -313,7 +313,11 @@
       "Bash(find /c/Users/brend/Documents/pediatria-v2/src -name *hook* -o -name use*.ts -o -name use*.tsx)",
       "Bash(grep -r financial_transactions src/app/api --include=*.ts)",
       "Bash(grep -r \"payment\\\\|transaction\\\\|venda\\\\|sale\" src/components --include=*.tsx -l)",
-      "Bash(grep -r agenda /c/Users/brend/Documents/pediatria-v2/src/config /c/Users/brend/Documents/pediatria-v2/src/constants --include=*.ts --include=*.tsx -l)"
+      "Bash(grep -r agenda /c/Users/brend/Documents/pediatria-v2/src/config /c/Users/brend/Documents/pediatria-v2/src/constants --include=*.ts --include=*.tsx -l)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2/src -type f -name *loja* -o -name *store* -o -name *product* -o -name *produto*)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2/src -type f \\\\\\(-name *Navigation* -o -name *MainLayout* \\\\\\))",
+      "Bash(grep -r \"SET.*waiting_payment\\\\|UPDATE.*waiting_payment\" /c/Users/brend/Documents/pediatria-v2/src --include=*.ts --include=*.tsx)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2 -path *node_modules -prune -o -type f \\\\\\(-name *loja* -o -name *store* -o -name *product* \\\\\\) -print)"
     ]
   },
   "hooks": {
