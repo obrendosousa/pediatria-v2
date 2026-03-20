@@ -67,7 +67,7 @@ export function useServicePoints() {
         })
         .select()
         .single();
-      if (error) throw error;
+      if (error) throw new Error(error.message || 'Erro na operacao de ponto de atendimento');
       return data as ServicePoint;
     } finally {
       setSaving(false);
@@ -83,7 +83,7 @@ export function useServicePoints() {
         .eq('id', id)
         .select()
         .single();
-      if (error) throw error;
+      if (error) throw new Error(error.message || 'Erro na operacao de ponto de atendimento');
       return data as ServicePoint;
     } finally {
       setSaving(false);
@@ -97,7 +97,7 @@ export function useServicePoints() {
         .from('service_points')
         .delete()
         .eq('id', id);
-      if (error) throw error;
+      if (error) throw new Error(error.message || 'Erro na operacao de ponto de atendimento');
     } finally {
       setSaving(false);
     }

@@ -39,9 +39,10 @@ interface EvolutionRequestOptions {
 
 export async function evolutionRequest<T = unknown>(
   pathTemplate: string,
-  options: EvolutionRequestOptions = {}
+  options: EvolutionRequestOptions = {},
+  instanceEnvKey?: string
 ): Promise<{ ok: boolean; status: number; data: T | Record<string, unknown> | string | null }> {
-  const cfg = getEvolutionConfig();
+  const cfg = getEvolutionConfig(instanceEnvKey);
   const endpoint = buildEvolutionEndpoint(pathTemplate, cfg);
 
   const res = await fetch(endpoint, {

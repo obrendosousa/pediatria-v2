@@ -76,6 +76,8 @@ export const funnelRunCommandSchema = z.object({
   initiatedBy: z.enum(["ui", "api", "system"]).default("ui"),
   runId: z.string().uuid().optional(),
   threadId: z.string().min(1).optional(),
+  instanceEnvKey: z.string().optional(),
+  schema: z.string().optional(),
 });
 export type FunnelRunCommandContract = z.infer<typeof funnelRunCommandSchema>;
 

@@ -3,8 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { funnelRunCommandSchema } from '@/lib/automation/contracts';
 import { runChatFunnelGraph } from '@/lib/automation/graphs/chatFunnel';
 
-// Por enquanto reutiliza o mesmo grafo de funnel.
-// TODO: Criar versão schema-aware quando o automation tiver dados separados.
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -17,6 +15,8 @@ export async function POST(req: Request) {
       title: body.title,
       steps: body.steps,
       initiatedBy: body.initiatedBy || 'ui',
+      instanceEnvKey: 'EVOLUTION_ATENDIMENTO_INSTANCE',
+      schema: 'atendimento',
     });
 
     const result = await runChatFunnelGraph(command);

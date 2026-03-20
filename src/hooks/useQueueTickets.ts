@@ -55,7 +55,7 @@ export function useQueueTickets() {
     // Gerar próximo número via RPC
     const { data: ticketNumber, error: rpcError } = await supabase
       .rpc('next_ticket_number', { p_prefix: prefix });
-    if (rpcError) throw rpcError;
+    if (rpcError) throw new Error(rpcError.message || 'Erro ao gerar numero da senha');
 
     // Inserir ticket
     const { data: ticket, error: insertError } = await supabase
@@ -70,7 +70,7 @@ export function useQueueTickets() {
       })
       .select()
       .single();
-    if (insertError) throw insertError;
+    if (insertError) throw new Error(insertError.message || 'Erro ao inserir senha');
 
     // Atualizar appointment com stage e ticket_id
     await supabase
@@ -106,7 +106,7 @@ export function useQueueTickets() {
       .eq('id', ticketId)
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw new Error(error.message || 'Erro na operacao de fila');
 
     const tk = ticket as QueueTicket;
 
@@ -140,7 +140,7 @@ export function useQueueTickets() {
       .from('queue_tickets')
       .update({ status: 'in_service', served_at: new Date().toISOString() })
       .eq('id', ticketId);
-    if (error) throw error;
+    if (error) throw new Error(error.message || 'Erro na operacao de fila');
   }, []);
 
   /** Marca ticket como completo */
@@ -149,7 +149,7 @@ export function useQueueTickets() {
       .from('queue_tickets')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('id', ticketId);
-    if (error) throw error;
+    if (error) throw new Error(error.message || 'Erro na operacao de fila');
   }, []);
 
   /** Retorna o ticket ativo (waiting ou called) de um appointment */

@@ -7,6 +7,7 @@ export interface EvolutionSendInput {
   caption?: string;
   fileName?: string;
   mimetype?: string;
+  instanceEnvKey?: string;
 }
 
 export interface EvolutionSendResult {
@@ -37,7 +38,7 @@ export async function sendWithEvolution(input: EvolutionSendInput): Promise<Evol
     }
   }
 
-  const { ok, status, data } = await evolutionRequest(endpoint, { method: "POST", body });
+  const { ok, status, data } = await evolutionRequest(endpoint, { method: "POST", body }, input.instanceEnvKey);
   const result = (data as Record<string, unknown>) || {};
   const keyObj = (result.key as Record<string, unknown>) || {};
   const wppId = (keyObj.id as string) || (result.id as string) || null;

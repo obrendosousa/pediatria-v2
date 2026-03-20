@@ -16,9 +16,11 @@ interface FunnelState {
   steps: FunnelRunCommandContract["steps"];
   stepIndex: number;
   completed: number;
+  instanceEnvKey: string;
+  schema: string;
 }
 
-async function setPresence(phone: string, status: "composing" | "recording", durationMs: number) {
+async function setPresence(phone: string, status: "composing" | "recording", durationMs: number, instanceEnvKey?: string) {
   await evolutionRequest("/chat/sendPresence/{instance}", {
     method: "POST",
     body: {
@@ -26,9 +28,10 @@ async function setPresence(phone: string, status: "composing" | "recording", dur
       presence: status,
       delay: durationMs,
     },
-  });
+  }, instanceEnvKey);
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 async function appendRunLog(runId: string, threadId: string, nodeName: string, message: string, metadata: Record<string, unknown>) {
   const supabase = getSupabaseAdminClient() as any;
   await supabase.from("worker_run_logs").insert({
@@ -50,16 +53,19 @@ async function getCompiledChatFunnelGraph() {
       const checkpointer = await getAutomationCheckpointer();
       const graph = new StateGraph<FunnelState>({
         channels: {
-          runId: { reducer: (_, y) => y, default: () => randomUUID() },
-          threadId: { reducer: (_, y) => y, default: () => "" },
-          chatId: { reducer: (_, y) => y, default: () => 0 },
-          phone: { reducer: (_, y) => y, default: () => "" },
-          title: { reducer: (_, y) => y, default: () => "" },
-          steps: { reducer: (_, y) => y, default: () => [] },
-          stepIndex: { reducer: (_, y) => y, default: () => 0 },
-          completed: { reducer: (_, y) => y, default: () => 0 },
+          runId: { reducer: (_: string, y: string) => y, default: () => randomUUID() },
+          threadId: { reducer: (_: string, y: string) => y, default: () => "" },
+          chatId: { reducer: (_: number, y: number) => y, default: () => 0 },
+          phone: { reducer: (_: string, y: string) => y, default: () => "" },
+          title: { reducer: (_: string, y: string) => y, default: () => "" },
+          steps: { reducer: (_: FunnelRunCommandContract["steps"], y: FunnelRunCommandContract["steps"]) => y, default: () => [] as FunnelRunCommandContract["steps"] },
+          stepIndex: { reducer: (_: number, y: number) => y, default: () => 0 },
+          completed: { reducer: (_: number, y: number) => y, default: () => 0 },
+          instanceEnvKey: { reducer: (_: string, y: string) => y, default: () => "EVOLUTION_INSTANCE" },
+          schema: { reducer: (_: string, y: string) => y, default: () => "public" },
         },
       }) as any;
+      /* eslint-enable @typescript-eslint/no-explicit-any */
 
       graph.addNode("execute_step", async (state: FunnelState) => {
         const step = state.steps[state.stepIndex];
@@ -80,9 +86,9 @@ async function getCompiledChatFunnelGraph() {
 
         const payloadContent = step.content || "";
         if (step.type === "audio") {
-          await setPresence(state.phone, "recording", Math.max(delaySec, 1) * 1000);
+          await setPresence(state.phone, "recording", Math.max(delaySec, 1) * 1000, state.instanceEnvKey);
         } else {
-          await setPresence(state.phone, "composing", Math.max(delaySec, 1) * 1000);
+          await setPresence(state.phone, "composing", Math.max(delaySec, 1) * 1000, state.instanceEnvKey);
         }
 
         if (delaySec > 0) {
@@ -93,6 +99,7 @@ async function getCompiledChatFunnelGraph() {
           phone: state.phone,
           type: step.type as "text" | "audio" | "image" | "video" | "document",
           content: payloadContent,
+          instanceEnvKey: state.instanceEnvKey,
         });
 
         if (!sendRes.ok) {
@@ -106,6 +113,7 @@ async function getCompiledChatFunnelGraph() {
           content: payloadContent,
           mediaUrl: step.type === "text" ? null : payloadContent,
           wppId: sendRes.wppId,
+          schema: state.schema,
         });
 
         await appendRunLog(state.runId, state.threadId, "execute_step", "step_sent", {
@@ -145,6 +153,8 @@ export async function runChatFunnelGraph(input: FunnelRunCommandContract): Promi
       steps: command.steps,
       stepIndex: 0,
       completed: 0,
+      instanceEnvKey: command.instanceEnvKey || "EVOLUTION_INSTANCE",
+      schema: command.schema || "public",
     },
     {
       configurable: {

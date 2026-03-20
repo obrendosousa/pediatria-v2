@@ -1,7 +1,9 @@
 import { getSupabaseAdminClient } from "./supabaseAdmin";
+import { createSchemaAdminClient } from "@/lib/supabase/schemaServer";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-function getAdmin(): SupabaseClient {
+function getAdmin(schema?: string): SupabaseClient {
+  if (schema && schema !== 'public') return createSchemaAdminClient(schema) as unknown as SupabaseClient;
   return getSupabaseAdminClient();
 }
 
@@ -131,8 +133,9 @@ export async function insertChatAndMemory(params: {
   mediaUrl?: string | null;
   wppId?: string | null;
   automationRuleId?: number | null;
+  schema?: string;
 }) {
-  const supabase = getAdmin();
+  const supabase = getAdmin(params.schema);
   const isMediaType = params.type === "audio" || params.type === "image" || params.type === "video" || params.type === "document";
   const mediaUrl = params.mediaUrl || (isMediaType ? params.content : null);
   const messageText = isMediaType ? params.caption || "" : params.caption || params.content || "";

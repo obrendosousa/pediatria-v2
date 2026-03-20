@@ -196,55 +196,64 @@ export default function AtendimentoCRMPage() {
   // Fetch appointments
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const selectQuery = '*, patients:patient_id(full_name, phone, sex)';
-    let query = supabase
-      .from('appointments')
-      .select(selectQuery)
-      .eq('date', selectedDate)
-      .neq('status', 'cancelled')
-      .neq('status', 'blocked')
-      .order('time', { ascending: true });
+    try {
+      const selectQuery = '*, patients:patient_id(full_name, phone, sex)';
+      let query = supabase
+        .from('appointments')
+        .select(selectQuery)
+        .eq('date', selectedDate)
+        .neq('status', 'cancelled')
+        .neq('status', 'blocked')
+        .order('time', { ascending: true });
 
-    if (selectedDoctorId) {
-      query = query.eq('doctor_id', selectedDoctorId);
-    }
+      if (selectedDoctorId) {
+        query = query.eq('doctor_id', selectedDoctorId);
+      }
 
-    const { data } = await query;
-    if (data) {
-      const rows = data as Array<Record<string, unknown>>;
-      const mapped: AtendimentoAppointment[] = rows.map((row) => {
-        const patient = row.patients as { full_name?: string; phone?: string; sex?: string } | null;
-        const doctor = doctors.find(d => d.id === row.doctor_id);
-        return {
-          id: row.id as number,
-          date: row.date as string,
-          time: row.time as string | null,
-          patient_id: row.patient_id as number | null,
-          doctor_id: row.doctor_id as number | null,
-          doctor_name: doctor?.name || (row.doctor_name as string) || undefined,
-          type: row.type as string | null,
-          status: row.status as string,
-          notes: row.notes as string | null,
-          parent_name: row.parent_name as string | null,
-          parent_phone: row.parent_phone as string | null,
-          consultation_value: row.consultation_value as number | null,
-          patient_name: patient?.full_name || (row.patient_name as string) || null,
-          patient_phone: patient?.phone || (row.patient_phone as string) || null,
-          patient_sex: (patient?.sex as 'M' | 'F') || (row.patient_sex as 'M' | 'F') || null,
-          total_amount: row.total_amount as number | undefined,
-          amount_paid: row.amount_paid as number | undefined,
-          appointment_subtype: row.appointment_subtype as string | null,
-          procedures: row.procedures as string[] | null,
-          is_squeeze: row.is_squeeze as boolean | undefined,
-          is_teleconsultation: row.is_teleconsultation as boolean | undefined,
-          queue_stage: row.queue_stage as 'reception' | 'doctor' | null,
-          current_ticket_id: row.current_ticket_id as number | null,
-        };
-      });
-      setRawAppointments(mapped);
-      setAppointments(mapped.map(toReceptionAppointment));
+      const { data, error } = await query;
+      if (error) {
+        console.error('[CRM] fetchData error:', error);
+        return;
+      }
+      if (data) {
+        const rows = data as Array<Record<string, unknown>>;
+        const mapped: AtendimentoAppointment[] = rows.map((row) => {
+          const patient = row.patients as { full_name?: string; phone?: string; sex?: string } | null;
+          const doctor = doctors.find(d => d.id === row.doctor_id);
+          return {
+            id: row.id as number,
+            date: row.date as string,
+            time: row.time as string | null,
+            patient_id: row.patient_id as number | null,
+            doctor_id: row.doctor_id as number | null,
+            doctor_name: doctor?.name || (row.doctor_name as string) || undefined,
+            type: row.type as string | null,
+            status: row.status as string,
+            notes: row.notes as string | null,
+            parent_name: row.parent_name as string | null,
+            parent_phone: row.parent_phone as string | null,
+            consultation_value: row.consultation_value as number | null,
+            patient_name: patient?.full_name || (row.patient_name as string) || null,
+            patient_phone: patient?.phone || (row.patient_phone as string) || null,
+            patient_sex: (patient?.sex as 'M' | 'F') || (row.patient_sex as 'M' | 'F') || null,
+            total_amount: row.total_amount as number | undefined,
+            amount_paid: row.amount_paid as number | undefined,
+            appointment_subtype: row.appointment_subtype as string | null,
+            procedures: row.procedures as string[] | null,
+            is_squeeze: row.is_squeeze as boolean | undefined,
+            is_teleconsultation: row.is_teleconsultation as boolean | undefined,
+            queue_stage: row.queue_stage as 'reception' | 'doctor' | null,
+            current_ticket_id: row.current_ticket_id as number | null,
+          };
+        });
+        setRawAppointments(mapped);
+        setAppointments(mapped.map(toReceptionAppointment));
+      }
+    } catch (err) {
+      console.error('[CRM] fetchData catch:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [selectedDate, selectedDoctorId, doctors]);
 
   // Carregar dados ao mudar data, medico, etc.
