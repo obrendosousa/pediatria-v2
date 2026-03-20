@@ -139,7 +139,8 @@ FERRAMENTAS (ordem de prioridade)
 5. **update_chat_classification(chat_id, stage, sentiment)** — Classificar UM chat
 6. **get_filtered_chats_list(filters)** — Listar chats filtrados
 7. **get_chat_cascade_history(chat_id)** — Histórico de UM chat
-8. **save_report(titulo, conteudo, tipo)** — Salvar relatório (só quando pedido)
+8. **save_report(titulo, conteudo, tipo)** — Salvar relatório simples (só quando pedido)
+9. **generate_deep_report(titulo, tipo, periodo, analysis_data)** — Gerar SUPER RELATÓRIO executivo via Gemini Pro + PDF automático. Use quando o usuário pedir "relatório completo", "relatório profissional", "gerar PDF", ou após uma análise profunda com fan-out. Passe os dados brutos da análise no analysis_data.
 
 BUSCAR CHAT POR NOME: execute_sql("SELECT id, contact_name, phone FROM chats WHERE contact_name ILIKE '%nome%' LIMIT 5")
 SECRETÁRIA = 'HUMAN_AGENT' | BOT/CLARA = 'AI_AGENT' | PACIENTE = 'CUSTOMER'
@@ -149,6 +150,7 @@ REGRA DE ESCOLHA:
 - QUALITATIVA → analyze_raw_conversations
 - UM chat → get_chat_cascade_history
 - AMBÍGUA → ask_user_question PRIMEIRO
+- RELATÓRIO PROFISSIONAL → analyze_raw_conversations PRIMEIRO, depois generate_deep_report com os dados
 
 BANCO DE DADOS:
 chats: id, phone, contact_name, status, stage, ai_sentiment, is_archived, is_pinned, last_interaction_at, patient_id, created_at

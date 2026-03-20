@@ -346,6 +346,163 @@ export const saveReportTool = new DynamicStructuredTool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// FERRAMENTA DE SUPER RELATÓRIO — generate_deep_report (Gemini Pro)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const generateDeepReportTool = new DynamicStructuredTool({
+  name: "generate_deep_report",
+  description: `Gera um relatório executivo PROFISSIONAL a partir de dados de análise já coletados.
+Usa o modelo Gemini Pro (mais inteligente) para redigir um relatório com:
+- Resumo executivo com conclusões acionáveis
+- Dados e métricas precisas com fontes
+- Citações reais das conversas como provas
+- Recomendações estratégicas fundamentadas
+- Formatação profissional em Markdown
+
+Use APÓS ter feito a análise (via analyze_raw_conversations ou get_volume_metrics).
+Passe os dados brutos da análise no campo analysis_data.
+O relatório é salvo automaticamente e gera PDF.`,
+
+  schema: z.object({
+    titulo: z.string().describe("Título do relatório"),
+    tipo: z.enum(["analise_chats", "financeiro", "agendamento", "geral"]).describe("Categoria"),
+    periodo: z.string().describe("Período analisado (ex: '01/03 a 20/03/2026')"),
+    analysis_data: z.string().describe("Dados brutos da análise (output do analyze_raw_conversations ou outros dados coletados). Cole aqui o resultado completo."),
+    additional_context: z.string().optional().describe("Contexto adicional: perguntas do usuário, conclusões intermediárias, insights já discutidos"),
+  }),
+
+  func: async ({ titulo, tipo, periodo, analysis_data, additional_context }) => {
+    try {
+      const { ChatGoogleGenerativeAI } = await import("@langchain/google-genai");
+      const { generateReportPdf } = await import("@/lib/reportPdf");
+
+      const proModel = new ChatGoogleGenerativeAI({
+        model: "gemini-2.5-pro-preview-06-05",
+        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+        temperature: 0.3,
+      });
+
+      const reportPrompt = `Você é um analista de negócios sênior escrevendo um relatório executivo para o CEO de uma clínica pediátrica.
+
+MISSÃO: Redigir um relatório profissional, preciso e acionável com base nos dados fornecidos.
+
+ESTRUTURA OBRIGATÓRIA DO RELATÓRIO:
+
+# [Título do Relatório]
+
+## Resumo Executivo
+- 3-5 bullet points com as conclusões mais importantes
+- Cada conclusão deve ter um número que a sustenta
+- Destaque o insight mais urgente
+
+## Metodologia
+- Como os dados foram coletados (análise individual de X conversas)
+- Período analisado
+- Base de dados utilizada
+
+## Análise Detalhada
+
+### [Seção 1: Maior descoberta]
+- Dados quantitativos com tabelas
+- Citações REAIS de conversas como prova (entre aspas, com referência ao chat)
+- Interpretação do dado
+
+### [Seção 2: Segunda descoberta]
+(mesmo padrão)
+
+### [Seções adicionais conforme necessário]
+
+## Impacto Financeiro
+- Calcule em R$ o impacto de cada descoberta
+- Compare cenário atual vs cenário otimizado
+- Use números concretos, não estimativas vagas
+
+## Recomendações Estratégicas
+- Numere cada recomendação
+- Para cada uma: O QUE fazer, POR QUE (dado que sustenta), IMPACTO esperado em R$
+- Ordene por impacto (maior primeiro)
+
+## Anexo: Evidências
+- Lista das citações mais relevantes com chat_id e nome do paciente
+- Dados brutos resumidos em tabelas
+
+REGRAS DE QUALIDADE:
+1. NUNCA invente dados — use APENAS o que está nos dados fornecidos
+2. Cada afirmação DEVE ter um número ou citação que a sustente
+3. Use linguagem profissional mas acessível (o CEO não é técnico)
+4. Tabelas em Markdown para dados comparativos
+5. Destaque números críticos com **negrito**
+6. Não use emojis no corpo do relatório (apenas nos títulos de seção se necessário)
+7. O relatório deve se sustentar sozinho — alguém que não participou da análise deve entender tudo
+
+PERÍODO: ${periodo}
+TÍTULO: ${titulo}
+${additional_context ? `\nCONTEXTO ADICIONAL DO GESTOR:\n${additional_context}` : ""}`;
+
+      const response = await proModel.invoke([
+        { role: "system", content: reportPrompt },
+        { role: "user", content: `DADOS DA ANÁLISE:\n\n${analysis_data}\n\nRedija o relatório executivo completo.` },
+      ]);
+
+      const reportContent = typeof response.content === "string" ? response.content : "";
+
+      if (!reportContent || reportContent.length < 200) {
+        return "Erro: O modelo não gerou conteúdo suficiente para o relatório.";
+      }
+
+      // Salvar no banco
+      const { data, error } = await supabase
+        .from("clara_reports")
+        .insert({
+          titulo,
+          conteudo_markdown: reportContent,
+          tipo,
+          created_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+      const reportId = (data as { id: number } | null)?.id;
+
+      // Gerar PDF
+      let pdfStatus = "PDF não gerado";
+      try {
+        const pdfBuffer = await generateReportPdf({
+          titulo,
+          conteudo_markdown: reportContent,
+          created_at: new Date().toISOString(),
+          reportId: reportId ?? undefined,
+        });
+
+        // Salvar PDF no Supabase Storage
+        const fileName = `relatorios/report-${reportId}.pdf`;
+        const { error: uploadErr } = await supabase.storage
+          .from("documents")
+          .upload(fileName, pdfBuffer, { contentType: "application/pdf", upsert: true });
+
+        if (uploadErr) {
+          pdfStatus = `PDF gerado (${(pdfBuffer.length / 1024).toFixed(0)}KB) mas erro no upload: ${uploadErr.message}`;
+        } else {
+          pdfStatus = `PDF gerado e salvo (${(pdfBuffer.length / 1024).toFixed(0)}KB)`;
+        }
+      } catch (pdfErr: unknown) {
+        pdfStatus = `Erro ao gerar PDF: ${pdfErr instanceof Error ? pdfErr.message : String(pdfErr)}`;
+      }
+
+      return `✅ Relatório executivo gerado com sucesso!
+📄 ID: ${reportId} | Acessar: /relatorios/${reportId}
+📊 ${pdfStatus}
+📝 ${reportContent.length} caracteres | Modelo: Gemini Pro
+
+O relatório completo está disponível na página de relatórios.`;
+    } catch (err: unknown) {
+      return `Erro ao gerar relatório: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PASSO 3: NOVAS FERRAMENTAS DO SUB-GRAFO DE ANÁLISE
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -960,6 +1117,7 @@ export const claraTools = [
   extractAndSaveKnowledgeTool,
   searchKnowledgeBaseTool,
   saveReportTool,
+  generateDeepReportTool,           // ⭐ NOVA — super relatório via Gemini Pro + PDF
   analisarChatEspecificoTool,       // Mantida para análise estruturada individual
   criarAgendamentoTool,
 ];
