@@ -582,13 +582,33 @@ export default function CRMPage() {
                       setIsUpdating(null);
                     }
                   }}
+                  onConfirmArrival={async (apt) => {
+                    setIsUpdating(apt.id);
+                    try {
+                      const { error } = await supabase
+                        .from('appointments')
+                        .update({ status: 'waiting', queue_entered_at: new Date().toISOString() })
+                        .eq('id', apt.id);
+
+                      if (error) throw error;
+
+                      setCalledAppointmentId(null);
+                      setCallingAppointment(null);
+                      fetchData();
+                    } catch (error: any) {
+                      console.error('Erro ao confirmar chegada:', error);
+                      toast.error('Erro ao confirmar chegada: ' + (error.message || 'Tente novamente.'));
+                    } finally {
+                      setIsUpdating(null);
+                    }
+                  }}
                   onEnter={async (apt) => {
                     setIsUpdating(apt.id);
                     try {
-                      console.log('[DEBUG] Entrando em atendimento:', { 
-                        appointmentId: apt.id, 
+                      console.log('[DEBUG] Entrando em atendimento:', {
+                        appointmentId: apt.id,
                         patientId: apt.patient_id,
-                        currentStatus: apt.status 
+                        currentStatus: apt.status
                       });
 
                       // GARANTIR: Apenas 1 paciente pode estar em atendimento por vez

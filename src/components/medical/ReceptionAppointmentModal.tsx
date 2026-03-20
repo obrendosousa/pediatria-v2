@@ -18,7 +18,8 @@ import { createFinancialTransaction } from '@/lib/financialTransactions';
 const initialForm = {
   patient_name: '',
   patient_phone: '',
-  parent_name: '',
+  mother_name: '',
+  father_name: '',
   birthDateDisplay: '',
   birthDate: '', // YYYY-MM-DD
   notes: '',
@@ -75,7 +76,8 @@ export default function ReceptionAppointmentModal({
       setForm({
         patient_name: appointment.patient_name || '',
         patient_phone: appointment.patient_phone || '',
-        parent_name: appointment.parent_name || '',
+        mother_name: appointment.mother_name || '',
+        father_name: appointment.father_name || '',
         birthDateDisplay: appointment.patient_birth_date ? formatDateToDisplay(appointment.patient_birth_date) : '',
         birthDate: appointment.patient_birth_date || '',
         notes: appointment.anamnesis || appointment.notes || '',
@@ -235,7 +237,9 @@ export default function ReceptionAppointmentModal({
         .update({
           patient_name: form.patient_name || null,
           patient_phone: form.patient_phone || null,
-          parent_name: form.parent_name || null,
+          mother_name: form.mother_name || null,
+          father_name: form.father_name || null,
+          parent_name: form.mother_name || form.father_name || null,
           patient_birth_date: form.birthDate || null,
           notes: form.notes || null,
           anamnesis: form.notes || null,
@@ -251,7 +255,9 @@ export default function ReceptionAppointmentModal({
         ...appointment,
         patient_name: form.patient_name || null,
         patient_phone: form.patient_phone || null,
-        parent_name: form.parent_name || null,
+        mother_name: form.mother_name || null,
+        father_name: form.father_name || null,
+        parent_name: form.mother_name || form.father_name || null,
         patient_birth_date: form.birthDate || null,
         notes: form.notes || null,
         anamnesis: form.notes || null,
@@ -521,23 +527,42 @@ export default function ReceptionAppointmentModal({
             </div>
           </div>
 
-          {/* Responsável e WhatsApp */}
+          {/* Mãe, Pai e WhatsApp */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-              <div className="p-1.5 bg-purple-100 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400 rounded-md"><User size={14} /></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Responsável</p>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={form.parent_name}
-                    onChange={e => setForm(prev => ({ ...prev, parent_name: e.target.value }))}
-                    placeholder="Nome do responsável"
-                    className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
-                  />
-                ) : (
-                  <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{appointment.parent_name || 'Não informado'}</p>
-                )}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                <div className="p-1.5 bg-purple-100 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400 rounded-md"><User size={14} /></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Mãe</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={form.mother_name}
+                      onChange={e => setForm(prev => ({ ...prev, mother_name: e.target.value }))}
+                      placeholder="Nome da mãe"
+                      className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{appointment.mother_name || 'Não informado'}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 rounded-md"><User size={14} /></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Pai</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={form.father_name}
+                      onChange={e => setForm(prev => ({ ...prev, father_name: e.target.value }))}
+                      placeholder="Nome do pai"
+                      className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{appointment.father_name || 'Não informado'}</p>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">

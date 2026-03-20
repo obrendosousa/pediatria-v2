@@ -46,7 +46,8 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
     dateDisplay: '', // Formato DD/MM/YYYY para exibição
     time: '',
     patient_name: '',
-    parent_name: '',
+    mother_name: '',
+    father_name: '',
     patient_phone: '',
     patient_sex: '' as 'M' | 'F' | '',
     birthDateDisplay: '',
@@ -132,7 +133,8 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         dateDisplay: formatDateToDisplay(initialDateValue),
         time: initialTime || defaultTime,
         patient_name: initialPatient?.patientName || '',
-        parent_name: initialPatient?.parentName || '',
+        mother_name: initialPatient?.parentName || '',
+        father_name: '',
         patient_phone: initialPatient?.phone || '',
         patient_sex: initialPatient?.patientSex || '',
         birthDateDisplay: '',
@@ -239,8 +241,14 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         insertData.total_amount = totalAmountNum;
         insertData.amount_paid = paidAmountNum;
 
-        if (formData.parent_name.trim()) {
-          insertData.parent_name = formData.parent_name.trim();
+        if (formData.mother_name.trim()) {
+          insertData.mother_name = formData.mother_name.trim();
+        }
+        if (formData.father_name.trim()) {
+          insertData.father_name = formData.father_name.trim();
+        }
+        if (formData.mother_name.trim() || formData.father_name.trim()) {
+          insertData.parent_name = formData.mother_name.trim() || formData.father_name.trim();
         }
 
         if (formData.patient_sex) {
@@ -259,7 +267,9 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
               patient_name: formData.patient_name.trim(),
               patient_phone: formData.patient_phone.trim() || null,
               patient_sex: formData.patient_sex || null,
-              parent_name: formData.parent_name.trim() || null,
+              mother_name: formData.mother_name.trim() || null,
+              father_name: formData.father_name.trim() || null,
+              parent_name: formData.mother_name.trim() || formData.father_name.trim() || null,
               patient_birth_date: formData.birthDate || null
             };
             patientId = await createBasicPatientFromAppointment(appointmentData as Appointment);
@@ -356,7 +366,8 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                         patient_name: p.name,
                         patient_phone: p.phone || '',
                         patient_sex: (p.biological_sex || '') as 'M' | 'F' | '',
-                        parent_name: p.parent_name || '',
+                        mother_name: p.mother_name || '',
+                        father_name: p.father_name || '',
                         birthDateDisplay: p.birth_date ? formatDateToDisplay(p.birth_date) : '',
                         birthDate: p.birth_date || ''
                       }));
@@ -384,25 +395,42 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                 </div>
               </div>
 
-              {/* Nome do Responsável + Sexo */}
+              {/* Nome da Mãe e Nome do Pai */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
-                    Nome do Responsável
+                    Nome da Mãe
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
                     <input
                       type="text"
-                      value={formData.parent_name}
-                      onChange={e => setFormData({...formData, parent_name: e.target.value})}
+                      value={formData.mother_name}
+                      onChange={e => setFormData({...formData, mother_name: e.target.value})}
                       className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
-                      placeholder="Nome do pai/mãe"
+                      placeholder="Nome da mãe"
                     />
                   </div>
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
+                    Nome do Pai
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
+                    <input
+                      type="text"
+                      value={formData.father_name}
+                      onChange={e => setFormData({...formData, father_name: e.target.value})}
+                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
+                      placeholder="Nome do pai"
+                    />
+                  </div>
+                </div>
+              </div>
 
-                {/* Sexo da Criança */}
+              {/* Sexo da Criança */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
                     Sexo da Criança

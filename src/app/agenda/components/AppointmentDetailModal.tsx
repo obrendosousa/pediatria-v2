@@ -19,7 +19,8 @@ const supabase = createClient();
 const initialEditForm = {
   patient_name: '',
   patient_phone: '',
-  parent_name: '',
+  mother_name: '',
+  father_name: '',
   patient_sex: '' as 'M' | 'F' | '',
   birthDateDisplay: '',
   birthDate: '', // YYYY-MM-DD
@@ -87,7 +88,8 @@ export default function AppointmentDetailModal({
       setEditForm({
         patient_name: selectedAppointment.patient_name || '',
         patient_phone: selectedAppointment.patient_phone || '',
-        parent_name: selectedAppointment.parent_name || '',
+        mother_name: selectedAppointment.mother_name || '',
+        father_name: selectedAppointment.father_name || '',
         patient_sex: (selectedAppointment.patient_sex as 'M' | 'F' | '') || '',
         birthDateDisplay: selectedAppointment.patient_birth_date ? formatDateToDisplay(selectedAppointment.patient_birth_date) : '',
         birthDate: selectedAppointment.patient_birth_date || '',
@@ -153,7 +155,9 @@ export default function AppointmentDetailModal({
         total_amount: totalNum,
         amount_paid: paidNum
       };
-      if (editForm.parent_name) updateData.parent_name = editForm.parent_name;
+      if (editForm.mother_name) updateData.mother_name = editForm.mother_name;
+      if (editForm.father_name) updateData.father_name = editForm.father_name;
+      if (editForm.mother_name || editForm.father_name) updateData.parent_name = editForm.mother_name || editForm.father_name;
       if (editForm.patient_sex) updateData.patient_sex = editForm.patient_sex;
       const { error } = await supabase.from('appointments').update(updateData).eq('id', selectedAppointment.id);
       if (error) throw error;
@@ -368,15 +372,28 @@ export default function AppointmentDetailModal({
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-              <div className="p-1.5 bg-purple-100 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400 rounded-md"><User size={14}/></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Responsável</p>
-                {isEditing ? (
-                  <input type="text" value={editForm.parent_name} onChange={e => setEditForm({ ...editForm, parent_name: e.target.value })} placeholder="Nome do responsável" className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#1c1c21] transition-all" />
-                ) : (
-                  <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{selectedAppointment.parent_name || 'Não informado'}</p>
-                )}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                <div className="p-1.5 bg-purple-100 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400 rounded-md"><User size={14}/></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Mãe</p>
+                  {isEditing ? (
+                    <input type="text" value={editForm.mother_name} onChange={e => setEditForm({ ...editForm, mother_name: e.target.value })} placeholder="Nome da mãe" className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#1c1c21] transition-all" />
+                  ) : (
+                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{selectedAppointment.mother_name || 'Não informado'}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 rounded-md"><User size={14}/></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Pai</p>
+                  {isEditing ? (
+                    <input type="text" value={editForm.father_name} onChange={e => setEditForm({ ...editForm, father_name: e.target.value })} placeholder="Nome do pai" className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 outline-none bg-white dark:bg-[#1c1c21] transition-all" />
+                  ) : (
+                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{selectedAppointment.father_name || 'Não informado'}</p>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">

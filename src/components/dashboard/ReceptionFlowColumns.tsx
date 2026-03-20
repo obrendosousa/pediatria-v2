@@ -10,6 +10,7 @@ interface ReceptionFlowColumnsProps {
   appointments: Appointment[];
   onCallAppointment?: (appointment: Appointment) => void;
   onCheckIn?: (appointment: Appointment) => void;
+  onConfirmArrival?: (appointment: Appointment) => void;
   onEnter?: (appointment: Appointment) => void;
   onFinish?: (appointment: Appointment) => void;
   onRevert?: (appointment: Appointment, newStatus: string) => void;
@@ -38,6 +39,7 @@ export default function ReceptionFlowColumns({
   appointments,
   onCallAppointment,
   onCheckIn,
+  onConfirmArrival,
   onEnter,
   onFinish,
   onRevert,
@@ -120,9 +122,9 @@ export default function ReceptionFlowColumns({
 
       {activeTab === 'flow' && variant === 'pediatria' && (
         <>
-          {/* Pediatria: 1. Agendado */}
+          {/* Pediatria: 1. Agendados */}
           <ReceptionColumn
-            title="Agendado"
+            title="Agendados"
             status="scheduled"
             appointments={relevantAppointments.filter(a => a.status === 'scheduled')}
             color={{
@@ -136,53 +138,49 @@ export default function ReceptionFlowColumns({
             onEditAppointment={onEditAppointment}
             isUpdating={isUpdating}
             callingAppointmentId={callingAppointmentId}
-            ticketMap={ticketMap}
           />
 
-          {/* Pediatria: 2. Confirmado */}
+          {/* Pediatria: 2. Chamados */}
           <ReceptionColumn
-            title="Confirmado"
-            status="scheduled"
-            appointments={relevantAppointments.filter(a => a.status === 'confirmed')}
-            color={{
-              border: 'border-cyan-200 dark:border-cyan-800/50',
-              bg: 'bg-cyan-100 dark:bg-cyan-900/40',
-              text: 'text-cyan-700 dark:text-cyan-300',
-              headerBg: 'bg-cyan-50/50 dark:bg-cyan-900/30'
-            }}
-            onCall={onCallAppointment}
-            onCheckIn={onCheckIn}
-            onRevert={(apt) => handleRevert(apt, 'scheduled')}
-            onEditAppointment={onEditAppointment}
-            isUpdating={isUpdating}
-            callingAppointmentId={callingAppointmentId}
-            ticketMap={ticketMap}
-          />
-
-          {/* Pediatria: 3. Fila */}
-          <ReceptionColumn
-            title="Fila"
-            status="waiting"
-            appointments={relevantAppointments.filter(a =>
-              a.status === 'waiting' || a.status === 'called'
-            ).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())}
+            title="Chamados"
+            status="called"
+            appointments={relevantAppointments.filter(a => a.status === 'called')}
             color={{
               border: 'border-amber-200 dark:border-amber-800/50',
               bg: 'bg-amber-100 dark:bg-amber-900/40',
               text: 'text-amber-700 dark:text-amber-300',
               headerBg: 'bg-amber-50/50 dark:bg-amber-900/30'
             }}
+            onConfirmArrival={onConfirmArrival}
+            onRevert={(apt) => handleRevert(apt, 'scheduled')}
+            onEditAppointment={onEditAppointment}
+            isUpdating={isUpdating}
+            callingAppointmentId={callingAppointmentId}
+          />
+
+          {/* Pediatria: 3. Na Fila */}
+          <ReceptionColumn
+            title="Na Fila"
+            status="waiting"
+            appointments={relevantAppointments.filter(a => a.status === 'waiting').sort((a, b) =>
+              new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+            )}
+            color={{
+              border: 'border-green-200 dark:border-green-800/50',
+              bg: 'bg-green-100 dark:bg-green-900/40',
+              text: 'text-green-700 dark:text-green-300',
+              headerBg: 'bg-green-50/50 dark:bg-green-900/30'
+            }}
             onEnter={onEnter}
             onRevert={(apt) => handleRevert(apt, 'scheduled')}
             onEditAppointment={onEditAppointment}
             isUpdating={isUpdating}
             callingAppointmentId={callingAppointmentId}
-            ticketMap={ticketMap}
           />
 
-          {/* Pediatria: 4. Atendimento */}
+          {/* Pediatria: 4. Em Atendimento */}
           <ReceptionColumn
-            title="Atendimento"
+            title="Em Atendimento"
             status="in_service"
             appointments={relevantAppointments.filter(a => a.status === 'in_service')}
             color={{
@@ -196,12 +194,11 @@ export default function ReceptionFlowColumns({
             onEditAppointment={onEditAppointment}
             isUpdating={isUpdating}
             callingAppointmentId={callingAppointmentId}
-            ticketMap={ticketMap}
           />
 
-          {/* Pediatria: 5. Concluído */}
+          {/* Pediatria: 5. Concluídos */}
           <ReceptionColumn
-            title="Concluído"
+            title="Concluídos"
             status="finished"
             appointments={finished}
             color={{
@@ -213,7 +210,6 @@ export default function ReceptionFlowColumns({
             onEditAppointment={onEditAppointment}
             isUpdating={isUpdating}
             callingAppointmentId={callingAppointmentId}
-            ticketMap={ticketMap}
           />
         </>
       )}
