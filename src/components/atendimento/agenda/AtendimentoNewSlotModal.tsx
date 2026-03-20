@@ -28,7 +28,8 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
     dateDisplay: '',
     time: '',
     patient_name: '',
-    parent_name: '',
+    mother_name: '',
+    father_name: '',
     parent_phone: '',
     patient_sex: '' as 'M' | 'F' | '',
     birthDateDisplay: '',
@@ -96,7 +97,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
         date: initialDateValue,
         dateDisplay: formatDateToDisplay(initialDateValue),
         time: initialTime || '09:00',
-        patient_name: '', parent_name: '', parent_phone: '',
+        patient_name: '', mother_name: '', father_name: '', parent_phone: '',
         patient_sex: '', birthDateDisplay: '', birthDate: '',
         type: '', notes: '', totalAmount: '', paidAmount: ''
       });
@@ -178,7 +179,9 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
 
         if (patientId) insertData.patient_id = patientId;
         insertData.type = formData.type;
-        insertData.parent_name = formData.parent_name.trim() || null;
+        insertData.mother_name = formData.mother_name.trim() || null;
+        insertData.father_name = formData.father_name.trim() || null;
+        insertData.parent_name = formData.mother_name.trim() || formData.father_name.trim() || null;
         insertData.parent_phone = formData.parent_phone.trim() || null;
         insertData.consultation_value = parseCurrency(formData.totalAmount) || null;
       }
@@ -244,12 +247,22 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Responsavel</label>
+                  <label className="block text-xs font-bold text-purple-600 dark:text-purple-400 uppercase mb-1">Nome da Mae</label>
                   <div className="relative">
-                    <User className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                    <input type="text" value={formData.parent_name} onChange={e => setFormData({...formData, parent_name: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="Nome do responsavel" />
+                    <User className="w-4 h-4 text-purple-400 absolute left-3 top-3.5" />
+                    <input type="text" value={formData.mother_name} onChange={e => setFormData({...formData, mother_name: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-purple-200 dark:border-purple-800/30 rounded-lg bg-white dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all" placeholder="Nome da mae" />
                   </div>
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-1">Nome do Pai</label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-blue-400 absolute left-3 top-3.5" />
+                    <input type="text" value={formData.father_name} onChange={e => setFormData({...formData, father_name: e.target.value})} className="w-full pl-9 pr-3 py-2.5 border border-blue-200 dark:border-blue-800/30 rounded-lg bg-white dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="Nome do pai" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Sexo</label>
                   <div className="flex gap-0 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
