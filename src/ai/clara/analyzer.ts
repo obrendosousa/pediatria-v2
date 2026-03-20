@@ -99,13 +99,15 @@ export async function analyzeChatInteraction(chatId: number) {
     try {
         const supabase = getSupabaseAdminClient();
 
-        // 1. Fetch the last 15 messages for context
+        // 1. Fetch the last 50 messages for context (15 era insuficiente e causava
+        // classificações erradas — ex: paciente classificado como "perdido" quando
+        // na verdade tinha agendado, porque a conversão ficava fora da janela de 15 msgs)
         const { data: messages } = await supabase
             .from("chat_messages")
             .select("sender, message_text, created_at, message_type")
             .eq("chat_id", chatId)
             .order("created_at", { ascending: false })
-            .limit(15);
+            .limit(50);
 
         if (!messages || messages.length < 2) return;
 
@@ -132,6 +134,12 @@ HISTÓRICO DA CONVERSA:
 -------------------------------------------------
 ${history}
 -------------------------------------------------
+
+REGRA CRÍTICA DE CLASSIFICAÇÃO DE DESFECHO:
+- Leia a conversa INTEIRA antes de decidir o desfecho. NUNCA classifique como perda/desistência
+  se houver QUALQUER sinal posterior de conversão (paciente enviou dados, confirmou, disse "sim").
+- Se o paciente fez objeção MAS depois aceitou reagendar ou forneceu dados → é CONVERSÃO, não perda.
+- Objeção seguida de aceitação = caso de SUCESSO no contorno de objeção.
 
 REGRAS DE DECISÃO:
 - 'ignore': mensagem simples (ok, obrigado, emoji, confirmação de leitura) sem ação necessária.

@@ -639,12 +639,14 @@ export const getVolumeMetricsTool = new DynamicStructuredTool({
           .range(from, to)
       );
 
-      // Agrega chats por dia (fuso Brasília)
+      // Agrega chats por dia (fuso Brasília) — derivado das MENSAGENS reais,
+      // não do campo last_interaction_at da tabela chats (que só guarda a última interação
+      // e causava subestimação de 20-64% nos chats ativos por dia).
       const chatsByDay: Record<string, Set<number>> = {};
-      for (const chat of chatRows) {
-        const day = toBRTDateStr(chat.last_interaction_at);
+      for (const msg of msgRows) {
+        const day = toBRTDateStr(msg.created_at);
         if (!chatsByDay[day]) chatsByDay[day] = new Set();
-        chatsByDay[day].add(chat.id);
+        chatsByDay[day].add(msg.chat_id);
       }
 
       // Agrega mensagens por dia e por tipo de remetente

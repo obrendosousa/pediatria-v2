@@ -13,6 +13,7 @@ const EmojiPicker = dynamic(() => import('emoji-picker-react').then(mod => mod.d
 });
 import FormattedMessage from '@/components/ui/FormattedMessage';
 import ClaraMarkdownMessage from '@/components/chat/ClaraMarkdownMessage';
+import PdfPreviewCard from '@/components/chat/PdfPreviewCard';
 
 interface MessageBubbleProps {
   message: Message;
@@ -581,14 +582,26 @@ function MessageBubble({
       const isSpreadsheet = mime.includes('spreadsheet') || mime.includes('excel') || /\.(xlsx?|csv)$/i.test(fileName);
       const isWord = mime.includes('wordprocessing') || mime.includes('msword') || /\.(docx?)$/i.test(fileName);
 
-      // Cores por tipo de documento
-      const docStyle = isPdf
-        ? { bg: 'bg-rose-500', lightBg: 'bg-rose-50 dark:bg-rose-900/20', text: 'text-rose-500', label: 'PDF' }
-        : isSpreadsheet
-          ? { bg: 'bg-emerald-500', lightBg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-500', label: 'Planilha' }
-          : isWord
-            ? { bg: 'bg-blue-500', lightBg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-500', label: 'Word' }
-            : { bg: 'bg-gray-500', lightBg: 'bg-gray-50 dark:bg-[#1c1c21]', text: 'text-gray-500', label: 'Documento' };
+      // PDF: renderiza preview da primeira página com botões Visualizar/Baixar
+      if (isPdf) {
+        return (
+          <div className="pt-1">
+            <PdfPreviewCard url={message.media_url} fileName={fileName} fileSize={fileSize} />
+            {documentCaptionText && (
+              <div className="pt-1.5">
+                <FormattedMessage text={documentCaptionText} />
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // Outros documentos: layout original com ícone
+      const docStyle = isSpreadsheet
+        ? { bg: 'bg-emerald-500', lightBg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-500', label: 'Planilha' }
+        : isWord
+          ? { bg: 'bg-blue-500', lightBg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-500', label: 'Word' }
+          : { bg: 'bg-gray-500', lightBg: 'bg-gray-50 dark:bg-[#1c1c21]', text: 'text-gray-500', label: 'Documento' };
 
       return (
         <div className="pt-1 w-[240px] sm:w-[260px]">
@@ -1085,7 +1098,7 @@ export default React.memo(MessageBubble, (prev, next) => {
     prev.showAvatar === next.showAvatar &&
     prev.chatPhoto === next.chatPhoto &&
     prev.isAIChat === next.isAIChat &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     JSON.stringify((prev.message as any).reactions) === JSON.stringify((next.message as any).reactions)
   );
 });
