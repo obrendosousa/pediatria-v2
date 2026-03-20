@@ -5,6 +5,7 @@ import { requireApprovedProfile } from "@/lib/auth/requireApprovedProfile";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { claraGraph } from "@/ai/clara/graph";
 import { saveGraphCheckpoint } from "@/ai/clara/interactive_questions";
+import { setFanOutProgressCallback } from "@/ai/clara/raw_data_analyzer";
 
 type HistoryItem = {
   role: "user" | "assistant";
@@ -181,6 +182,16 @@ INSTRUÇÕES: A pergunta é sobre ESTE paciente. Use o histórico acima e ferram
       async start(controller) {
         const enqueue = (payload: object) =>
           controller.enqueue(encoder.encode(JSON.stringify(payload) + "\n"));
+
+        // Fan-out progress: emite ui_log a cada lote processado
+        setFanOutProgressCallback(({ batch, total, chatsProcessed, chatsTotal }) => {
+          enqueue({
+            type: "ui_log",
+            subtype: "research_step",
+            content: `📊 Lote ${batch}/${total} processado (${chatsProcessed}/${chatsTotal} conversas classificadas)`,
+            metadata: { batch, total, chatsProcessed, chatsTotal },
+          });
+        });
 
         try {
           // Clara 2.0: emite escopo detectado com subtype
@@ -364,8 +375,10 @@ INSTRUÇÕES: A pergunta é sobre ESTE paciente. Use o histórico acima e ferram
             }
           }
 
+          setFanOutProgressCallback(null);
           controller.close();
         } catch (err) {
+          setFanOutProgressCallback(null);
           const msg = err instanceof Error ? err.message : "Erro durante a execução.";
           console.error("[/api/ai/copilot/chat] erro no stream:", err);
           controller.enqueue(encoder.encode(JSON.stringify({ type: "error", content: msg }) + "\n"));

@@ -59,6 +59,18 @@ interface BatchResult {
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Callback global para progresso do fan-out (setado pelo route.ts de streaming)
+type FanOutProgressCallback = (event: { batch: number; total: number; chatsProcessed: number; chatsTotal: number }) => void;
+let _fanOutProgressCb: FanOutProgressCallback | null = null;
+
+export function setFanOutProgressCallback(cb: FanOutProgressCallback | null): void {
+  _fanOutProgressCb = cb;
+}
+
+function emitProgress(batch: number, total: number, chatsProcessed: number, chatsTotal: number): void {
+  if (_fanOutProgressCb) _fanOutProgressCb({ batch, total, chatsProcessed, chatsTotal });
+}
+
 function normalizeSender(sender: string | null): string {
   const s = String(sender ?? "").toUpperCase();
   if (s === "HUMAN_AGENT" || s === "ME") return "SECRETÁRIA";
@@ -252,6 +264,10 @@ async function fanOutAnalyze(
       window.map((b) => analyzeBatch(b, goals, model, period, chatNames))
     );
     results.push(...windowResults);
+
+    const processed = results.flatMap((r) => r.classifications).length;
+    const totalChats = batches.reduce((s, b) => s + b.chats.length, 0);
+    emitProgress(Math.min(i + MAX_CONCURRENCY, batches.length), batches.length, processed, totalChats);
   }
 
   return {
