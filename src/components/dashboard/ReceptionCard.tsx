@@ -290,7 +290,7 @@ export default function ReceptionCard({
                   className="w-full bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPin className="w-3 h-3" />}
-                  Check-in
+                  Chegou
                 </button>
               </>
             )}

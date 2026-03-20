@@ -107,6 +107,21 @@ export default function AgendaPage() {
     fetchDoctors();
   }, []);
 
+  // Realtime: atualizar agenda quando appointments mudar
+  useEffect(() => {
+    const channel = supabase
+      .channel('agenda_appointments')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'appointments'
+      }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentDate, currentWeekStart, viewMode, doctorId]);
+
   async function fetchData() {
     setLoading(true);
     let dId = doctorId;
@@ -118,7 +133,7 @@ export default function AgendaPage() {
     }
 
     if (!dId) {
-      const { data: doc } = await supabase.from('doctors').select('id').limit(1).single();
+      const { data: doc } = await supabase.from('doctors').select('id').eq('active', true).limit(1).maybeSingle();
       if (doc) {
         dId = doc.id;
         setDoctorId(doc.id);

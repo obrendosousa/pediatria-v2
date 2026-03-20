@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Ban, Plus, DollarSign } from 'lucide-react';
-import { getCardColorClasses, getAppointmentsForDay } from '../utils/agendaUtils';
+import { getCardColorClasses, getAppointmentsForDay, formatPhoneDisplay } from '../utils/agendaUtils';
 
 type WeekViewProps = {
   weekDays: Date[];
@@ -67,7 +67,7 @@ export default function WeekView({
                       </p>
                       {!isBlocked && app.patient_phone && (
                         <p className="text-[10px] text-slate-500 dark:text-[#a1a1aa] truncate mt-0.5">
-                          {app.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
+                          {formatPhoneDisplay(app.patient_phone)}
                         </p>
                       )}
                       {total > 0 && (

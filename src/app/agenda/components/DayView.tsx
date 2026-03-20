@@ -33,7 +33,7 @@ function AppointmentCard({ app, setSelectedAppointment }: { app: Appointment; se
           </p>
           {!isBlocked && (
             <p className="text-xs text-slate-500 dark:text-[#a1a1aa]">
-              {app.patient_phone ? app.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : 'S/ telefone'}
+              {formatPhoneDisplay(app.patient_phone)}
             </p>
           )}
         </div>
