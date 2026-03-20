@@ -550,6 +550,7 @@ export default function CRMPage() {
                 </div>
 
                 <ReceptionFlowColumns
+                  variant="pediatria"
                   selectedDate={selectedDate}
                   appointments={appointments}
                   callingAppointmentId={sendingCallAppointmentId}

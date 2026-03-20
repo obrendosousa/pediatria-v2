@@ -112,6 +112,8 @@ export interface Appointment {
   patient_phone: string | null;
   patient_id?: number | null;
   parent_name?: string | null;
+  mother_name?: string | null;
+  father_name?: string | null;
   patient_sex?: 'M' | 'F' | null;
   doctor_name: string;
   doctor_id: number | null;

@@ -68,3 +68,35 @@ export async function evolutionRequest<T = unknown>(
 
   return { ok: res.ok, status: res.status, data };
 }
+
+/**
+ * Marca mensagens como lidas no WhatsApp via Evolution API.
+ * Fire-and-forget — erros são logados mas não propagados.
+ */
+export async function markMessagesAsRead(
+  phone: string,
+  messageWppIds: string[],
+  instanceEnvKey?: string
+): Promise<void> {
+  if (!messageWppIds.length) return;
+
+  const cleanPhone = phone.replace(/\D/g, '');
+  if (!cleanPhone) return;
+
+  const remoteJid = `${cleanPhone}@s.whatsapp.net`;
+
+  try {
+    await evolutionRequest('/chat/markMessageAsRead/{instance}', {
+      method: 'PUT' as EvolutionMethod,
+      body: {
+        read_messages: messageWppIds.map(id => ({
+          remoteJid,
+          fromMe: false,
+          id,
+        })),
+      },
+    }, instanceEnvKey);
+  } catch (err) {
+    console.error('[markMessagesAsRead] erro ao marcar como lida no WhatsApp:', err);
+  }
+}

@@ -12,6 +12,8 @@ export interface PatientSearchOption {
   phone: string | null;
   biological_sex: 'M' | 'F' | null;
   parent_name: string | null;
+  mother_name: string | null;
+  father_name: string | null;
   birth_date: string | null;
 }
 
@@ -55,7 +57,7 @@ export default function PatientSearchSelect({
     try {
       const { data, error } = await supabase
         .from('patients')
-        .select('id, name, phone, biological_sex, family_members, birth_date')
+        .select('id, name, phone, biological_sex, family_members, birth_date, mother_name, father_name')
         .or(`name.ilike.%${trimmed.replace(/[%_\\]/g, '\\$&')}%,phone.ilike.%${trimmed.replace(/[%_\\]/g, '\\$&')}%`)
         .limit(20)
         .order('name');
@@ -72,6 +74,8 @@ export default function PatientSearchSelect({
         phone: (p.phone as string) || null,
         biological_sex: (p.biological_sex as 'M' | 'F') || null,
         parent_name: extractParentName(p.family_members),
+        mother_name: (p.mother_name as string) || null,
+        father_name: (p.father_name as string) || null,
         birth_date: (p.birth_date as string) || null
       }));
       setResults(options);

@@ -277,13 +277,24 @@ export async function createBasicPatientFromAppointment(
       how_found_us: 'Agendamento'
     };
 
-    // Adicionar parent_name como familiar se disponível
-    if (appointment.parent_name && appointment.parent_name.trim()) {
-      patientPayload.family_members = [{
-        name: appointment.parent_name.trim(),
-        relationship: 'Responsável',
-        phone: null
-      }];
+    // Preencher mother_name e father_name diretamente na tabela patients
+    if (appointment.mother_name && appointment.mother_name.trim()) {
+      patientPayload.mother_name = appointment.mother_name.trim();
+    }
+    if (appointment.father_name && appointment.father_name.trim()) {
+      patientPayload.father_name = appointment.father_name.trim();
+    }
+
+    // Manter family_members para compatibilidade
+    const familyMembers: Array<{ name: string; relationship: string; phone: string | null }> = [];
+    if (appointment.mother_name?.trim()) {
+      familyMembers.push({ name: appointment.mother_name.trim(), relationship: 'Mãe', phone: null });
+    }
+    if (appointment.father_name?.trim()) {
+      familyMembers.push({ name: appointment.father_name.trim(), relationship: 'Pai', phone: null });
+    }
+    if (familyMembers.length > 0) {
+      patientPayload.family_members = familyMembers;
     }
 
     // Inserir paciente no banco
