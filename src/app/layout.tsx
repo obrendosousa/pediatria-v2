@@ -3,8 +3,10 @@ import { Figtree, Noto_Sans } from 'next/font/google';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { CheckoutNotificationProvider } from '@/contexts/CheckoutNotificationContext';
+import { InternalChatProvider } from '@/contexts/InternalChatContext';
 import AuthLayoutGuard from '@/components/AuthLayoutGuard';
 import CheckoutAlertPopup from '@/components/CheckoutAlertPopup';
+import InternalChatFab from '@/components/internal-chat/InternalChatFab';
 import type { Metadata } from 'next';
 
 // Fonte Principal (Heading - limpa, médica, acessível)
@@ -49,8 +51,11 @@ export default function RootLayout({
         <AuthProvider>
           <ToastProvider>
             <CheckoutNotificationProvider>
-              <AuthLayoutGuard>{children}</AuthLayoutGuard>
-              <CheckoutAlertPopup />
+              <InternalChatProvider>
+                <AuthLayoutGuard>{children}</AuthLayoutGuard>
+                <CheckoutAlertPopup />
+                <InternalChatFab />
+              </InternalChatProvider>
             </CheckoutNotificationProvider>
           </ToastProvider>
         </AuthProvider>
