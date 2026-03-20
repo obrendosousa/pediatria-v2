@@ -2,7 +2,7 @@
 
 import { RefObject } from 'react';
 import { User, Ban, Plus, FileText, DollarSign } from 'lucide-react';
-import { getCardColorClasses } from '../utils/agendaUtils';
+import { getCardColorClasses, formatPhoneDisplay } from '../utils/agendaUtils';
 import type { Appointment } from '@/types/medical';
 
 type DayViewProps = {

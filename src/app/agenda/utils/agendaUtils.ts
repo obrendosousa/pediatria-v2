@@ -78,10 +78,38 @@ export function getCardColorClasses(app: { status?: string; patient_sex?: string
   };
 }
 
-/** Retorna agendamentos de um dia a partir da lista semanal */
+/** Formata telefone para exibição, suportando 10, 11 e 13 dígitos (com código de país) */
+export function formatPhoneDisplay(phone: string | null | undefined): string {
+  if (!phone) return 'S/ telefone';
+  let digits = phone.replace(/\D/g, '');
+  // Remove código de país 55 se presente
+  if (digits.length >= 12 && digits.startsWith('55')) {
+    digits = digits.substring(2);
+  }
+  if (digits.length === 11) {
+    return `(${digits.substring(0, 2)}) ${digits.substring(2, 7)}-${digits.substring(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.substring(0, 2)}) ${digits.substring(2, 6)}-${digits.substring(6)}`;
+  }
+  return phone;
+}
+
+/** Retorna agendamentos de um dia a partir da lista semanal (com parsing de timezone local) */
 export function getAppointmentsForDay<T extends { start_time?: string }>(date: Date, weekAppointments: T[]): T[] {
-  const dateStr = date.toLocaleDateString('en-CA');
-  return weekAppointments.filter(app => app.start_time?.startsWith(dateStr));
+  const targetDateStr = date.toLocaleDateString('en-CA');
+  return weekAppointments.filter(app => {
+    if (!app.start_time) return false;
+    // Parsear removendo timezone para tratar como hora local
+    const clean = app.start_time.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
+    const [datePart, timePart] = clean.split('T');
+    if (!datePart || !timePart) return false;
+    const [y, m, d] = datePart.split('-').map(Number);
+    const [h, min] = timePart.split(':').map(Number);
+    const local = new Date(y, m - 1, d, h, min || 0);
+    const localDateStr = local.toLocaleDateString('en-CA');
+    return localDateStr === targetDateStr;
+  });
 }
 
 /** Gera array de dias do mês para o minicalendário (com nulls no início) */
