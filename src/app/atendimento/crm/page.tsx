@@ -4,10 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
 import { createClient } from '@/lib/supabase/client';
 import { Appointment } from '@/types/medical';
+import type { ServicePoint } from '@/types/queue';
+import type { TicketInfo } from '@/components/dashboard/ReceptionCard';
 import {
   LayoutList, Users, DollarSign,
   ChevronLeft, ChevronRight, UserPlus, Calendar,
-  Stethoscope, ChevronDown
+  Stethoscope, ChevronDown, X, MapPin
 } from 'lucide-react';
 
 import ReceptionFlowColumns from '@/components/dashboard/ReceptionFlowColumns';
@@ -18,6 +20,8 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import { getTodayDateString, addDaysToDate } from '@/utils/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQueueTickets } from '@/hooks/useQueueTickets';
+import { useServicePoints } from '@/hooks/useServicePoints';
 
 const supabase = createSchemaClient('atendimento');
 const supabasePublic = createClient();
@@ -41,20 +45,20 @@ type AtendimentoAppointment = {
   patient_sex?: 'M' | 'F' | null;
   total_amount?: number;
   amount_paid?: number;
-  queue_entered_at?: string | null;
-  in_service_at?: string | null;
-  finished_at?: string | null;
+
+
   appointment_subtype?: string | null;
   procedures?: string[] | null;
   is_squeeze?: boolean;
   is_teleconsultation?: boolean;
+  queue_stage?: 'reception' | 'doctor' | null;
+  current_ticket_id?: number | null;
 };
 
 type DoctorOption = { id: number; name: string; color?: string };
 
 /** Converte appointment do schema atendimento para o tipo Appointment usado pelo ReceptionFlowColumns */
 function toReceptionAppointment(apt: AtendimentoAppointment): Appointment {
-  // Gerar um start_time sintético para compatibilidade com componentes existentes
   const startTime = apt.date && apt.time
     ? `${apt.date}T${apt.time}:00`
     : apt.date
@@ -76,19 +80,22 @@ function toReceptionAppointment(apt: AtendimentoAppointment): Appointment {
     notes: apt.notes || null,
     total_amount: apt.total_amount,
     amount_paid: apt.amount_paid,
-    queue_entered_at: apt.queue_entered_at || null,
-    in_service_at: apt.in_service_at || null,
-    finished_at: apt.finished_at || null,
     appointment_subtype: apt.appointment_subtype || null,
     procedures: apt.procedures || null,
     is_squeeze: apt.is_squeeze,
     is_teleconsultation: apt.is_teleconsultation,
+    queue_stage: apt.queue_stage || null,
+    current_ticket_id: apt.current_ticket_id ?? null,
   } as Appointment;
 }
 
 export default function AtendimentoCRMPage() {
   const { toast } = useToast();
   useAuth();
+
+  // Hooks de fila
+  const { generateTicket, callTicket, completeTicket, fetchTodayTickets, tickets } = useQueueTickets();
+  const { servicePoints, listServicePoints } = useServicePoints();
 
   // Tabs
   const [receptionFlowTab, setReceptionFlowTab] = useState<'flow' | 'checkout'>('flow');
@@ -98,15 +105,15 @@ export default function AtendimentoCRMPage() {
   const [rawAppointments, setRawAppointments] = useState<AtendimentoAppointment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filtro de médico
+  // Filtro de medico
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
-  const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null); // null = Todos
+  const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
   const [isDoctorDropdownOpen, setIsDoctorDropdownOpen] = useState(false);
 
   // Appointments convertidos
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-  // Ações
+  // Acoes
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
   const [sendingCallAppointmentId, setSendingCallAppointmentId] = useState<number | null>(null);
   const [isSendingCall, setIsSendingCall] = useState(false);
@@ -117,6 +124,13 @@ export default function AtendimentoCRMPage() {
   const [isNewSlotModalOpen, setIsNewSlotModalOpen] = useState(false);
   const [selectedCheckoutAppointmentId, setSelectedCheckoutAppointmentId] = useState<number | null>(null);
   const [callMessage] = useState("Olá! Sua vez chegou. Por favor, dirija-se ao consultório.");
+
+  // Modal seletor de ponto de atendimento
+  const [servicePointSelector, setServicePointSelector] = useState<{
+    isOpen: boolean;
+    appointment: Appointment | null;
+    filterType: 'guiche' | 'consultorio';
+  }>({ isOpen: false, appointment: null, filterType: 'guiche' });
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -132,10 +146,21 @@ export default function AtendimentoCRMPage() {
     onConfirm: () => {}
   });
 
-  // Carregar lista de médicos
+  // Mapa de ticket info por appointment_id (para exibir badge no card)
+  const ticketMap = new Map<number, TicketInfo>();
+  for (const tk of tickets) {
+    if (tk.status === 'cancelled' || tk.status === 'completed') continue;
+    const spName = tk.service_point?.name;
+    ticketMap.set(tk.appointment_id, {
+      ticket_number: tk.ticket_number,
+      is_priority: tk.is_priority,
+      service_point_name: spName || undefined,
+    });
+  }
+
+  // Carregar lista de medicos + pontos de atendimento
   useEffect(() => {
     (async () => {
-      // 1. Doctors da tabela public.doctors
       const { data: doctorsData } = await supabasePublic
         .from('doctors')
         .select('id, name, color, professional_id')
@@ -147,7 +172,6 @@ export default function AtendimentoCRMPage() {
         color: (d.color as string) || undefined,
       }));
 
-      // 2. Profissionais com agenda que não estão linkados como doctors
       const linkedIds = new Set((doctorsData || []).map((d: Record<string, unknown>) => d.professional_id).filter(Boolean));
       const { data: profsData } = await supabase
         .from('professionals')
@@ -165,6 +189,8 @@ export default function AtendimentoCRMPage() {
 
       setDoctors(list);
     })();
+    listServicePoints();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch appointments
@@ -207,13 +233,12 @@ export default function AtendimentoCRMPage() {
           patient_sex: (patient?.sex as 'M' | 'F') || (row.patient_sex as 'M' | 'F') || null,
           total_amount: row.total_amount as number | undefined,
           amount_paid: row.amount_paid as number | undefined,
-          queue_entered_at: row.queue_entered_at as string | null,
-          in_service_at: row.in_service_at as string | null,
-          finished_at: row.finished_at as string | null,
           appointment_subtype: row.appointment_subtype as string | null,
           procedures: row.procedures as string[] | null,
           is_squeeze: row.is_squeeze as boolean | undefined,
           is_teleconsultation: row.is_teleconsultation as boolean | undefined,
+          queue_stage: row.queue_stage as 'reception' | 'doctor' | null,
+          current_ticket_id: row.current_ticket_id as number | null,
         };
       });
       setRawAppointments(mapped);
@@ -222,29 +247,33 @@ export default function AtendimentoCRMPage() {
     setLoading(false);
   }, [selectedDate, selectedDoctorId, doctors]);
 
-  // Carregar dados ao mudar data, médico, etc.
+  // Carregar dados ao mudar data, medico, etc.
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchTodayTickets();
+  }, [fetchData, fetchTodayTickets]);
 
-  // Realtime subscription
+  // Realtime subscription (appointments + queue_tickets)
   useEffect(() => {
     const channel = supabase
       .channel('atendimento_crm_updates')
       .on('postgres_changes', { event: '*', schema: 'atendimento', table: 'appointments' }, () => {
         fetchData();
       })
+      .on('postgres_changes', { event: '*', schema: 'atendimento', table: 'queue_tickets' }, () => {
+        fetchTodayTickets();
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchData]);
+  }, [fetchData, fetchTodayTickets]);
 
-  // Navegação de data
+  // Navegacao de data
   const changeDate = (days: number) => {
     setSelectedDate(addDaysToDate(selectedDate, days));
   };
 
-  // --- Ações sobre appointments ---
+  // --- Acoes sobre appointments ---
   const updateAppointmentStatus = async (aptId: number, updates: Record<string, string | null>) => {
     const { error } = await supabase
       .from('appointments')
@@ -268,7 +297,6 @@ export default function AtendimentoCRMPage() {
     try {
       const cleanPhone = appointment.patient_phone.replace(/\D/g, '');
 
-      // Buscar ou criar chat no schema atendimento
       const { data: existingChat } = await supabase
         .from('chats')
         .select('id')
@@ -294,7 +322,6 @@ export default function AtendimentoCRMPage() {
         chatId = newChat.id;
       }
 
-      // Enviar mensagem
       if (audioBlob) {
         const fileName = `${chatId}_${Date.now()}_audio.webm`;
         const { error: uploadError } = await supabasePublic.storage
@@ -334,7 +361,6 @@ export default function AtendimentoCRMPage() {
         });
       }
 
-      // Mudar status para chamado
       await updateAppointmentStatus(appointment.id, { status: 'called' });
       fetchData();
     } catch (error: unknown) {
@@ -347,10 +373,94 @@ export default function AtendimentoCRMPage() {
     }
   };
 
+  /** Gerar senha para o guiche (etapa 1 do fluxo) */
+  const handleGenerateTicket = async (apt: Appointment, isPriority: boolean) => {
+    setIsUpdating(apt.id);
+    try {
+      await generateTicket(apt.id, isPriority, 'reception');
+      toast.success(`Senha gerada para ${apt.patient_name || 'paciente'}`);
+      fetchData();
+      fetchTodayTickets();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Tente novamente.';
+      toast.error('Erro ao gerar senha: ' + msg);
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  /** Abrir seletor de ponto de atendimento para chamar paciente */
+  const handleCallWithDestination = (apt: Appointment) => {
+    const stage = apt.queue_stage;
+    const filterType = stage === 'doctor' ? 'consultorio' : 'guiche';
+    setServicePointSelector({ isOpen: true, appointment: apt, filterType });
+  };
+
+  /** Confirmar chamada para ponto de atendimento selecionado */
+  const handleConfirmCallToServicePoint = async (sp: ServicePoint) => {
+    const apt = servicePointSelector.appointment;
+    if (!apt) return;
+    setServicePointSelector({ isOpen: false, appointment: null, filterType: 'guiche' });
+    setIsUpdating(apt.id);
+    try {
+      // Buscar ticket ativo do appointment
+      const activeTicket = tickets.find(
+        t => t.appointment_id === apt.id && ['waiting', 'called'].includes(t.status)
+      );
+      if (!activeTicket) {
+        toast.error('Nenhuma senha ativa encontrada para este paciente.');
+        return;
+      }
+
+      await callTicket(
+        activeTicket.id,
+        sp.id,
+        apt.patient_name || 'Paciente',
+        sp.name,
+        sp.code,
+        apt.doctor_name || undefined,
+        activeTicket.is_priority
+      );
+      toast.success(`${apt.patient_name || 'Paciente'} chamado para ${sp.name}`);
+      fetchData();
+      fetchTodayTickets();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Tente novamente.';
+      toast.error('Erro ao chamar paciente: ' + msg);
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  /** Finalizar guiche e enviar para fila do medico (etapa 2) */
+  const handleFinishGuiche = async (apt: Appointment) => {
+    setIsUpdating(apt.id);
+    try {
+      // Completar ticket do guiche
+      const activeTicket = tickets.find(
+        t => t.appointment_id === apt.id && t.queue_stage === 'reception' && ['waiting', 'called', 'in_service'].includes(t.status)
+      );
+      if (activeTicket) {
+        await completeTicket(activeTicket.id);
+      }
+
+      // Gerar novo ticket para fila do medico
+      await generateTicket(apt.id, activeTicket?.is_priority ?? false, 'doctor');
+      toast.success(`${apt.patient_name || 'Paciente'} enviado para fila do médico`);
+      fetchData();
+      fetchTodayTickets();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Tente novamente.';
+      toast.error('Erro ao finalizar guichê: ' + msg);
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
   const handleCheckIn = async (apt: Appointment) => {
     setIsUpdating(apt.id);
     try {
-      await updateAppointmentStatus(apt.id, { status: 'waiting', queue_entered_at: new Date().toISOString() });
+      await updateAppointmentStatus(apt.id, { status: 'waiting' });
       fetchData();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Tente novamente.';
@@ -360,23 +470,10 @@ export default function AtendimentoCRMPage() {
     }
   };
 
-  const handleConfirmArrival = async (apt: Appointment) => {
-    setIsUpdating(apt.id);
-    try {
-      await updateAppointmentStatus(apt.id, { status: 'waiting', queue_entered_at: new Date().toISOString() });
-      fetchData();
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Tente novamente.';
-      toast.error('Erro ao confirmar chegada: ' + msg);
-    } finally {
-      setIsUpdating(null);
-    }
-  };
-
   const handleEnter = async (apt: Appointment) => {
     setIsUpdating(apt.id);
     try {
-      // Verificar se outro paciente está em atendimento pelo mesmo médico
+      // Verificar se outro paciente esta em atendimento pelo mesmo medico
       let query = supabase.from('appointments').select('*').eq('status', 'in_service').neq('id', apt.id);
       if (apt.doctor_id) {
         query = query.eq('doctor_id', apt.doctor_id);
@@ -393,10 +490,10 @@ export default function AtendimentoCRMPage() {
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
             const ids = currentInService.map((a: Record<string, unknown>) => a.id as number);
             await supabase.from('appointments')
-              .update({ status: 'finished', finished_at: new Date().toISOString() })
+              .update({ status: 'finished' })
               .in('id', ids);
 
-            await updateAppointmentStatus(apt.id, { status: 'in_service', in_service_at: new Date().toISOString() });
+            await updateAppointmentStatus(apt.id, { status: 'in_service' });
             toast.success(`Entrada confirmada para ${apt.patient_name || 'paciente'}.`);
             fetchData();
           }
@@ -405,7 +502,7 @@ export default function AtendimentoCRMPage() {
         return;
       }
 
-      await updateAppointmentStatus(apt.id, { status: 'in_service', in_service_at: new Date().toISOString() });
+      await updateAppointmentStatus(apt.id, { status: 'in_service' });
       toast.success(`Entrada confirmada para ${apt.patient_name || 'paciente'}.`);
       fetchData();
     } catch (error: unknown) {
@@ -419,8 +516,16 @@ export default function AtendimentoCRMPage() {
   const handleFinish = async (apt: Appointment) => {
     setIsUpdating(apt.id);
     try {
-      await updateAppointmentStatus(apt.id, { status: 'finished', finished_at: new Date().toISOString() });
+      // Completar ticket ativo se houver
+      const activeTicket = tickets.find(
+        t => t.appointment_id === apt.id && ['waiting', 'called', 'in_service'].includes(t.status)
+      );
+      if (activeTicket) {
+        await completeTicket(activeTicket.id);
+      }
+      await updateAppointmentStatus(apt.id, { status: 'finished' });
       fetchData();
+      fetchTodayTickets();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Tente novamente.';
       toast.error('Erro ao finalizar: ' + msg);
@@ -441,14 +546,7 @@ export default function AtendimentoCRMPage() {
         try {
           const updates: Record<string, string | null> = { status: newStatus };
           if (newStatus === 'scheduled') {
-            updates.queue_entered_at = null;
-            updates.in_service_at = null;
-            updates.finished_at = null;
-          }
-          if (newStatus === 'waiting') {
-            updates.queue_entered_at = new Date().toISOString();
-            updates.in_service_at = null;
-            updates.finished_at = null;
+            updates.queue_stage = null;
           }
           await updateAppointmentStatus(apt.id, updates);
           fetchData();
@@ -467,7 +565,7 @@ export default function AtendimentoCRMPage() {
     if (raw) setSelectedAppointmentForEdit(raw);
   };
 
-  // Médico selecionado
+  // Medico selecionado
   const selectedDoctor = doctors.find(d => d.id === selectedDoctorId);
   const selectedDoctorLabel = selectedDoctor ? selectedDoctor.name : 'Todos os Médicos';
 
@@ -476,6 +574,11 @@ export default function AtendimentoCRMPage() {
     acc[a.status] = (acc[a.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  // Pontos de atendimento filtrados para o modal seletor
+  const filteredServicePoints = servicePoints.filter(
+    sp => sp.type === servicePointSelector.filterType && sp.status === 'active'
+  );
 
   return (
     <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#050507] relative overflow-hidden transition-colors duration-300">
@@ -517,12 +620,12 @@ export default function AtendimentoCRMPage() {
         </div>
       </div>
 
-      {/* ÁREA PRINCIPAL */}
+      {/* AREA PRINCIPAL */}
       <div className="flex-1 overflow-hidden relative z-10 transition-all duration-300">
         <div className="h-full flex flex-col p-6 overflow-hidden">
-          {/* Toolbar: Data + Filtro Médico + Novo Paciente */}
+          {/* Toolbar: Data + Filtro Medico + Novo Paciente */}
           <div className="flex justify-between items-center mb-6 gap-4 flex-wrap">
-            {/* Navegação de Data */}
+            {/* Navegacao de Data */}
             <div className="flex items-center gap-4 bg-white dark:bg-[#0e0e14] px-2 py-1.5 rounded-full border border-slate-200 dark:border-[#252530] shadow-sm transition-colors">
               <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-gray-400">
                 <ChevronLeft className="w-5 h-5" />
@@ -541,7 +644,7 @@ export default function AtendimentoCRMPage() {
               </button>
             </div>
 
-            {/* Filtro de Médico */}
+            {/* Filtro de Medico */}
             <div className="relative">
               <button
                 type="button"
@@ -564,7 +667,6 @@ export default function AtendimentoCRMPage() {
                   <div className="fixed inset-0 z-40" onClick={() => setIsDoctorDropdownOpen(false)} />
                   <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white dark:bg-[#1a1a22] border border-slate-200 dark:border-[#252530] rounded-xl shadow-xl z-50 overflow-hidden">
                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                      {/* Opção "Todos" */}
                       <button
                         type="button"
                         onClick={() => { setSelectedDoctorId(null); setIsDoctorDropdownOpen(false); }}
@@ -580,7 +682,6 @@ export default function AtendimentoCRMPage() {
 
                       <div className="border-t border-slate-100 dark:border-[#252530]" />
 
-                      {/* Lista de médicos */}
                       {doctors.map(doc => (
                         <button
                           key={doc.id}
@@ -609,10 +710,10 @@ export default function AtendimentoCRMPage() {
               )}
             </div>
 
-            {/* Contadores rápidos */}
+            {/* Contadores rapidos */}
             <div className="hidden md:flex items-center gap-3 text-xs font-medium">
               <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full">
-                Agendados: {statusCounts['scheduled'] || 0}
+                Agendados: {(statusCounts['scheduled'] || 0) + (statusCounts['confirmed'] || 0)}
               </span>
               <span className="flex items-center gap-1 px-2.5 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-full">
                 Na Fila: {statusCounts['waiting'] || 0}
@@ -625,7 +726,7 @@ export default function AtendimentoCRMPage() {
               </span>
             </div>
 
-            {/* Botão Novo Paciente */}
+            {/* Botao Novo Paciente */}
             {receptionFlowTab !== 'checkout' && (
               <button
                 onClick={() => setIsNewSlotModalOpen(true)}
@@ -656,11 +757,14 @@ export default function AtendimentoCRMPage() {
               onEditAppointment={handleEditAppointment}
               onCallAppointment={handleCallAppointment}
               onCheckIn={handleCheckIn}
-              onConfirmArrival={handleConfirmArrival}
               onEnter={handleEnter}
               onFinish={handleFinish}
               onRevert={handleRevert}
               isUpdating={isUpdating}
+              onGenerateTicket={handleGenerateTicket}
+              onCallWithDestination={handleCallWithDestination}
+              onFinishGuiche={handleFinishGuiche}
+              ticketMap={ticketMap}
             />
           )}
         </div>
@@ -702,6 +806,55 @@ export default function AtendimentoCRMPage() {
         message={confirmModal.message}
         type={confirmModal.type}
       />
+
+      {/* Modal Seletor de Ponto de Atendimento */}
+      {servicePointSelector.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1a1a22] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#2d2d36] w-full max-w-sm mx-4 overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-[#252530]">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-gray-100">
+                  Chamar para {servicePointSelector.filterType === 'guiche' ? 'Guichê' : 'Consultório'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                  {servicePointSelector.appointment?.patient_name || 'Paciente'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setServicePointSelector({ isOpen: false, appointment: null, filterType: 'guiche' })}
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-3 space-y-1.5 max-h-[300px] overflow-y-auto">
+              {filteredServicePoints.length === 0 ? (
+                <p className="text-center text-sm text-slate-400 dark:text-gray-500 py-6">
+                  Nenhum {servicePointSelector.filterType === 'guiche' ? 'guichê' : 'consultório'} cadastrado.
+                </p>
+              ) : (
+                filteredServicePoints.map(sp => (
+                  <button
+                    key={sp.id}
+                    type="button"
+                    onClick={() => handleConfirmCallToServicePoint(sp)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
+                  >
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40 transition-colors">
+                      <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-semibold text-slate-700 dark:text-gray-200">{sp.name}</span>
+                      <span className="text-xs text-slate-400 dark:text-gray-500 ml-2">{sp.code}</span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

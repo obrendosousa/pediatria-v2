@@ -2,48 +2,24 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { Appointment } from '@/types/medical';
-import { getLocalDateRange, getTodayDateString } from '@/utils/dateUtils';
-import { Volume2, Stethoscope, Clock, Users, ArrowRight, Activity, Heart, Sun, Moon } from 'lucide-react';
+import { createSchemaClient } from '@/lib/supabase/schemaClient';
+import { getTodayDateString } from '@/utils/dateUtils';
+import type { TVCallPayload } from '@/types/queue';
+import { Volume2, Stethoscope, Clock, Users, ArrowRight, Activity, Heart, Sun, Moon, VolumeX } from 'lucide-react';
 
-const supabase = createClient();
+const supabase = createSchemaClient('atendimento');
 
 // Clinic brand colors
 const BRAND = {
-  blue: '#2B47A5',       // primary royal blue
+  blue: '#2B47A5',
   blueDark: '#1E3380',
   blueLight: '#3B5BC0',
-  cyan: '#00BCD4',       // secondary cyan/turquoise
+  cyan: '#00BCD4',
   cyanDark: '#0097A7',
-  red: '#DC2626',        // accent red
+  red: '#DC2626',
   redDark: '#B91C1C',
   redLight: '#EF4444',
 };
-
-// Mock data
-const MOCK_CALLED = [
-  { id: 901, patient_name: 'Flávio Viana Damasceno', doctor_name: 'Dr. Egberto', location: 'Sala de Eletro', status: 'called' as const },
-];
-const MOCK_LAST_CALLS = [
-  { ticket: '0040p', counter: 4 },
-  { ticket: '0038', counter: 3 },
-  { ticket: '0039p', counter: 5 },
-  { ticket: '0037p', counter: 5 },
-  { ticket: '0035e', counter: 5 },
-];
-const MOCK_IN_SERVICE = [
-  { id: 801, patient_name: 'Maria Helena Costa', doctor_name: 'Dra. Renata', location: 'Consultório 1', status: 'in_service' as const },
-  { id: 802, patient_name: 'Daniele dos Santos Lima', doctor_name: 'Dr. Egberto', location: 'Sala de Ultrassonografia', status: 'in_service' as const },
-  { id: 803, patient_name: 'João Pedro Alves', doctor_name: 'Dr. Ricardo', location: 'Consultório 3', status: 'in_service' as const },
-];
-const MOCK_WAITING = [
-  { id: 701, patient_name: 'Ana Beatriz Souza', doctor_name: 'Dra. Renata', start_time: '14:30', status: 'waiting' as const },
-  { id: 702, patient_name: 'Carlos Eduardo Lima', doctor_name: 'Dr. Egberto', start_time: '14:45', status: 'waiting' as const },
-  { id: 703, patient_name: 'Patricia Mendes', doctor_name: 'Dr. Ricardo', start_time: '15:00', status: 'waiting' as const },
-  { id: 704, patient_name: 'Roberto Silva Neto', doctor_name: 'Dra. Renata', start_time: '15:15', status: 'waiting' as const },
-  { id: 705, patient_name: 'Luciana Ferreira', doctor_name: 'Dr. Egberto', start_time: '15:30', status: 'waiting' as const },
-];
 
 // ── Particle System ──
 interface Particle {
@@ -77,15 +53,13 @@ function useParticles(canvasRef: React.RefObject<HTMLCanvasElement | null>, isLi
         vy: (Math.random() - 0.5) * 0.3,
         size: Math.random() * 2 + 0.5,
         opacity: Math.random() * 0.3 + 0.05,
-        hue: Math.random() > 0.5 ? 220 : 185, // blue or cyan
+        hue: Math.random() > 0.5 ? 220 : 185,
       });
     }
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       const connAlpha = isLight ? 0.035 : 0.06;
-
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
@@ -102,13 +76,11 @@ function useParticles(canvasRef: React.RefObject<HTMLCanvasElement | null>, isLi
           }
         }
       }
-
       for (const p of particles) {
         p.x += p.vx;
         p.y += p.vy;
         if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
         const lightness = isLight ? '50%' : '70%';
         const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 4);
         gradient.addColorStop(0, `hsla(${p.hue}, 60%, ${lightness}, ${p.opacity})`);
@@ -117,13 +89,11 @@ function useParticles(canvasRef: React.RefObject<HTMLCanvasElement | null>, isLi
         ctx.fillStyle = gradient;
         ctx.arc(p.x, p.y, p.size * 4, 0, Math.PI * 2);
         ctx.fill();
-
         ctx.beginPath();
         ctx.fillStyle = `hsla(${p.hue}, 70%, ${isLight ? '40%' : '80%'}, ${p.opacity * 2})`;
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
       }
-
       animId = requestAnimationFrame(draw);
     };
 
@@ -135,134 +105,253 @@ function useParticles(canvasRef: React.RefObject<HTMLCanvasElement | null>, isLi
   }, [canvasRef, isLight]);
 }
 
+// Tipo interno para dados da TV
+type TVAppointment = {
+  id: number;
+  patient_name: string | null;
+  doctor_name: string | null;
+  status: string;
+  time: string | null;
+  queue_stage: string | null;
+};
+
+type TVTicket = {
+  id: number;
+  appointment_id: number;
+  ticket_number: string;
+  status: string;
+  is_priority: boolean;
+  called_at: string | null;
+  queue_stage: string;
+  service_point: { name: string; code: string } | null;
+  appointment: { patient_id: number | null; patients: { full_name: string } | null } | null;
+};
+
+type LastCallEntry = {
+  ticket: string;
+  destination: string;
+  patientName: string;
+  isPriority: boolean;
+};
+
 export default function TVPanelPage() {
   const searchParams = useSearchParams();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [callingPatient, setCallingPatient] = useState<Appointment | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [lastCalledIds, setLastCalledIds] = useState<Set<number>>(new Set());
-  const [useMock] = useState(true);
   const [isLight, setIsLight] = useState(() => searchParams.get('theme') !== 'dark');
+  const [soundEnabled, setSoundEnabled] = useState(false);
+
+  // Dados reais
+  const [tvAppointments, setTvAppointments] = useState<TVAppointment[]>([]);
+  const [lastCalls, setLastCalls] = useState<LastCallEntry[]>([]);
+
+  // Overlay de chamada
+  const [callOverlay, setCallOverlay] = useState<TVCallPayload | null>(null);
+  const overlayTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useParticles(canvasRef, isLight);
 
+  // Buscar appointments do dia
   const fetchAppointments = useCallback(async () => {
     const today = getTodayDateString();
-    const { startOfDay, endOfDay } = getLocalDateRange(today);
-    const { data } = await supabase
-      .from('appointments').select('*')
-      .gte('start_time', startOfDay).lte('start_time', endOfDay)
-      .in('status', ['waiting', 'called', 'in_service', 'scheduled'])
-      .order('start_time', { ascending: true });
-    if (data) {
-      setAppointments(data as Appointment[]);
-      const newCalled = (data as Appointment[]).filter(a => a.status === 'called' && !lastCalledIds.has(a.id));
-      if (newCalled.length > 0) {
-        setCallingPatient(newCalled[newCalled.length - 1]);
-        setLastCalledIds(prev => { const next = new Set(prev); newCalled.forEach(a => next.add(a.id)); return next; });
-        try {
-          const ctx = new AudioContext();
-          const o = ctx.createOscillator(); const g = ctx.createGain();
-          o.connect(g); g.connect(ctx.destination); o.frequency.value = 800; g.gain.value = 0.3;
-          o.start(); o.stop(ctx.currentTime + 0.15);
-          setTimeout(() => { const o2 = ctx.createOscillator(); const g2 = ctx.createGain(); o2.connect(g2); g2.connect(ctx.destination); o2.frequency.value = 1000; g2.gain.value = 0.3; o2.start(); o2.stop(ctx.currentTime + 0.2); }, 200);
-        } catch { /* */ }
-        setTimeout(() => setCallingPatient(null), 8000);
-      }
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('id, doctor_id, status, time, queue_stage, patient_id, patients:patient_id(full_name)')
+      .eq('date', today)
+      .in('status', ['waiting', 'called', 'in_service', 'scheduled', 'confirmed'])
+      .order('time', { ascending: true });
+
+    if (error) {
+      console.error('[TV] fetchAppointments error:', error);
+      return;
     }
-  }, [lastCalledIds]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => { if (!cancelled) await fetchAppointments(); };
-    load();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (data) {
+      const mapped: TVAppointment[] = (data as Array<Record<string, unknown>>).map(row => {
+        const patient = row.patients as { full_name?: string } | null;
+        return {
+          id: row.id as number,
+          patient_name: patient?.full_name || null,
+          doctor_name: null,
+          status: row.status as string,
+          time: row.time as string | null,
+          queue_stage: row.queue_stage as string | null,
+        };
+      });
+      setTvAppointments(mapped);
+    }
   }, []);
-  useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
-  useEffect(() => {
-    const ch = supabase.channel('tv_panel').on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => fetchAppointments()).subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [fetchAppointments]);
-  useEffect(() => { const i = setInterval(fetchAppointments, 30000); return () => clearInterval(i); }, [fetchAppointments]);
 
-  const waiting = useMock ? MOCK_WAITING : appointments.filter(a => a.status === 'waiting').sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
-  const called = useMock ? MOCK_CALLED : appointments.filter(a => a.status === 'called');
-  const inService = useMock ? MOCK_IN_SERVICE : appointments.filter(a => a.status === 'in_service');
-  const currentCall = called[0] || null;
-  const lastCalls = useMock ? MOCK_LAST_CALLS : [];
+  // Buscar ultimas chamadas (tickets chamados hoje)
+  const fetchLastCalls = useCallback(async () => {
+    const today = getTodayDateString();
+    const { data, error } = await supabase
+      .from('queue_tickets')
+      .select(`
+        id, appointment_id, ticket_number, status, is_priority, called_at, queue_stage,
+        service_point:service_point_id(name, code),
+        appointment:appointment_id(
+          patient_id,
+          patients:patient_id(full_name)
+        )
+      `)
+      .eq('ticket_date', today)
+      .in('status', ['called', 'in_service', 'completed'])
+      .not('called_at', 'is', null)
+      .order('called_at', { ascending: false })
+      .limit(6);
+
+    if (error) {
+      console.error('[TV] fetchLastCalls error:', error);
+      return;
+    }
+    if (data) {
+      const entries: LastCallEntry[] = (data as unknown as TVTicket[]).map(tk => ({
+        ticket: tk.ticket_number,
+        destination: tk.service_point?.name || '',
+        patientName: tk.appointment?.patients?.full_name || '',
+        isPriority: tk.is_priority,
+      }));
+      setLastCalls(entries);
+    }
+  }, []);
+
+  // Carregar dados iniciais
+  useEffect(() => {
+    fetchAppointments();
+    fetchLastCalls();
+  }, [fetchAppointments, fetchLastCalls]);
+
+  // Clock
+  useEffect(() => {
+    const t = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Realtime: postgres_changes + broadcast para chamadas
+  useEffect(() => {
+    const channel = supabase
+      .channel('tv_panel_live')
+      .on('postgres_changes', { event: '*', schema: 'atendimento', table: 'appointments' }, () => {
+        fetchAppointments();
+      })
+      .on('postgres_changes', { event: '*', schema: 'atendimento', table: 'queue_tickets' }, () => {
+        fetchLastCalls();
+        fetchAppointments();
+      })
+      .subscribe();
+
+    // Canal broadcast separado para chamadas com TTS
+    const broadcastChannel = supabase
+      .channel('tv-queue')
+      .on('broadcast', { event: 'call' }, ({ payload }) => {
+        const callData = payload as TVCallPayload;
+        showCallOverlay(callData);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(broadcastChannel);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchAppointments, fetchLastCalls]);
+
+  // Polling de backup a cada 30s
+  useEffect(() => {
+    const i = setInterval(() => { fetchAppointments(); fetchLastCalls(); }, 30000);
+    return () => clearInterval(i);
+  }, [fetchAppointments, fetchLastCalls]);
+
+  // Mostrar overlay de chamada + tocar audio TTS
+  const showCallOverlay = (data: TVCallPayload) => {
+    if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+    setCallOverlay(data);
+
+    // Tocar audio TTS se disponivel e som habilitado
+    if (data.tts_audio_url && soundEnabled) {
+      const audio = new Audio(data.tts_audio_url);
+      audio.play().catch(() => {});
+    } else if (soundEnabled) {
+      // Beep fallback
+      try {
+        const ctx = new AudioContext();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = 800; g.gain.value = 0.3;
+        o.start(); o.stop(ctx.currentTime + 0.15);
+        setTimeout(() => {
+          const o2 = ctx.createOscillator();
+          const g2 = ctx.createGain();
+          o2.connect(g2); g2.connect(ctx.destination);
+          o2.frequency.value = 1000; g2.gain.value = 0.3;
+          o2.start(); o2.stop(ctx.currentTime + 0.2);
+        }, 200);
+      } catch { /* */ }
+    }
+
+    overlayTimerRef.current = setTimeout(() => setCallOverlay(null), 10000);
+  };
+
+  // Ativar som (necessario pelo autoplay policy)
+  const enableSound = () => {
+    const ctx = new AudioContext();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 600; g.gain.value = 0.1;
+    o.start(); o.stop(ctx.currentTime + 0.05);
+    setSoundEnabled(true);
+  };
+
+  // Listas derivadas
+  const waiting = tvAppointments.filter(a => a.status === 'waiting');
+  const inService = tvAppointments.filter(a => a.status === 'in_service' && (a.queue_stage === 'doctor' || !a.queue_stage));
+  const called = tvAppointments.filter(a => a.status === 'called');
+
+  // Chamada atual (ultimo chamado se nao houver overlay)
+  const currentCallFromList = lastCalls.length > 0 ? lastCalls[0] : null;
 
   const formatClock = (d: Date) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-  // ── Theme tokens — Brand: Royal Blue + Cyan ──
+  // ── Theme tokens ──
   const th = isLight ? {
     pageBg: 'bg-[#F0F2F8]',
     pageText: 'text-gray-900',
-    // Primary accent (royal blue)
     acText: `text-[${BRAND.blue}]`,
-    acTextMuted: `text-[${BRAND.blue}]/70`,
     acBg: `bg-[${BRAND.blue}]`,
-    acBgMuted: `bg-[${BRAND.blue}]/8`,
-    acBorder: `border-[${BRAND.blue}]/20`,
-    // Text hierarchy
     textPrimary: 'text-gray-900',
     textSecondary: 'text-gray-600',
     textTertiary: 'text-gray-400',
     textQuaternary: 'text-gray-300',
     emptyText: 'text-gray-200',
-    // Cyan accent (reception)
-    cyanText: `text-[${BRAND.cyanDark}]`,
-    cyanTextMuted: `text-[${BRAND.cyanDark}]/60`,
-    cyanBg: `bg-[${BRAND.cyan}]/8`,
-    cyanBorder: `border-[${BRAND.cyan}]/20`,
     cyanDot: `bg-[${BRAND.cyan}]`,
-    // Emerald (consultórios)
-    emeraldText: 'text-emerald-600',
     emeraldTextMuted: 'text-emerald-600/50',
     emeraldDot: 'bg-emerald-500',
     emeraldBadge: 'text-emerald-600/80',
-    // Clock
     clockText: `text-[${BRAND.blueDark}]`,
     dateText: 'text-gray-400',
-    // Overlay
     overlayBg: 'bg-white/95',
-    // Footer
     footerDot: 'bg-emerald-500',
     footerText: 'text-gray-300',
     footerBrand: 'text-gray-200',
   } : {
     pageBg: 'bg-[#080B1A]',
     pageText: 'text-white',
-    // Primary accent (lighter blue for dark bg)
     acText: 'text-blue-400',
-    acTextMuted: 'text-blue-400/60',
     acBg: 'bg-blue-500',
-    acBgMuted: 'bg-blue-500/10',
-    acBorder: 'border-blue-500/20',
-    // Text hierarchy
     textPrimary: 'text-white/95',
     textSecondary: 'text-white/60',
     textTertiary: 'text-white/25',
     textQuaternary: 'text-white/15',
     emptyText: 'text-white/10',
-    // Cyan accent
-    cyanText: 'text-cyan-300',
-    cyanTextMuted: 'text-cyan-400/50',
-    cyanBg: 'bg-cyan-500/8',
-    cyanBorder: 'border-cyan-500/10',
     cyanDot: 'bg-cyan-400',
-    // Emerald
-    emeraldText: 'text-emerald-400',
     emeraldTextMuted: 'text-emerald-400/40',
     emeraldDot: 'bg-emerald-400/60',
     emeraldBadge: 'text-emerald-400/70',
-    // Clock
     clockText: 'text-blue-200/80',
     dateText: 'text-white/20',
-    // Overlay
     overlayBg: 'bg-[#080B1A]/90',
-    // Footer
     footerDot: 'bg-emerald-400',
     footerText: 'text-white/15',
     footerBrand: 'text-white/8',
@@ -273,7 +362,7 @@ export default function TVPanelPage() {
 
   return (
     <div className={`h-screen w-screen ${th.pageBg} ${th.pageText} overflow-hidden flex flex-col select-none relative`}>
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes tv-pulse { 0%,100% { opacity:1 } 50% { opacity:.3 } }
         @keyframes tv-float { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-8px) } }
         @keyframes tv-slide { from { transform:translateX(-30px);opacity:0 } to { transform:translateX(0);opacity:1 } }
@@ -317,7 +406,7 @@ export default function TVPanelPage() {
           background: rgba(43,71,165,0.03);
           border: 1px solid rgba(43,71,165,0.06);
         }
-      `}</style>
+      ` }} />
 
       {/* ── Particle Canvas ── */}
       <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />
@@ -342,7 +431,6 @@ export default function TVPanelPage() {
       {/* ══════ HEADER ══════ */}
       <div className="relative z-10 flex items-center justify-between px-10 py-5">
         <div className="flex items-center gap-5">
-          {/* Logo — red heart on blue */}
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl"
             style={{
@@ -369,6 +457,18 @@ export default function TVPanelPage() {
           </div>
         </div>
         <div className="flex items-center gap-6">
+          {/* Som toggle */}
+          <button
+            onClick={() => soundEnabled ? setSoundEnabled(false) : enableSound()}
+            className={`p-2.5 rounded-xl transition-all ${
+              soundEnabled
+                ? isLight ? 'bg-emerald-50 text-emerald-600' : 'bg-emerald-500/10 text-emerald-400'
+                : isLight ? 'bg-red-50 text-red-400' : 'bg-red-500/10 text-red-400'
+            }`}
+            title={soundEnabled ? 'Som ativado' : 'Clique para ativar som'}
+          >
+            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+          </button>
           {/* Theme toggle */}
           <button
             onClick={() => setIsLight(v => !v)}
@@ -403,31 +503,52 @@ export default function TVPanelPage() {
       />
 
       {/* ══════ CALLING OVERLAY ══════ */}
-      {callingPatient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {callOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setCallOverlay(null)}>
           <div className={`absolute inset-0 ${th.overlayBg} backdrop-blur-xl`} />
-          <div className="relative text-center tv-fade">
-            <div className="mb-8">
+          <div className="relative text-center tv-fade max-w-4xl mx-auto px-8">
+            <div className="mb-6">
               <Volume2
-                className="w-20 h-20 mx-auto"
+                className="w-16 h-16 mx-auto"
                 style={{ color: BRAND.red, animation: 'tv-pulse 1s ease-in-out infinite' }}
               />
             </div>
-            <p className="text-xl font-semibold mb-8 uppercase tracking-[0.5em]" style={{ color: BRAND.red }}>
+            <p className="text-lg font-semibold mb-4 uppercase tracking-[0.5em]" style={{ color: BRAND.red }}>
               Chamando
             </p>
+            {/* Senha grande */}
             <p
-              className={`text-8xl font-bold mb-6 ${isLight ? 'text-gray-900' : 'text-white'}`}
+              className={`text-[120px] font-black leading-none mb-4 tracking-wider ${
+                callOverlay.is_priority
+                  ? 'text-red-600'
+                  : isLight ? 'text-gray-900' : 'text-white'
+              }`}
               style={{ animation: 'tv-pulse 2.5s ease-in-out infinite' }}
             >
-              {callingPatient.patient_name || 'Paciente'}
+              {callOverlay.ticket_number.replace(/([A-Z])(\d)/, '$1 $2')}
             </p>
-            {callingPatient.doctor_name && (
-              <p className={`text-3xl font-light ${isLight ? 'text-gray-400' : 'text-white/40'}`}>
-                Dr(a). {callingPatient.doctor_name}
+            {/* Nome do paciente */}
+            <p className={`text-5xl font-bold mb-6 ${isLight ? 'text-gray-800' : 'text-white/90'}`}>
+              {callOverlay.patient_name}
+            </p>
+            {/* Destino */}
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <ArrowRight className="w-8 h-8" style={{ color: BRAND.blue }} />
+              <p className={`text-3xl font-semibold ${isLight ? 'text-blue-700' : 'text-blue-300'}`}>
+                {callOverlay.service_point_name}
+              </p>
+            </div>
+            {callOverlay.doctor_name && (
+              <p className={`text-xl font-light ${isLight ? 'text-gray-400' : 'text-white/40'}`}>
+                {callOverlay.doctor_name}
               </p>
             )}
-            <div className="mt-12 flex justify-center gap-4">
+            {callOverlay.is_priority && (
+              <span className="inline-block mt-4 px-4 py-1.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm font-bold uppercase tracking-wider">
+                Prioridade
+              </span>
+            )}
+            <div className="mt-10 flex justify-center gap-4">
               {[0, 1, 2, 3, 4].map(i => (
                 <div
                   key={i}
@@ -454,26 +575,25 @@ export default function TVPanelPage() {
                 style={{ backgroundColor: BRAND.red, animation: 'tv-pulse 2s ease-in-out infinite' }}
               />
               <h2 className="text-xs font-bold uppercase tracking-[0.25em]" style={{ color: isLight ? BRAND.red + 'CC' : '#F87171AA' }}>
-                Chamada Atual
+                Última Chamada
               </h2>
             </div>
-            {currentCall ? (
+            {currentCallFromList ? (
               <div className="tv-slide">
-                <p className={`text-5xl font-bold ${th.textPrimary} mb-4 leading-tight`}>{currentCall.patient_name}</p>
-                <div className="flex items-center gap-8">
-                  {(currentCall as typeof MOCK_CALLED[0]).location && (
-                    <span className="flex items-center gap-3 text-lg">
-                      <ArrowRight className="w-5 h-5" style={{ color: BRAND.blue }} />
-                      <span className={`${th.textSecondary} font-medium`}>{(currentCall as typeof MOCK_CALLED[0]).location}</span>
-                    </span>
-                  )}
-                  {currentCall.doctor_name && (
-                    <span className={`flex items-center gap-3 text-lg ${th.textTertiary}`}>
-                      <Stethoscope className="w-5 h-5" />
-                      <span>{currentCall.doctor_name}</span>
-                    </span>
-                  )}
+                <div className="flex items-center gap-6 mb-4">
+                  <span
+                    className={`text-4xl font-black tracking-wider ${currentCallFromList.isPriority ? 'text-red-600' : (isLight ? 'text-blue-700' : 'text-blue-400')}`}
+                  >
+                    {currentCallFromList.ticket}
+                  </span>
+                  <span className={`text-4xl font-bold ${th.textPrimary}`}>{currentCallFromList.patientName}</span>
                 </div>
+                {currentCallFromList.destination && (
+                  <div className="flex items-center gap-3">
+                    <ArrowRight className="w-5 h-5" style={{ color: BRAND.blue }} />
+                    <span className={`text-lg font-medium ${th.textSecondary}`}>{currentCallFromList.destination}</span>
+                  </div>
+                )}
               </div>
             ) : (
               <p className={`text-3xl ${th.emptyText} font-light`}>Nenhuma chamada no momento</p>
@@ -527,7 +647,7 @@ export default function TVPanelPage() {
                   </div>
                   <div className={`flex items-center gap-2 ${th.textQuaternary} text-sm`}>
                     <Clock className="w-3.5 h-3.5" />
-                    <span className="tabular-nums">{typeof apt.start_time === 'string' && apt.start_time.includes(':') ? apt.start_time : ''}</span>
+                    <span className="tabular-nums">{apt.time || ''}</span>
                   </div>
                 </div>
               ))}
@@ -538,20 +658,23 @@ export default function TVPanelPage() {
         {/* ── RIGHT ── */}
         <div className="w-[400px] flex flex-col gap-5">
 
-          {/* Recepção / Últimas Chamadas */}
+          {/* Ultimas Chamadas */}
           <div className={`${cardClass} rounded-2xl p-6`}>
             <div className="flex items-center gap-3 mb-5">
               <div className={`w-2 h-2 rounded-full ${th.cyanDot}`} style={{ animation: 'tv-pulse 2s ease-in-out infinite' }} />
               <h2 className="text-xs font-bold uppercase tracking-[0.25em]" style={{ color: isLight ? BRAND.cyanDark + '99' : '#22D3EE77' }}>
-                Recepção
+                Últimas Chamadas
               </h2>
             </div>
             <div className="space-y-1">
               <div className={`flex px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] ${th.textQuaternary}`}>
-                <span className="flex-1">Senha</span>
-                <span className="w-20 text-center">Guichê</span>
+                <span className="w-20">Senha</span>
+                <span className="flex-1">Paciente</span>
+                <span className="w-28 text-right">Destino</span>
               </div>
-              {lastCalls.map((call, idx) => (
+              {lastCalls.length === 0 ? (
+                <p className={`text-center text-sm ${th.emptyText} py-4`}>Nenhuma chamada ainda</p>
+              ) : lastCalls.map((call, idx) => (
                 <div
                   key={idx}
                   className={`flex items-center px-4 py-3 rounded-lg ${
@@ -565,41 +688,50 @@ export default function TVPanelPage() {
                   } : undefined}
                 >
                   <span
-                    className={`flex-1 font-mono font-bold text-base tracking-wider ${idx === 0 ? '' : th.textTertiary}`}
+                    className={`w-20 font-mono font-bold text-sm tracking-wider ${idx === 0 ? '' : th.textTertiary}`}
                     style={idx === 0 ? { color: isLight ? BRAND.red : BRAND.redLight } : undefined}
                   >
                     {call.ticket}
                   </span>
+                  <span className={`flex-1 text-sm truncate ${idx === 0 ? th.textPrimary : th.textSecondary} font-medium`}>
+                    {call.patientName}
+                  </span>
                   <span
-                    className={`w-20 text-center font-bold text-base ${idx === 0 ? '' : th.textQuaternary}`}
-                    style={idx === 0 ? { color: isLight ? BRAND.red : BRAND.redLight } : undefined}
+                    className={`w-28 text-right text-xs font-medium ${idx === 0 ? '' : th.textQuaternary}`}
+                    style={idx === 0 ? { color: isLight ? BRAND.blue : '#60A5FA' } : undefined}
                   >
-                    {call.counter}
+                    {call.destination}
                   </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Consultórios */}
+          {/* Consultorios */}
           <div className={`flex-1 ${cardClass} rounded-2xl p-6 overflow-hidden flex flex-col`}>
             <div className="flex items-center gap-3 mb-5">
               <Activity className={`w-4 h-4 ${th.emeraldTextMuted}`} />
-              <h2 className={`text-xs font-bold uppercase tracking-[0.25em] ${th.textTertiary}`}>Consultórios</h2>
+              <h2 className={`text-xs font-bold uppercase tracking-[0.25em] ${th.textTertiary}`}>Em Atendimento</h2>
               <span className={`ml-auto text-sm font-bold ${th.emeraldBadge}`}>{inService.length}</span>
             </div>
             <div className="flex-1 overflow-y-auto space-y-2">
-              {inService.map((apt, idx) => (
+              {inService.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className={`${th.emptyText} text-sm font-light`}>Nenhum atendimento</p>
+                </div>
+              ) : inService.map((apt, idx) => (
                 <div key={apt.id} className={`${innerClass} rounded-xl p-4 tv-slide`} style={{ animationDelay: `${idx * 0.1}s` }}>
                   <div className="flex items-center gap-3 mb-1.5">
                     <div className={`w-1.5 h-1.5 rounded-full ${th.emeraldDot}`} />
                     <p className={`text-base font-semibold ${isLight ? 'text-gray-700' : 'text-white/75'} truncate`}>{apt.patient_name}</p>
                   </div>
                   <div className="flex items-center gap-4 pl-5 text-sm">
-                    {(apt as typeof MOCK_IN_SERVICE[0]).location && (
-                      <span className={`${th.emeraldTextMuted} font-medium`}>{(apt as typeof MOCK_IN_SERVICE[0]).location}</span>
+                    {apt.doctor_name && (
+                      <span className="flex items-center gap-1.5">
+                        <Stethoscope className={`w-3 h-3 ${th.textQuaternary}`} />
+                        <span className={th.textQuaternary}>{apt.doctor_name}</span>
+                      </span>
                     )}
-                    {apt.doctor_name && <span className={th.textQuaternary}>{apt.doctor_name}</span>}
                   </div>
                 </div>
               ))}

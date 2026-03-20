@@ -3,13 +3,13 @@
 import { Appointment } from '@/types/medical';
 import ReceptionColumn from './ReceptionColumn';
 import CheckoutDetailPanel from '@/components/medical/CheckoutDetailPanel';
+import type { TicketInfo } from './ReceptionCard';
 
 interface ReceptionFlowColumnsProps {
   selectedDate: string;
   appointments: Appointment[];
   onCallAppointment?: (appointment: Appointment) => void;
   onCheckIn?: (appointment: Appointment) => void;
-  onConfirmArrival?: (appointment: Appointment) => void;
   onEnter?: (appointment: Appointment) => void;
   onFinish?: (appointment: Appointment) => void;
   onRevert?: (appointment: Appointment, newStatus: string) => void;
@@ -18,11 +18,16 @@ interface ReceptionFlowColumnsProps {
   isUpdating?: number | null;
   callingAppointmentId?: number | null;
   activeTab?: 'flow' | 'checkout';
-  /** Hub checkout: paciente selecionado e callbacks */
   selectedCheckoutAppointmentId?: number | null;
   onSelectCheckoutAppointment?: (appointment: Appointment) => void;
   onCheckoutSuccess?: () => void;
   onScheduleReturn?: (data: { suggestedDate: string; patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string }) => void;
+  /** Callbacks do sistema de fila */
+  onGenerateTicket?: (appointment: Appointment, isPriority: boolean) => void;
+  onCallWithDestination?: (appointment: Appointment) => void;
+  onFinishGuiche?: (appointment: Appointment) => void;
+  /** Mapa de tickets por appointment_id */
+  ticketMap?: Map<number, TicketInfo>;
 }
 
 export default function ReceptionFlowColumns({
@@ -31,7 +36,6 @@ export default function ReceptionFlowColumns({
   appointments,
   onCallAppointment,
   onCheckIn,
-  onConfirmArrival,
   onEnter,
   onFinish,
   onRevert,
@@ -43,37 +47,77 @@ export default function ReceptionFlowColumns({
   selectedCheckoutAppointmentId = null,
   onSelectCheckoutAppointment,
   onCheckoutSuccess,
-  onScheduleReturn
+  onScheduleReturn,
+  onGenerateTicket,
+  onCallWithDestination,
+  onFinishGuiche,
+  ticketMap,
 }: ReceptionFlowColumnsProps) {
 
   const relevantAppointments = appointments.filter(a =>
-    ['scheduled', 'called', 'waiting', 'in_service', 'waiting_payment', 'finished'].includes(a.status || '')
+    ['scheduled', 'confirmed', 'called', 'waiting', 'in_service', 'waiting_payment', 'finished'].includes(a.status || '')
   );
 
-  const scheduled = relevantAppointments.filter(a => a.status === 'scheduled');
-  const called = relevantAppointments.filter(a => a.status === 'called');
-  const waiting = relevantAppointments.filter(a => a.status === 'waiting').sort((a, b) => {
-    const aTime = new Date(a.start_time).getTime();
-    const bTime = new Date(b.start_time).getTime();
-    return aTime - bTime;
-  });
-  const inService = relevantAppointments.filter(a => a.status === 'in_service');
+  // Agendados (sem senha ainda)
+  const scheduled = relevantAppointments.filter(a =>
+    (a.status === 'scheduled' || a.status === 'confirmed') && !a.queue_stage
+  );
+
+  // Fila Guiche: waiting + queue_stage='reception'
+  const receptionWaiting = relevantAppointments.filter(a =>
+    a.status === 'waiting' && a.queue_stage === 'reception'
+  ).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+  // No Guiche: called ou in_service + queue_stage='reception'
+  const atGuiche = relevantAppointments.filter(a =>
+    (a.status === 'called' || a.status === 'in_service') && a.queue_stage === 'reception'
+  );
+
+  // Fila Medico: waiting + queue_stage='doctor'
+  const doctorWaiting = relevantAppointments.filter(a =>
+    a.status === 'waiting' && a.queue_stage === 'doctor'
+  ).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+  // Em Atendimento: in_service + queue_stage='doctor' OU sem queue_stage (legado)
+  const inService = relevantAppointments.filter(a =>
+    a.status === 'in_service' && (a.queue_stage === 'doctor' || !a.queue_stage)
+  );
+
+  // Legado: waiting/called sem queue_stage (fluxo antigo)
+  const legacyWaiting = relevantAppointments.filter(a =>
+    a.status === 'waiting' && !a.queue_stage
+  ).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+  const legacyCalled = relevantAppointments.filter(a =>
+    a.status === 'called' && !a.queue_stage
+  );
+  // Called no doctor stage
+  const doctorCalled = relevantAppointments.filter(a =>
+    a.status === 'called' && a.queue_stage === 'doctor'
+  );
+
   const waitingPayment = relevantAppointments.filter(a => a.status === 'waiting_payment');
-  const finished = relevantAppointments.filter(a => a.status === 'finished').sort((a, b) => {
-    const aTime = new Date(a.start_time).getTime();
-    const bTime = new Date(b.start_time).getTime();
-    return bTime - aTime;
-  });
+  const finished = relevantAppointments.filter(a => a.status === 'finished').sort((a, b) =>
+    new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+  );
+
+  // Merge doctor called + in_service
+  const doctorActive = [...doctorCalled, ...inService];
+
+  // Merge legacy into appropriate columns
+  const filaGuicheAll = receptionWaiting;
+  const filaMedicoAll = [...doctorWaiting, ...legacyWaiting];
+  const emAtendimentoAll = [...doctorActive, ...legacyCalled];
 
   const handleRevert = (appointment: Appointment, newStatus: string) => {
     if (onRevert) onRevert(appointment, newStatus);
   };
 
   return (
-    <div className="flex-1 flex gap-3 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2">
+    <div className="flex-1 flex gap-2 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2">
 
       {activeTab === 'flow' && (
         <>
+          {/* 1. Agendados */}
           <ReceptionColumn
             title="Agendados"
             status="scheduled"
@@ -86,46 +130,79 @@ export default function ReceptionFlowColumns({
             }}
             onCall={onCallAppointment}
             onCheckIn={onCheckIn}
+            onGenerateTicket={onGenerateTicket}
             onEditAppointment={onEditAppointment}
             isUpdating={isUpdating}
             callingAppointmentId={callingAppointmentId}
+            ticketMap={ticketMap}
           />
+
+          {/* 2. Fila Guiche */}
           <ReceptionColumn
-            title="Chamados"
-            status="called"
-            appointments={called}
+            title="Fila Guiche"
+            status="waiting"
+            appointments={filaGuicheAll}
             color={{
-              border: 'border-amber-200 dark:border-amber-800/50',
-              bg: 'bg-amber-100 dark:bg-amber-900/40',
-              text: 'text-amber-700 dark:text-amber-300',
-              headerBg: 'bg-amber-50/50 dark:bg-amber-900/30'
+              border: 'border-cyan-200 dark:border-cyan-800/50',
+              bg: 'bg-cyan-100 dark:bg-cyan-900/40',
+              text: 'text-cyan-700 dark:text-cyan-300',
+              headerBg: 'bg-cyan-50/50 dark:bg-cyan-900/30'
             }}
-            onConfirmArrival={onConfirmArrival}
+            onCallWithDestination={onCallWithDestination}
             onRevert={(apt) => handleRevert(apt, 'scheduled')}
             onEditAppointment={onEditAppointment}
             isUpdating={isUpdating}
             callingAppointmentId={callingAppointmentId}
+            ticketMap={ticketMap}
+            columnContext="guiche"
           />
+
+          {/* 3. No Guiche */}
           <ReceptionColumn
-            title="Na Fila"
+            title="No Guiche"
+            status="in_service"
+            appointments={atGuiche}
+            color={{
+              border: 'border-teal-200 dark:border-teal-800/50',
+              bg: 'bg-teal-100 dark:bg-teal-900/40',
+              text: 'text-teal-700 dark:text-teal-300',
+              headerBg: 'bg-teal-50/50 dark:bg-teal-900/30'
+            }}
+            onFinishGuiche={onFinishGuiche}
+            onRevert={(apt) => handleRevert(apt, 'waiting')}
+            onEditAppointment={onEditAppointment}
+            isUpdating={isUpdating}
+            callingAppointmentId={callingAppointmentId}
+            ticketMap={ticketMap}
+            columnContext="guiche"
+          />
+
+          {/* 4. Fila Medico */}
+          <ReceptionColumn
+            title="Fila Medico"
             status="waiting"
-            appointments={waiting}
+            appointments={filaMedicoAll}
             color={{
               border: 'border-green-200 dark:border-green-800/50',
               bg: 'bg-green-100 dark:bg-green-900/40',
               text: 'text-green-700 dark:text-green-300',
               headerBg: 'bg-green-50/50 dark:bg-green-900/30'
             }}
+            onCallWithDestination={onCallWithDestination}
             onEnter={onEnter}
             onRevert={(apt) => handleRevert(apt, 'scheduled')}
             onEditAppointment={onEditAppointment}
             isUpdating={isUpdating}
             callingAppointmentId={callingAppointmentId}
+            ticketMap={ticketMap}
+            columnContext="doctor"
           />
+
+          {/* 5. Em Atendimento */}
           <ReceptionColumn
             title="Em Atendimento"
             status="in_service"
-            appointments={inService}
+            appointments={emAtendimentoAll}
             color={{
               border: 'border-emerald-200 dark:border-emerald-800/50',
               bg: 'bg-emerald-100 dark:bg-emerald-900/40',
@@ -137,9 +214,13 @@ export default function ReceptionFlowColumns({
             onEditAppointment={onEditAppointment}
             isUpdating={isUpdating}
             callingAppointmentId={callingAppointmentId}
+            ticketMap={ticketMap}
+            columnContext="doctor"
           />
+
+          {/* 6. Concluidos */}
           <ReceptionColumn
-            title="Concluídos"
+            title="Concluidos"
             status="finished"
             appointments={finished}
             color={{
@@ -151,6 +232,7 @@ export default function ReceptionFlowColumns({
             onEditAppointment={onEditAppointment}
             isUpdating={isUpdating}
             callingAppointmentId={callingAppointmentId}
+            ticketMap={ticketMap}
           />
         </>
       )}
@@ -176,9 +258,10 @@ export default function ReceptionFlowColumns({
               buttonLabel="Abrir"
               selectedAppointmentId={selectedCheckoutAppointmentId ?? undefined}
               onSelectAppointment={onSelectCheckoutAppointment}
+              ticketMap={ticketMap}
             />
             <ReceptionColumn
-              title="Concluídos do Dia"
+              title="Concluidos do Dia"
               status="finished"
               appointments={finished}
               color={{
@@ -190,6 +273,7 @@ export default function ReceptionFlowColumns({
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}
               callingAppointmentId={callingAppointmentId}
+              ticketMap={ticketMap}
             />
           </div>
           <div className="flex-1 min-w-0 overflow-hidden">

@@ -1,9 +1,10 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
 
 import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
-import { Chat, Patient } from '@/types';
+import { Chat, ChatPatient as Patient } from '@/types';
 import { 
   LayoutList, Users, DollarSign,
   BarChart3, Calendar, 
@@ -576,26 +577,6 @@ export default function CRMPage() {
                     } catch (error: any) {
                       console.error('Erro ao fazer check-in:', error);
                       toast.error('Erro ao fazer check-in: ' + (error.message || 'Tente novamente.'));
-                    } finally {
-                      setIsUpdating(null);
-                    }
-                  }}
-                  onConfirmArrival={async (apt) => {
-                    setIsUpdating(apt.id);
-                    try {
-                      const { error } = await supabase
-                        .from('appointments')
-                        .update({ status: 'waiting', queue_entered_at: new Date().toISOString() })
-                        .eq('id', apt.id);
-                      
-                      if (error) throw error;
-                      
-                      setCalledAppointmentId(null);
-                      setCallingAppointment(null);
-                      fetchData();
-                    } catch (error: any) {
-                      console.error('Erro ao confirmar chegada:', error);
-                      toast.error('Erro ao confirmar chegada: ' + (error.message || 'Tente novamente.'));
                     } finally {
                       setIsUpdating(null);
                     }

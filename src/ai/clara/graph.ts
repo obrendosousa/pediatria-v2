@@ -249,23 +249,23 @@ const claraWorkflow = new StateGraph<ClaraState>({
     },
     // Clara 2.0 — novos canais
     temporal_anchor: {
-      reducer: (_x: TemporalAnchor | null, y: TemporalAnchor | null) => y ?? _x ?? null,
+      reducer: (_x: TemporalAnchor | null, y: TemporalAnchor | null | undefined) => y === undefined ? (_x ?? null) : y,
       default: () => null as TemporalAnchor | null,
     },
     db_stats: {
-      reducer: (_x: DbStats | null, y: DbStats | null) => y ?? _x ?? null,
+      reducer: (_x: DbStats | null, y: DbStats | null | undefined) => y === undefined ? (_x ?? null) : y,
       default: () => null as DbStats | null,
     },
     loaded_context: {
-      reducer: (_x: LoadedContext | null, y: LoadedContext | null) => y ?? _x ?? null,
+      reducer: (_x: LoadedContext | null, y: LoadedContext | null | undefined) => y === undefined ? (_x ?? null) : y,
       default: () => null as LoadedContext | null,
     },
     spot_check_result: {
-      reducer: (_x: SpotCheckResult | null, y: SpotCheckResult | null) => y ?? _x ?? null,
+      reducer: (_x: SpotCheckResult | null, y: SpotCheckResult | null | undefined) => y === undefined ? (_x ?? null) : y,
       default: () => null as SpotCheckResult | null,
     },
     pending_question: {
-      reducer: (_x: string | null, y: string | null) => y ?? _x ?? null,
+      reducer: (_x: string | null, y: string | null | undefined) => y === undefined ? (_x ?? null) : y,
       default: () => null as string | null,
     },
     tool_call_count: {

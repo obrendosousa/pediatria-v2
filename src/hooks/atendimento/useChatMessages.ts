@@ -237,7 +237,7 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     const chatId = activeChat.id;
     const cacheKey = `atd_chat_messages_${chatId}`;
     const cached = get<Message[]>(cacheKey);
-    const hasValidCache = Array.isArray(cached) && cached.length >= 0;
+    const hasValidCache = Array.isArray(cached) && cached.length > 0;
     const deletedForChat = getDeletedSetForChat(chatId);
     if (hasValidCache && cached) {
       const cachedFiltered = deletedForChat.size > 0

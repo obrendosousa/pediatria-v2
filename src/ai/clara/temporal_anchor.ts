@@ -2,6 +2,10 @@
 // CAMADA 1: Temporal Anchor Service
 // Resolve TODAS as expressões temporais em timestamps BRT absolutos
 // ANTES de qualquer processamento.
+//
+// LIMITAÇÃO: Design single-tenant — assume fuso fixo BRT (America/Sao_Paulo).
+// Para multi-tenant com fusos diferentes, o timezone precisaria ser passado
+// como parâmetro (ex: vindo do perfil do usuário ou config do tenant).
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface TemporalAnchor {

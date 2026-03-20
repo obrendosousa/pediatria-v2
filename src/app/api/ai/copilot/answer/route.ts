@@ -56,6 +56,7 @@ export async function POST(request: Request) {
         loaded_context: null,
         spot_check_result: null,
         pending_question: null,
+        tool_call_count: 0,
       };
 
       return streamGraphResponse(freshInputs, chatId || 0);

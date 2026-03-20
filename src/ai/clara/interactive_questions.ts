@@ -33,6 +33,9 @@ export interface GraphCheckpoint {
 }
 
 // ── Checkpoint store (in-memory) ──────────────────────────────────────────
+// LIMITAÇÃO: Este store é in-memory e será perdido em caso de restart/redeploy
+// do servidor. Em ambiente serverless (Vercel), cada cold start cria um Map novo.
+// Para produção multi-instância, migrar para Redis ou Supabase.
 
 const checkpoints = new Map<string, GraphCheckpoint>();
 

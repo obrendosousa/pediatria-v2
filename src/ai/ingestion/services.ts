@@ -1,7 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-// Função auxiliar para pegar cliente supabase no server action/route
-async function getSupabase() {
+// Singleton do cliente Supabase para ingestion (server-side, service role)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _supabaseClient: SupabaseClient<any, "public", any> | null = null;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSupabase(): SupabaseClient<any, "public", any> {
+  if (_supabaseClient) return _supabaseClient;
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -9,7 +15,10 @@ async function getSupabase() {
     throw new Error("Variáveis NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configuradas.");
   }
 
-  return createClient(supabaseUrl, serviceRoleKey);
+  _supabaseClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return _supabaseClient;
 }
 
 function normalizePhone(value?: string | null) {
@@ -204,7 +213,7 @@ export async function resolveLidToPhone(lidJid: string): Promise<LidResolution |
 }
 
 export async function ensureChatExists(phone: string, pushName: string, fromMe: boolean) {
-  const supabase = await getSupabase();
+  const supabase = getSupabase();
 
   // 1. Tenta buscar o chat existente
   // IMPORTANTE: usar .limit(1).maybeSingle() em vez de .single()
@@ -271,7 +280,7 @@ export async function ensureChatExists(phone: string, pushName: string, fromMe: 
 }
 
 export async function getContactNameByPhone(phone: string): Promise<string | null> {
-  const supabase = await getSupabase();
+  const supabase = getSupabase();
   const normalizedPhone = normalizePhone(phone);
   if (!normalizedPhone) return null;
 
@@ -310,7 +319,7 @@ export async function saveMessageToDb(payload: {
   /** Dados extras para tool_data (ex: vCard de contato, localização, etc.) */
   extra_tool_data?: Record<string, unknown>;
 }) {
-  const supabase = await getSupabase();
+  const supabase = getSupabase();
 
   if (payload.type === "reaction") {
     return;
@@ -466,7 +475,7 @@ export function fetchAndUpdateProfilePicture(phone: string, chatId: number, inst
   fetchProfilePictureFromEvolution(phone, instanceEnvKey)
     .then(async (url) => {
       if (!url) return;
-      const supabase = await getSupabase();
+      const supabase = getSupabase();
       await supabase.from("chats").update({ profile_pic: url }).eq("id", chatId);
       console.log(`[ProfilePic] Atualizada foto do chat ${chatId} (${phone})`);
     })
@@ -631,7 +640,7 @@ async function uploadToSupabase(
   mimeType: string,
   fileName: string
 ): Promise<string | null> {
-  const supabase = await getSupabase();
+  const supabase = getSupabase();
   const buf = Buffer.from(base64, "base64");
 
   const safeFileName = fileName

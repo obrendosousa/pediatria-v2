@@ -2,11 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { User, FileText, Calendar, Phone, X, ExternalLink, Loader2 } from 'lucide-react';
+import { User, FileText, Calendar, Phone, X, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { useRouter } from 'next/navigation';
-import { getPatientPhones, getPatientAppointments } from '@/utils/patientRelations';
+import { PatientPhone, getPatientPhones, getPatientAppointments } from '@/utils/patientRelations';
+
+interface PatientData {
+  name: string;
+  birth_date?: string;
+  phone?: string;
+}
+
+interface AppointmentData {
+  id: number;
+  start_time: string;
+  doctor_name?: string;
+  status: string;
+}
 
 interface PatientInfoBadgeProps {
   chatId: number;
@@ -14,50 +27,49 @@ interface PatientInfoBadgeProps {
   onLinkPatient?: (patientId: number) => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function PatientInfoBadge({ chatId, patientId, onLinkPatient }: PatientInfoBadgeProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [patient, setPatient] = useState<any>(null);
-  const [phones, setPhones] = useState<any[]>([]);
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [patient, setPatient] = useState<PatientData | null>(null);
+  const [phones, setPhones] = useState<PatientPhone[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentData[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
-    if (patientId && isOpen) {
-      fetchPatientData();
-    }
+    if (!patientId || !isOpen) return;
+
+    const fetchPatientData = async () => {
+      setLoading(true);
+      try {
+        // Buscar dados do paciente
+        const { data: patientData, error: patientError } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('id', patientId)
+          .single();
+
+        if (patientError) throw patientError;
+        setPatient(patientData);
+
+        // Buscar números do paciente
+        const phonesData = await getPatientPhones(patientId);
+        setPhones(phonesData);
+
+        // Buscar appointments do paciente
+        const appointmentsData = await getPatientAppointments(patientId);
+        setAppointments(appointmentsData.slice(0, 5) as unknown as AppointmentData[]); // Últimos 5
+      } catch (error) {
+        console.error('Erro ao buscar dados do paciente:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatientData();
   }, [patientId, isOpen]);
-
-  const fetchPatientData = async () => {
-    if (!patientId) return;
-    
-    setLoading(true);
-    try {
-      // Buscar dados do paciente
-      const { data: patientData, error: patientError } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('id', patientId)
-        .single();
-
-      if (patientError) throw patientError;
-      setPatient(patientData);
-
-      // Buscar números do paciente
-      const phonesData = await getPatientPhones(patientId);
-      setPhones(phonesData);
-
-      // Buscar appointments do paciente
-      const appointmentsData = await getPatientAppointments(patientId);
-      setAppointments(appointmentsData.slice(0, 5)); // Últimos 5
-    } catch (error) {
-      console.error('Erro ao buscar dados do paciente:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleOpenProntuario = () => {
     if (patientId) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -166,15 +166,22 @@ export default function FinancialDashboardPage() {
     fetchFinancials();
   }, [fetchFinancials]);
 
+  // Debounce para realtime: múltiplos eventos em sequência rápida disparam apenas um fetch
+  const realtimeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
+    const debouncedFetch = () => {
+      if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
+      realtimeDebounceRef.current = setTimeout(() => {
+        fetchFinancials();
+        realtimeDebounceRef.current = null;
+      }, 2000);
+    };
+
     const channel = supabase
       .channel('finance_realtime_updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'financial_transactions' }, () => {
-        fetchFinancials();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'financial_transaction_payments' }, () => {
-        fetchFinancials();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'financial_transactions' }, debouncedFetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'financial_transaction_payments' }, debouncedFetch)
       .subscribe();
 
     const interval = setInterval(() => {
@@ -183,6 +190,7 @@ export default function FinancialDashboardPage() {
 
     return () => {
       clearInterval(interval);
+      if (realtimeDebounceRef.current) clearTimeout(realtimeDebounceRef.current);
       supabase.removeChannel(channel);
     };
   }, [fetchFinancials]);

@@ -429,12 +429,6 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
         notes: data.description.trim() || null,
       };
 
-      // Salvar valor total como previsão financeira (não é pagamento)
-      if (proceduresTotal > 0) {
-        insertData.total_amount = proceduresTotal;
-        insertData.amount_paid = 0;
-      }
-
       const shouldGenerateBudget = data.generate_budget && data.procedures.length > 0;
 
       if (shouldGenerateBudget) {

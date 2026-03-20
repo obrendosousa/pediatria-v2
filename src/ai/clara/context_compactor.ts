@@ -3,7 +3,7 @@
 // Compacta mensagens antigas em um resumo para manter contexto gerenciável.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { BaseMessage, SystemMessage } from "@langchain/core/messages";
+import { BaseMessage, HumanMessage } from "@langchain/core/messages";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
 const MAX_FULL_MESSAGES = 8;
@@ -55,7 +55,7 @@ export async function compactMessages(
     const summary = typeof summaryResponse.content === "string" ? summaryResponse.content : "";
 
     const result: BaseMessage[] = [
-      new SystemMessage(`[RESUMO DA CONVERSA ANTERIOR]\n${summary}`),
+      new HumanMessage(`[SISTEMA - RESUMO DA CONVERSA ANTERIOR]\n${summary}`),
     ];
 
     // Se recentMessages não contém HumanMessage, inserir a original

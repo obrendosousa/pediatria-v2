@@ -41,20 +41,14 @@ const ChatListItem = memo(({
     const menuRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; openUpward: boolean } | null>(null);
-    const [isExiting, setIsExiting] = useState(false);
     const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const [avatarError, setAvatarError] = useState(false);
-    const prevAvatarKeyRef = useRef(`${chat.id}_${chat.profile_pic}`);
+    // Keyed state: avatarError se auto-reseta quando chat.id ou profile_pic mudam
+    const avatarKey = `${chat.id}_${chat.profile_pic}`;
+    const [avatarErrorState, setAvatarErrorState] = useState<{ key: string; error: boolean }>({ key: avatarKey, error: false });
+    const avatarError = avatarErrorState.key === avatarKey && avatarErrorState.error;
 
     // Identificador para o chat da IA
     const isAIChat = chat.phone === '00000000000';
-
-    // Resetar avatarError quando chat.id ou profile_pic mudar (sem useEffect + setState)
-    const currentAvatarKey = `${chat.id}_${chat.profile_pic}`;
-    if (prevAvatarKeyRef.current !== currentAvatarKey) {
-      prevAvatarKeyRef.current = currentAvatarKey;
-      if (avatarError) setAvatarError(false);
-    }
 
     useLayoutEffect(() => {
         if (!isMenuOpen || !triggerRef.current || typeof document === 'undefined') return;
@@ -97,25 +91,24 @@ const ChatListItem = memo(({
         };
     }, [isMenuOpen]);
 
+    // Animação de saída: quando o menu fecha, menuPosition persiste por 260ms para a animação
+    // isExiting é derivado: !isMenuOpen && menuPosition !== null
     useEffect(() => {
         if (isMenuOpen) {
-            setIsExiting(false);
             if (exitTimeoutRef.current) {
                 clearTimeout(exitTimeoutRef.current);
                 exitTimeoutRef.current = null;
             }
         } else if (menuPosition) {
-            setIsExiting(true);
             exitTimeoutRef.current = setTimeout(() => {
                 setMenuPosition(null);
-                setIsExiting(false);
                 exitTimeoutRef.current = null;
             }, 260);
         }
         return () => {
             if (exitTimeoutRef.current) clearTimeout(exitTimeoutRef.current);
         };
-     
+
     }, [isMenuOpen, menuPosition]);
 
     const isUnread = (chat.unread_count || 0) > 0;
@@ -296,7 +289,7 @@ const ChatListItem = memo(({
             >
               {chat.profile_pic && !avatarError ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={chat.profile_pic} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarError(true)} loading="lazy" />
+                <img src={chat.profile_pic} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarErrorState({ key: avatarKey, error: true })} loading="lazy" />
               ) : (
                 <span className="text-lg font-semibold select-none" style={{ color: getAvatarTextColor(chat.id) }}>
                   {(chat.contact_name || chat.phone || '?').charAt(0).toUpperCase()}
@@ -368,11 +361,11 @@ const ChatListItem = memo(({
         </div>
 
         {/* MENU SUSPENSO */}
-        {!isSelectionMode && !isAIChat && (isMenuOpen || isExiting) && menuPosition && typeof document !== 'undefined' && createPortal(
-          <div 
+        {!isSelectionMode && !isAIChat && menuPosition && typeof document !== 'undefined' && createPortal(
+          <div
             ref={menuRef}
             data-chat-menu
-            className={`fixed w-52 bg-white dark:bg-[#1c1c21] rounded-lg shadow-lg py-2 z-[9999] border border-gray-100 dark:border-[#3d3d48] transition-all ${isExiting ? (menuPosition.openUpward ? 'animate-chat-menu-out-upward' : 'animate-chat-menu-out') : (menuPosition.openUpward ? 'animate-chat-menu-in-upward' : 'animate-chat-menu-in')}`}
+            className={`fixed w-52 bg-white dark:bg-[#1c1c21] rounded-lg shadow-lg py-2 z-[9999] border border-gray-100 dark:border-[#3d3d48] transition-all ${!isMenuOpen ? (menuPosition.openUpward ? 'animate-chat-menu-out-upward' : 'animate-chat-menu-out') : (menuPosition.openUpward ? 'animate-chat-menu-in-upward' : 'animate-chat-menu-in')}`}
             style={{ top: menuPosition.top, left: menuPosition.left, transformOrigin: menuPosition.openUpward ? 'bottom right' : 'top right' }}
             onClick={(e) => e.stopPropagation()}
           >

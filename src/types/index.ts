@@ -58,6 +58,7 @@ export interface Message {
       from_me?: boolean;
       created_at?: string;
     }>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
   };
 }
@@ -124,21 +125,23 @@ export interface Chat {
     duration?: number;
     caption?: string;
     fileName?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
   };
 
-  [key: string]: any; 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
 }
 
-export interface Patient {
+export interface ChatPatient {
   id: number;
   chat_id: number;
   name: string;
   birth_date?: string;
   notes?: string;
   created_at?: string;
-  stage?: string; 
-  chats?: Chat;   
+  stage?: string;
+  chats?: Chat;
 }
 
 // --- TIPOS DE PRODUTO E ESTOQUE ---
@@ -279,6 +282,7 @@ export interface ScheduledMessage {
   item_type: 'macro' | 'funnel' | 'adhoc';
   item_id?: number;
   title?: string;     // Para exibir na lista
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   content: any;       // O conteúdo da macro ou funil salvo
   scheduled_for: string;
   status: 'pending' | 'processing' | 'sent' | 'failed' | 'cancelled';
@@ -306,6 +310,7 @@ export interface AutomationRule {
   age_months?: number; // Para tipo 'milestone'
   trigger_time: string; // Formato HH:MM:SS
   message_sequence: AutomationMessage[]; // Array de mensagens
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   variables_template?: Record<string, any>; // Template com variáveis
   created_at: string;
   updated_at: string;

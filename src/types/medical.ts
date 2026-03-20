@@ -144,5 +144,9 @@ export interface Appointment {
   rescheduled_from?: number | null;
   end_time?: string | null;
 
+  // Campos de fila/senha
+  queue_stage?: 'reception' | 'doctor' | null;
+  current_ticket_id?: number | null;
+
   created_at?: string;
 }
