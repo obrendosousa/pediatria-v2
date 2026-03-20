@@ -24,6 +24,8 @@ type AtendimentoAppointment = {
   status: string;
   notes?: string | null;
   parent_name?: string | null;
+  mother_name?: string | null;
+  father_name?: string | null;
   parent_phone?: string | null;
   consultation_value?: number | null;
   patient_name?: string | null;
@@ -42,7 +44,8 @@ type Props = {
 
 const initialEditForm = {
   patient_name: '',
-  parent_name: '',
+  mother_name: '',
+  father_name: '',
   parent_phone: '',
   patient_sex: '' as 'M' | 'F' | '',
   notes: '',
@@ -87,7 +90,8 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
       const doctorName = doctors.find(d => d.id === selectedAppointment.doctor_id)?.name || '';
       setEditForm({
         patient_name: selectedAppointment.patient_name || '',
-        parent_name: selectedAppointment.parent_name || '',
+        mother_name: selectedAppointment.mother_name || '',
+        father_name: selectedAppointment.father_name || '',
         parent_phone: selectedAppointment.parent_phone || selectedAppointment.patient_phone || '',
         patient_sex: (selectedAppointment.patient_sex as 'M' | 'F' | '') || '',
         notes: selectedAppointment.notes || '',
@@ -100,7 +104,6 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
         totalAmount: selectedAppointment.consultation_value ? formatCurrency(selectedAppointment.consultation_value) : '',
         paidAmount: selectedAppointment.amount_paid ? formatCurrency(selectedAppointment.amount_paid) : ''
       });
-      // Guardar doctor_name no appointment para exibição
       if (!selectedAppointment.doctor_name && doctorName) {
         selectedAppointment.doctor_name = doctorName;
       }
@@ -125,7 +128,9 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
         doctor_id: editForm.doctor_id,
         status: editForm.status,
         type: editForm.type || null,
-        parent_name: editForm.parent_name || null,
+        mother_name: editForm.mother_name || null,
+        father_name: editForm.father_name || null,
+        parent_name: editForm.mother_name || editForm.father_name || null,
         parent_phone: editForm.parent_phone || null,
         consultation_value: parseCurrency(editForm.totalAmount) || null
       };
@@ -281,15 +286,28 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#252530]">
-              <div className="p-1.5 bg-purple-100 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400 rounded-md"><User size={14}/></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Responsavel</p>
-                {isEditing ? (
-                  <input type="text" value={editForm.parent_name} onChange={e => setEditForm({ ...editForm, parent_name: e.target.value })} placeholder="Nome do responsavel" className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1a1a22]" />
-                ) : (
-                  <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{selectedAppointment.parent_name || 'Nao informado'}</p>
-                )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-purple-200/50 dark:border-purple-800/20">
+                <div className="p-1.5 bg-purple-100 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400 rounded-md"><User size={14}/></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase">Mae</p>
+                  {isEditing ? (
+                    <input type="text" value={editForm.mother_name} onChange={e => setEditForm({ ...editForm, mother_name: e.target.value })} placeholder="Nome da mae" className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-purple-400 focus:ring-1 focus:ring-purple-400/20 outline-none bg-white dark:bg-[#1a1a22]" />
+                  ) : (
+                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{selectedAppointment.mother_name || 'Nao informado'}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-blue-200/50 dark:border-blue-800/20">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 rounded-md"><User size={14}/></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase">Pai</p>
+                  {isEditing ? (
+                    <input type="text" value={editForm.father_name} onChange={e => setEditForm({ ...editForm, father_name: e.target.value })} placeholder="Nome do pai" className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 outline-none bg-white dark:bg-[#1a1a22]" />
+                  ) : (
+                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{selectedAppointment.father_name || 'Nao informado'}</p>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#252530]">
