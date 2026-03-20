@@ -13,7 +13,7 @@ import {
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCheckoutNotifications } from '@/contexts/CheckoutNotificationContext';
-import { useUnreadChatsCount } from '@/hooks/useUnreadChatsCount';
+import { useUnreadChatsCount, useUnreadChatsCountPediatria } from '@/hooks/useUnreadChatsCount';
 import { getModuleFromPathname, type ModuleConfig, type ModuleTheme } from '@/config/modules';
 
 export default function Navigation() {
@@ -29,6 +29,7 @@ export default function Navigation() {
     modules.every(m => m.role === 'doctor') &&
     profile?.doctor_id != null;
   const { unreadCount } = useUnreadChatsCount();
+  const { unreadCount: unreadCountPediatria } = useUnreadChatsCountPediatria();
   const { pendingCount: checkoutPendingCount } = useCheckoutNotifications();
 
   const currentModule: ModuleConfig = useMemo(
@@ -425,7 +426,7 @@ export default function Navigation() {
                 path="/"
                 active={isActive('/')}
                 color="pink"
-                badge={unreadCount > 0 ? unreadCount : undefined}
+                badge={unreadCountPediatria > 0 ? unreadCountPediatria : undefined}
                 moduleTheme={mt}
               />
               <NavItem icon={Trello} label="Recepção & CRM" path="/crm" active={isActive('/crm')} color="purple" badge={checkoutPendingCount > 0 ? checkoutPendingCount : undefined} moduleTheme={mt} />

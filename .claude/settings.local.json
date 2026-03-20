@@ -317,7 +317,8 @@
       "Bash(find /c/Users/brend/Documents/pediatria-v2/src -type f -name *loja* -o -name *store* -o -name *product* -o -name *produto*)",
       "Bash(find /c/Users/brend/Documents/pediatria-v2/src -type f \\\\\\(-name *Navigation* -o -name *MainLayout* \\\\\\))",
       "Bash(grep -r \"SET.*waiting_payment\\\\|UPDATE.*waiting_payment\" /c/Users/brend/Documents/pediatria-v2/src --include=*.ts --include=*.tsx)",
-      "Bash(find /c/Users/brend/Documents/pediatria-v2 -path *node_modules -prune -o -type f \\\\\\(-name *loja* -o -name *store* -o -name *product* \\\\\\) -print)"
+      "Bash(find /c/Users/brend/Documents/pediatria-v2 -path *node_modules -prune -o -type f \\\\\\(-name *loja* -o -name *store* -o -name *product* \\\\\\) -print)",
+      "Bash(find /c/Users/brend/Documents/pediatria-v2 -type f -name *.sql)"
     ]
   },
   "hooks": {

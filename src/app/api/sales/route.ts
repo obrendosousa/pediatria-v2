@@ -131,10 +131,12 @@ export async function POST(request: Request) {
     // 3. Processar Itens e Baixar Estoque (Lógica FEFO)
     const stockMovements: Array<{
       product_id: number;
-      movement_type: 'sale_out';
+      type: string;
+      quantity: number;
+      movement_type: string;
       quantity_change: number;
       reason: string;
-      reference_type: 'sale';
+      reference_type: string;
       reference_id: string;
       metadata: Record<string, unknown>;
       created_by: string;
@@ -174,6 +176,8 @@ export async function POST(request: Request) {
 
           stockMovements.push({
             product_id: item.id,
+            type: 'sale_out',
+            quantity: take,
             movement_type: 'sale_out',
             quantity_change: -take,
             reason: 'Baixa de estoque por venda finalizada',

@@ -4,13 +4,13 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
-import { 
-  LayoutGrid, ShoppingCart, Package, 
-  TrendingUp, AlertTriangle, Calendar, 
-  Search, Plus, Filter, Smartphone, 
-  Trash2, CreditCard, Banknote, QrCode,
-  ArrowUpRight, ArrowDownRight, MoreHorizontal,
-  History, Barcode, Scan, RefreshCw, X, CheckCircle2, Wallet, ShieldCheck, FileText
+import {
+  LayoutGrid, ShoppingCart, Package,
+  TrendingUp, AlertTriangle, Calendar,
+  Search, Plus, Smartphone,
+  Trash2, Banknote, QrCode,
+  MoreHorizontal,
+  History, Barcode, RefreshCw, X, CheckCircle2, Wallet, ShieldCheck
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { format } from 'date-fns';
@@ -435,6 +435,11 @@ export default function StorePage() {
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existing = prev.find(p => p.id === product.id);
+      const currentQty = existing ? existing.quantity : 0;
+      if (currentQty + 1 > (product.stock || 0)) {
+        toast.error(`Estoque insuficiente para "${product.name}". Disponível: ${product.stock || 0}`);
+        return prev;
+      }
       if (existing) {
         return prev.map(p => p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p);
       }

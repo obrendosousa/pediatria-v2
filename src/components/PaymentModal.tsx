@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { Task, Sale, SaleItem } from '@/types';
-// ADICIONADO: AlertCircle na importação abaixo
 import { X, DollarSign, CreditCard, Wallet, Banknote, ShoppingBag, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,34 +29,32 @@ export default function PaymentModal({ isOpen, onClose, task, onSuccess }: Payme
     if (isOpen && task) {
       fetchSaleDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, task]);
 
   async function fetchSaleDetails() {
     setLoading(true);
-    // Busca a última venda PENDENTE deste cliente
     const { data: saleData } = await supabase
-      .from('sales' as any)
+      .from('sales')
       .select('*')
       .eq('chat_id', task?.chat_id)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (saleData) {
-      setSale(saleData);
-      // Busca os itens dessa venda com Join em produtos para pegar o nome
+      setSale(saleData as Sale);
       const { data: itemsData } = await supabase
-        .from('sale_items' as any)
+        .from('sale_items')
         .select('*, products(name)')
         .eq('sale_id', saleData.id);
-      
-      if (itemsData) setItems(itemsData);
+
+      if (itemsData) setItems(itemsData as SaleItem[]);
     }
     setLoading(false);
   }
 
-  // Calcula o total na hora
   const total = items.reduce((acc, item) => acc + (item.unit_price * item.quantity), 0);
 
   async function handleConfirmPayment() {
@@ -68,7 +65,7 @@ export default function PaymentModal({ isOpen, onClose, task, onSuccess }: Payme
         // 1. Atualiza a Venda para PAGO
         const paymentSplits = normalizePaymentSplits(total, paymentMethod);
         const salePaymentMethod = resolveSalePaymentMethodFromSplits(paymentSplits);
-        await supabase.from('sales' as any).update({
+        await supabase.from('sales').update({
             status: 'completed',
             total: total,
             payment_method: salePaymentMethod,
@@ -83,22 +80,47 @@ export default function PaymentModal({ isOpen, onClose, task, onSuccess }: Payme
           payments: paymentSplits
         });
 
-        // 2. Baixa o Estoque (Opcional)
+        // 2. Baixa o Estoque via FEFO (consumindo de product_batches)
         for (const item of items) {
-             const { data: prod } = await supabase.from('products').select('stock').eq('id', item.product_id).single();
-             if (prod) {
-                 await supabase.from('products').update({ stock: prod.stock - item.quantity }).eq('id', item.product_id);
-             }
+            let qtyNeeded = item.quantity;
+            const { data: batches } = await supabase
+              .from('product_batches')
+              .select('id, quantity')
+              .eq('product_id', item.product_id)
+              .gt('quantity', 0)
+              .order('expiration_date', { ascending: true });
+
+            if (batches) {
+              for (const batch of batches) {
+                if (qtyNeeded <= 0) break;
+                const take = Math.min(batch.quantity, qtyNeeded);
+                await supabase
+                  .from('product_batches')
+                  .update({ quantity: batch.quantity - take })
+                  .eq('id', batch.id);
+                qtyNeeded -= take;
+              }
+            }
+
+            // Sincroniza products.stock com soma dos batches
+            const { data: remaining } = await supabase
+              .from('product_batches')
+              .select('quantity')
+              .eq('product_id', item.product_id)
+              .gt('quantity', 0);
+
+            const syncedStock = (remaining || []).reduce((acc, b) => acc + Number(b.quantity || 0), 0);
+            await supabase.from('products').update({ stock: syncedStock }).eq('id', item.product_id);
         }
 
         // 3. Marca a Tarefa como FEITA
-        await supabase.from('tasks' as any).update({ status: 'done' }).eq('id', task.id);
+        await supabase.from('tasks').update({ status: 'done' }).eq('id', (task as unknown as Record<string, unknown>).id);
 
         onSuccess();
         onClose();
     } catch (error) {
         console.error(error);
-        toast.toast.error('Erro ao processar pagamento.');
+        toast.error('Erro ao processar pagamento.');
     } finally {
         setLoading(false);
     }
@@ -109,7 +131,7 @@ export default function PaymentModal({ isOpen, onClose, task, onSuccess }: Payme
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[60] flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up">
-        
+
         {/* Header */}
         <div className="bg-slate-50 p-6 border-b border-slate-100 flex justify-between items-center">
             <div>
@@ -138,7 +160,7 @@ export default function PaymentModal({ isOpen, onClose, task, onSuccess }: Payme
                         {items.map(item => (
                             <div key={item.id} className="flex justify-between items-center text-sm">
                                 <span className="text-slate-700 font-medium">
-                                    {item.quantity}x {(item.products as any)?.name || 'Produto'}
+                                    {item.quantity}x {(item.products as unknown as Record<string, string>)?.name || 'Produto'}
                                 </span>
                                 <span className="text-slate-500">R$ {(item.unit_price * item.quantity).toFixed(2)}</span>
                             </div>
@@ -168,7 +190,7 @@ export default function PaymentModal({ isOpen, onClose, task, onSuccess }: Payme
                         </button>
                     </div>
 
-                    <button 
+                    <button
                         onClick={handleConfirmPayment}
                         disabled={loading}
                         className="w-full mt-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-200 transition-all active:scale-95 flex items-center justify-center gap-2"
