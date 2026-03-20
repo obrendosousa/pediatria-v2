@@ -238,19 +238,36 @@ export async function ensureChatExists(phone: string, pushName: string, fromMe: 
   // Para mensagem enviada (fromMe), usa telefone como fallback seguro.
   const newContactName = (!fromMe && pushName && pushName !== phone) ? pushName : phone;
 
-  const { data: newChat, error } = await supabase
-    .from("chats")
-    .insert({
-      phone,
-      contact_name: newContactName,
-      status: "ACTIVE",
-      created_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
+  try {
+    const { data: newChat, error } = await supabase
+      .from("chats")
+      .insert({
+        phone,
+        contact_name: newContactName,
+        status: "ACTIVE",
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-  if (error) throw new Error(`Erro ao criar chat no Supabase: ${error.message}`);
-  return newChat;
+    if (error) throw error;
+    return newChat;
+  } catch (err: unknown) {
+    // Race condition: outro webhook concorrente criou o chat entre o check e o insert.
+    // Se duplicate key, re-buscar o existente.
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("duplicate") || msg.includes("unique") || msg.includes("23505")) {
+      const { data: existing } = await supabase
+        .from("chats")
+        .select("*")
+        .eq("phone", phone)
+        .order("id", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (existing) return existing;
+    }
+    throw new Error(`Erro ao criar chat no Supabase: ${msg}`);
+  }
 }
 
 export async function getContactNameByPhone(phone: string): Promise<string | null> {

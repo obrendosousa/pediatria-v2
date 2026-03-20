@@ -64,6 +64,7 @@ export interface ClaraState {
   loaded_context: LoadedContext | null;
   spot_check_result: SpotCheckResult | null;
   pending_question: string | null;
+  tool_call_count: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ export interface ClaraState {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MAX_SUPERVISOR_ITERATIONS = 3;
+const MAX_TOOL_CALL_ITERATIONS = 20;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FERRAMENTAS DO SIMPLE_AGENT
@@ -265,6 +267,10 @@ const claraWorkflow = new StateGraph<ClaraState>({
     pending_question: {
       reducer: (_x: string | null, y: string | null) => y ?? _x ?? null,
       default: () => null as string | null,
+    },
+    tool_call_count: {
+      reducer: (_x: number, y: number) => (typeof y === "number" ? y : _x ?? 0),
+      default: () => 0,
     },
   },
 });
@@ -497,9 +503,12 @@ claraWorkflow.addNode("spot_check_node", async (state: ClaraState) => {
   const lastMessage = state.messages[state.messages.length - 1];
   const content = typeof lastMessage?.content === "string" ? lastMessage.content : "";
 
+  // Incrementar contador de tool calls
+  const newCount = (state.tool_call_count ?? 0) + 1;
+
   // Só executa spot-check se o último tool output contém __SPOT_CHECK_DATA__
   if (!content.includes("__SPOT_CHECK_DATA__")) {
-    return {};
+    return { tool_call_count: newCount };
   }
 
   try {
@@ -509,11 +518,11 @@ claraWorkflow.addNode("spot_check_node", async (state: ClaraState) => {
     const supabase = getSupabaseAdminClient();
     const result = await spotCheckCitations(citations, supabase);
 
-    return { spot_check_result: result };
+    return { spot_check_result: result, tool_call_count: newCount };
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : String(e);
     console.warn("[spot_check_node] Erro no spot-check:", message);
-    return {};
+    return { tool_call_count: newCount };
   }
 });
 
@@ -884,7 +893,13 @@ claraWorkflow.addConditionalEdges("classify_node", (state: ClaraState) => {
 });
 
 // @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
-claraWorkflow.addConditionalEdges("simple_agent", toolsCondition);
+claraWorkflow.addConditionalEdges("simple_agent", (state: ClaraState) => {
+  // Limite de iterações do loop simple_agent ↔ tools
+  if ((state.tool_call_count ?? 0) >= MAX_TOOL_CALL_ITERATIONS) {
+    return END;
+  }
+  return toolsCondition(state);
+});
 
 // @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addEdge("tools", "spot_check_node");

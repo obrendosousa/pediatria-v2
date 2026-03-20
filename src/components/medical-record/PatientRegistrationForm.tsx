@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray, Controller, Control, FieldPath, UseFormRegister } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { 
-  User, Shield, Save, Loader2, Info, Plus, 
-  MapPin, Phone, CreditCard, Sparkles, AlertCircle,
+import {
+  User, Shield, Save, Loader2, Info, Plus,
+  MapPin, Phone, Sparkles,
   Camera, Trash2, Users, X
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -14,7 +14,7 @@ import { Appointment } from '@/types/medical';
 import { patientBaseSchema, patientRefinements } from '@/schemas/patientSchema';
 import { z } from 'zod';
 import { formatCPF, cleanCPF, formatPhone, cleanPhone, formatCEP, cleanCEP, cleanRG } from '@/utils/formatUtils';
-import { linkPatientByPhone, addPhoneToPatient } from '@/utils/patientRelations';
+import { addPhoneToPatient } from '@/utils/patientRelations';
 import { useToast } from '@/contexts/ToastContext';
 
 // --- SCHEMA EXTENDIDO ---
@@ -31,6 +31,15 @@ const extendedSchema = patientBaseSchema
   .merge(insuranceSchema)
   .superRefine(patientRefinements);
 
+// z.input = tipo de entrada do formulário (campos com .default() são opcionais)
+// z.output = tipo de saída após validação (campos com .default() são obrigatórios)
+type FormInput = z.input<typeof extendedSchema>;
+type FormOutput = z.output<typeof extendedSchema>;
+
+// Tipos derivados do useForm para garantir compatibilidade exata
+type FormRegister = UseFormRegister<FormInput>;
+type FormControl = Control<FormInput, unknown, FormOutput>;
+
 interface PatientRegistrationFormProps {
   appointment: Appointment;
   onCancel: () => void;
@@ -39,7 +48,7 @@ interface PatientRegistrationFormProps {
 }
 
 // Componentes auxiliares
-function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
+function SectionHeader({ icon: Icon, title }: { icon: React.ComponentType<{ className?: string }>; title: string }) {
   return (
     <div className="flex items-center gap-2 mb-4 px-1">
       <Icon className="w-5 h-5 text-rose-500" />
@@ -48,7 +57,24 @@ function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
   );
 }
 
-function ModernInput({ label, register, name, type = 'text', placeholder, error, icon, className = '', autoFocus = false, format, control }: any) {
+interface ModernInputProps {
+  label?: string;
+  register: FormRegister;
+  name: string;
+  type?: string;
+  placeholder?: string;
+  error?: { message?: string };
+  icon?: React.ReactNode;
+  className?: string;
+  autoFocus?: boolean;
+  format?: (v: string) => string;
+  control?: FormControl;
+  // Ignored legacy props
+  setValue?: unknown;
+  watch?: unknown;
+}
+
+function ModernInput({ label, register, name, type = 'text', placeholder, error, icon, className = '', autoFocus = false, format, control }: ModernInputProps) {
   // Se há format, usar Controller para gerenciar o valor
   if (format && control) {
     return (
@@ -59,7 +85,7 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
         <div className="relative">
           {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2">{icon}</div>}
           <Controller
-            name={name}
+            name={name as FieldPath<FormInput>}
             control={control}
             render={({ field }) => {
               const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,11 +93,11 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
                 const formatted = format(inputValue);
                 field.onChange(formatted);
               };
-              
+
               return (
                 <input
                   name={field.name}
-                  value={field.value || ''}
+                  value={(field.value as string) || ''}
                   onBlur={field.onBlur}
                   ref={field.ref}
                   type={type}
@@ -79,9 +105,9 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
                   autoFocus={autoFocus}
                   onChange={handleChange}
                   className={`
-                    w-full ${icon ? 'pl-9' : 'pl-3'} pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg 
-                    bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 
-                    focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 
+                    w-full ${icon ? 'pl-9' : 'pl-3'} pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg
+                    bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200
+                    focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500
                     transition-all ${className}
                     ${error ? 'border-red-300 dark:border-red-700' : ''}
                   `}
@@ -94,10 +120,10 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
       </div>
     );
   }
-  
+
   // Caso contrário, usar register normalmente
-  const registerResult = register(name);
-  
+  const registerResult = register(name as FieldPath<FormInput>);
+
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wider ml-1 block">
@@ -111,9 +137,9 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
           placeholder={placeholder}
           autoFocus={autoFocus}
           className={`
-            w-full ${icon ? 'pl-9' : 'pl-3'} pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg 
-            bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 
-            focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 
+            w-full ${icon ? 'pl-9' : 'pl-3'} pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg
+            bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200
+            focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500
             transition-all ${className}
             ${error ? 'border-red-300 dark:border-red-700' : ''}
           `}
@@ -124,18 +150,26 @@ function ModernInput({ label, register, name, type = 'text', placeholder, error,
   );
 }
 
-function ModernSelect({ label, register, name, children, error }: any) {
+interface ModernSelectProps {
+  label?: string;
+  register: FormRegister;
+  name: string;
+  children: React.ReactNode;
+  error?: { message?: string };
+}
+
+function ModernSelect({ label, register, name, children, error }: ModernSelectProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wider ml-1 block">
         {label}
       </label>
       <select
-        {...register(name)}
+        {...register(name as FieldPath<FormInput>)}
         className={`
-          w-full pl-3 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg 
-          bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 
-          focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 
+          w-full pl-3 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg
+          bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200
+          focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500
           transition-all
           ${error ? 'border-red-300 dark:border-red-700' : ''}
         `}
@@ -147,26 +181,27 @@ function ModernSelect({ label, register, name, children, error }: any) {
   );
 }
 
-function Switch({ register, name, colorClass = 'bg-blue-500' }: any) {
-  const [checked, setChecked] = useState(false);
+function Switch({ control, name }: { control: FormControl; name: FieldPath<FormInput> }) {
   return (
-    <label className="relative inline-flex items-center cursor-pointer">
-      <input
-        {...register(name)}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => setChecked(e.target.checked)}
-        className="sr-only peer"
-      />
-      <div className={`
-        w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-300 
-        dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-[#2d2d36] 
-        peer-checked:after:translate-x-full peer-checked:after:border-white 
-        after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
-        after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 
-        after:transition-all dark:border-gray-600 peer-checked:${colorClass}
-      `}></div>
-    </label>
+    <Controller control={control} name={name}
+      render={({ field }) => (
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!!field.value}
+            onChange={(e) => field.onChange(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="
+            w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-300
+            dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-[#2d2d36]
+            peer-checked:bg-blue-500 peer-checked:after:translate-x-full peer-checked:after:border-white
+            after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+            after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
+            after:transition-all dark:border-gray-600
+          "></div>
+        </label>
+      )} />
   );
 }
 
@@ -177,13 +212,13 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { 
-    register, 
-    handleSubmit, 
-    watch, 
-    setValue, 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
     control,
-    formState: { errors } 
+    formState: { errors }
   } = useForm({
     resolver: zodResolver(extendedSchema),
     defaultValues: {
@@ -205,13 +240,12 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "family_members" as any
+    name: "family_members"
   });
 
   const watchZip = watch('address_zip');
   const watchUseSocialName = watch('use_social_name');
   const watchUseGenderIdentity = watch('use_gender_identity');
-  const watchIsDeceased = watch('is_deceased');
   const watchBiologicalSex = watch('biological_sex');
 
   // Busca CEP
@@ -245,7 +279,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
     }
   };
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: FormOutput) => {
     setIsSubmitting(true);
     try {
       let photoUrl = null;
@@ -268,7 +302,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
       }
 
       // Limpar formatação dos campos antes de salvar
-      const cleanFamilyMembers = (data.family_members || []).map((member: any) => ({
+      const cleanFamilyMembers = (data.family_members || []).map((member: { name?: string; relationship?: string; phone?: string }) => ({
         ...member,
         phone: member.phone ? cleanPhone(member.phone) : null
       }));
@@ -348,19 +382,19 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
           .from('chats')
           .update({ patient_id: newPatient.id })
           .eq('id', chatId);
-        
+
         // Adicionar número do chat se diferente
         const { data: chatData } = await supabase
           .from('chats')
           .select('phone')
           .eq('id', chatId)
           .single();
-        
+
         if (chatData?.phone) {
           const chatPhoneClean = cleanPhone(chatData.phone);
           const patientPhoneClean = cleanPhone(data.phone);
           const appointmentPhoneClean = cleanPhone(appointment.patient_phone || '');
-          
+
           if (chatPhoneClean !== patientPhoneClean && chatPhoneClean !== appointmentPhoneClean) {
             await addPhoneToPatient(
               newPatient.id,
@@ -385,9 +419,10 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
       }
 
       onSuccess(newPatient.id);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao salvar:', err);
-      toast.toast.error('Erro ao salvar: ' + err.message);
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+      toast.error('Erro ao salvar: ' + msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -408,8 +443,8 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
             Complete os dados para iniciar o prontuário
           </p>
         </div>
-        <button 
-          onClick={onCancel} 
+        <button
+          onClick={onCancel}
           className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
         >
           <X className="w-4 h-4 text-slate-400" />
@@ -469,7 +504,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
             {activeTab === 'personal' && (
               <div className="space-y-6">
                 <SectionHeader icon={User} title="Identificação Básica" />
-                
+
                 <div className="grid grid-cols-12 gap-5">
                   <div className="col-span-12 flex items-start gap-6 mb-4">
                     <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
@@ -479,6 +514,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                         transition-all duration-300 group-hover:scale-105
                       `}>
                         {imagePreview ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                         ) : (
                           <User className="w-8 h-8 text-slate-300 dark:text-slate-600" />
@@ -487,10 +523,10 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                           <Camera className="w-5 h-5 text-white" />
                         </div>
                       </div>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
                         accept="image/*"
                         onChange={handleImageChange}
                       />
@@ -499,22 +535,22 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
 
                     <div className="flex-1 grid grid-cols-12 gap-4">
                       <div className="col-span-12">
-                        <ModernInput 
-                          label="Nome Completo *" 
-                          register={register} 
-                          name="name" 
+                        <ModernInput
+                          label="Nome Completo *"
+                          register={register}
+                          name="name"
                           placeholder="Digite o nome completo"
                           error={errors.name}
                           autoFocus
                         />
                       </div>
                       <div className="col-span-12 md:col-span-5">
-                        <ModernInput 
-                          label="Data de Nascimento *" 
-                          type="date" 
-                          register={register} 
-                          name="birth_date" 
-                          error={errors.birth_date} 
+                        <ModernInput
+                          label="Data de Nascimento *"
+                          type="date"
+                          register={register}
+                          name="birth_date"
+                          error={errors.birth_date}
                         />
                       </div>
                       <div className="col-span-12 md:col-span-7">
@@ -524,8 +560,8 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                             type="button"
                             onClick={() => setValue('biological_sex', 'M')}
                             className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                              watchBiologicalSex === 'M' 
-                                ? 'bg-white text-blue-600 shadow-sm dark:bg-[#1c1c21] dark:text-blue-400' 
+                              watchBiologicalSex === 'M'
+                                ? 'bg-white text-blue-600 shadow-sm dark:bg-[#1c1c21] dark:text-blue-400'
                                 : 'text-slate-500 dark:text-slate-400'
                             }`}
                           >
@@ -535,8 +571,8 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                             type="button"
                             onClick={() => setValue('biological_sex', 'F')}
                             className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                              watchBiologicalSex === 'F' 
-                                ? 'bg-white text-pink-600 shadow-sm dark:bg-[#1c1c21] dark:text-pink-400' 
+                              watchBiologicalSex === 'F'
+                                ? 'bg-white text-pink-600 shadow-sm dark:bg-[#1c1c21] dark:text-pink-400'
                                 : 'text-slate-500 dark:text-slate-400'
                             }`}
                           >
@@ -558,22 +594,22 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                         <span className="text-xs text-slate-500">O paciente prefere ser chamado por outro nome?</span>
                       </div>
                     </div>
-                    <Switch register={register} name="use_social_name" />
+                    <Switch control={control} name="use_social_name" />
                   </div>
 
                   {watchUseSocialName && (
                     <div className="col-span-12">
-                      <ModernInput 
-                        label="Nome Social" 
-                        register={register} 
-                        name="social_name" 
+                      <ModernInput
+                        label="Nome Social"
+                        register={register}
+                        name="social_name"
                         error={errors.social_name}
                       />
                     </div>
                   )}
 
                   <div className="col-span-12 flex items-center gap-3">
-                    <Switch register={register} name="use_gender_identity" />
+                    <Switch control={control} name="use_gender_identity" />
                     <span className="text-sm text-slate-600 dark:text-[#d4d4d8]">Incluir Identidade de Gênero?</span>
                   </div>
 
@@ -590,11 +626,11 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                   )}
 
                   <div className="col-span-4">
-                    <ModernInput 
-                      label="CPF" 
-                      register={register} 
-                      name="cpf" 
-                      placeholder="000.000.000-00" 
+                    <ModernInput
+                      label="CPF"
+                      register={register}
+                      name="cpf"
+                      placeholder="000.000.000-00"
                       error={errors.cpf}
                       format={formatCPF}
                       control={control}
@@ -616,11 +652,11 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                 <SectionHeader icon={Phone} title="Canais de Contato" />
                 <div className="grid grid-cols-12 gap-5">
                   <div className="col-span-5">
-                    <ModernInput 
-                      label="Celular (WhatsApp) *" 
-                      register={register} 
-                      name="phone" 
-                      placeholder="(99) 99999-9999" 
+                    <ModernInput
+                      label="Celular (WhatsApp) *"
+                      register={register}
+                      name="phone"
+                      placeholder="(99) 99999-9999"
                       error={errors.phone}
                       format={formatPhone}
                       control={control}
@@ -630,7 +666,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                     <ModernInput label="E-mail" type="email" register={register} name="email" error={errors.email} />
                   </div>
                   <div className="col-span-12 flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
-                    <Switch register={register} name="receive_sms_alerts" />
+                    <Switch control={control} name="receive_sms_alerts" />
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">Notificações Automáticas</span>
                       <span className="text-xs text-blue-600/70 dark:text-blue-400/70">Receber lembretes via SMS/WhatsApp</span>
@@ -641,10 +677,10 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                 <SectionHeader icon={MapPin} title="Localização" />
                 <div className="grid grid-cols-12 gap-4">
                   <div className="col-span-4">
-                    <ModernInput 
-                      label="CEP" 
-                      register={register} 
-                      name="address_zip" 
+                    <ModernInput
+                      label="CEP"
+                      register={register}
+                      name="address_zip"
                       placeholder="00000-000"
                       format={formatCEP}
                       control={control}
@@ -715,8 +751,8 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                       <Users className="w-4 h-4 text-blue-500" />
                       <h3 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase">Núcleo Familiar</h3>
                     </div>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => append({ name: '', relationship: '', phone: '' })}
                       className="text-xs flex items-center gap-1 font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
                     >
@@ -750,19 +786,18 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                           </ModernSelect>
                         </div>
                         <div className="col-span-3">
-                          <ModernInput 
-                            label="Telefone" 
-                            register={register} 
-                            name={`family_members.${index}.phone`} 
+                          <ModernInput
+                            label="Telefone"
+                            register={register}
+                            name={`family_members.${index}.phone`}
                             placeholder="(00) 0000-0000"
                             format={formatPhone}
-                            setValue={setValue}
-                            watch={watch}
+                            control={control}
                           />
                         </div>
                         <div className="col-span-1 pt-6 flex justify-center">
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => remove(index)}
                             className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           >
@@ -821,14 +856,14 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                 <span className="text-rose-500 font-bold">*</span> Campos obrigatórios
               </div>
               <div className="flex gap-3">
-                <button 
+                <button
                   type="button"
-                  onClick={onCancel} 
+                  onClick={onCancel}
                   className="px-6 py-2.5 text-slate-600 dark:text-[#d4d4d8] font-semibold text-sm hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"

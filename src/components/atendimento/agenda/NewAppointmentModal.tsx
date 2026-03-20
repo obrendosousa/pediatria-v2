@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
 import { createClient } from '@/lib/supabase/client';
@@ -8,7 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import {
   X, Search, User, Calendar, Clock, Stethoscope, FileText, Video,
   Save, Loader2, ChevronDown, Check, ClipboardList, CalendarClock,
-  Phone, History, AlertTriangle
+  Phone, History, AlertTriangle, HelpCircle
 } from 'lucide-react';
 import { isValidISODate, isEndTimeAfterStartTime, checkTimeConflict, checkBlockConflict } from '@/utils/scheduling/validation';
 
@@ -107,10 +107,19 @@ function maskDate(value: string): string {
   return out;
 }
 
+// Textos de ajuda detalhados para cada checkbox
+const CHECKBOX_HELP: Record<string, string> = {
+  is_squeeze: 'Permite agendar mesmo que ja exista outro agendamento ou bloqueio no mesmo horario. O sistema mostra um aviso, mas nao impede a criacao. Util para encaixes de urgencia ou quando o profissional aceita atender em paralelo.',
+  is_teleconsultation: 'Marca o agendamento como atendimento remoto (teleconsulta). O paciente sera atendido por videochamada em vez de presencialmente. Essa informacao aparece no calendario e nas notificacoes.',
+  auto_confirm: 'Ao criar o agendamento, o status ja sera "Confirmado" em vez de "Agendado". Use quando o paciente ja confirmou presenca por telefone ou mensagem, evitando a etapa de confirmacao posterior.',
+  generate_budget: 'Gera automaticamente um orcamento vinculado ao agendamento com base nos procedimentos selecionados. O orcamento entra como "Pendente" (previsao financeira) — o pagamento so e registrado durante ou apos o atendimento.',
+};
+
 // ── Componente principal ───────────────────────────────────
 export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initialDate, initialTime }: Props) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [helpOpen, setHelpOpen] = useState<string | null>(null);
 
   // Listas auxiliares
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
@@ -128,12 +137,10 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
   // Profissional selecionado (UUID para buscar procedimentos)
   const [selectedProfessionalUuid, setSelectedProfessionalUuid] = useState<string | null>(null);
 
-  // Busca de procedimentos
-  const [procSearch, setProcSearch] = useState('');
-  const [procResults, setProcResults] = useState<ProcedureOption[]>([]);
+  // Procedimentos do profissional (carrega todos ao selecionar)
+  const [profProcedures, setProfProcedures] = useState<ProcedureOption[]>([]);
+  const [procFilter, setProcFilter] = useState('');
   const [procLoading, setProcLoading] = useState(false);
-  const [procDropdownOpen, setProcDropdownOpen] = useState(false);
-  const procRef = useRef<HTMLDivElement>(null);
 
   const { control, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormData>({
     defaultValues: {
@@ -209,8 +216,10 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
     });
     setSelectedPatient(null);
     setPatientSearch('');
-    setProcSearch('');
+    setProcFilter('');
+    setProfProcedures([]);
     setSelectedProfessionalUuid(null);
+    setHelpOpen(null);
   }, [isOpen, initialDate, initialTime, reset]);
 
   // ── Busca de pacientes (debounce) ──────────────────────
@@ -235,33 +244,58 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
     return () => clearTimeout(t);
   }, [patientSearch]);
 
-  // ── Busca de procedimentos do profissional selecionado (debounce) ──
+  // ── Carregar TODOS os procedimentos do profissional selecionado ──
   useEffect(() => {
-    const trimmed = procSearch.trim();
-    if (!trimmed || trimmed.length < 2 || !selectedProfessionalUuid) {
-      setProcResults([]);
+    if (!selectedProfessionalUuid) {
+      setProfProcedures([]);
       return;
     }
     setProcLoading(true);
-    const t = setTimeout(async () => {
+    (async () => {
       try {
-        const res = await fetch(`/api/atendimento/procedures/search?q=${encodeURIComponent(trimmed)}&limit=15&professional_id=${selectedProfessionalUuid}`);
-        const data = await res.json();
-        setProcResults(Array.isArray(data) ? data : []);
+        const { data, error } = await supabaseAtendimento
+          .from('professional_procedures')
+          .select('id, name, procedure_type, duration_minutes, value')
+          .eq('professional_id', selectedProfessionalUuid)
+          .eq('status', 'active')
+          .order('name');
+
+        if (error) {
+          console.error('Erro ao carregar procedimentos:', error);
+          setProfProcedures([]);
+        } else {
+          const mapped: ProcedureOption[] = (data || []).map((p: { id: string; name: string; procedure_type: string; duration_minutes: number; value: number }) => ({
+            id: p.id,
+            name: p.name,
+            procedure_type: p.procedure_type,
+            duration_minutes: p.duration_minutes,
+            fee_value: p.value,
+            total_value: p.value,
+          }));
+          setProfProcedures(mapped);
+        }
       } catch {
-        setProcResults([]);
+        setProfProcedures([]);
       }
       setProcLoading(false);
-      setProcDropdownOpen(true);
-    }, 300);
-    return () => clearTimeout(t);
-  }, [procSearch, selectedProfessionalUuid]);
+    })();
+  }, [selectedProfessionalUuid]);
+
+  // Lista filtrada de procedimentos disponíveis (exclui já selecionados)
+  const filteredProcedures = useMemo(() => {
+    const selectedIds = new Set((watchedProcedures || []).map(p => p.id));
+    let list = profProcedures.filter(p => !selectedIds.has(p.id));
+    const q = procFilter.trim().toLowerCase();
+    if (q) {
+      list = list.filter(p => p.name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [profProcedures, watchedProcedures, procFilter]);
 
   // ── Click outside para fechar dropdowns ────────────────
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (patientRef.current && !patientRef.current.contains(e.target as Node)) setPatientDropdownOpen(false);
-      if (procRef.current && !procRef.current.contains(e.target as Node)) setProcDropdownOpen(false);
     }
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -286,8 +320,6 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
     const current = watchedProcedures || [];
     if (current.some(p => p.id === proc.id)) return;
     setValue('procedures', [...current, proc]);
-    setProcSearch('');
-    setProcDropdownOpen(false);
   }, [watchedProcedures, setValue]);
 
   const removeProcedure = useCallback((id: string) => {
@@ -306,7 +338,6 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
   const applyProtocol = useCallback(async (protocolId: string) => {
     if (!protocolId) return;
     try {
-      // Buscar itens do protocolo com dados do procedimento
       const { data: items } = await supabaseAtendimento
         .from('clinical_protocol_items')
         .select('procedure_id')
@@ -337,22 +368,18 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
     if (!data.date || data.date.length !== 10) { toast.error('Data invalida.'); return; }
     if (!data.time_start) { toast.error('Informe o horario inicial.'); return; }
 
-    // Validação: data real (rejeita 32/13, etc)
     if (!isValidISODate(data.date)) { toast.error('Data invalida (dia/mes incorreto).'); return; }
 
-    // Validação: hora final > hora inicial
     if (data.time_end && !isEndTimeAfterStartTime(data.time_start, data.time_end)) {
       toast.error('Hora final deve ser posterior a hora inicial.'); return;
     }
 
-    // Validação: profissional sem vínculo com médico
     const selectedDoctor = doctors.find(d => d.id === data.doctor_id);
     if (selectedDoctor?.isProfessionalOnly) {
       toast.error('Este profissional nao possui cadastro de medico vinculado. Vincule primeiro em Cadastros > Profissionais.');
       return;
     }
 
-    // Validação de conflitos (apenas se não for encaixe)
     if (!data.is_squeeze) {
       const [conflictResult, blockResult] = await Promise.all([
         checkTimeConflict(supabaseAtendimento, data.doctor_id!, data.date, data.time_start, data.time_end || null),
@@ -370,13 +397,12 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
         return;
       }
     } else {
-      // Encaixe: verificar mas apenas avisar
       const [conflictResult, blockResult] = await Promise.all([
         checkTimeConflict(supabaseAtendimento, data.doctor_id!, data.date, data.time_start, data.time_end || null),
         checkBlockConflict(supabaseAtendimento, data.doctor_id!, data.date, data.time_start),
       ]);
       if (conflictResult.hasConflict || blockResult.isBlocked) {
-        toast.info('Encaixe: agendamento criado em horário com conflito/bloqueio.');
+        toast.info('Encaixe: agendamento criado em horario com conflito/bloqueio.');
       }
     }
 
@@ -403,7 +429,12 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
         notes: data.description.trim() || null,
       };
 
-      // Usar RPC transacional se precisar gerar orçamento
+      // Salvar valor total como previsão financeira (não é pagamento)
+      if (proceduresTotal > 0) {
+        insertData.total_amount = proceduresTotal;
+        insertData.amount_paid = 0;
+      }
+
       const shouldGenerateBudget = data.generate_budget && data.procedures.length > 0;
 
       if (shouldGenerateBudget) {
@@ -439,7 +470,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
       }
 
       toast.success(shouldGenerateBudget
-        ? 'Agendamento criado e orçamento gerado!'
+        ? 'Agendamento criado e orcamento gerado!'
         : 'Agendamento criado com sucesso!');
       onSuccess();
       onClose();
@@ -447,7 +478,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
       console.error('Erro ao criar agendamento:', err);
       const pgCode = (err as { code?: string })?.code;
       if (pgCode === '23505') {
-        toast.error('Este horário já está ocupado para este profissional. Escolha outro horário.');
+        toast.error('Este horario ja esta ocupado para este profissional. Escolha outro horario.');
       } else {
         toast.error('Erro ao salvar: ' + (err instanceof Error ? err.message : 'Tente novamente.'));
       }
@@ -552,7 +583,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                         const doc = val ? doctors.find(d => d.id === val) : null;
                         setSelectedProfessionalUuid(doc?.professionalUuid || null);
                         setValue('procedures', []);
-                        setProcSearch('');
+                        setProcFilter('');
                       }}
                       className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none"
                     >
@@ -660,7 +691,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
             {/* ── Protocolo Clínico (atalho) ── */}
             {protocols.length > 0 && (
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Protocolo Clínico</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Protocolo Clinico</label>
                 <div className="relative">
                   <ClipboardList className="w-4 h-4 text-gray-400 absolute left-3 top-3"/>
                   <select
@@ -680,10 +711,11 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
               </div>
             )}
 
-            {/* ── Procedimentos (multi-select com busca) ── */}
-            <div ref={procRef} className="relative">
+            {/* ── Procedimentos (lista do profissional) ── */}
+            <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Procedimentos *</label>
-              {/* Tabela dos procedimentos selecionados com valores */}
+
+              {/* Tabela dos procedimentos selecionados */}
               {watchedProcedures && watchedProcedures.length > 0 && (
                 <div className="mb-2 border border-slate-200 dark:border-[#252530] rounded-lg overflow-hidden">
                   <table className="w-full text-xs">
@@ -711,7 +743,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                     </tbody>
                     <tfoot>
                       <tr className="border-t-2 border-slate-200 dark:border-[#252530] bg-slate-50 dark:bg-[#1a1a22]">
-                        <td className="px-3 py-2 font-bold text-slate-700 dark:text-[#fafafa]">Total</td>
+                        <td className="px-3 py-2 font-bold text-slate-700 dark:text-[#fafafa]">Total (previsao)</td>
                         <td className="px-3 py-2 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
                           {proceduresTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </td>
@@ -721,36 +753,49 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                   </table>
                 </div>
               )}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
-                <input
-                  type="text"
-                  value={procSearch}
-                  onChange={e => setProcSearch(e.target.value)}
-                  onFocus={() => procSearch.trim().length >= 2 && selectedProfessionalUuid && setProcDropdownOpen(true)}
-                  disabled={!selectedProfessionalUuid}
-                  placeholder={selectedProfessionalUuid ? 'Buscar procedimento por nome...' : 'Selecione um profissional primeiro'}
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-              {procDropdownOpen && (
-                <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-[#111118] border border-slate-200 dark:border-[#252530] rounded-lg shadow-lg custom-scrollbar">
-                  {procLoading ? (
-                    <div className="p-4 text-center text-sm text-slate-500">Buscando...</div>
-                  ) : procResults.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-slate-500">Nenhum procedimento encontrado.</div>
-                  ) : (
-                    procResults.map(proc => {
-                      const isSelected = (watchedProcedures || []).some(p => p.id === proc.id);
-                      return (
+
+              {/* Lista de procedimentos disponíveis do profissional */}
+              {!selectedProfessionalUuid ? (
+                <div className="p-4 text-center text-sm text-slate-400 dark:text-[#71717a] border border-dashed border-slate-200 dark:border-[#252530] rounded-lg">
+                  Selecione um profissional para ver os procedimentos disponíveis
+                </div>
+              ) : procLoading ? (
+                <div className="p-4 flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-[#a1a1aa] border border-slate-200 dark:border-[#252530] rounded-lg">
+                  <Loader2 size={16} className="animate-spin"/> Carregando procedimentos...
+                </div>
+              ) : profProcedures.length === 0 ? (
+                <div className="p-4 text-center text-sm text-slate-400 dark:text-[#71717a] border border-dashed border-slate-200 dark:border-[#252530] rounded-lg">
+                  Nenhum procedimento cadastrado para este profissional
+                </div>
+              ) : (
+                <div className="border border-slate-200 dark:border-[#252530] rounded-lg overflow-hidden">
+                  {/* Filtro */}
+                  {profProcedures.length > 5 && (
+                    <div className="relative border-b border-slate-200 dark:border-[#252530]">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400"/>
+                      <input
+                        type="text"
+                        value={procFilter}
+                        onChange={e => setProcFilter(e.target.value)}
+                        placeholder="Filtrar procedimentos..."
+                        className="w-full pl-8 pr-3 py-2 text-sm bg-slate-50 dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none placeholder:text-slate-400"
+                      />
+                    </div>
+                  )}
+
+                  {/* Lista clicável */}
+                  <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                    {filteredProcedures.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-400 dark:text-[#71717a]">
+                        {procFilter ? 'Nenhum resultado para o filtro' : 'Todos os procedimentos ja foram adicionados'}
+                      </div>
+                    ) : (
+                      filteredProcedures.map(proc => (
                         <button
                           key={proc.id}
                           type="button"
                           onClick={() => addProcedure(proc)}
-                          disabled={isSelected}
-                          className={`w-full text-left px-4 py-2.5 border-b border-slate-100 dark:border-[#1e1e28] last:border-0 flex items-center gap-3 transition-colors ${
-                            isSelected ? 'bg-blue-50/50 dark:bg-blue-900/10 cursor-default' : 'hover:bg-slate-50 dark:hover:bg-white/5'
-                          }`}
+                          className="w-full text-left px-4 py-2.5 border-b border-slate-100 dark:border-[#1e1e28] last:border-0 flex items-center gap-3 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/10"
                         >
                           <div className="min-w-0 flex-1">
                             <p className="text-sm text-slate-800 dark:text-gray-200">{proc.name}</p>
@@ -759,11 +804,10 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                           <span className="text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
                             {(proc.total_value || proc.fee_value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
-                          {isSelected && <Check size={14} className="text-blue-500 shrink-0"/>}
                         </button>
-                      );
-                    })
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -793,12 +837,12 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
               />
             </div>
 
-            {/* ── Checkboxes ── */}
+            {/* ── Checkboxes com tooltip de ajuda ── */}
             <div className="grid grid-cols-2 gap-3">
               {[
                 { name: 'is_squeeze' as const, label: 'Encaixar horario', desc: 'Ignora conflito de horario', icon: AlertTriangle },
-                { name: 'is_teleconsultation' as const, label: 'Teleconsulta', desc: 'Consulta por video', icon: Video },
-                { name: 'auto_confirm' as const, label: 'Agendar como confirmado', desc: 'Status inicial = confirmado', icon: Check },
+                { name: 'is_teleconsultation' as const, label: 'Teleconsulta', desc: 'Agendamento remoto', icon: Video },
+                { name: 'auto_confirm' as const, label: 'Confirmar automaticamente', desc: 'Status ja confirmado ao criar', icon: Check },
                 { name: 'generate_budget' as const, label: 'Gerar orcamento', desc: 'Cria orcamento ao salvar', icon: ClipboardList }
               ].map(cb => (
                 <Controller
@@ -806,29 +850,65 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
                   name={cb.name}
                   control={control}
                   render={({ field }) => (
-                    <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                      field.value
-                        ? 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/30'
-                        : 'border-gray-200 dark:border-[#252530] hover:border-slate-300'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={e => field.onChange(e.target.checked)}
-                        className="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
-                      />
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <cb.icon size={13} className={field.value ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}/>
-                          <span className={`text-xs font-bold ${field.value ? 'text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-[#d4d4d8]'}`}>{cb.label}</span>
+                    <div className="relative">
+                      <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        field.value
+                          ? 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/30'
+                          : 'border-gray-200 dark:border-[#252530] hover:border-slate-300'
+                      }`}>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={e => field.onChange(e.target.checked)}
+                          className="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <cb.icon size={13} className={field.value ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}/>
+                            <span className={`text-xs font-bold ${field.value ? 'text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-[#d4d4d8]'}`}>{cb.label}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 dark:text-[#71717a] mt-0.5">{cb.desc}</p>
                         </div>
-                        <p className="text-[10px] text-slate-400 dark:text-[#71717a] mt-0.5">{cb.desc}</p>
-                      </div>
-                    </label>
+                        <button
+                          type="button"
+                          onClick={e => { e.preventDefault(); e.stopPropagation(); setHelpOpen(helpOpen === cb.name ? null : cb.name); }}
+                          className="shrink-0 p-0.5 rounded-full text-slate-300 hover:text-slate-500 dark:text-[#52525b] dark:hover:text-[#a1a1aa] transition-colors"
+                        >
+                          <HelpCircle size={14}/>
+                        </button>
+                      </label>
+
+                      {/* Popup de ajuda */}
+                      {helpOpen === cb.name && (
+                        <div className="absolute z-50 top-full mt-1 left-0 right-0 p-3 bg-white dark:bg-[#1a1a22] border border-slate-200 dark:border-[#3d3d48] rounded-lg shadow-xl">
+                          <div className="flex items-start gap-2">
+                            <HelpCircle size={14} className="text-blue-500 shrink-0 mt-0.5"/>
+                            <p className="text-xs text-slate-600 dark:text-[#d4d4d8] leading-relaxed">{CHECKBOX_HELP[cb.name]}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setHelpOpen(null)}
+                            className="absolute top-1.5 right-1.5 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-gray-200 transition-colors"
+                          >
+                            <X size={12}/>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 />
               ))}
             </div>
+
+            {/* ── Nota financeira ── */}
+            {proceduresTotal > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg">
+                <AlertTriangle size={14} className="text-amber-500 shrink-0"/>
+                <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                  O valor dos procedimentos ({proceduresTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) sera registrado como <strong>previsao financeira</strong>. O pagamento sera registrado durante ou apos o atendimento.
+                </p>
+              </div>
+            )}
 
             {/* ── Descricao ── */}
             <div>
@@ -878,8 +958,6 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-slate-400 dark:text-[#71717a] uppercase tracking-wider">Links Rapidos</p>
                 {[
-                  { label: 'Prontuario', icon: FileText, href: `/atendimento/prontuario/${selectedPatient.id}` },
-                  { label: 'Ver cadastro', icon: User, href: `/atendimento/pacientes/${selectedPatient.id}` },
                   { label: 'Historico de agendamentos', icon: History, href: `/atendimento/agenda/historico/${selectedPatient.id}` }
                 ].map(link => (
                   <a
@@ -906,7 +984,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
             {watchedSubtype === 'orcamento' && <span className="text-amber-600 dark:text-amber-400 font-semibold">Agendamento tipo orcamento</span>}
             {proceduresTotal > 0 && (
               <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                Total: {proceduresTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                Previsao: {proceduresTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </span>
             )}
           </div>

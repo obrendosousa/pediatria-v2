@@ -100,7 +100,7 @@ export async function analyzeChatInteraction(chatId: number) {
         const supabase = getSupabaseAdminClient();
 
         // 1. Fetch the last 15 messages for context
-        const { data: messages } = await (supabase as any)
+        const { data: messages } = await supabase
             .from("chat_messages")
             .select("sender, message_text, created_at, message_type")
             .eq("chat_id", chatId)
@@ -110,7 +110,8 @@ export async function analyzeChatInteraction(chatId: number) {
         if (!messages || messages.length < 2) return;
 
         // 2. Format transcript
-        const history = messages.reverse().map((m: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const history = messages.reverse().map((m: Record<string, any>) => {
             const senderStr = String(m.sender || "").toUpperCase();
             const label = senderStr === "AI_AGENT" ? "CLARA" : senderStr.includes("HUMAN") ? "CLÍNICA" : "PACIENTE";
             const txt = m.message_text || `[Mídia enviada: ${m.message_type}]`;
@@ -181,6 +182,7 @@ Siga rigorosamente o schema de JSON de saída.`;
 
         if (action.type === "suggest_reply" && action.draft_text) {
             console.log(`[Analyzer] Suggesting reply for chat ${chatId}`);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (supabase as any)
                 .from("chats")
                 .update({
@@ -192,6 +194,7 @@ Siga rigorosamente o schema de JSON de saída.`;
         else if (action.type === "suggest_schedule" && action.draft_text && action.schedule_date) {
             const safeDate = snapToBusinessHours(action.schedule_date);
             console.log(`[Analyzer] Suggesting schedule for chat ${chatId} at ${safeDate}`);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (supabase as any)
                 .from("chats")
                 .update({
@@ -203,14 +206,7 @@ Siga rigorosamente o schema de JSON de saída.`;
         }
         else {
             console.log(`[Analyzer] Ignoring action for chat ${chatId}. Reason: ${action.reason}`);
-            // Optional: Clear existing draft if ignored naturally
-            await (supabase as any)
-                .from("chats")
-                .update({
-                    ai_draft_reply: null,
-                    ai_draft_reason: null
-                })
-                .eq("id", chatId);
+            // Não apagar drafts do Copilot — eles são gerados por outro fluxo
         }
 
     } catch (error) {
