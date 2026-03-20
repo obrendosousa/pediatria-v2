@@ -4,6 +4,7 @@ import { FormEvent, Fragment, useEffect, useRef, useState } from "react";
 import { BotMessageSquare, Loader2, SendHorizonal, Sparkles, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import ClaraProgressPanel, { type ProgressEvent } from "./ClaraProgressPanel";
+import ReportPdfCard from "./ReportPdfCard";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MARKDOWN RENDERER LEVE (sem dependências externas)
@@ -122,6 +123,14 @@ function CopilotMarkdown({ content }: { content: string }) {
   return <div className="text-sm space-y-0.5">{elements}</div>;
 }
 
+/** Extrai IDs de relatórios referenciados no texto (pattern /relatorios/ID) */
+function extractReportIds(text: string): number[] {
+  const matches = text.matchAll(/\/relatorios\/(\d+)/g);
+  const ids = new Set<number>();
+  for (const m of matches) ids.add(parseInt(m[1]));
+  return Array.from(ids);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 type LocalMessage = {
@@ -153,6 +162,7 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMemory, setIsLoadingMemory] = useState(false);
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
+  const [reportCardIds, setReportCardIds] = useState<number[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const supabase = createClient() as unknown as UntypedSupabase;
 
@@ -162,6 +172,7 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
     setMessages([]);
     setInput("");
     setProgressEvents([]);
+    setReportCardIds([]);
     setIsLoading(false);
     setIsLoadingMemory(true);
 
@@ -188,12 +199,13 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
   // Auto-scroll suave
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, progressEvents]);
+  }, [messages, progressEvents, reportCardIds]);
 
   async function clearMemory() {
     if (!chatId) return;
     await supabase.from("copilot_memories").delete().eq("chat_id", chatId);
     setMessages([]);
+    setReportCardIds([]);
   }
 
   async function sendQuestion(question: string) {
@@ -205,6 +217,7 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
     setMessages((prev) => [...prev, { role: "user", content: clean }]);
     setInput("");
     setProgressEvents([]);
+    setReportCardIds([]);
     setIsLoading(true);
 
     let fullResponse = "";
@@ -278,6 +291,12 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
                   }
                   return updated;
                 });
+              } else if (parsed.type === "report_card") {
+                // Clara salvou um relatório — exibe card com PDF inline
+                const reportId = parsed.metadata?.reportId as number | undefined;
+                if (reportId) {
+                  setReportCardIds((prev) => prev.includes(reportId) ? prev : [...prev, reportId]);
+                }
               } else if (parsed.type === "error") {
                 throw new Error(parsed.content);
               }
@@ -286,6 +305,15 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
             }
           }
         }
+      }
+
+      // Detecta relatórios referenciados no texto da resposta (para finalReportNode auto-save)
+      const detectedIds = extractReportIds(fullResponse);
+      if (detectedIds.length > 0) {
+        setReportCardIds((prev) => {
+          const merged = new Set([...prev, ...detectedIds]);
+          return Array.from(merged);
+        });
       }
 
       // Persiste o par pergunta + resposta na memória isolada deste paciente
@@ -310,6 +338,12 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
     e.preventDefault();
     sendQuestion(input);
   }
+
+  // Coleta IDs de relatórios de mensagens carregadas da memória
+  const memoryReportIds = messages
+    .filter((m) => m.role === "assistant")
+    .flatMap((m) => extractReportIds(m.content));
+  const allReportIds = Array.from(new Set([...reportCardIds, ...memoryReportIds]));
 
   return (
     <div className="flex flex-col h-full">
@@ -391,6 +425,13 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
             </div>
           );
         })}
+
+        {/* Cards de PDF de relatórios */}
+        {allReportIds.map((id) => (
+          <div key={`report-${id}`} className="flex justify-start">
+            <ReportPdfCard reportId={id} />
+          </div>
+        ))}
 
         {/* Clara 2.0: Progress Panel com etapas detalhadas */}
         {(isLoading || progressEvents.length > 0) && (

@@ -311,6 +311,18 @@ INSTRUÇÕES: A pergunta é sobre ESTE paciente. Use o histórico acima e ferram
                 });
               }
 
+              // Emit report_card quando save_report conclui
+              if (toolName === "save_report") {
+                const idMatch = outputStr.match(/ID:\s*(\d+)/);
+                if (idMatch) {
+                  enqueue({
+                    type: "report_card",
+                    content: "",
+                    metadata: { reportId: parseInt(idMatch[1]) },
+                  });
+                }
+              }
+
               // Emit spot-check validation result
               if (outputStr.includes("__SPOT_CHECK_DATA__")) {
                 enqueue({ type: "ui_log", subtype: "validation", content: "✓ Dados com citações para verificação" });

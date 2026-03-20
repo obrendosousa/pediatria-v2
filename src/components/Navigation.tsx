@@ -632,8 +632,8 @@ function NavItem({ icon: Icon, label, path, active, badge }: NavItemProps) {
               }}
             >
               <span className="relative flex items-center justify-center">
-                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" style={{ animationDuration: '2s' }} />
-                <span className={`relative flex ${badge > 99 ? 'min-w-[16px] px-0.5' : 'h-[16px] w-[16px]'} items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-[8px] font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.4)]`}>
+                <span className="absolute inset-[-2px] rounded-full bg-emerald-400 animate-ping opacity-30" style={{ animationDuration: '2s' }} />
+                <span className={`relative flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-[8px] font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.4)] h-[16px] ${badge > 99 ? 'min-w-[16px] px-1' : 'w-[16px]'}`}>
                   {badge > 99 ? '99+' : badge}
                 </span>
               </span>
@@ -670,8 +670,8 @@ function NavItem({ icon: Icon, label, path, active, badge }: NavItemProps) {
             }}
           >
             <span className="relative flex items-center justify-center">
-              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" style={{ animationDuration: '2s' }} />
-              <span className={`relative flex ${badge > 99 ? 'min-w-[24px] px-1.5' : 'h-[22px] w-[22px]'} items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-[10px] font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.4)]`}>
+              <span className="absolute inset-[-2px] rounded-full bg-emerald-400 animate-ping opacity-30" style={{ animationDuration: '2s' }} />
+              <span className={`relative flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-[10px] font-bold text-white shadow-[0_2px_8px_rgba(16,185,129,0.4)] h-[22px] ${badge > 99 ? 'min-w-[22px] px-1.5' : 'w-[22px]'}`}>
                 {badge > 99 ? '99+' : badge}
               </span>
             </span>

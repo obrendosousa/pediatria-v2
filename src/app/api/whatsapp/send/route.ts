@@ -6,6 +6,7 @@ import { evolutionRequest, getEvolutionConfig } from '@/lib/evolution';
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 import { claraGraph } from '@/ai/clara/graph';
 import { parseVoiceSegments, generateAndUploadVoice } from '@/ai/voice/client';
+import { generateReportPdf } from '@/lib/reportPdf';
 
 // Ignorar erro de self-signed certificate no node-fetch (usado pela LangChain/PostgresSaver)
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
 
           let finalMessages: BaseMessage[] = [];
           let typingSignaled = false;
+          let savedReportId: number | null = null;
 
           const stream = claraGraph.streamEvents(
             { messages: langChainMessages, chat_id: chatId },
@@ -147,6 +149,18 @@ export async function POST(req: Request) {
                 broadcastStatus(statusLabel);
                 break;
 
+              case 'on_tool_end':
+                // Detecta quando save_report conclui para enviar PDF no chat
+                if (event.name === 'save_report') {
+                  const toolOutput = typeof event.data?.output === 'string' ? event.data.output : '';
+                  const idMatch = toolOutput.match(/ID:\s*(\d+)/);
+                  if (idMatch) {
+                    savedReportId = parseInt(idMatch[1]);
+                    console.log(`📄 [Clara] Relatório #${savedReportId} salvo — PDF será gerado.`);
+                  }
+                }
+                break;
+
               case 'on_chain_start':
                 // Nós da nova arquitetura open_deep_research
                 if (event.name === 'classify_node') {
@@ -191,6 +205,17 @@ export async function POST(req: Request) {
                     // queremos sempre a última mensagem gerada.
                     finalMessages = nodeMessages;
                     console.log(`📨 [Clara] Resposta capturada de '${event.name}' (${nodeMessages.length} msg(s))`);
+
+                    // Detecta auto-save do finalReportNode (não passa pela tool save_report)
+                    if (event.name === 'final_report_node' && !savedReportId) {
+                      const lastContent = nodeMessages[nodeMessages.length - 1]?.content;
+                      const txt = typeof lastContent === 'string' ? lastContent : '';
+                      const reportMatch = txt.match(/\/relatorios\/(\d+)/);
+                      if (reportMatch) {
+                        savedReportId = parseInt(reportMatch[1]);
+                        console.log(`📄 [Clara] Relatório #${savedReportId} (auto-save) — PDF será gerado.`);
+                      }
+                    }
                   }
                 }
                 // Fallback: extrai do evento de conclusão do grafo principal se ainda vazio
@@ -267,9 +292,68 @@ export async function POST(req: Request) {
           }
 
           const lastSeg = segments[segments.length - 1];
+
+          // ── PDF do Relatório: gera e envia como documento no chat ─────────
+          if (savedReportId) {
+            try {
+              console.log(`📄 [Clara] Gerando PDF do relatório #${savedReportId}...`);
+              broadcastStatus('tool:Gerando PDF do relatório...');
+
+              const { data: reportData } = await supabase
+                .from('clara_reports')
+                .select('id, titulo, conteudo_markdown, created_at')
+                .eq('id', savedReportId)
+                .single();
+
+              if (reportData) {
+                const report = reportData as { id: number; titulo: string; conteudo_markdown: string; created_at: string };
+                const pdfBuffer = await generateReportPdf({
+                  titulo: report.titulo,
+                  conteudo_markdown: report.conteudo_markdown,
+                  created_at: report.created_at,
+                  reportId: report.id,
+                });
+
+                const pdfFileName = `reports/relatorio_${report.id}_${Date.now()}.pdf`;
+                const { error: uploadError } = await supabase.storage
+                  .from('midia')
+                  .upload(pdfFileName, pdfBuffer, { contentType: 'application/pdf', upsert: false });
+
+                if (uploadError) {
+                  console.error('📄 [Clara] Erro no upload do PDF:', uploadError);
+                } else {
+                  const { data: urlData } = supabase.storage
+                    .from('midia')
+                    .getPublicUrl(pdfFileName);
+
+                  const pdfUrl = urlData.publicUrl;
+
+                  await supabase.from('chat_messages').insert({
+                    chat_id: chatId,
+                    phone,
+                    sender: 'contact',
+                    message_text: `📄 ${report.titulo}.pdf`,
+                    message_type: 'document',
+                    media_url: pdfUrl,
+                    status: 'read',
+                    created_at: new Date(baseTs + segments.length * 1000 + 500).toISOString(),
+                    wpp_id: `ai_report_pdf_${report.id}_${Date.now()}`
+                  });
+
+                  console.log(`📄 [Clara] PDF do relatório #${report.id} enviado no chat.`);
+                }
+              }
+            } catch (pdfError) {
+              console.error('📄 [Clara] Erro ao gerar/enviar PDF:', pdfError);
+            }
+          }
+          // ──────────────────────────────────────────────────────────────────
+
           await supabase.from('chats').update({
-            last_message: lastSeg?.content || aiResponseText,
-            last_message_type: lastSeg?.type || 'text',
+            last_message: savedReportId
+              ? `📄 Relatório #${savedReportId}.pdf`
+              : (lastSeg?.content || aiResponseText),
+            last_message_type: savedReportId ? 'document' : (lastSeg?.type || 'text'),
             last_message_sender: 'contact',
             last_message_status: 'read',
             last_interaction_at: new Date().toISOString()

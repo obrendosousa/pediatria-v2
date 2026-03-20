@@ -299,6 +299,15 @@ export function useCheckoutPanel(appointmentId: number | null) {
                 qtyNeed -= take;
               }
             }
+
+            // Sincroniza products.stock com soma dos batches restantes
+            const { data: remaining } = await supabase
+              .from('product_batches')
+              .select('quantity')
+              .eq('product_id', item.product.id)
+              .gt('quantity', 0);
+            const syncedStock = (remaining || []).reduce((acc: number, b: { quantity: number }) => acc + Number(b.quantity || 0), 0);
+            await supabase.from('products').update({ stock: syncedStock }).eq('id', item.product.id);
           }
         }
 

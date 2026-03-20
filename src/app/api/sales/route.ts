@@ -176,7 +176,7 @@ export async function POST(request: Request) {
 
           stockMovements.push({
             product_id: item.id,
-            type: 'sale_out',
+            type: 'SALE',
             quantity: take,
             movement_type: 'sale_out',
             quantity_change: -take,

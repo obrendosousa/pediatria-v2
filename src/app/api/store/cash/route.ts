@@ -163,6 +163,7 @@ export async function POST(request: Request) {
         .insert({
           closure_date: date,
           closed_by: user.id,
+          closed_at: new Date().toISOString(),
           totals_by_method: totals.totalsByMethod,
           totals_by_origin: { loja: totals.totalAmount, atendimento: 0 },
           total_amount: totals.totalAmount,
