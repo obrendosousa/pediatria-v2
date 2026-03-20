@@ -83,9 +83,9 @@ export default function PdfPreviewCard({ url, fileName, fileSize }: PdfPreviewCa
   const metaParts = ["PDF", fileSize, pageLabel].filter(Boolean).join(" \u00B7 ");
 
   return (
-    <div className="w-[280px] rounded-md overflow-hidden">
+    <div className="w-[280px] overflow-hidden">
       {/* ── Preview: topo proporcional da página 1 ─────────────────────── */}
-      <div className="relative w-full h-[140px] bg-[#f0f0f0] dark:bg-[#1a1a22] overflow-hidden">
+      <div className="relative w-full h-[140px] bg-[#f0f0f0] dark:bg-[#1a1a22] overflow-hidden rounded-t-lg">
         {status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center">
             <Loader2 size={20} className="animate-spin text-gray-400" />

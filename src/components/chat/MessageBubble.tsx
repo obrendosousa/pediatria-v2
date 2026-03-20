@@ -162,7 +162,7 @@ function AdaptiveImageMessage({
   return (
     <>
       <div
-        className={`relative w-full ${dims.maxW} ${dims.aspect} cursor-pointer overflow-hidden bg-black/5 transition-all duration-150 ${hasCaption ? 'rounded-t-[inherit]' : 'rounded-[inherit]'}`}
+        className={`relative w-full ${dims.maxW} ${dims.aspect} cursor-pointer overflow-hidden bg-black/5 transition-all duration-150 ${hasCaption ? 'rounded-t-lg' : 'rounded-lg'}`}
         onClick={onClick}
       >
         <img
@@ -578,7 +578,10 @@ function MessageBubble({
       const fileName = String(toolData.file_name || message.message_text || 'Documento');
       const mime = String(toolData.mime_type || '');
       const fileSize = toolData.file_size ? formatDocSize(toolData.file_size) : null;
-      const isPdf = mime.includes('pdf') || fileName.toLowerCase().endsWith('.pdf');
+      const isPdf = mime.includes('pdf')
+        || fileName.toLowerCase().endsWith('.pdf')
+        || (message.media_url || '').toLowerCase().endsWith('.pdf')
+        || (message.message_text || '').toLowerCase().endsWith('.pdf');
       const isSpreadsheet = mime.includes('spreadsheet') || mime.includes('excel') || /\.(xlsx?|csv)$/i.test(fileName);
       const isWord = mime.includes('wordprocessing') || mime.includes('msword') || /\.(docx?)$/i.test(fileName);
 
