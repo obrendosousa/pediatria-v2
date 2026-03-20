@@ -491,10 +491,10 @@ export default function CRMPage() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#0b141a] relative overflow-hidden transition-colors duration-300">
+    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-black relative overflow-hidden transition-colors duration-300">
       
       {/* HEADER */}
-      <div className={`px-6 py-5 z-10 border-b border-slate-100 dark:border-[#2d2d36] bg-white/50 dark:bg-[#08080b]/80 backdrop-blur-sm transition-all duration-300 ${isChatOpen ? 'mr-[400px]' : ''}`}>
+      <div className={`px-6 py-5 z-10 border-b border-slate-100 dark:border-[#1a1a24] bg-white/50 dark:bg-[#050508]/90 backdrop-blur-sm transition-all duration-300 ${isChatOpen ? 'mr-[400px]' : ''}`}>
         <div className="flex justify-between items-center mb-4">
             <h1 className="text-xl font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2">
                 <div className="p-2 bg-rose-500 text-white rounded-lg shadow-lg shadow-rose-200 dark:shadow-none"><LayoutList className="w-5 h-5" /></div>
@@ -539,7 +539,7 @@ export default function CRMPage() {
         {activeTab === 'reception' && (
             <div className="h-full flex flex-col p-6 overflow-hidden">
                 <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-4 bg-white dark:bg-[#08080b] px-2 py-1.5 rounded-full border border-slate-200 dark:border-[#3d3d48] shadow-sm transition-colors">
+                    <div className="flex items-center gap-4 bg-white dark:bg-[#0a0a10] px-2 py-1.5 rounded-full border border-slate-200 dark:border-[#1e1e28] shadow-sm transition-colors">
                         <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-[#a1a1aa]"><ChevronLeft className="w-5 h-5"/></button>
                         <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-rose-500" /><input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="text-sm font-bold text-slate-700 dark:text-gray-200 bg-transparent outline-none uppercase" /></div>
                         <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-[#a1a1aa]"><ChevronRight className="w-5 h-5"/></button>

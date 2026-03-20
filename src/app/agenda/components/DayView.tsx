@@ -86,7 +86,7 @@ export default function DayView({
                   <div className="w-14"></div>
                   <div className="flex-1 relative">
                     <div className="absolute left-0 top-0 w-full h-0.5 bg-rose-500 dark:bg-rose-400 shadow-lg shadow-rose-500/50"></div>
-                    <div className="absolute left-0 top-0 w-3 h-3 -translate-x-1.5 -translate-y-1.5 rounded-full bg-rose-500 dark:bg-rose-400 shadow-lg shadow-rose-500/50 border-2 border-white dark:border-[#1e2028]"></div>
+                    <div className="absolute left-0 top-0 w-3 h-3 -translate-x-1.5 -translate-y-1.5 rounded-full bg-rose-500 dark:bg-rose-400 shadow-lg shadow-rose-500/50 border-2 border-white dark:border-[#141419]"></div>
                   </div>
                 </div>
               </div>

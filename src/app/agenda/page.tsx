@@ -14,6 +14,7 @@ import AppointmentDetailModal from './components/AppointmentDetailModal';
 
 import { useAuth } from '@/contexts/AuthContext';
 
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 export default function AgendaPage() {
   const { profile, loading: authLoading } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -28,6 +29,7 @@ export default function AgendaPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [weekAppointments, setWeekAppointments] = useState<any[]>([]);
   const [doctorId, setDoctorId] = useState<number | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
 
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -209,7 +211,7 @@ export default function AgendaPage() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#0b141a] transition-colors duration-300">
+    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-black transition-colors duration-300">
       <AgendaHeader
         viewMode={viewMode}
         setViewMode={setViewMode}
@@ -222,7 +224,7 @@ export default function AgendaPage() {
       />
 
       <div className="flex-1 overflow-hidden flex p-6 gap-6">
-        <div className="flex-1 bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] shadow-sm overflow-hidden flex flex-col transition-colors">
+        <div className="flex-1 bg-white dark:bg-[#141419] rounded-2xl border border-slate-100 dark:border-[#2d2d36] shadow-sm overflow-hidden flex flex-col transition-colors">
           {viewMode === 'day' ? (
             <DayView
               timeSlots={timeSlots}

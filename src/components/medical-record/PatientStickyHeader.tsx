@@ -93,7 +93,7 @@ export function PatientStickyHeader({
             {/* Avatar com Gradiente */}
             <div className="relative flex-shrink-0">
                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-800/20 border-2 border-white dark:border-[#3d3d48] shadow-md flex items-center justify-center text-base sm:text-lg lg:text-xl font-black text-blue-600 dark:text-blue-400">
-                  {patient.name.substring(0,2).toUpperCase()}
+                  {(patient.name || '??').substring(0,2).toUpperCase()}
                </div>
                {/* Indicador Online (Opcional) */}
                <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-4 sm:h-4 bg-emerald-400 border-2 border-white dark:border-[#1e2028] rounded-full"></div>

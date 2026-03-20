@@ -208,6 +208,11 @@ export default function AppointmentModal({
       return;
     }
 
+    if (parseCurrency(formData.totalAmount) <= 0) {
+      toast.error('Informe o valor da consulta.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -218,7 +223,9 @@ export default function AppointmentModal({
 
       // Converter valores monetários
       const totalAmountNum = parseCurrency(formData.totalAmount);
-      const paidAmountNum = parseCurrency(formData.paidAmount);
+      // amount_paid sempre 0 na criação — pagamento deve ser registrado
+      // via fluxo próprio (handleSavePaymentOnly) para gerar financial_transaction
+      // e garantir precisão no fechamento de caixa.
 
       const insertData: Record<string, unknown> = {
         doctor_id: selectedDoctorId,
@@ -230,9 +237,8 @@ export default function AppointmentModal({
         notes: formData.reason.trim() || null,
         appointment_type: formData.appointmentType,
         patient_birth_date: formData.birthDate || null,
-        // Inserção dos dados financeiros
         total_amount: totalAmountNum,
-        amount_paid: paidAmountNum
+        amount_paid: 0
       };
 
       if (formData.motherName.trim()) {
@@ -295,8 +301,6 @@ export default function AppointmentModal({
 
   // Cálculos para exibição no formulário
   const totalNum = parseCurrency(formData.totalAmount);
-  const paidNum = parseCurrency(formData.paidAmount);
-  const remaining = Math.max(0, totalNum - paidNum);
 
   if (!isOpen) return null;
 
@@ -566,30 +570,14 @@ export default function AppointmentModal({
                 </div>
               </div>
 
-              {/* Valor Pago (Entrada) */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
-                  Entrada / Pago (R$)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">R$</span>
-                  <input
-                    type="text"
-                    value={formData.paidAmount}
-                    onChange={e => handleMoneyInput('paidAmount', e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-emerald-200 dark:border-emerald-900/50 rounded-lg bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                    placeholder="0,00"
-                  />
-                </div>
-              </div>
             </div>
 
-            {/* Resumo Restante */}
+            {/* Resumo — pagamento será registrado na recepção */}
             {totalNum > 0 && (
               <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-[#3d3d48]">
-                <span className="text-sm text-slate-500 dark:text-[#a1a1aa]">Restante a pagar no local:</span>
-                <span className={`text-lg font-black ${remaining > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="text-sm text-slate-500 dark:text-[#a1a1aa]">Valor a cobrar na recepção:</span>
+                <span className="text-lg font-black text-amber-600 dark:text-amber-400">
+                  R$ {totalNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             )}

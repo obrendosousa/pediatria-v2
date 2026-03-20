@@ -38,6 +38,8 @@ interface ReceptionCardProps {
   isSelected?: boolean;
   /** Contexto de coluna para ações customizadas */
   columnContext?: 'guiche' | 'doctor' | null;
+  /** Renderizado como overlay do drag */
+  isDragOverlay?: boolean;
 }
 
 export default function ReceptionCard({
@@ -61,6 +63,7 @@ export default function ReceptionCard({
   selectable = false,
   isSelected = false,
   columnContext,
+  isDragOverlay = false,
 }: ReceptionCardProps) {
   const formatTime = formatAppointmentTime;
 
@@ -71,13 +74,15 @@ export default function ReceptionCard({
   const canEnter = status !== 'waiting' || total <= 0 || remaining <= 0;
 
   const getCardStyles = () => {
+    // 3D: borda top clara simula luz vindo de cima, sombra pesada embaixo dá profundidade
+    const base3d = 'dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.7),0_1px_0_0_rgba(255,255,255,0.04)_inset] dark:border-t dark:border-t-white/[0.06]';
     switch (status) {
       case 'scheduled':
-        return 'border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-gradient-to-b dark:from-blue-900/15 dark:to-[#131316]';
+        return `${base3d} border-blue-200 dark:border-blue-500/15  bg-blue-50/50 dark:bg-[#141419]`;
       case 'called':
-        return 'border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-gradient-to-b dark:from-amber-900/20 dark:to-[#131316]';
+        return `${base3d} border-amber-200 dark:border-amber-500/15  bg-amber-50/50 dark:bg-[#141419]`;
       case 'waiting':
-        return 'border-green-200 dark:border-green-800/60 bg-green-50/50 dark:bg-gradient-to-b dark:from-green-900/15 dark:to-[#131316]';
+        return `${base3d} border-green-200 dark:border-green-500/15  bg-green-50/50 dark:bg-[#141419]`;
       case 'in_service': {
         const isLongRunning = isLongRunningAppointment(appointment.start_time, 2);
         const timeInService = calculateTimeInService(appointment.start_time);
@@ -86,18 +91,18 @@ export default function ReceptionCard({
         const isVeryLong = timeInService.includes('dia') || hours > 2;
 
         if (isVeryLong) {
-          return 'border-red-200 dark:border-red-800/60 bg-red-50/50 dark:bg-gradient-to-b dark:from-red-900/15 dark:to-[#131316]';
+          return `${base3d} border-red-200 dark:border-red-500/15  bg-red-50/50 dark:bg-[#141419]`;
         } else if (isLongRunning) {
-          return 'border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-gradient-to-b dark:from-amber-900/20 dark:to-[#131316]';
+          return `${base3d} border-amber-200 dark:border-amber-500/15  bg-amber-50/50 dark:bg-[#141419]`;
         }
-        return 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-gradient-to-b dark:from-emerald-900/20 dark:to-[#131316]';
+        return `${base3d} border-emerald-200 dark:border-emerald-500/15  bg-emerald-50/50 dark:bg-[#141419]`;
       }
       case 'waiting_payment':
-        return 'border-purple-200 dark:border-purple-800/60 bg-purple-50/50 dark:bg-gradient-to-b dark:from-purple-900/20 dark:to-[#131316]';
+        return `${base3d} border-purple-200 dark:border-purple-500/15  bg-purple-50/50 dark:bg-[#141419]`;
       case 'finished':
-        return 'border-slate-200 dark:border-slate-700/60 bg-slate-50/50 dark:bg-gradient-to-b dark:from-slate-800/20 dark:to-[#131316] opacity-75';
+        return `${base3d} border-slate-200 dark:border-slate-600/10 bg-slate-50/50 dark:bg-[#111115] opacity-75`;
       default:
-        return 'border-slate-200 dark:border-slate-700 bg-white dark:bg-gradient-to-b dark:from-[#1c1c21] dark:to-[#131316]';
+        return `${base3d} border-slate-200 dark:border-slate-600/10 bg-white dark:bg-[#141419]`;
     }
   };
 
@@ -170,7 +175,8 @@ export default function ReceptionCard({
       onClick={onEdit || selectable ? handleCardClick : undefined}
       onKeyDown={onEdit || selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (selectable) onFinish?.(); else onEdit?.(); } } : undefined}
       className={`p-3 rounded-lg border transition-all ${getCardStyles()} ${
-        isSelected ? 'ring-2 ring-purple-500 dark:ring-purple-400 shadow-md' : ''
+        isDragOverlay ? 'drag-overlay-card' : ''
+      } ${isSelected ? 'ring-2 ring-purple-500 dark:ring-purple-400 shadow-md' : ''
       } ${onEdit || selectable ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 ' + (selectable ? 'hover:ring-2 hover:ring-purple-300 dark:hover:ring-purple-600/50 focus:ring-purple-400' : 'hover:ring-2 hover:ring-rose-300 dark:hover:ring-rose-600/50 focus:ring-rose-400 dark:focus:ring-rose-500') : ''}`}
     >
       {/* Header com nome + badge de senha */}
@@ -242,7 +248,7 @@ export default function ReceptionCard({
       </div>
 
       {/* Botoes de acao */}
-      <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-200/50 dark:border-[#3d3d48]/50">
+      <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-200/50 dark:border-white/5">
         {status === 'scheduled' && (
           <>
             {/* Botoes de gerar senha (se disponivel) */}
@@ -306,7 +312,7 @@ export default function ReceptionCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); onRevert?.(); }}
               disabled={isUpdating}
-              className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+              className="w-full bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 dark:border dark:border-white/5"
             >
               <Undo2 className="w-3 h-3" /> Reverter
             </button>
@@ -359,7 +365,7 @@ export default function ReceptionCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); onRevert?.(); }}
               disabled={isUpdating}
-              className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+              className="w-full bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 dark:border dark:border-white/5"
             >
               <Undo2 className="w-3 h-3" /> Reverter
             </button>
@@ -394,7 +400,7 @@ export default function ReceptionCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); onRevert?.(); }}
               disabled={isUpdating}
-              className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+              className="w-full bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 dark:border dark:border-white/5"
             >
               <Undo2 className="w-3 h-3" /> Reverter
             </button>
@@ -416,7 +422,7 @@ export default function ReceptionCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); onRevert?.(); }}
               disabled={isUpdating}
-              className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+              className="w-full bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 dark:border dark:border-white/5"
             >
               <Undo2 className="w-3 h-3" /> Voltar p/ Atend.
             </button>

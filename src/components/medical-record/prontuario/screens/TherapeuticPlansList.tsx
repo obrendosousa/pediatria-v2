@@ -11,15 +11,15 @@ export function TherapeuticPlansList({ patientId }: ProntuarioScreenProps) {
   const { toast } = useToast();
   const { plans, isLoading, isSaving, fetchPlans, createPlan, updatePlanStatus } = useTherapeuticPlans();
   const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState('');
-  const [focus, setFocus] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
 
   useEffect(() => { fetchPlans(patientId); }, [patientId, fetchPlans]);
 
   const handleCreate = async () => {
-    if (!name.trim()) { toast.error('Nome é obrigatório'); return; }
-    await createPlan({ patient_id: patientId, doctor_id: null, name: name.trim(), focus: focus || null, status: 'active' });
-    setName(''); setFocus(''); setShowForm(false);
+    if (!title.trim()) { toast.error('Nome é obrigatório'); return; }
+    await createPlan({ patient_id: patientId, doctor_id: null, title: title.trim(), description: description || null, status: 'active' });
+    setTitle(''); setDescription(''); setShowForm(false);
     fetchPlans(patientId);
     toast.success('Plano criado!');
   };
@@ -47,11 +47,11 @@ export function TherapeuticPlansList({ patientId }: ProntuarioScreenProps) {
         <div className="bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-xl p-5 space-y-4">
           <div>
             <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase mb-1 block">Nome *</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nome do plano terapêutico" className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Nome do plano terapêutico" className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-xl bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400" />
           </div>
           <div>
             <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase mb-1 block">Foco / Objetivo</label>
-            <RichTextEditor value={focus} onChange={setFocus} placeholder="Descreva o foco do tratamento..." />
+            <RichTextEditor value={description} onChange={setDescription} placeholder="Descreva o foco do tratamento..." />
           </div>
           <div className="flex gap-2 justify-end">
             <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg">Cancelar</button>
@@ -72,7 +72,7 @@ export function TherapeuticPlansList({ patientId }: ProntuarioScreenProps) {
           {plans.map(plan => (
             <div key={plan.id} className="bg-white dark:bg-[#08080b] border border-slate-200 dark:border-[#3d3d48] rounded-xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-sm text-slate-800 dark:text-[#fafafa]">{plan.name}</h3>
+                <h3 className="font-semibold text-sm text-slate-800 dark:text-[#fafafa]">{plan.title}</h3>
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${plan.status === 'active' ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
                     {plan.status === 'active' ? 'ATIVO' : plan.status === 'completed' ? 'CONCLUÍDO' : 'CANCELADO'}
@@ -82,7 +82,7 @@ export function TherapeuticPlansList({ patientId }: ProntuarioScreenProps) {
                   </button>
                 </div>
               </div>
-              {plan.focus && <div className="text-xs text-slate-600 dark:text-[#d4d4d8] prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: plan.focus }} />}
+              {plan.description && <div className="text-xs text-slate-600 dark:text-[#d4d4d8] prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: plan.description }} />}
               <p className="text-[10px] text-slate-400 mt-2">{new Date(plan.created_at).toLocaleDateString('pt-BR')}</p>
             </div>
           ))}

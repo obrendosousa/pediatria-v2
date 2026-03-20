@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Ban, Plus, DollarSign } from 'lucide-react';
 import { getCardColorClasses, getAppointmentsForDay } from '../utils/agendaUtils';
@@ -25,7 +26,7 @@ export default function WeekView({
           const isToday = day.toDateString() === new Date().toDateString();
 
           return (
-            <div key={dateStr} className={`flex flex-col h-full transition-colors ${isToday ? 'bg-rose-50/10 dark:bg-rose-900/5' : 'bg-white dark:bg-[#08080b]'}`}>
+            <div key={dateStr} className={`flex flex-col h-full transition-colors ${isToday ? 'bg-rose-50/10 dark:bg-rose-900/5' : 'bg-white dark:bg-[#141419]'}`}>
               <div className={`text-center p-3 border-b ${isToday ? 'border-rose-200 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10' : 'border-slate-100 dark:border-[#2d2d36]'}`}>
                 <span className={`text-[10px] font-extrabold uppercase block mb-1 tracking-wider ${isToday ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-[#71717a]'}`}>{day.toLocaleDateString('pt-BR', { weekday: 'short' })}</span>
                 <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-lg font-bold ${isToday ? 'bg-rose-600 text-white shadow-md' : 'text-slate-700 dark:text-[#a1a1aa]'}`}>{day.getDate()}</div>

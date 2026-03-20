@@ -197,6 +197,11 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         toast.error('Selecione se é consulta ou retorno.');
         return;
       }
+
+      if (parseCurrency(formData.totalAmount) <= 0) {
+        toast.error('Informe o valor da consulta.');
+        return;
+      }
     } else {
       if (!formData.notes.trim()) {
         toast.error('Por favor, informe o motivo do bloqueio.');
@@ -237,9 +242,11 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
 
         // Inserir dados financeiros
         const totalAmountNum = parseCurrency(formData.totalAmount);
-        const paidAmountNum = parseCurrency(formData.paidAmount);
+        // amount_paid sempre 0 na criação — pagamento deve ser registrado
+        // via fluxo próprio para gerar financial_transaction e garantir
+        // precisão no fechamento de caixa.
         insertData.total_amount = totalAmountNum;
-        insertData.amount_paid = paidAmountNum;
+        insertData.amount_paid = 0;
 
         if (formData.mother_name.trim()) {
           insertData.mother_name = formData.mother_name.trim();
@@ -296,11 +303,6 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
       setLoading(false);
     }
   }
-
-  // Cálculos para exibição
-  const totalNum = parseCurrency(formData.totalAmount);
-  const paidNum = parseCurrency(formData.paidAmount);
-  const remaining = Math.max(0, totalNum - paidNum);
 
   if (!isOpen) return null;
 
@@ -602,33 +604,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                     </div>
                   </div>
 
-                  {/* Valor Pago (Entrada) */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
-                      Entrada / Pago (R$)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">R$</span>
-                      <input
-                        type="text"
-                        value={formData.paidAmount}
-                        onChange={e => handleMoneyInput('paidAmount', e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 border border-emerald-200 dark:border-emerald-900/50 rounded-lg bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                        placeholder="0,00"
-                      />
-                    </div>
-                  </div>
                 </div>
-
-                {/* Resumo Restante */}
-                {totalNum > 0 && (
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-[#3d3d48]">
-                    <span className="text-sm text-slate-500 dark:text-[#a1a1aa]">Restante a pagar no local:</span>
-                    <span className={`text-lg font-black ${remaining > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                      R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* Motivo/Queixa */}

@@ -225,13 +225,19 @@ export default function ReceptionAppointmentModal({
       toast.error('Informe a data de nascimento do paciente.');
       return;
     }
+    if (parseCurrency(form.totalAmount) <= 0) {
+      toast.error('Informe o valor da consulta.');
+      return;
+    }
     setSaving(true);
     try {
       const doctor = doctors.find(d => d.id === form.doctor_id);
       if (!doctor) throw new Error('Médico não encontrado');
       const start_time = saveAppointmentDateTime(form.date, form.time);
       const totalNum = parseCurrency(form.totalAmount);
-      const paidNum = parseCurrency(form.paidAmount);
+      // amount_paid NÃO é editável aqui — todo pagamento deve passar pelo
+      // handleSavePaymentOnly para gerar financial_transaction e garantir
+      // precisão no fechamento de caixa.
       const { error } = await supabase
         .from('appointments')
         .update({
@@ -246,8 +252,7 @@ export default function ReceptionAppointmentModal({
           start_time,
           doctor_id: form.doctor_id,
           doctor_name: doctor.name,
-          total_amount: totalNum,
-          amount_paid: paidNum
+          total_amount: totalNum
         })
         .eq('id', appointment.id);
       if (error) throw error;
@@ -265,7 +270,7 @@ export default function ReceptionAppointmentModal({
         doctor_id: form.doctor_id,
         doctor_name: doctor.name,
         total_amount: totalNum,
-        amount_paid: paidNum
+        amount_paid: appointment.amount_paid ?? 0
       };
       onSave(updated);
       onClose();
@@ -285,10 +290,6 @@ export default function ReceptionAppointmentModal({
   const remainingDisplay = Math.max(0, totalDisplay - paidDisplay);
   const pendingAmountValue = parseCurrency(pendingAmount);
   const remainingAfterCurrentInput = Math.max(0, remainingDisplay - pendingAmountValue);
-  const editTotal = parseCurrency(form.totalAmount);
-  const editPaid = parseCurrency(form.paidAmount);
-  const editRemaining = Math.max(0, editTotal - editPaid);
-
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white dark:bg-[#202c33] w-full max-w-lg rounded-2xl shadow-lg border border-slate-200 dark:border-[#3d3d48] overflow-hidden animate-scale-in">
@@ -592,20 +593,16 @@ export default function ReceptionAppointmentModal({
               <Wallet size={12} /> Pagamento
             </h5>
             {isEditing ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
                 <div>
-                  <label className="text-[10px] text-slate-500 dark:text-[#a1a1aa] uppercase">Total (R$)</label>
+                  <label className="text-[10px] text-slate-500 dark:text-[#a1a1aa] uppercase">Valor da consulta (R$)</label>
                   <input type="text" value={form.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full text-sm font-bold border border-slate-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-400" placeholder="0,00" />
                 </div>
-                <div>
-                  <label className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase font-semibold">Valor pago (R$)</label>
-                  <input type="text" value={form.paidAmount} onChange={e => handleMoneyInput('paidAmount', e.target.value)} className="w-full text-sm font-bold border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1.5 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-400" placeholder="0,00" />
-                </div>
-                <div className="col-span-2 text-right text-xs font-bold text-slate-600 dark:text-[#d4d4d8] border-t border-amber-200 dark:border-amber-800 pt-2 mt-1">
-                  Restante: <span className={editRemaining > 0 ? 'text-rose-500 dark:text-rose-400 text-sm' : 'text-emerald-600 dark:text-emerald-400 text-sm'}>
-                    R$ {editRemaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
+                {paidDisplay > 0 && (
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                    Pago: R$ {paidDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (registrado via pagamento)
+                  </p>
+                )}
               </div>
             ) : (
               <div className="flex justify-between items-center bg-white dark:bg-black/20 p-2.5 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
@@ -681,7 +678,7 @@ export default function ReceptionAppointmentModal({
                 onClick={() => setIsEditing(true)}
                 className="flex-1 bg-rose-500 hover:bg-rose-600 text-white py-2 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
               >
-                <Edit2 size={14} /> Editar e registrar pagamento
+                <Edit2 size={14} /> Editar dados
               </button>
               <button
                 type="button"

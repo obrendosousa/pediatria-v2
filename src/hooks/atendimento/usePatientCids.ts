@@ -50,7 +50,7 @@ export function usePatientCids() {
   const searchCid10 = useCallback(async (query: string) => {
     if (query.length < 2) { setSearchResults([]); return; }
     // Tenta RPC primeiro, fallback para busca direta
-    const { data: rpcData } = await pubSupabase.rpc('search_cid10', { search_query: query });
+    const { data: rpcData } = await pubSupabase.rpc('search_cid10', { query_text: query });
     if (rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
       setSearchResults(rpcData.slice(0, 20) as Cid10Item[]);
       return;
@@ -68,13 +68,8 @@ export function usePatientCids() {
       })));
       return;
     }
-    // Último fallback: tabela cid10
-    const { data: cid10Data } = await pubSupabase
-      .from('cid10')
-      .select('code, description')
-      .or(`code.ilike.%${query.replace(/[%_\\]/g, '\\$&')}%,description.ilike.%${query.replace(/[%_\\]/g, '\\$&')}%`)
-      .limit(20);
-    setSearchResults((cid10Data || []) as Cid10Item[]);
+    // Se nenhum fallback retornou, limpa resultados
+    setSearchResults([]);
   }, []);
 
   const addCid = useCallback(async (entry: Omit<PatientCid, 'id' | 'created_at'>) => {

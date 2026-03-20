@@ -114,6 +114,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
       if (!formData.patient_name.trim()) { toast.error('Preencha o nome do paciente.'); return; }
       if (!selectedDoctorId) { toast.error('Selecione um profissional.'); return; }
       if (!formData.type) { toast.error('Selecione o tipo de atendimento.'); return; }
+      if (parseCurrency(formData.totalAmount) <= 0) { toast.error('Informe o valor da consulta.'); return; }
     } else {
       if (!formData.notes.trim()) { toast.error('Informe o motivo do bloqueio.'); return; }
     }
@@ -204,10 +205,6 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
       setLoading(false);
     }
   }
-
-  const totalNum = parseCurrency(formData.totalAmount);
-  const paidNum = parseCurrency(formData.paidAmount);
-  const remaining = Math.max(0, totalNum - paidNum);
 
   if (!isOpen) return null;
 
@@ -334,20 +331,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
                       <input type="text" value={formData.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#252530] rounded-lg bg-white dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" placeholder="0,00" />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Entrada / Pago (R$)</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-sm">R$</span>
-                      <input type="text" value={formData.paidAmount} onChange={e => handleMoneyInput('paidAmount', e.target.value)} className="w-full pl-9 pr-3 py-2 border border-emerald-200 dark:border-emerald-900/50 rounded-lg bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" placeholder="0,00" />
-                    </div>
-                  </div>
                 </div>
-                {totalNum > 0 && (
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-[#252530]">
-                    <span className="text-sm text-slate-500 dark:text-[#a1a1aa]">Restante:</span>
-                    <span className={`text-lg font-black ${remaining > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                )}
               </div>
 
               <div>

@@ -78,7 +78,7 @@ function PatientMedicalRecordViewInner({ patientId, appointmentId, currentDoctor
       .from('clinical_summaries')
       .select('*')
       .eq('patient_id', id)
-      .single();
+      .maybeSingle();
 
     if (pData) {
       // Normalizar campo de nome para 'name' em ambos os schemas

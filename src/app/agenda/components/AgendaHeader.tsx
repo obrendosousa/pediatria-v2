@@ -24,7 +24,7 @@ export default function AgendaHeader({
   openNewSlotModal
 }: AgendaHeaderProps) {
   return (
-    <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#08080b] border-b border-slate-100 dark:border-[#2d2d36] shadow-sm z-20 transition-colors">
+    <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0a0a0f] border-b border-slate-100 dark:border-[#1a1a24] shadow-sm z-20 transition-colors">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 rounded-lg shadow-sm">
           <Calendar className="w-5 h-5" />

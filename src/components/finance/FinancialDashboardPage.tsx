@@ -12,7 +12,7 @@ import {
   ShoppingBag,
   RefreshCw,
   CalendarRange,
-  CheckCircle2,
+  Download,
   Pencil
 } from 'lucide-react';
 import {
@@ -31,6 +31,7 @@ import {
 } from 'recharts';
 import { financialOriginLabel, financialTypeLabel, paymentMethodLabel } from '@/lib/finance';
 import { useAuth } from '@/contexts/AuthContext';
+import { getLetterheadDataUrl } from '@/lib/letterhead';
 
 const supabase = createClient();
 
@@ -73,6 +74,12 @@ type OverviewResponse = {
   bestClients: Array<{ name: string; total: number; visits: number }>;
 };
 
+type ClosureLogItem = {
+  name: string;
+  qty: number;
+  unit_price: number;
+};
+
 type ClosureLog = {
   id: number;
   occurred_at: string;
@@ -82,6 +89,7 @@ type ClosureLog = {
   amount: number;
   payment_methods: Array<{ payment_method: 'pix' | 'cash' | 'credit_card' | 'debit_card'; amount: number }>;
   notes: string | null;
+  items?: ClosureLogItem[];
 };
 
 type ClosureResponse = {
@@ -195,22 +203,158 @@ export default function FinancialDashboardPage() {
     };
   }, [fetchFinancials]);
 
-  async function handleCloseCashier() {
+  async function handleDownloadReport() {
     if (!closure) return;
     setClosingCashier(true);
     try {
-      const response = await fetch('/api/finance/closures', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: closure.startDate })
+      const [html2canvasMod, jsPDFMod] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf')
+      ]);
+      const html2canvas = html2canvasMod.default;
+      const jsPDF = jsPDFMod.default;
+      const letterheadDataUrl = await getLetterheadDataUrl();
+
+      const methodLabel: Record<string, string> = { pix: 'Pix', cash: 'Dinheiro', credit_card: 'Crédito', debit_card: 'Débito' };
+      const totalGeral = closure.totals.totalAmount;
+      const dateLabel = closure.startDate === closure.endDate
+        ? new Date(closure.startDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+        : `${closure.startDate} a ${closure.endDate}`;
+
+      const html = `<!DOCTYPE html><html><head><style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; color: #1e293b; background: transparent; }
+        .page { width: 210mm; min-height: 297mm; padding: 34mm 18mm 28mm; }
+        h1 { font-size: 16px; text-align: center; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; color: #0f172a; }
+        .subtitle { text-align: center; font-size: 11px; color: #64748b; margin-bottom: 18px; }
+        .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #475569; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; margin: 16px 0 8px; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+        .summary-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; }
+        .summary-card .label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+        .summary-card .value { font-size: 16px; font-weight: 900; color: #0f172a; margin-top: 2px; }
+        .total-bar { background: #f0fdf4; border: 2px solid #86efac; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin: 10px 0 16px; }
+        .total-bar .label { font-size: 12px; font-weight: bold; color: #166534; }
+        .total-bar .value { font-size: 20px; font-weight: 900; color: #166534; }
+        .origin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .origin-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }
+        .origin-card .label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+        .origin-card .value { font-size: 14px; font-weight: 900; color: #0f172a; }
+        table { width: 100%; border-collapse: collapse; font-size: 9px; }
+        thead th { background: #f1f5f9; text-align: left; padding: 6px 8px; font-size: 8px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+        tbody td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; }
+        tbody tr:nth-child(even) { background: #f8fafc; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .footer-note { margin-top: 20px; text-align: center; font-size: 9px; color: #94a3b8; }
+      </style></head><body><div class="page">
+        <h1>Relatório de Fechamento de Caixa</h1>
+        <p class="subtitle">${dateLabel}</p>
+
+        <p class="section-title">Resumo por Forma de Pagamento</p>
+        <div class="summary-grid">
+          ${(['pix', 'cash', 'credit_card', 'debit_card'] as const).map(m =>
+            `<div class="summary-card"><div class="label">${methodLabel[m]}</div><div class="value">R$ ${closure.totals.totalsByMethod[m].toFixed(2)}</div></div>`
+          ).join('')}
+        </div>
+
+        <div class="total-bar">
+          <span class="label">TOTAL GERAL</span>
+          <span class="value">R$ ${totalGeral.toFixed(2)}</span>
+        </div>
+
+        <p class="section-title">Resumo por Origem</p>
+        <div class="origin-grid">
+          <div class="origin-card"><div class="label">Atendimento</div><div class="value">R$ ${closure.totals.totalsByOrigin.atendimento.toFixed(2)}</div></div>
+          <div class="origin-card"><div class="label">Loja</div><div class="value">R$ ${closure.totals.totalsByOrigin.loja.toFixed(2)}</div></div>
+        </div>
+
+        ${closure.totals.totalsByType ? `
+        <p class="section-title">Detalhamento por Tipo</p>
+        <div class="summary-grid" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="summary-card"><div class="label">Consulta</div><div class="value">R$ ${closure.totals.totalsByType.consulta.toFixed(2)}</div></div>
+          <div class="summary-card"><div class="label">Retorno</div><div class="value">R$ ${closure.totals.totalsByType.retorno.toFixed(2)}</div></div>
+          <div class="summary-card"><div class="label">Loja</div><div class="value">R$ ${closure.totals.totalsByType.loja.toFixed(2)}</div></div>
+        </div>` : ''}
+
+        <p class="section-title">Lançamentos (${closure.logs.length})</p>
+        <table>
+          <thead><tr>
+            <th>Hora</th><th>Paciente</th><th>Tipo</th><th>Origem</th><th>Forma(s)</th><th class="text-right">Valor</th>
+          </tr></thead>
+          <tbody>
+            ${closure.logs.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:16px;color:#94a3b8;">Nenhum lançamento no período.</td></tr>' : ''}
+            ${closure.logs.map(log => `<tr>
+              <td>${new Date(log.occurred_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
+              <td>${log.patient_name}${(log.items && log.items.length > 0) ? '<br/>' + log.items.map(it => `<span style="font-size:7px;color:#64748b;">${it.qty}x ${it.name} (R$${it.unit_price.toFixed(2)})</span>`).join('<br/>') : ''}</td>
+              <td>${financialTypeLabel(log.attendance_type)}</td>
+              <td>${financialOriginLabel(log.origin)}</td>
+              <td>${(log.payment_methods || []).map(p => `${methodLabel[p.payment_method] || p.payment_method} R$${Number(p.amount).toFixed(2)}`).join(' + ')}</td>
+              <td class="text-right font-bold">R$ ${log.amount.toFixed(2)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer-note">
+          Gerado em ${new Date().toLocaleString('pt-BR')} — Centro Médico Aliança — Pediatria Integrada
+        </div>
+      </div></body></html>`;
+
+      const container = document.createElement('div');
+      container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:white;';
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'width:794px;min-height:1123px;border:none;';
+      container.appendChild(iframe);
+      document.body.appendChild(container);
+
+      await new Promise<void>((resolve) => {
+        iframe.onload = () => resolve();
+        const doc = iframe.contentWindow?.document;
+        if (doc) { doc.open(); doc.write(html); doc.close(); }
+        setTimeout(resolve, 1000);
       });
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({ error: 'Falha no fechamento.' }));
-        throw new Error(payload.error || 'Falha no fechamento.');
+      await new Promise((r) => setTimeout(r, 500));
+
+      try {
+        const body = iframe.contentWindow?.document.body;
+        if (!body) throw new Error('Erro ao renderizar relatório');
+        iframe.style.height = body.scrollHeight + 'px';
+
+        const canvas = await html2canvas(body, {
+          scale: 2, useCORS: true, logging: false,
+          width: 794, height: body.scrollHeight, windowWidth: 794,
+          backgroundColor: null
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const marginTop = 32;
+        const marginBottom = 30;
+        const usableHeight = pageHeight - marginTop - marginBottom;
+
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        pdf.addImage(letterheadDataUrl, 'PNG', 0, 0, imgWidth, pageHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+        if (imgHeight > pageHeight) {
+          let contentOffset = pageHeight;
+          while (contentOffset < imgHeight) {
+            pdf.addPage();
+            pdf.addImage(letterheadDataUrl, 'PNG', 0, 0, imgWidth, pageHeight);
+            pdf.addImage(imgData, 'PNG', 0, marginTop - contentOffset, imgWidth, imgHeight);
+            contentOffset += usableHeight;
+          }
+        }
+
+        const filename = `fechamento-caixa-${closure.startDate}.pdf`;
+        pdf.save(filename);
+      } finally {
+        document.body.removeChild(container);
       }
-      await fetchFinancials();
     } catch (err) {
-      console.error(err);
+      console.error('Erro ao gerar PDF:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao gerar relatório PDF.');
     } finally {
       setClosingCashier(false);
     }
@@ -307,10 +451,10 @@ export default function FinancialDashboardPage() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-[#0b141a] relative overflow-hidden transition-colors duration-300">
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-rose-100/40 dark:bg-rose-900/10 rounded-full blur-[100px] pointer-events-none -translate-y-1/2 translate-x-1/3 transition-colors"></div>
+    <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-black relative overflow-hidden transition-colors duration-300">
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-rose-100/40 dark:bg-rose-900/5 rounded-full blur-[100px] pointer-events-none -translate-y-1/2 translate-x-1/3 transition-colors"></div>
 
-      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#08080b] border-b border-slate-100 dark:border-[#2d2d36] shadow-sm z-20 transition-colors">
+      <div className="h-16 px-6 flex items-center justify-between bg-white dark:bg-[#0a0a0f] border-b border-slate-100 dark:border-[#1a1a24] shadow-sm z-20 transition-colors">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
             <PieChartIcon className="w-5 h-5" />
@@ -332,7 +476,7 @@ export default function FinancialDashboardPage() {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8 z-10">
         <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-2 bg-white dark:bg-[#08080b] rounded-xl border border-slate-100 dark:border-[#2d2d36] p-1">
+          <div className="flex items-center gap-2 bg-white dark:bg-[#141419] rounded-xl border border-slate-100 dark:border-[#2d2d36] p-1">
             {([
               { key: 'overview', label: 'Visão geral' },
               { key: 'closure', label: 'Fechamento de caixa' }
@@ -358,7 +502,7 @@ export default function FinancialDashboardPage() {
                 key={option.key}
                 type="button"
                 onClick={() => setPreset(option.key)}
-                className={`px-3 py-2 rounded-lg text-xs font-bold border ${preset === option.key ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-[#08080b] text-slate-700 dark:text-gray-200 border-slate-200 dark:border-[#3d3d48]'}`}
+                className={`px-3 py-2 rounded-lg text-xs font-bold border ${preset === option.key ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-[#141419] text-slate-700 dark:text-gray-200 border-slate-200 dark:border-[#3d3d48]'}`}
               >
                 {option.label}
               </button>
@@ -367,7 +511,7 @@ export default function FinancialDashboardPage() {
         </div>
 
         {preset === 'custom' && (
-          <div className="mb-6 bg-white dark:bg-[#08080b] rounded-xl border border-slate-100 dark:border-[#2d2d36] p-4 flex items-center gap-3">
+          <div className="mb-6 bg-white dark:bg-[#141419] rounded-xl border border-slate-100 dark:border-[#2d2d36] p-4 flex items-center gap-3">
             <CalendarRange className="w-4 h-4 text-slate-500" />
             <input
               type="date"
@@ -405,7 +549,7 @@ export default function FinancialDashboardPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-6 mb-6">
-              <div className="col-span-2 bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4 h-[320px]">
+              <div className="col-span-2 bg-white dark:bg-[#141419] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4 h-[320px]">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 mb-3">Faturamento por período</h3>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={overview.charts.revenueByDay}>
@@ -417,7 +561,7 @@ export default function FinancialDashboardPage() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4 h-[320px]">
+              <div className="bg-white dark:bg-[#141419] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4 h-[320px]">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 mb-3">Origem da receita</h3>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={overview.charts.revenueByOrigin}>
@@ -432,7 +576,7 @@ export default function FinancialDashboardPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-6 mb-6">
-              <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4 h-[320px]">
+              <div className="bg-white dark:bg-[#141419] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4 h-[320px]">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 mb-3">Formas de pagamento</h3>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -445,7 +589,7 @@ export default function FinancialDashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4">
+              <div className="bg-white dark:bg-[#141419] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 mb-3">Top pacientes (curva A)</h3>
                 <div className="space-y-2">
                   {overview.bestClients.length === 0 && (
@@ -465,7 +609,7 @@ export default function FinancialDashboardPage() {
 
         {activeTab === 'closure' && closure && (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4">
+            <div className="bg-white dark:bg-[#141419] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200">Fechamento de caixa</h3>
@@ -473,21 +617,15 @@ export default function FinancialDashboardPage() {
                     Período: {closure.startDate} até {closure.endDate}
                   </p>
                 </div>
-                {profile?.role === 'admin' ? (
-                  <button
-                    type="button"
-                    onClick={handleCloseCashier}
-                    disabled={closingCashier || closure.isClosed}
-                    className="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1.5"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    {closure.isClosed ? 'Dia já fechado' : closingCashier ? 'Fechando...' : 'Fechar caixa'}
-                  </button>
-                ) : (
-                  <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
-                    Apenas admin pode fechar o caixa
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={handleDownloadReport}
+                  disabled={closingCashier || closure.logs.length === 0}
+                  className="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Download className="w-4 h-4" />
+                  {closingCashier ? 'Gerando PDF...' : 'Baixar Relatório PDF'}
+                </button>
               </div>
               <div className="grid grid-cols-4 gap-3">
                 <SummaryValue label="Pix" value={closure.totals.totalsByMethod.pix} />
@@ -497,7 +635,7 @@ export default function FinancialDashboardPage() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] overflow-hidden">
+            <div className="bg-white dark:bg-[#141419] rounded-2xl border border-slate-100 dark:border-[#2d2d36] overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-[#1c1c21]">
@@ -524,7 +662,18 @@ export default function FinancialDashboardPage() {
                     {closure.logs.map((log) => (
                       <tr key={log.id} className="border-t border-slate-100 dark:border-[#2d2d36]">
                         <td className="px-4 py-3">{new Date(log.occurred_at).toLocaleString('pt-BR')}</td>
-                        <td className="px-4 py-3">{log.patient_name}</td>
+                        <td className="px-4 py-3">
+                          <div>{log.patient_name}</div>
+                          {log.items && log.items.length > 0 && (
+                            <div className="mt-1 space-y-0.5">
+                              {log.items.map((item, i) => (
+                                <span key={i} className="block text-[10px] text-slate-500 dark:text-[#a1a1aa]">
+                                  {item.qty}x {item.name} (R$ {item.unit_price.toFixed(2)})
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-4 py-3">{financialTypeLabel(log.attendance_type)}</td>
                         <td className="px-4 py-3">{financialOriginLabel(log.origin)}</td>
                         <td className="px-4 py-3">
@@ -556,7 +705,7 @@ export default function FinancialDashboardPage() {
       </div>
       {editingLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-[#3d3d48] dark:bg-[#08080b]">
+          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-[#3d3d48] dark:bg-[#141419]">
             <h3 className="mb-4 text-sm font-bold text-slate-700 dark:text-gray-200">Editar lançamento financeiro</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -692,7 +841,7 @@ function KpiCard({
   value: number;
 }) {
   return (
-    <div className="bg-white dark:bg-[#08080b] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4">
+    <div className="bg-white dark:bg-[#141419] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="p-2 rounded-lg text-rose-600 bg-rose-50 dark:bg-rose-900/20">
           <Icon className="w-4 h-4" />
@@ -706,7 +855,7 @@ function KpiCard({
 
 function SummaryValue({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-slate-100 dark:border-[#3d3d48] bg-slate-50 dark:bg-slate-800 p-3">
+    <div className="rounded-xl border border-slate-100 dark:border-[#2a2a35] bg-slate-50 dark:bg-[#1c1c21] p-3">
       <p className="text-[11px] uppercase font-bold text-slate-500 dark:text-[#a1a1aa]">{label}</p>
       <p className="text-lg font-black text-slate-800 dark:text-[#fafafa]">R$ {value.toFixed(2)}</p>
     </div>

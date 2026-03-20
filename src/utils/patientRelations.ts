@@ -253,7 +253,7 @@ export async function createBasicPatientFromAppointment(
       name: appointment.patient_name.trim(),
       birth_date: appointment.patient_birth_date || '2000-01-01',
       phone: appointment.patient_phone ? cleanPhone(appointment.patient_phone) : null,
-      biological_sex: appointment.patient_sex || 'F', // Padrão feminino se não especificado
+      biological_sex: appointment.patient_sex || 'M', // Requer preenchimento posterior se não especificado
       active: true,
       receive_sms_alerts: true,
       nationality: 'Brasileira',

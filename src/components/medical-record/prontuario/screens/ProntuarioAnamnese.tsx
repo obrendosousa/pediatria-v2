@@ -63,7 +63,7 @@ function CidSearch({ selected, onChange }: { selected: string[]; onChange: (cids
     if (sanitized.length < 2) { setResults([]); setOpen(false); return; }
     const t = setTimeout(async () => {
       // Tenta RPC primeiro, fallback para busca direta
-      const { data: rpcData } = await pubSupabase.rpc('search_cid10', { search_query: sanitized });
+      const { data: rpcData } = await pubSupabase.rpc('search_cid10', { query_text: sanitized });
       if (rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
         setResults(rpcData.slice(0, 15) as { code: string; description: string }[]);
         setOpen(true);

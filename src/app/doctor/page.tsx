@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,18 +11,15 @@ import { findPatientByPhone } from '@/utils/patientUtils';
 import { linkAppointmentToPatient, createBasicPatientFromAppointment } from '@/utils/patientRelations';
 import { getLocalDateRange, formatAppointmentTime as formatTimeUtil, isAppointmentOnDate, getTodayDateString } from '@/utils/dateUtils';
 import OrphanedAppointmentsModal from '@/components/medical-record/OrphanedAppointmentsModal';
-import { 
-  Stethoscope, Clock, Loader2, AlertCircle, Users, 
+import {
+  Stethoscope, Clock, Loader2, Users,
   Phone, Calendar, UserCheck, User
 } from 'lucide-react';
 
 export default function DoctorPage() {
   const { profile } = useAuth();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  
-  // Criar versão serializável dos searchParams para evitar erros do React DevTools
-  const searchParamsString = useMemo(() => searchParams?.toString() || '', [searchParams]);
+
   const patientIdParam = useMemo(() => searchParams?.get('patientId') || null, [searchParams]);
   const appointmentIdParam = useMemo(() => searchParams?.get('appointmentId') || null, [searchParams]);
   
@@ -33,6 +30,7 @@ export default function DoctorPage() {
   const [appointmentsList, setAppointmentsList] = useState<Appointment[]>([]);
   const [orphanedAppointments, setOrphanedAppointments] = useState<Appointment[]>([]);
   const [isOrphanedModalOpen, setIsOrphanedModalOpen] = useState(false);
+  const [isCreatingPatient, setIsCreatingPatient] = useState(false);
   // Usar função utilitária para obter data atual no timezone local
   const [selectedDate, setSelectedDate] = useState(getTodayDateString());
   const [displayDate, setDisplayDate] = useState(() => {
@@ -66,6 +64,7 @@ export default function DoctorPage() {
   
   useEffect(() => {
     fetchAppointments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
   // Realtime subscription para atualizar quando status mudar
@@ -80,7 +79,7 @@ export default function DoctorPage() {
       }, async (payload) => {
         console.log('[DoctorPage] Mudança detectada em appointment:', payload);
         // Se a mudança for para in_service, atualizar imediatamente
-        if (payload.new && (payload.new as any).status === 'in_service') {
+        if (payload.new && (payload.new as Record<string, unknown>).status === 'in_service') {
           console.log('[DoctorPage] Paciente entrou em atendimento, atualizando prontuário...');
         }
         // Atualizar sempre que houver mudança
@@ -91,7 +90,30 @@ export default function DoctorPage() {
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
+
+  // Fallback: criar paciente quando temos appointment mas não temos patient
+  useEffect(() => {
+    if (!currentAppointment || patientId || isCreatingPatient) return;
+    let cancelled = false;
+    setIsCreatingPatient(true);
+    (async () => {
+      const newPatientId = await createBasicPatientFromAppointment(currentAppointment);
+      if (cancelled) return;
+      if (newPatientId) {
+        await linkAppointmentToPatient(currentAppointment.id, newPatientId);
+        setPatientId(newPatientId);
+        setCurrentAppointment(null);
+        fetchAppointments();
+      } else {
+        setCurrentAppointment(null);
+      }
+      setIsCreatingPatient(false);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentAppointment, patientId, isCreatingPatient]);
 
   const fetchAppointment = async (id: number) => {
     const { data, error } = await supabase
@@ -173,24 +195,6 @@ export default function DoctorPage() {
     } catch (err) {
       console.error('Erro inesperado ao buscar appointments:', err);
       setAppointmentsList([]);
-    }
-  };
-  
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Se for formato DD/MM/YYYY, converter para YYYY-MM-DD
-    if (value.includes('/')) {
-      const [day, month, year] = value.split('/');
-      if (day && month && year) {
-        const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        setSelectedDate(isoDate);
-        setDisplayDate(value);
-      }
-    } else {
-      // Se for formato YYYY-MM-DD (input nativo)
-      setSelectedDate(value);
-      const [year, month, day] = value.split('-');
-      setDisplayDate(`${day}/${month}/${year}`);
     }
   };
   
@@ -300,8 +304,8 @@ export default function DoctorPage() {
         setAppointmentId(inService.id);
         
         // Primeiro, verificar se o appointment já tem patient_id
-        if ((inService as any).patient_id) {
-          setPatientId((inService as any).patient_id);
+        if (inService.patient_id) {
+          setPatientId(inService.patient_id);
           setCurrentAppointment(null);
           return;
         }
@@ -662,21 +666,8 @@ export default function DoctorPage() {
     );
   }
 
-  // Se há appointment mas não há patientId, tentar criar automaticamente
-  // (Isso não deveria acontecer, mas é um fallback de segurança)
+  // Se há appointment mas não há patientId, o useEffect de fallback já está tratando
   if (currentAppointment && !patientId) {
-    // Criar paciente automaticamente como fallback
-    (async () => {
-      const newPatientId = await createBasicPatientFromAppointment(currentAppointment);
-      if (newPatientId) {
-        await linkAppointmentToPatient(currentAppointment.id, newPatientId);
-        setPatientId(newPatientId);
-        setCurrentAppointment(null);
-        fetchAppointments();
-      }
-    })();
-    
-    // Mostrar loading enquanto cria
     return (
       <div className="h-full flex items-center justify-center bg-[#f8fafc] dark:bg-[#0b141a]">
         <div className="text-center">

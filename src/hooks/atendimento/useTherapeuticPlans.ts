@@ -9,8 +9,8 @@ export interface TherapeuticPlan {
   id: number;
   patient_id: number;
   doctor_id: number | null;
-  name: string;
-  focus: string | null;
+  title: string;
+  description: string | null;
   status: 'active' | 'completed' | 'cancelled';
   created_at: string;
   doctor_name?: string;

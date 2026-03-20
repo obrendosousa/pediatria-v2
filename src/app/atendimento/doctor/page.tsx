@@ -31,6 +31,7 @@ export default function AtendimentoDoctorPage() {
   const [appointmentsList, setAppointmentsList] = useState<Appointment[]>([]);
   const [orphanedAppointments, setOrphanedAppointments] = useState<Appointment[]>([]);
   const [isOrphanedModalOpen, setIsOrphanedModalOpen] = useState(false);
+  const [isCreatingPatient, setIsCreatingPatient] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getTodayDateString());
   const [displayDate, setDisplayDate] = useState(() => {
     const today = new Date();
@@ -276,6 +277,28 @@ export default function AtendimentoDoctorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
+  // Fallback: criar paciente quando temos appointment mas não temos patient
+  useEffect(() => {
+    if (!currentAppointment || patientId || isCreatingPatient) return;
+    let cancelled = false;
+    setIsCreatingPatient(true);
+    (async () => {
+      const newPatientId = await createBasicPatientFromAppointment(currentAppointment);
+      if (cancelled) return;
+      if (newPatientId) {
+        await linkAppointmentToPatient(currentAppointment.id, newPatientId);
+        setPatientId(newPatientId);
+        setCurrentAppointment(null);
+        fetchAppointments();
+      } else {
+        setCurrentAppointment(null);
+      }
+      setIsCreatingPatient(false);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentAppointment, patientId, isCreatingPatient]);
+
   const handleDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, '');
     if (value.length > 8) value = value.slice(0, 8);
@@ -329,16 +352,6 @@ export default function AtendimentoDoctorPage() {
 
   // Fallback: create patient when we have appointment but no patient
   if (currentAppointment && !patientId) {
-    (async () => {
-      const newPatientId = await createBasicPatientFromAppointment(currentAppointment);
-      if (newPatientId) {
-        await linkAppointmentToPatient(currentAppointment.id, newPatientId);
-        setPatientId(newPatientId);
-        setCurrentAppointment(null);
-        fetchAppointments();
-      }
-    })();
-
     return (
       <div className="h-full flex items-center justify-center bg-slate-50 dark:bg-[#15171e]">
         <div className="text-center">

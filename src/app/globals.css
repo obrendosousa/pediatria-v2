@@ -471,3 +471,36 @@
 .page-transition {
   animation: pageSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
+/* ---- Drag & Drop Kanban ---- */
+@keyframes cardDropIn {
+  0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+  60% { opacity: 1; transform: translateY(2px) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-drop-enter {
+  animation: cardDropIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.kanban-column-drag-over {
+  box-shadow: inset 0 0 0 2px rgba(99, 179, 237, 0.4), 0 0 20px -4px rgba(99, 179, 237, 0.15);
+}
+.dark .kanban-column-drag-over {
+  box-shadow: inset 0 0 0 2px rgba(99, 179, 237, 0.25), 0 0 30px -4px rgba(99, 179, 237, 0.1);
+}
+
+.drag-overlay-card {
+  transform: scale(1.04);
+  box-shadow:
+    0 20px 40px -8px rgba(0,0,0,0.45),
+    0 8px 16px -4px rgba(0,0,0,0.3),
+    0 0 0 1px rgba(255,255,255,0.06);
+  cursor: grabbing;
+}
+.dark .drag-overlay-card {
+  box-shadow:
+    0 20px 50px -8px rgba(0,0,0,0.8),
+    0 8px 20px -4px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(255,255,255,0.08),
+    0 0 40px -10px rgba(99, 179, 237, 0.12);
+}

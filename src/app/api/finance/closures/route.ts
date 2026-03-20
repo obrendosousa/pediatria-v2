@@ -9,6 +9,14 @@ type PaymentMethod = 'pix' | 'cash' | 'credit_card' | 'debit_card';
 type FinancialOrigin = 'atendimento' | 'loja';
 type FinancialType = 'consulta' | 'retorno' | 'loja';
 
+type SaleItemRow = {
+  sale_id: number;
+  quantity: number;
+  unit_price: number;
+  product_id: number | null;
+  products?: Array<{ id: number; name: string }> | null;
+};
+
 type TransactionRow = {
   id: number;
   amount: number;
@@ -97,7 +105,8 @@ function buildDailyTotals(transactions: TransactionRow[]) {
 function mapTransactionLog(
   transaction: TransactionRow,
   patientNameById: Map<number, string>,
-  chatNameById: Map<number, string>
+  chatNameById: Map<number, string>,
+  saleItemsBySaleId: Map<number, SaleItemRow[]>
 ) {
   const appointment = firstAppointment(transaction);
   const sale = firstSale(transaction);
@@ -114,6 +123,14 @@ function mapTransactionLog(
     appointmentType
   });
 
+  const items = transaction.sale_id
+    ? (saleItemsBySaleId.get(transaction.sale_id) || []).map((si) => ({
+        name: si.products?.[0]?.name || `Produto #${si.product_id}`,
+        qty: si.quantity,
+        unit_price: Number(si.unit_price || 0)
+      }))
+    : [];
+
   return {
     id: transaction.id,
     occurred_at: transaction.occurred_at,
@@ -122,7 +139,8 @@ function mapTransactionLog(
     patient_name: patientName,
     amount: Number(transaction.amount || 0),
     payment_methods: transaction.financial_transaction_payments || [],
-    notes: transaction.notes
+    notes: transaction.notes,
+    items
   };
 }
 
@@ -210,10 +228,37 @@ async function loadTransactionsByRange(startISO: string, endISO: string) {
   const patientNameById = new Map((patientsRes.data || []).map((patient) => [patient.id, patient.name || 'Paciente']));
   const chatNameById = new Map((chatsRes.data || []).map((chat) => [chat.id, chat.contact_name || chat.phone || 'Cliente']));
 
+  // Carregar itens vendidos por sale_id
+  const saleIds = [
+    ...new Set(
+      rows
+        .map((row) => row.sale_id)
+        .filter((id): id is number => Number.isInteger(id))
+    )
+  ];
+
+  const saleItemsBySaleId = new Map<number, SaleItemRow[]>();
+  if (saleIds.length > 0) {
+    const { data: saleItemsData } = await supabase
+      .from('sale_items')
+      .select('sale_id, quantity, unit_price, product_id, products (id, name)')
+      .in('sale_id', saleIds);
+
+    if (saleItemsData) {
+      const itemRows = saleItemsData as unknown as SaleItemRow[];
+      for (const item of itemRows) {
+        const existing = saleItemsBySaleId.get(item.sale_id) || [];
+        existing.push(item);
+        saleItemsBySaleId.set(item.sale_id, existing);
+      }
+    }
+  }
+
   return {
     rows,
     patientNameById,
-    chatNameById
+    chatNameById,
+    saleItemsBySaleId
   };
 }
 
@@ -249,9 +294,9 @@ export async function GET(request: Request) {
     const closure = isSingleDay ? (closures[0] ?? null) : null;
     const isClosed = isSingleDay ? Boolean(closure) : closures.length >= expectedClosureDays;
 
-    const { rows, patientNameById, chatNameById } = await loadTransactionsByRange(range.startISO, range.endISO);
+    const { rows, patientNameById, chatNameById, saleItemsBySaleId } = await loadTransactionsByRange(range.startISO, range.endISO);
     const totals = buildDailyTotals(rows);
-    const logs = rows.map((transaction) => mapTransactionLog(transaction, patientNameById, chatNameById));
+    const logs = rows.map((transaction) => mapTransactionLog(transaction, patientNameById, chatNameById, saleItemsBySaleId));
 
     return NextResponse.json({
       date: range.startDate,
@@ -310,7 +355,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { rows, patientNameById, chatNameById } = await loadTransactionsByRange(range.startISO, range.endISO);
+    const { rows, patientNameById, chatNameById, saleItemsBySaleId } = await loadTransactionsByRange(range.startISO, range.endISO);
     if (rows.length === 0) {
       return NextResponse.json(
         { error: 'Não existem lançamentos para fechar neste dia.' },
@@ -364,7 +409,7 @@ export async function POST(request: Request) {
       success: true,
       closure,
       totals,
-      logs: rows.map((transaction) => mapTransactionLog(transaction, patientNameById, chatNameById))
+      logs: rows.map((transaction) => mapTransactionLog(transaction, patientNameById, chatNameById, saleItemsBySaleId))
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erro ao fechar o caixa diário.';

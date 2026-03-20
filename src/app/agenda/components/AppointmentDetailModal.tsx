@@ -207,7 +207,7 @@ export default function AppointmentDetailModal({
   return (
     <>
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white dark:bg-[#202c33] w-full max-w-lg rounded-2xl shadow-lg border border-slate-200 dark:border-[#3d3d48] overflow-hidden animate-scale-in">
+      <div className="bg-white dark:bg-[#141419] w-full max-w-lg rounded-2xl shadow-lg border border-slate-200 dark:border-[#2a2a35] overflow-hidden animate-scale-in">
         <div className={`p-4 border-b border-slate-200 dark:border-[#3d3d48] flex justify-between items-center ${
           selectedAppointment.status === 'blocked' ? 'bg-red-50/50 dark:bg-red-900/10'
             : selectedAppointment.patient_sex === 'M' ? 'bg-blue-50/50 dark:bg-blue-900/10'
@@ -448,7 +448,7 @@ export default function AppointmentDetailModal({
           </div>
         </div>
 
-        <div className="p-4 bg-slate-50/50 dark:bg-[#08080b] border-t border-slate-200 dark:border-[#3d3d48] flex gap-2">
+        <div className="p-4 bg-slate-50/50 dark:bg-[#0e0e14] border-t border-slate-200 dark:border-[#2a2a35] flex gap-2">
           {isEditing ? (
             <>
               <button onClick={() => setIsEditing(false)} className="flex-1 bg-white dark:bg-[#1c1c21] border border-slate-300 dark:border-gray-600 text-slate-600 dark:text-[#d4d4d8] py-2 rounded-lg text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-colors">Cancelar</button>
