@@ -94,7 +94,7 @@ export function EditClinicalInfoModal({
       const { data } = await supabaseAtendimento
         .from('medications')
         .select('id, description, active_ingredient, presentation')
-        .or(`description.ilike.%${searchTerm}%,active_ingredient.ilike.%${searchTerm}%`)
+        .or(`description.ilike.%${searchTerm.replace(/[%_\\]/g, '\\$&')}%,active_ingredient.ilike.%${searchTerm.replace(/[%_\\]/g, '\\$&')}%`)
         .limit(5);
 
       if (data) {
@@ -128,8 +128,8 @@ export function EditClinicalInfoModal({
   };
 
   const handleClose = async () => {
-    onClose();
     await handleSave(false);
+    onClose();
     setTimeout(() => {
       onRefresh();
     }, 300);

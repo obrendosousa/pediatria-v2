@@ -27,7 +27,8 @@ export function useMedications() {
         .select('*', { count: 'exact' });
 
       if (search.trim()) {
-        query = query.or(`description.ilike.%${search.trim()}%,presentation.ilike.%${search.trim()}%,active_ingredient.ilike.%${search.trim()}%`);
+        const escaped = search.trim().replace(/[%_\\]/g, '\\$&');
+        query = query.or(`description.ilike.%${escaped}%,presentation.ilike.%${escaped}%,active_ingredient.ilike.%${escaped}%`);
       }
 
       query = query.order('description', { ascending: true });

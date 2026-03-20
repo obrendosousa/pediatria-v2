@@ -37,7 +37,8 @@ export function usePartners() {
         .select('*', { count: 'exact' });
 
       if (search.trim()) {
-        query = query.or(`name.ilike.%${search.trim()}%,email.ilike.%${search.trim()}%`);
+        const escaped = search.trim().replace(/[%_\\]/g, '\\$&');
+        query = query.or(`name.ilike.%${escaped}%,email.ilike.%${escaped}%`);
       }
 
       if (sort) {

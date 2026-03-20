@@ -234,7 +234,7 @@ export default function NewAppointmentModal({ isOpen, onClose, onSuccess, initia
       const { data } = await supabaseAtendimento
         .from('patients')
         .select('id, full_name, phone, sex, birth_date')
-        .or(`full_name.ilike.%${trimmed}%,phone.ilike.%${trimmed}%`)
+        .or(`full_name.ilike.%${trimmed.replace(/[%_\\]/g, '\\$&')}%,phone.ilike.%${trimmed.replace(/[%_\\]/g, '\\$&')}%`)
         .order('full_name')
         .limit(15);
       setPatientResults(data || []);

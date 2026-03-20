@@ -88,7 +88,7 @@ export default function CriarOrcamentoPage() {
       const { data } = await supabase
         .from('patients')
         .select('id, full_name, phone')
-        .or(`full_name.ilike.%${trimmed}%,phone.ilike.%${trimmed}%`)
+        .or(`full_name.ilike.%${trimmed.replace(/[%_\\]/g, '\\$&')}%,phone.ilike.%${trimmed.replace(/[%_\\]/g, '\\$&')}%`)
         .order('full_name')
         .limit(15);
       setPatientResults(data || []);

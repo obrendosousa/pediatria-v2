@@ -55,7 +55,8 @@ export default function PatientListTable({ onNewPatient, onEditPatient }: Patien
       else if (statusFilter === 'inactive') query = query.eq('active', false);
 
       if (searchTerm.trim()) {
-        const term = `%${searchTerm.trim()}%`;
+        const escaped = searchTerm.trim().replace(/[%_\\]/g, '\\$&');
+        const term = `%${escaped}%`;
         query = query.or(`full_name.ilike.${term},phone.ilike.${term},cpf.ilike.${term}`);
       }
 

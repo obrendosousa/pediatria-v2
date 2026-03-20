@@ -3,7 +3,7 @@
 import React from 'react';
 import {
   X, User, Calendar, FileText, Activity, Clipboard,
-  Stethoscope, Syringe, HeartPulse, Shield, Baby, Book,
+  Stethoscope, Syringe, Baby, Book,
   Paperclip, FileSignature, Pill, TestTube, ArrowRight,
   Printer, Image as ImageIcon, Video, File
 } from 'lucide-react';
@@ -13,21 +13,23 @@ import { useExamRequests } from '@/hooks/useExamRequests';
 import { usePrescriptions } from '@/hooks/usePrescriptions';
 import { useDocuments } from '@/hooks/useDocuments';
 import { useAttachments, isImage, isVideo, isPdf } from '@/hooks/useAttachments';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { printRequest } from './attendance/screens/ExamsAndProcedures';
 import { printPrescription } from './attendance/screens/Prescriptions';
 import { printDocument } from './attendance/screens/DocumentsAndCertificates';
-import { MedicalRecord } from '@/types/medical';
 
 interface AttendanceDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  record: any | null; // Using any to access all the 15 screen types fetched via useMedicalRecord
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  record: Record<string, any> | null;
   doctorName?: string;
-  externalPatientData?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  externalPatientData?: Record<string, any>;
 }
 
 // Helper para exibir campos individuais
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Field = ({ label, value, isHtml = false }: { label: string, value: any, isHtml?: boolean }) => {
   if (value === null || value === undefined || value === '') return null;
   if (Array.isArray(value) && value.length === 0) return null;
@@ -55,7 +57,8 @@ const Field = ({ label, value, isHtml = false }: { label: string, value: any, is
 };
 
 // Seção Collapsible para agrupar as telas
-const Section = ({ title, icon: Icon, children, isEmpty }: { title: string, icon: any, children: React.ReactNode, isEmpty?: boolean }) => {
+ 
+const Section = ({ title, icon: Icon, children, isEmpty }: { title: string, icon: React.ElementType, children: React.ReactNode, isEmpty?: boolean }) => {
   const [isOpen, setIsOpen] = React.useState(true);
 
   if (isEmpty) return null;
@@ -127,12 +130,13 @@ export function AttendanceDetailModal({
     [allAttachments, medicalRecordId]
   );
 
-  const [patientData, setPatientData] = React.useState<any>(externalPatientData || {});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [patientData, setPatientData] = React.useState<Record<string, any>>(externalPatientData || {});
 
   React.useEffect(() => {
     async function loadPatient() {
       if (!patientId) return;
-
+      const supabase = createClient();
       const { data, error } = await supabase
         .from('patients')
         .select('*')

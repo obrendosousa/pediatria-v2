@@ -56,7 +56,7 @@ export default function PatientSearchSelect({
       const { data, error } = await supabase
         .from('patients')
         .select('id, name, phone, biological_sex, family_members, birth_date')
-        .or(`name.ilike.%${trimmed}%,phone.ilike.%${trimmed}%`)
+        .or(`name.ilike.%${trimmed.replace(/[%_\\]/g, '\\$&')}%,phone.ilike.%${trimmed.replace(/[%_\\]/g, '\\$&')}%`)
         .limit(20)
         .order('name');
 

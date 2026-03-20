@@ -59,7 +59,7 @@ export function usePatientCids() {
     const { data: directData } = await pubSupabase
       .from('cid_sub_categoria')
       .select('id, descricao')
-      .or(`id.ilike.%${query}%,descricao.ilike.%${query}%`)
+      .or(`id.ilike.%${query.replace(/[%_\\]/g, '\\$&')}%,descricao.ilike.%${query.replace(/[%_\\]/g, '\\$&')}%`)
       .limit(20);
     if (directData) {
       setSearchResults(directData.map((d: Record<string, unknown>) => ({
@@ -72,7 +72,7 @@ export function usePatientCids() {
     const { data: cid10Data } = await pubSupabase
       .from('cid10')
       .select('code, description')
-      .or(`code.ilike.%${query}%,description.ilike.%${query}%`)
+      .or(`code.ilike.%${query.replace(/[%_\\]/g, '\\$&')}%,description.ilike.%${query.replace(/[%_\\]/g, '\\$&')}%`)
       .limit(20);
     setSearchResults((cid10Data || []) as Cid10Item[]);
   }, []);

@@ -428,6 +428,14 @@ export const insightExtractorNode = async (
   state: IngestionState
 ): Promise<Partial<IngestionState>> => {
   if (state.chat_id && state.should_continue && state.phone) {
+    // Guard: skip LLM call para mensagens curtas, mídia-only ou enviadas pelo bot
+    const text = (state.message_content ?? "").trim();
+    const isMediaOnly = state.message_type !== "text" && !text;
+    const isTooShort = text.length < 10;
+    if (isMediaOnly || isTooShort) {
+      return {};
+    }
+
     // Fire and forget the Analyzer to prevent blocking the ingestion pipeline
     Promise.resolve().then(() => analyzeChatInteraction(state.chat_id!));
   }

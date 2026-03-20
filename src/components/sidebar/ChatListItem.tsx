@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useRef, useEffect, useLayoutEffect, useState, useMemo } from 'react';
+import { memo, useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Pin, Trash2, Mail, ChevronDown, 
@@ -44,12 +44,17 @@ const ChatListItem = memo(({
     const [isExiting, setIsExiting] = useState(false);
     const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [avatarError, setAvatarError] = useState(false);
+    const prevAvatarKeyRef = useRef(`${chat.id}_${chat.profile_pic}`);
 
     // Identificador para o chat da IA
     const isAIChat = chat.phone === '00000000000';
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useMemo(() => { setAvatarError(false); }, [chat.id, chat.profile_pic]);
+    // Resetar avatarError quando chat.id ou profile_pic mudar (sem useEffect + setState)
+    const currentAvatarKey = `${chat.id}_${chat.profile_pic}`;
+    if (prevAvatarKeyRef.current !== currentAvatarKey) {
+      prevAvatarKeyRef.current = currentAvatarKey;
+      if (avatarError) setAvatarError(false);
+    }
 
     useLayoutEffect(() => {
         if (!isMenuOpen || !triggerRef.current || typeof document === 'undefined') return;
