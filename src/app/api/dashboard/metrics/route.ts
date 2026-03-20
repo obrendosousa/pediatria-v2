@@ -2,22 +2,22 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/api-auth';
 
-// Usa as mesmas variáveis de ambiente do cliente
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-// Para APIs, pode precisar de service role key se necessário acessar dados protegidos
-// Por enquanto, usa anon key
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(request: Request) {
   try {
+    const auth = await requireAuth();
+    if ('error' in auth) return auth.error;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30'; // Últimos 30 dias por padrão
-    const doctorId = searchParams.get('doctor_id'); // Opcional: filtrar por médico
-    
-    const daysAgo = parseInt(period);
+    const _doctorId = searchParams.get('doctor_id'); // Opcional: filtrar por médico (TODO)
+    void _doctorId;
+
+    const daysAgo = parseInt(period, 10);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysAgo);
     const startDateISO = startDate.toISOString();
@@ -157,10 +157,11 @@ export async function GET(request: Request) {
         birthdays: birthdaysToday,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Dashboard API Error]', error);
+    const msg = error instanceof Error ? error.message : 'Erro ao buscar métricas';
     return NextResponse.json(
-      { error: error.message || 'Erro ao buscar métricas' },
+      { error: msg },
       { status: 500 }
     );
   }

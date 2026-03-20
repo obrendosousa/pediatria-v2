@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  X, 
-  Plus, 
-  Trash2, 
-  Clock, 
-  ChevronUp, 
-  ChevronDown, 
-  CheckCircle2, 
-  LayoutTemplate, 
-  FileText, 
-  Mic, 
+import {
+  Plus,
+  Trash2,
+  Clock,
+  ChevronUp,
+  ChevronDown,
+  CheckCircle2,
+  LayoutTemplate,
+  FileText,
+  Mic,
   Image as ImageIcon,
   Scroll,
   Zap,
@@ -18,28 +18,64 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 
+interface StepData {
+  id: number;
+  type: string;
+  content: string;
+  delay: number;
+  title?: string;
+  funnel_id?: string | number;
+  funnel_steps?: Array<{ type: string; content: string; delay: number }>;
+}
+
+interface MacroItem {
+  id: string | number;
+  title: string;
+  content: string;
+  type: string;
+  simulation_delay?: number;
+}
+
+interface FunnelItem {
+  id: string | number;
+  title: string;
+  type?: string;
+  steps?: Array<{ type: string; content?: string; delay?: number }>;
+}
+
 interface SequenceEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: any) => void;
-  initialData?: any;
+  onSave: (data: { title: string; steps: StepData[]; type: string }) => void;
+  initialData?: { title?: string; steps?: StepData[] };
   mode?: 'script' | 'funnel';
-  macros?: any[];
-  funnels?: any[];
+  macros?: MacroItem[];
+  funnels?: FunnelItem[];
+}
+
+let _idCounter = 0;
+function nextId(): number {
+  return ++_idCounter;
 }
 
 export default function SequenceEditorModal({ isOpen, onClose, onSave, initialData, mode = 'funnel', macros = [], funnels = [] }: SequenceEditorModalProps) {
     const { toast } = useToast();
     const [title, setTitle] = useState('');
-    const [steps, setSteps] = useState<any[]>([]);
+    const [steps, setSteps] = useState<StepData[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    
+
     // Estado para adição manual rápida
     const [manualText, setManualText] = useState('');
     const [manualDelay, setManualDelay] = useState(5);
     const [mounted, setMounted] = useState(false);
+    const idCounterRef = useRef(0);
 
     const isScriptMode = mode === 'script';
+
+    const generateId = useCallback(() => {
+        idCounterRef.current += 1;
+        return nextId();
+    }, []);
 
     useEffect(() => setMounted(true), []);
     useEffect(() => {
@@ -54,30 +90,29 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
     // --- AÇÕES ---
 
     // 1. Adicionar uma Macro Pronta (Da lista da esquerda)
-    const addMacroToSequence = (macro: any) => {
-        const newStep = {
-            id: Date.now() + Math.random(), // ID único
+    const addMacroToSequence = useCallback((macro: MacroItem) => {
+        const newStep: StepData = {
+            id: generateId(),
             type: macro.type === 'ptt' ? 'audio' : macro.type,
             content: macro.content,
-            delay: isScriptMode ? 0 : (macro.simulation_delay || 5), // Sem delay para scripts
-            title: macro.title 
+            delay: isScriptMode ? 0 : (macro.simulation_delay || 5),
+            title: macro.title
         };
         setSteps(prev => [...prev, newStep]);
-    };
+    }, [isScriptMode, generateId]);
 
-    const addFunnelToSequence = (funnel: any) => {
-        // No script, o funil é adicionado como bloco único (não expande mensagens automaticamente)
+    const addFunnelToSequence = useCallback((funnel: FunnelItem) => {
         const sourceSteps = Array.isArray(funnel?.steps) ? funnel.steps : [];
         if (!sourceSteps.length) return;
 
-        const funnelBlock = {
-            id: Date.now() + Math.random(),
+        const funnelBlock: StepData = {
+            id: generateId(),
             type: 'funnel',
             content: '',
             delay: 0,
             title: funnel.title,
             funnel_id: funnel.id,
-            funnel_steps: sourceSteps.map((step: any) => ({
+            funnel_steps: sourceSteps.map((step) => ({
                 type: step.type,
                 content: step.content || '',
                 delay: Math.max(step.delay || 0, 0),
@@ -85,13 +120,13 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
         };
 
         setSteps(prev => [...prev, funnelBlock]);
-    };
+    }, [generateId]);
 
     // 2. Adicionar Texto Manual (Digitado na hora)
     const addManualStep = () => {
         if (!manualText.trim()) return;
-        const newStep = {
-            id: Date.now(),
+        const newStep: StepData = {
+            id: generateId(),
             type: 'text',
             content: manualText,
             delay: isScriptMode ? 0 : manualDelay,
@@ -102,40 +137,44 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
     };
 
     // 3. Remover Passo
-    const removeStep = (index: number) => {
+    const removeStep = useCallback((index: number) => {
         setSteps(prev => prev.filter((_, i) => i !== index));
-    };
+    }, []);
 
     // 4. Mover Passo (Reordenar)
-    const moveStep = (index: number, direction: 'up' | 'down') => {
-        const newSteps = [...steps];
-        if (direction === 'up' && index > 0) {
-            [newSteps[index], newSteps[index - 1]] = [newSteps[index - 1], newSteps[index]];
-        } else if (direction === 'down' && index < newSteps.length - 1) {
-            [newSteps[index], newSteps[index + 1]] = [newSteps[index + 1], newSteps[index]];
-        }
-        setSteps(newSteps);
-    };
+    const moveStep = useCallback((index: number, direction: 'up' | 'down') => {
+        setSteps(prev => {
+            const newSteps = [...prev];
+            if (direction === 'up' && index > 0) {
+                [newSteps[index], newSteps[index - 1]] = [newSteps[index - 1], newSteps[index]];
+            } else if (direction === 'down' && index < newSteps.length - 1) {
+                [newSteps[index], newSteps[index + 1]] = [newSteps[index + 1], newSteps[index]];
+            }
+            return newSteps;
+        });
+    }, []);
 
     // 5. Atualizar Delay
-    const updateStepDelay = (index: number, newDelay: number) => {
-        const newSteps = [...steps];
-        newSteps[index].delay = newDelay;
-        setSteps(newSteps);
-    };
+    const updateStepDelay = useCallback((index: number, newDelay: number) => {
+        setSteps(prev => {
+            const newSteps = [...prev];
+            newSteps[index] = { ...newSteps[index], delay: newDelay };
+            return newSteps;
+        });
+    }, []);
 
     const handleSave = () => {
         if (!title.trim()) { toast.error("Dê um nome para este roteiro."); return; }
         if (steps.length === 0) { toast.error("Adicione pelo menos um passo."); return; }
-        onSave({ title, steps, type: mode }); 
+        onSave({ title, steps, type: mode });
         onClose();
     };
 
     if (!isOpen) return null;
 
     // Filtrar e agrupar macros por tipo
-    const filteredMacros = macros.filter(m => 
-        m.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredMacros = macros.filter(m =>
+        m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (m.content && m.content.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     const groupedMacros = {
@@ -152,7 +191,7 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
     const modalContent = (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
-                
+
                 {/* HEADER */}
                 <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-3">
@@ -176,7 +215,7 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
 
                 {/* CORPO PRINCIPAL */}
                 <div className="flex flex-1 overflow-hidden">
-                    
+
                     {/* ESQUERDA: BIBLIOTECA (MACROS) */}
                     <div className="w-[30%] border-r bg-white flex flex-col">
                         <div className="p-4 border-b bg-gray-50/50">
@@ -186,12 +225,12 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                                 <input
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-100 outline-none" 
-                                    placeholder="Buscar..." 
+                                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-100 outline-none"
+                                    placeholder="Buscar..."
                                 />
                             </div>
                         </div>
-                        
+
                         <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50 custom-scrollbar">
                             {filteredFunnels.length > 0 && (
                                 <>
@@ -209,7 +248,7 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                                                 <span className="font-bold text-sm text-gray-700 truncate flex-1">{funnel.title}</span>
                                                 <Plus size={16} className="text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"/>
                                             </div>
-                                            <p className="text-xs text-gray-500">{(funnel.steps || []).length} etapas • entra como bloco único</p>
+                                            <p className="text-xs text-gray-500">{(funnel.steps || []).length} etapas</p>
                                         </div>
                                     ))}
                                 </>
@@ -258,6 +297,7 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                                             )}
                                             {macro.type === 'image' && (
                                               <div className="h-16 bg-gray-100 rounded overflow-hidden relative">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                                 <img src={macro.content} alt="Preview macro" className="w-full h-full object-cover opacity-70"/>
                                               </div>
                                             )}
@@ -276,9 +316,9 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                         {/* INPUT TÍTULO */}
                         <div className="p-4 bg-white shadow-sm z-10">
                             <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Nome do Roteiro</label>
-                            <input 
-                                value={title} 
-                                onChange={e => setTitle(e.target.value)} 
+                            <input
+                                value={title}
+                                onChange={e => setTitle(e.target.value)}
                                 className="w-full text-lg font-bold text-gray-800 border-b border-gray-300 focus:border-blue-500 outline-none pb-1 bg-transparent placeholder:font-normal placeholder:text-gray-300"
                                 placeholder={isScriptMode ? "Ex: Abordagem Cliente Frio" : "Ex: Funil de Aquecimento 3 Dias"}
                                 autoFocus
@@ -314,7 +354,7 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                                                         </div>
                                                         {step.title && <span className="text-xs text-gray-400 font-medium">• Origem: {step.title}</span>}
                                                     </div>
-                                                    
+
                                                     {/* Controles */}
                                                     <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                                         <button onClick={() => moveStep(idx, 'up')} disabled={idx === 0} className="p-1.5 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30"><ChevronUp size={16}/></button>
@@ -332,14 +372,14 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                                                                 Este bloco representa um funil completo
                                                             </p>
                                                             <div className="space-y-1">
-                                                                {((step as any).funnel_steps || []).slice(0, 3).map((nested: any, nestedIdx: number) => (
+                                                                {(step.funnel_steps || []).slice(0, 3).map((nested, nestedIdx) => (
                                                                     <p key={nestedIdx} className="text-xs text-indigo-600 truncate">
                                                                         {nestedIdx + 1}. {nested.type === 'text' ? (nested.content || 'Texto') : `[${nested.type}]`}
                                                                     </p>
                                                                 ))}
-                                                                {((step as any).funnel_steps || []).length > 3 && (
+                                                                {(step.funnel_steps || []).length > 3 && (
                                                                     <p className="text-[11px] text-indigo-500">
-                                                                        + {((step as any).funnel_steps || []).length - 3} etapas
+                                                                        + {(step.funnel_steps || []).length - 3} etapas
                                                                     </p>
                                                                 )}
                                                             </div>
@@ -347,7 +387,8 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                                                     ) : step.type === 'text' ? (
                                                         <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{step.content}</p>
                                                     ) : step.type === 'image' ? (
-                                                        <img src={step.content} className="h-24 rounded-lg border bg-gray-50 object-cover"/>
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img src={step.content} alt="Preview" className="h-24 rounded-lg border bg-gray-50 object-cover"/>
                                                     ) : step.type === 'video' ? (
                                                         <video src={step.content} className="h-24 rounded-lg border bg-gray-50 object-cover" controls preload="metadata" />
                                                     ) : step.type === 'document' ? (
@@ -368,11 +409,11 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                                                     <div className="flex items-center gap-2 border-t pt-2">
                                                         <Clock size={14} className="text-gray-400"/>
                                                         <span className="text-xs text-gray-500">Aguardar</span>
-                                                        <input 
-                                                            type="number" 
+                                                        <input
+                                                            type="number"
                                                             min="1"
-                                                            value={step.delay} 
-                                                            onChange={(e) => updateStepDelay(idx, parseInt(e.target.value))}
+                                                            value={step.delay}
+                                                            onChange={(e) => updateStepDelay(idx, parseInt(e.target.value, 10) || 0)}
                                                             className="w-12 text-center text-xs font-bold border rounded py-0.5"
                                                         />
                                                         <span className="text-xs text-gray-500">segundos</span>
@@ -390,7 +431,7 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                             <div className="max-w-3xl mx-auto flex gap-3 items-end">
                                 <div className="flex-1">
                                     <label className="text-xs font-bold text-gray-500 mb-1 block">Adicionar Texto Avulso (sem salvar macro)</label>
-                                    <textarea 
+                                    <textarea
                                         value={manualText}
                                         onChange={e => setManualText(e.target.value)}
                                         placeholder="Digite e tecle Enter..."
@@ -398,21 +439,21 @@ export default function SequenceEditorModal({ isOpen, onClose, onSave, initialDa
                                         onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addManualStep(); } }}
                                     />
                                 </div>
-                                
+
                                 {/* Delay Manual só aparece se NÃO for script */}
                                 {!isScriptMode && (
                                     <div className="w-20">
                                         <label className="text-xs font-bold text-gray-500 mb-1 block">Delay (s)</label>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             value={manualDelay}
-                                            onChange={e => setManualDelay(parseInt(e.target.value))}
+                                            onChange={e => setManualDelay(parseInt(e.target.value, 10) || 0)}
                                             className="w-full border rounded-lg p-2 h-14 text-center font-bold"
                                         />
                                     </div>
                                 )}
 
-                                <button 
+                                <button
                                     onClick={addManualStep}
                                     disabled={!manualText.trim()}
                                     className="h-14 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg font-bold flex flex-col items-center justify-center min-w-[80px]"

@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { automationQueue } from "@/lib/queue/config";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const cronKey = searchParams.get("key");
+  const expectedKey = process.env.CRON_SECRET;
   const allowHttpCron =
     process.env.ENABLE_HTTP_CRON_ENDPOINTS === "true" || process.env.NODE_ENV !== "production";
-  if (!allowHttpCron) {
+  if (!allowHttpCron && cronKey !== expectedKey) {
     return NextResponse.json(
-      { ok: false, error: "http_cron_disabled_use_dedicated_worker" },
+      { ok: false, error: "unauthorized" },
       { status: 403 }
     );
   }

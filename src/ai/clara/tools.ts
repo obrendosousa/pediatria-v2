@@ -289,7 +289,7 @@ export const searchKnowledgeBaseTool = new DynamicStructuredTool({
     const { data, error } = await supabase
       .from("knowledge_base")
       .select("pergunta, resposta_ideal, categoria")
-      .or(`pergunta.ilike.%${termo_busca}%,tags.ilike.%${termo_busca}%`)
+      .or(`pergunta.ilike.%${termo_busca.replace(/[%_\\]/g, '\\$&')}%,tags.ilike.%${termo_busca.replace(/[%_\\]/g, '\\$&')}%`)
       .limit(3);
 
     if (error) return `Erro ao buscar conhecimento: ${error instanceof Error ? error.message : String(error)}`;
@@ -771,11 +771,12 @@ export const criarAgendamentoTool = new DynamicStructuredTool({
       const phoneDigits = patient_phone.replace(/\D/g, "");
       let patientId: number | null = null;
 
-      const { data: existingPatient } = await supabase
+      const { data: existingPatients } = await supabase
         .from("patients")
         .select("id")
-        .or(`phone.ilike.%${phoneDigits.slice(-11)}%`)
-        .maybeSingle();
+        .or(`phone.ilike.%${phoneDigits.slice(-11).replace(/[%_\\]/g, '\\$&')}%`)
+        .limit(1);
+      const existingPatient = existingPatients?.[0] ?? null;
 
       if (existingPatient?.id) {
         patientId = existingPatient.id;

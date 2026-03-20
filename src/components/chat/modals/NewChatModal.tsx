@@ -19,7 +19,13 @@ export default function NewChatModal({ isOpen, onClose, onStartChat }: NewChatMo
   const [error, setError] = useState('');
   const [mounted, setMounted] = useState(false);
 
+   
   useEffect(() => setMounted(true), []);
+
+   
+  useEffect(() => {
+    if (isOpen) { setPhone(''); setError(''); }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -59,7 +65,8 @@ export default function NewChatModal({ isOpen, onClose, onStartChat }: NewChatMo
         // O ID começa com 'new_' para o ChatWindow saber que precisa criar no banco
         // ao enviar a primeira mensagem.
         const tempChat: Partial<Chat> = {
-          id: `new_${Date.now()}` as any, // Cast para any pois id geralmente é number
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          id: `new_${Date.now()}` as unknown as number, // ID temporário até criar no banco
           phone: cleanPhone,
           contact_name: cleanPhone, // Nome provisório igual ao fone
           status: 'ACTIVE',

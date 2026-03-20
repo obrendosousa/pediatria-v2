@@ -74,7 +74,7 @@ export async function loadContextForInteraction(
         const { data } = await supabase
           .from("knowledge_base")
           .select("content:resposta_ideal, category:categoria")
-          .or(keywords.map((k) => `pergunta.ilike.%${k}%`).join(","))
+          .or(keywords.map((k) => `pergunta.ilike.%${k.replace(/[%_\\]/g, '\\$&')}%`).join(","))
           .limit(3);
         return (data || []).map((k: { category: string; content: string }) => `[${k.category}] ${k.content}`);
       })(),

@@ -71,7 +71,7 @@ export async function GET(request: Request) {
       allowedRoles: ['admin', 'secretary']
     });
 
-    const [{ data: transactions, error: txError }, { data: sales, error: salesError }, { data: saleItems, error: itemsError }] =
+    const [{ data: transactions, error: txError }, { data: sales, error: salesError }] =
       await Promise.all([
         supabase
           .from('financial_transactions')
@@ -110,19 +110,27 @@ export async function GET(request: Request) {
           .in('status', ['paid', 'completed'])
           .gte('created_at', range.startISO)
           .lte('created_at', range.endISO),
-        supabase
-          .from('sale_items')
-          .select(`
-            sale_id,
-            quantity,
-            unit_price,
-            products (price_cost)
-          `)
       ]);
 
     if (txError) throw new Error(txError.message || 'Erro ao consultar transações financeiras.');
     if (salesError) throw new Error(salesError.message || 'Erro ao consultar vendas.');
-    if (itemsError) throw new Error(itemsError.message || 'Erro ao consultar itens de venda.');
+
+    // Buscar sale_items apenas para as vendas do período
+    const saleIds = (sales || []).map(s => s.id);
+    let saleItems: Record<string, unknown>[] | null = [];
+    if (saleIds.length > 0) {
+      const { data: items, error: itemsError } = await supabase
+        .from('sale_items')
+        .select(`
+          sale_id,
+          quantity,
+          unit_price,
+          products (price_cost)
+        `)
+        .in('sale_id', saleIds);
+      if (itemsError) throw new Error(itemsError.message || 'Erro ao consultar itens de venda.');
+      saleItems = items;
+    }
 
     const txRows = ((transactions || []) as unknown) as FinancialTransaction[];
     const salesRows = (sales || []) as SaleRow[];

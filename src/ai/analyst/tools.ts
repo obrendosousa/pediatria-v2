@@ -282,7 +282,7 @@ export const searchChatsByKeywordTool = new DynamicStructuredTool({
     }
 
     const supabase = getSupabaseAdminClient();
-    const searchExpr = `%${term}%`;
+    const searchExpr = `%${term.replace(/[%_\\]/g, '\\$&')}%`;
     const { data: hits, error: hitsError } = await supabase
       .from("chat_messages")
       .select("chat_id, message_text, user_message, created_at")
@@ -382,7 +382,7 @@ export const getAggregatedInsightsTool = new DynamicStructuredTool({
       }
       if (!data || data.length === 0) break;
 
-      allInsights.push(...data as any[]);
+      allInsights.push(...(data as typeof allInsights));
       if (data.length < pageSize) break;
       offset += pageSize;
     }

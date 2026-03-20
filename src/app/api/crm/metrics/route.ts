@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/automation/adapters/supabaseAdmin';
 import { buildCRMMetricsPayload, resolveRange } from '@/lib/crm/metrics';
+import { requireAuth } from '@/lib/api-auth';
 import type { Appointment } from '@/types/medical';
 
 export async function GET(request: Request) {
   try {
+    const auth = await requireAuth();
+    if ('error' in auth) return auth.error;
     const { searchParams } = new URL(request.url);
     const range = resolveRange({
       granularity: searchParams.get('granularity'),

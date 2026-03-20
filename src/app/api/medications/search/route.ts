@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from('medications')
       .select('id, description, active_ingredient, presentation, type')
-      .or(`description.ilike.%${q}%,active_ingredient.ilike.%${q}%`)
+      .or(`description.ilike.%${q.replace(/[%_\\]/g, '\\$&')}%,active_ingredient.ilike.%${q.replace(/[%_\\]/g, '\\$&')}%`)
       .order('description', { ascending: true })
       .limit(limit);
 

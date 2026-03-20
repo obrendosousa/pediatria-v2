@@ -71,6 +71,17 @@ export default function CreateScheduleModal({
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => setMounted(true), []);
+
+    // Cleanup de timers e streams ao desmontar
+    useEffect(() => {
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        if (mediaRecorder.current?.state === 'recording') {
+          mediaRecorder.current.stream.getTracks().forEach(t => t.stop());
+        }
+      };
+    }, []);
+
     useEffect(() => {
       if (!isOpen) return;
       if (preselectedItem?.item) {

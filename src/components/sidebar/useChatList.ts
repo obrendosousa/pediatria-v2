@@ -62,7 +62,8 @@ export function useChatList(isViewingArchived: boolean, searchTerm: string, opti
         .eq('is_archived', isViewingArchived);
 
       if (searchTerm) {
-        query = query.or(`contact_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+        const escaped = searchTerm.replace(/[%_\\]/g, '\\$&');
+        query = query.or(`contact_name.ilike.%${escaped}%,phone.ilike.%${escaped}%`);
       }
 
       const { data, error } = await query;

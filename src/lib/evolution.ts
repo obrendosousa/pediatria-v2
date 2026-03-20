@@ -52,6 +52,7 @@ export async function evolutionRequest<T = unknown>(
       ...(options.headers ?? {}),
     },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    signal: AbortSignal.timeout(30_000),
   });
 
   const contentType = res.headers.get('content-type') ?? '';

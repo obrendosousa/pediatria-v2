@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/api-auth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,8 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireAuth();
+    if ('error' in auth) return auth.error;
     const body = await req.json().catch(() => ({}));
     const chatId = Number(body?.chatId);
 

@@ -20,15 +20,16 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from('tuss_procedures')
       .select('id, code, name, category')
-      .or(`code.ilike.${q}%,name.ilike.%${q}%`)
+      .or(`code.ilike.${q.replace(/[%_\\]/g, '\\$&')}%,name.ilike.%${q.replace(/[%_\\]/g, '\\$&')}%`)
       .order('code', { ascending: true })
       .limit(limit);
 
     if (error) throw error;
 
     return NextResponse.json(data ?? []);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[TUSS search]', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

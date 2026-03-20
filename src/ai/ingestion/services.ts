@@ -262,7 +262,7 @@ export async function getContactNameByPhone(phone: string): Promise<string | nul
     .from("chats")
     .select("contact_name")
     .eq("phone", normalizedPhone)
-    .single();
+    .maybeSingle();
 
   if (data?.contact_name) {
     const name = data.contact_name.trim();
