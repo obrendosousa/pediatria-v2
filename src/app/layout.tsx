@@ -6,7 +6,7 @@ import { CheckoutNotificationProvider } from '@/contexts/CheckoutNotificationCon
 import { InternalChatProvider } from '@/contexts/InternalChatContext';
 import AuthLayoutGuard from '@/components/AuthLayoutGuard';
 import CheckoutAlertPopup from '@/components/CheckoutAlertPopup';
-// import InternalChatFab from '@/components/internal-chat/InternalChatFab';
+import InternalChatFab from '@/components/internal-chat/InternalChatFab';
 import type { Metadata } from 'next';
 
 // Fonte Principal (Heading - limpa, médica, acessível)
@@ -54,7 +54,7 @@ export default function RootLayout({
               <InternalChatProvider>
                 <AuthLayoutGuard>{children}</AuthLayoutGuard>
                 <CheckoutAlertPopup />
-                {/* <InternalChatFab /> */}
+                <InternalChatFab />
               </InternalChatProvider>
             </CheckoutNotificationProvider>
           </ToastProvider>

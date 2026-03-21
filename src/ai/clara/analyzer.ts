@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { Type, Schema } from "@google/genai";
 import { manageLongTermMemoryTool } from "./tools";
+import { stripPIIAndReferences, isGeneralizablePattern } from "./memory_quality";
 
 // Initialize the new Google GenAI SDK
 const ai = new GoogleGenAI({
@@ -62,7 +63,15 @@ const analyzerSchema: Schema = {
     properties: {
         strategic_insight: {
             type: Type.STRING,
-            description: "Apenas preencha se houver uma nova REGRA DE NEGÓCIO, OBJEÇÃO DE VENDA RECORRENTE, ou PREFERÊNCIA CLÍNICA GERAL. Exemplos úteis: 'Pacientes reclamam do preço na primeira consulta', 'A clínica não aceita plano X'. É PROIBIDO extrair nomes de pacientes, CPFs, horários marcados ou detalhes de uma consulta específica. Se for lixo/dados rasos, retorne null.",
+            description: `Apenas preencha se houver um PADRAO GENERALIZAVEL que se aplica a MULTIPLOS pacientes ou situacoes.
+CRITERIOS OBRIGATORIOS (TODOS devem ser verdadeiros):
+1. E um padrao recorrente, NAO uma observacao individual de um unico caso
+2. NAO contem nomes de pacientes, CPFs, telefones, e-mails ou dados de UM caso especifico
+3. E util para atendimentos FUTUROS (nao apenas descreve o que aconteceu)
+4. NAO e trivial/obvio (ex: 'paciente agendou consulta' NAO e insight)
+EXEMPLOS VALIDOS: 'Pacientes frequentemente demonstram resistencia ao preco na primeira consulta', 'Convenio X nao cobre procedimento Y', 'Pacientes que adiam por mais de 3 dias geralmente nao retornam'.
+EXEMPLOS INVALIDOS (retorne null): 'Maria demonstrou interesse', 'Paciente do chat 1234 mora longe', 'Consulta agendada para sexta'.
+Se nao houver insight generalizavel, retorne null.`,
             nullable: true,
         },
         action: {
@@ -174,15 +183,20 @@ Siga rigorosamente o schema de JSON de saída.`;
 
         const analysis = JSON.parse(response.text);
 
-        // 4. Handle Memory (Strategic Insight ONLY)
+        // 4. Handle Memory (Strategic Insight ONLY — com quality gate)
         if (analysis.strategic_insight) {
-            console.log(`[Analyzer] Salved strategic insight for chat ${chatId}: ${analysis.strategic_insight}`);
-            await manageLongTermMemoryTool.invoke({
-                action: "salvar",
-                memory_type: "insight_observador",
-                content: `Insight Validado (Chat ${chatId}): ${analysis.strategic_insight}`,
-                source_role: "system"
-            });
+            const cleaned = stripPIIAndReferences(analysis.strategic_insight);
+            if (cleaned && isGeneralizablePattern(cleaned)) {
+                console.log(`[Analyzer] Saving strategic insight for chat ${chatId}: ${cleaned}`);
+                await manageLongTermMemoryTool.invoke({
+                    action: "salvar",
+                    memory_type: "padrao_comportamental",
+                    content: cleaned,
+                    source_role: "system"
+                });
+            } else {
+                console.log(`[Analyzer] Insight rejeitado pelo quality gate para chat ${chatId}`);
+            }
         }
 
         // 5. Handle Action (Drafts)

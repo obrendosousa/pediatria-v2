@@ -9,7 +9,7 @@ import type { TicketInfo } from '@/components/dashboard/ReceptionCard';
 import {
   LayoutList, Users, DollarSign,
   ChevronLeft, ChevronRight, UserPlus, Calendar,
-  Stethoscope, ChevronDown, X, MapPin
+  Stethoscope, ChevronDown, X, MapPin, Megaphone, Loader2
 } from 'lucide-react';
 
 import ReceptionFlowColumns from '@/components/dashboard/ReceptionFlowColumns';
@@ -124,6 +124,11 @@ export default function AtendimentoCRMPage() {
   const [isNewSlotModalOpen, setIsNewSlotModalOpen] = useState(false);
   const [selectedCheckoutAppointmentId, setSelectedCheckoutAppointmentId] = useState<number | null>(null);
   const [callMessage] = useState("Olá! Sua vez chegou. Por favor, dirija-se ao consultório.");
+
+  // Chamada manual na TV
+  const [isManualCallOpen, setIsManualCallOpen] = useState(false);
+  const [manualCallText, setManualCallText] = useState('');
+  const [isManualCallSending, setIsManualCallSending] = useState(false);
 
   // Modal seletor de ponto de atendimento
   const [servicePointSelector, setServicePointSelector] = useState<{
@@ -379,6 +384,32 @@ export default function AtendimentoCRMPage() {
     } finally {
       setSendingCallAppointmentId(null);
       setIsSendingCall(false);
+    }
+  };
+
+  /** Disparar chamada manual na TV (texto livre) */
+  const handleManualCall = async () => {
+    const text = manualCallText.trim();
+    if (!text || isManualCallSending) return;
+    setIsManualCallSending(true);
+    try {
+      const res = await fetch('/api/atendimento/queue/manual-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
+        throw new Error(err.error || 'Erro ao disparar chamada');
+      }
+      toast.success('Chamada enviada para a TV!');
+      setManualCallText('');
+      setIsManualCallOpen(false);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Tente novamente.';
+      toast.error('Erro na chamada manual: ' + msg);
+    } finally {
+      setIsManualCallSending(false);
     }
   };
 
@@ -735,14 +766,22 @@ export default function AtendimentoCRMPage() {
               </span>
             </div>
 
-            {/* Botao Novo Paciente */}
+            {/* Botoes de acao */}
             {receptionFlowTab !== 'checkout' && (
-              <button
-                onClick={() => setIsNewSlotModalOpen(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all hover:-translate-y-0.5"
-              >
-                <UserPlus className="w-4 h-4" /> Novo Paciente
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsManualCallOpen(true)}
+                  className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-amber-200 dark:shadow-none transition-all hover:-translate-y-0.5"
+                >
+                  <Megaphone className="w-4 h-4" /> Chamar na TV
+                </button>
+                <button
+                  onClick={() => setIsNewSlotModalOpen(true)}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all hover:-translate-y-0.5"
+                >
+                  <UserPlus className="w-4 h-4" /> Novo Paciente
+                </button>
+              </div>
             )}
           </div>
 
@@ -815,6 +854,70 @@ export default function AtendimentoCRMPage() {
         message={confirmModal.message}
         type={confirmModal.type}
       />
+
+      {/* Modal Chamada Manual na TV */}
+      {isManualCallOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1a1a22] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#2d2d36] w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-[#252530]">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <Megaphone className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-gray-100">Chamada Manual na TV</h3>
+                  <p className="text-xs text-slate-500 dark:text-gray-400">Digite o texto que sera falado e exibido</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setIsManualCallOpen(false); setManualCallText(''); }}
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <textarea
+                value={manualCallText}
+                onChange={(e) => setManualCallText(e.target.value)}
+                placeholder="Ex: Senha G001, Maria Silva, por favor dirija-se ao Guichê 1"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-[#252530] bg-slate-50 dark:bg-[#0e0e14] text-sm text-slate-800 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-400 resize-none"
+                rows={3}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleManualCall();
+                  }
+                }}
+              />
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setIsManualCallOpen(false); setManualCallText(''); }}
+                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleManualCall}
+                  disabled={!manualCallText.trim() || isManualCallSending}
+                  className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl shadow-lg shadow-amber-200 dark:shadow-none transition-all"
+                >
+                  {isManualCallSending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Megaphone className="w-4 h-4" />
+                  )}
+                  {isManualCallSending ? 'Enviando...' : 'Chamar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Seletor de Ponto de Atendimento */}
       {servicePointSelector.isOpen && (

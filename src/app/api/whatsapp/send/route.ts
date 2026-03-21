@@ -198,7 +198,7 @@ export async function POST(req: Request) {
                 // Captura a resposta final diretamente dos nós produtores de mensagem.
                 // Mais robusto do que depender do evento 'LangGraph' que pode não disparar
                 // corretamente quando há subgrafos compilados (researcher_graph) aninhados.
-                if (event.name === 'simple_agent' || event.name === 'final_report_node') {
+                if (event.name === 'simple_agent' || event.name === 'final_report_node' || event.name === 'write_research_brief_node') {
                   const nodeMessages = (event.data?.output as { messages?: BaseMessage[] })?.messages;
                   if (nodeMessages && nodeMessages.length > 0) {
                     // Sempre sobrescreve — se o nó rodou múltiplas vezes (ReAct loop),

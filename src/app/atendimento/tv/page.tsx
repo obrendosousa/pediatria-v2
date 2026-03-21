@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
 import { getTodayDateString } from '@/utils/dateUtils';
 import type { TVCallPayload } from '@/types/queue';
-import { Volume2, Stethoscope, Clock, Users, ArrowRight, Activity, Heart, Sun, Moon, VolumeX } from 'lucide-react';
+import { Volume2, Stethoscope, Clock, Users, ArrowRight, Activity, Heart, Sun, Moon, Settings, Play, Check, X, Loader2, RefreshCw, Download } from 'lucide-react';
 
 const supabase = createSchemaClient('atendimento');
 
@@ -20,6 +20,25 @@ const BRAND = {
   redDark: '#B91C1C',
   redLight: '#EF4444',
 };
+
+// Vozes disponiveis no Kokoro-82M (HuggingFace hexgrad/Kokoro-82M)
+const KOKORO_VOICES = [
+  { id: 'pf_dora', name: 'Dora', gender: 'Feminina', lang: 'PT-BR', flag: '\u{1F1E7}\u{1F1F7}' },
+  { id: 'pm_alex', name: 'Alex', gender: 'Masculina', lang: 'PT-BR', flag: '\u{1F1E7}\u{1F1F7}' },
+  { id: 'pm_santa', name: 'Santa', gender: 'Masculina', lang: 'PT-BR', flag: '\u{1F1E7}\u{1F1F7}' },
+  { id: 'af_heart', name: 'Heart', gender: 'Feminina', lang: 'EN-US', flag: '\u{1F1FA}\u{1F1F8}' },
+  { id: 'af_bella', name: 'Bella', gender: 'Feminina', lang: 'EN-US', flag: '\u{1F1FA}\u{1F1F8}' },
+  { id: 'af_nova', name: 'Nova', gender: 'Feminina', lang: 'EN-US', flag: '\u{1F1FA}\u{1F1F8}' },
+  { id: 'af_sarah', name: 'Sarah', gender: 'Feminina', lang: 'EN-US', flag: '\u{1F1FA}\u{1F1F8}' },
+  { id: 'af_nicole', name: 'Nicole', gender: 'Feminina', lang: 'EN-US', flag: '\u{1F1FA}\u{1F1F8}' },
+  { id: 'af_sky', name: 'Sky', gender: 'Feminina', lang: 'EN-US', flag: '\u{1F1FA}\u{1F1F8}' },
+  { id: 'am_adam', name: 'Adam', gender: 'Masculina', lang: 'EN-US', flag: '\u{1F1FA}\u{1F1F8}' },
+  { id: 'am_michael', name: 'Michael', gender: 'Masculina', lang: 'EN-US', flag: '\u{1F1FA}\u{1F1F8}' },
+  { id: 'bf_emma', name: 'Emma', gender: 'Feminina', lang: 'EN-GB', flag: '\u{1F1EC}\u{1F1E7}' },
+  { id: 'bf_lily', name: 'Lily', gender: 'Feminina', lang: 'EN-GB', flag: '\u{1F1EC}\u{1F1E7}' },
+  { id: 'ef_dora', name: 'Dora (ES)', gender: 'Feminina', lang: 'Espanhol', flag: '\u{1F1EA}\u{1F1F8}' },
+  { id: 'em_alex', name: 'Alex (ES)', gender: 'Masculina', lang: 'Espanhol', flag: '\u{1F1EA}\u{1F1F8}' },
+];
 
 // ── Particle System ──
 interface Particle {
@@ -123,6 +142,7 @@ type TVTicket = {
   is_priority: boolean;
   called_at: string | null;
   queue_stage: string;
+  tts_audio_url: string | null;
   service_point: { name: string; code: string } | null;
   appointment: { patient_id: number | null; patients: { full_name: string } | null } | null;
 };
@@ -139,17 +159,142 @@ export default function TVPanelPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLight, setIsLight] = useState(() => searchParams.get('theme') !== 'dark');
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  // Som sempre ativo — ref para uso em callbacks sem stale closure
+  const soundEnabledRef = useRef(true);
 
   // Dados reais
   const [tvAppointments, setTvAppointments] = useState<TVAppointment[]>([]);
   const [lastCalls, setLastCalls] = useState<LastCallEntry[]>([]);
 
+  // Tracking de audios ja tocados para evitar repetir
+  const playedAudioRef = useRef<Set<string>>(new Set());
+
   // Overlay de chamada
   const [callOverlay, setCallOverlay] = useState<TVCallPayload | null>(null);
   const overlayTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Settings modal
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState('pf_dora');
+  const [savedVoice, setSavedVoice] = useState('pf_dora');
+  const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
+  const [savingVoice, setSavingVoice] = useState(false);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Preview URLs pre-gerados (voiceId -> audioUrl)
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [generatingAll, setGeneratingAll] = useState(false);
+  const [generateProgress, setGenerateProgress] = useState('');
+
   useParticles(canvasRef, isLight);
+
+  // Carregar voz salva + preview URLs ao montar
+  useEffect(() => {
+    fetch('/api/atendimento/tv/settings')
+      .then(r => r.json())
+      .then(d => {
+        if (d.voice) {
+          setSelectedVoice(d.voice);
+          setSavedVoice(d.voice);
+        }
+      })
+      .catch(() => {});
+    // Carregar previews cached
+    fetch('/api/atendimento/tv/voice-preview')
+      .then(r => r.json())
+      .then(d => {
+        if (d.previews) setPreviewUrls(d.previews);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Preview de voz — toca do cache se disponivel, senao gera sob demanda
+  const handlePreview = async (voiceId: string) => {
+    if (previewingVoice) return;
+    // Parar audio anterior se estiver tocando
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+
+    // Se ja tem URL cached, toca instantaneamente
+    const cachedUrl = previewUrls[voiceId];
+    if (cachedUrl) {
+      const audio = new Audio(cachedUrl);
+      previewAudioRef.current = audio;
+      audio.play().catch(e => console.error('[TV] Erro ao tocar preview:', e));
+      return;
+    }
+
+    // Senao, gera sob demanda via API
+    setPreviewingVoice(voiceId);
+    try {
+      const res = await fetch('/api/atendimento/tv/voice-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice: voiceId }),
+      });
+      const data = await res.json();
+      if (data.audioUrl) {
+        // Salvar no cache local
+        setPreviewUrls(prev => ({ ...prev, [voiceId]: data.audioUrl }));
+        const audio = new Audio(data.audioUrl);
+        previewAudioRef.current = audio;
+        await audio.play();
+      }
+    } catch (e) {
+      console.error('[TV] Erro no preview:', e);
+    } finally {
+      setPreviewingVoice(null);
+    }
+  };
+
+  // Gerar todos os previews de uma vez
+  const handleGenerateAll = async () => {
+    if (generatingAll) return;
+    setGeneratingAll(true);
+    setGenerateProgress('Iniciando...');
+    try {
+      const res = await fetch('/api/atendimento/tv/voice-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generateAll: true }),
+      });
+      const data = await res.json();
+      if (data.previews) {
+        setPreviewUrls(data.previews);
+        const total = Object.keys(data.previews).length;
+        setGenerateProgress(`${total} vozes prontas!`);
+      }
+    } catch (e) {
+      console.error('[TV] Erro ao gerar previews:', e);
+      setGenerateProgress('Erro ao gerar');
+    } finally {
+      setGeneratingAll(false);
+      setTimeout(() => setGenerateProgress(''), 3000);
+    }
+  };
+
+  // Salvar voz selecionada
+  const handleSaveVoice = async () => {
+    setSavingVoice(true);
+    try {
+      const res = await fetch('/api/atendimento/tv/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice: selectedVoice }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSavedVoice(selectedVoice);
+        setIsSettingsOpen(false);
+      }
+    } catch (e) {
+      console.error('[TV] Erro ao salvar voz:', e);
+    } finally {
+      setSavingVoice(false);
+    }
+  };
 
   // Buscar appointments do dia
   const fetchAppointments = useCallback(async () => {
@@ -181,13 +326,13 @@ export default function TVPanelPage() {
     }
   }, []);
 
-  // Buscar ultimas chamadas (tickets chamados hoje)
+  // Buscar ultimas chamadas (tickets chamados hoje) + tocar audio de novos
   const fetchLastCalls = useCallback(async () => {
     const today = getTodayDateString();
     const { data, error } = await supabase
       .from('queue_tickets')
       .select(`
-        id, appointment_id, ticket_number, status, is_priority, called_at, queue_stage,
+        id, appointment_id, ticket_number, status, is_priority, called_at, queue_stage, tts_audio_url,
         service_point:service_point_id(name, code),
         appointment:appointment_id(
           patient_id,
@@ -205,21 +350,47 @@ export default function TVPanelPage() {
       return;
     }
     if (data) {
-      const entries: LastCallEntry[] = (data as unknown as TVTicket[]).map(tk => ({
+      const tickets = data as unknown as TVTicket[];
+      const entries: LastCallEntry[] = tickets.map(tk => ({
         ticket: tk.ticket_number,
         destination: tk.service_point?.name || '',
         patientName: tk.appointment?.patients?.full_name || '',
         isPriority: tk.is_priority,
       }));
       setLastCalls(entries);
+
+      // Fallback: tocar audio de tickets recem-chamados que ainda nao tocamos
+      const newest = tickets[0];
+      if (newest?.tts_audio_url && newest.status === 'called' && !playedAudioRef.current.has(newest.tts_audio_url)) {
+        playedAudioRef.current.add(newest.tts_audio_url);
+        console.log('[TV] Fallback: tocando audio do ticket', newest.ticket_number);
+        const audio = new Audio(newest.tts_audio_url);
+        audio.play().catch((err) => console.error('[TV] Fallback audio erro:', err));
+      }
     }
   }, []);
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais — skip audio no primeiro fetch para nao tocar chamadas antigas
   useEffect(() => {
-    fetchAppointments();
-    fetchLastCalls();
-  }, [fetchAppointments, fetchLastCalls]);
+    const loadInitial = async () => {
+      await fetchAppointments();
+      const today = getTodayDateString();
+      const { data } = await supabase
+        .from('queue_tickets')
+        .select('tts_audio_url')
+        .eq('ticket_date', today)
+        .not('tts_audio_url', 'is', null)
+        .not('called_at', 'is', null);
+      if (data) {
+        for (const t of data) {
+          if (t.tts_audio_url) playedAudioRef.current.add(t.tts_audio_url);
+        }
+      }
+      await fetchLastCalls();
+    };
+    loadInitial();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Clock
   useEffect(() => {
@@ -227,51 +398,17 @@ export default function TVPanelPage() {
     return () => clearInterval(t);
   }, []);
 
-  // Realtime: postgres_changes + broadcast para chamadas
-  useEffect(() => {
-    const channel = supabase
-      .channel('tv_panel_live')
-      .on('postgres_changes', { event: '*', schema: 'atendimento', table: 'appointments' }, () => {
-        fetchAppointments();
-      })
-      .on('postgres_changes', { event: '*', schema: 'atendimento', table: 'queue_tickets' }, () => {
-        fetchLastCalls();
-        fetchAppointments();
-      })
-      .subscribe();
-
-    // Canal broadcast separado para chamadas com TTS
-    const broadcastChannel = supabase
-      .channel('tv-queue')
-      .on('broadcast', { event: 'call' }, ({ payload }) => {
-        const callData = payload as TVCallPayload;
-        showCallOverlay(callData);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(broadcastChannel);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchAppointments, fetchLastCalls]);
-
-  // Polling de backup a cada 30s
-  useEffect(() => {
-    const i = setInterval(() => { fetchAppointments(); fetchLastCalls(); }, 30000);
-    return () => clearInterval(i);
-  }, [fetchAppointments, fetchLastCalls]);
-
-  // Mostrar overlay de chamada + tocar audio TTS
-  const showCallOverlay = (data: TVCallPayload) => {
+  // Mostrar overlay de chamada + tocar audio TTS (usa ref para evitar stale closure)
+  const showCallOverlay = useCallback((data: TVCallPayload) => {
+    console.log('[TV] showCallOverlay recebido:', data, 'som:', soundEnabledRef.current);
     if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
     setCallOverlay(data);
 
-    // Tocar audio TTS se disponivel e som habilitado
-    if (data.tts_audio_url && soundEnabled) {
+    if (data.tts_audio_url && soundEnabledRef.current) {
+      console.log('[TV] Tocando audio TTS:', data.tts_audio_url);
       const audio = new Audio(data.tts_audio_url);
-      audio.play().catch(() => {});
-    } else if (soundEnabled) {
+      audio.play().catch((err) => console.error('[TV] Erro ao tocar audio:', err));
+    } else if (soundEnabledRef.current) {
       // Beep fallback
       try {
         const ctx = new AudioContext();
@@ -291,18 +428,59 @@ export default function TVPanelPage() {
     }
 
     overlayTimerRef.current = setTimeout(() => setCallOverlay(null), 10000);
-  };
+  }, []);
 
-  // Ativar som (necessario pelo autoplay policy)
-  const enableSound = () => {
-    const ctx = new AudioContext();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.value = 600; g.gain.value = 0.1;
-    o.start(); o.stop(ctx.currentTime + 0.05);
-    setSoundEnabled(true);
-  };
+  // Realtime: postgres_changes + broadcast para chamadas
+  useEffect(() => {
+    const channel = supabase
+      .channel('tv_panel_live')
+      .on('postgres_changes', { event: '*', schema: 'atendimento', table: 'appointments' }, () => {
+        fetchAppointments();
+      })
+      .on('postgres_changes', { event: '*', schema: 'atendimento', table: 'queue_tickets' }, () => {
+        fetchLastCalls();
+        fetchAppointments();
+      })
+      .subscribe();
+
+    // Canal broadcast separado para chamadas com TTS
+    const broadcastChannel = supabase
+      .channel('tv-queue')
+      .on('broadcast', { event: 'call' }, ({ payload }) => {
+        console.log('[TV] Broadcast recebido:', payload);
+        const callData = payload as TVCallPayload;
+        showCallOverlay(callData);
+      })
+      .subscribe((status) => {
+        console.log('[TV] tv-queue channel status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(broadcastChannel);
+    };
+  }, [fetchAppointments, fetchLastCalls, showCallOverlay]);
+
+  // Polling de backup a cada 30s
+  useEffect(() => {
+    const i = setInterval(() => { fetchAppointments(); fetchLastCalls(); }, 30000);
+    return () => clearInterval(i);
+  }, [fetchAppointments, fetchLastCalls]);
+
+  // Desbloquear audio do navegador no primeiro clique em qualquer lugar da pagina
+  useEffect(() => {
+    const unlock = () => {
+      const ctx = new AudioContext();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.value = 0;
+      o.start(); o.stop(ctx.currentTime + 0.01);
+      document.removeEventListener('click', unlock);
+    };
+    document.addEventListener('click', unlock);
+    return () => document.removeEventListener('click', unlock);
+  }, []);
 
   // Listas derivadas
   const waiting = tvAppointments.filter(a => a.status === 'waiting');
@@ -359,6 +537,16 @@ export default function TVPanelPage() {
 
   const cardClass = isLight ? 'tv-card-light' : 'tv-card-dark';
   const innerClass = isLight ? 'tv-card-inner-light' : 'tv-card-inner-dark';
+
+  // Agrupar vozes por idioma para exibicao
+  const voicesByLang = KOKORO_VOICES.reduce((acc, v) => {
+    if (!acc[v.lang]) acc[v.lang] = [];
+    acc[v.lang].push(v);
+    return acc;
+  }, {} as Record<string, typeof KOKORO_VOICES>);
+
+  const cachedCount = KOKORO_VOICES.filter(v => previewUrls[v.id]).length;
+  const allCached = cachedCount === KOKORO_VOICES.length;
 
   return (
     <div className={`h-screen w-screen ${th.pageBg} ${th.pageText} overflow-hidden flex flex-col select-none relative`}>
@@ -457,17 +645,24 @@ export default function TVPanelPage() {
           </div>
         </div>
         <div className="flex items-center gap-6">
-          {/* Som toggle */}
-          <button
-            onClick={() => soundEnabled ? setSoundEnabled(false) : enableSound()}
-            className={`p-2.5 rounded-xl transition-all ${
-              soundEnabled
-                ? isLight ? 'bg-emerald-50 text-emerald-600' : 'bg-emerald-500/10 text-emerald-400'
-                : isLight ? 'bg-red-50 text-red-400' : 'bg-red-500/10 text-red-400'
-            }`}
-            title={soundEnabled ? 'Som ativado' : 'Clique para ativar som'}
+          {/* Indicador de som (sempre ativo) */}
+          <div
+            className={`p-2.5 rounded-xl ${isLight ? 'bg-emerald-50 text-emerald-600' : 'bg-emerald-500/10 text-emerald-400'}`}
+            title="Som ativo"
           >
-            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            <Volume2 className="w-5 h-5" />
+          </div>
+          {/* Settings */}
+          <button
+            onClick={() => { setSelectedVoice(savedVoice); setIsSettingsOpen(true); }}
+            className={`p-2.5 rounded-xl transition-all ${
+              isLight
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-400'
+                : 'bg-white/5 hover:bg-white/10 text-white/30'
+            }`}
+            title="Configurações de Voz"
+          >
+            <Settings className="w-5 h-5" />
           </button>
           {/* Theme toggle */}
           <button
@@ -501,6 +696,179 @@ export default function TVPanelPage() {
           background: `linear-gradient(to right, transparent, ${isLight ? BRAND.blue + '22' : BRAND.blue + '33'}, transparent)`,
         }}
       />
+
+      {/* ══════ VOICE SETTINGS MODAL ══════ */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md">
+          <div className={`${isLight ? 'bg-white' : 'bg-[#111118]'} rounded-3xl shadow-2xl border ${isLight ? 'border-slate-200' : 'border-[#2d2d36]'} w-full max-w-3xl mx-6 max-h-[85vh] flex flex-col overflow-hidden tv-fade`}>
+            {/* Header */}
+            <div className={`flex items-center justify-between px-8 py-5 border-b ${isLight ? 'border-slate-100' : 'border-[#252530]'}`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${isLight ? 'bg-blue-50' : 'bg-blue-500/10'}`}>
+                  <Settings className={`w-5 h-5 ${isLight ? 'text-blue-600' : 'text-blue-400'}`} />
+                </div>
+                <div>
+                  <h2 className={`text-lg font-bold ${isLight ? 'text-slate-800' : 'text-gray-100'}`}>Configuração de Voz</h2>
+                  <p className={`text-xs ${isLight ? 'text-slate-400' : 'text-gray-500'}`}>
+                    Voz atual: <strong>{KOKORO_VOICES.find(v => v.id === savedVoice)?.name || savedVoice}</strong>
+                    {' · '}{cachedCount}/{KOKORO_VOICES.length} previews prontos
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Gerar todos os previews */}
+                <button
+                  onClick={handleGenerateAll}
+                  disabled={generatingAll || allCached}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    allCached
+                      ? isLight
+                        ? 'bg-emerald-50 text-emerald-600 cursor-default'
+                        : 'bg-emerald-500/10 text-emerald-400 cursor-default'
+                      : generatingAll
+                        ? isLight
+                          ? 'bg-amber-50 text-amber-600'
+                          : 'bg-amber-500/10 text-amber-400'
+                        : isLight
+                          ? 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+                          : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400'
+                  }`}
+                  title={allCached ? 'Todos os previews já foram gerados' : 'Gerar todos os previews de uma vez'}
+                >
+                  {generatingAll ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : allCached ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" />
+                  )}
+                  {generatingAll ? (generateProgress || 'Gerando...') : allCached ? 'Prontos' : 'Gerar Previews'}
+                </button>
+                <button
+                  onClick={() => setIsSettingsOpen(false)}
+                  className={`p-2 rounded-xl transition-colors ${isLight ? 'hover:bg-slate-100 text-slate-400' : 'hover:bg-white/10 text-gray-500'}`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Voice list */}
+            <div className="flex-1 overflow-y-auto px-8 py-5 space-y-6">
+              {Object.entries(voicesByLang).map(([lang, voices]) => (
+                <div key={lang}>
+                  <h3 className={`text-xs font-bold uppercase tracking-widest mb-3 ${isLight ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {voices[0].flag} {lang}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {voices.map(voice => {
+                      const isSelected = selectedVoice === voice.id;
+                      const isPreviewing = previewingVoice === voice.id;
+                      const hasCached = !!previewUrls[voice.id];
+                      return (
+                        <div
+                          key={voice.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setSelectedVoice(voice.id)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedVoice(voice.id); } }}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all border cursor-pointer ${
+                            isSelected
+                              ? isLight
+                                ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
+                                : 'bg-blue-500/10 border-blue-500/40 ring-2 ring-blue-500/20'
+                              : isLight
+                                ? 'bg-white border-slate-150 hover:bg-slate-50 hover:border-slate-200'
+                                : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10'
+                          }`}
+                        >
+                          {/* Radio indicator */}
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-500'
+                              : isLight ? 'border-slate-300' : 'border-white/20'
+                          }`}>
+                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                          </div>
+
+                          {/* Voice info */}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-semibold ${isLight ? 'text-slate-700' : 'text-gray-200'}`}>
+                              {voice.name}
+                            </p>
+                            <p className={`text-xs ${isLight ? 'text-slate-400' : 'text-gray-500'}`}>
+                              {voice.gender} · {voice.id}
+                            </p>
+                          </div>
+
+                          {/* Preview button */}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handlePreview(voice.id); }}
+                            disabled={!!previewingVoice && !isPreviewing}
+                            className={`p-2 rounded-lg transition-all flex-shrink-0 ${
+                              isPreviewing
+                                ? 'bg-blue-500 text-white'
+                                : hasCached
+                                  ? isLight
+                                    ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-500 hover:text-emerald-600'
+                                    : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300'
+                                  : isLight
+                                    ? 'bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600'
+                                    : 'bg-white/5 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400'
+                            } ${previewingVoice && !isPreviewing ? 'opacity-40 cursor-not-allowed' : ''}`}
+                            title={hasCached ? 'Ouvir (instantâneo)' : 'Ouvir (vai gerar agora)'}
+                          >
+                            {isPreviewing ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : hasCached ? (
+                              <Play className="w-4 h-4" />
+                            ) : (
+                              <RefreshCw className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className={`px-8 py-4 border-t ${isLight ? 'border-slate-100 bg-slate-50/50' : 'border-[#252530] bg-[#0e0e14]/50'} flex items-center justify-between`}>
+              <p className={`text-xs ${isLight ? 'text-slate-400' : 'text-gray-500'}`}>
+                {allCached
+                  ? 'Todos os previews prontos — clique Play para ouvir instantaneamente.'
+                  : 'Clique "Gerar Previews" para baixar todas as amostras de uma vez.'
+                }
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsSettingsOpen(false)}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    isLight ? 'text-slate-600 hover:bg-slate-100' : 'text-gray-400 hover:bg-white/5'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveVoice}
+                  disabled={selectedVoice === savedVoice || savingVoice}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    selectedVoice === savedVoice || savingVoice
+                      ? 'opacity-40 cursor-not-allowed bg-blue-500 text-white'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                  }`}
+                >
+                  {savingVoice ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  {savingVoice ? 'Salvando...' : 'Salvar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══════ CALLING OVERLAY ══════ */}
       {callOverlay && (

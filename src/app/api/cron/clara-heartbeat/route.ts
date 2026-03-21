@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { claraGraph, ClaraState } from '@/ai/clara/graph';
 import { HumanMessage } from "@langchain/core/messages";
+import { writeToInbox } from "@/ai/vault/sync";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -65,12 +66,18 @@ Sua missão agora é:
           last_message_sender: 'contact',
           last_message_status: 'read',
           last_interaction_at: new Date().toISOString(),
-          unread_count: 1 // Adiciona notificação visual pro Brendo ver que ela fez algo!
+          unread_count: 1
         }).eq('id', chatId);
 
-        console.log("✅ [Cron Heartbeat] Clara terminou de estudar e deixou um relatório no painel.");
+        // Dump de observacoes no inbox do vault (fire-and-forget)
+        writeToInbox("clara-heartbeat", aiResponseText, {
+          trigger: "cron",
+          chat_id: chatId,
+        }).catch(() => {});
+
+        console.log("[Cron Heartbeat] Clara terminou de estudar e deixou um relatorio no painel.");
       } catch (e) {
-        console.error("❌ Erro durante o estudo autônomo da Clara:", e);
+        console.error("[Cron Heartbeat] Erro durante o estudo autonomo da Clara:", e);
       }
     })();
 

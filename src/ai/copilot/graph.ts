@@ -4,6 +4,8 @@ import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { copilotTools } from "./tools";
+import { getVaultService, isVaultAvailable } from "@/ai/vault/service";
+import { semanticSearchSimple } from "@/ai/vault/semantic";
 
 export interface CopilotState {
   messages: BaseMessage[];
@@ -44,47 +46,87 @@ copilotWorkflow.addNode("agent", async (state: CopilotState) => {
 
   const now = new Date().toISOString();
 
-  // ── RAG: busca exemplos aprovados pela secretária para few-shot prompting ──
+  // ── RAG: busca exemplos aprovados + vault semantic search para few-shot ──
   let fewShotBlock = "";
   try {
     const supabase = getSupabaseAdminClient();
 
-    // Extrai a última mensagem do paciente para usar como query de busca
+    // Extrai a ultima mensagem do paciente para usar como query de busca
     const historyLines = (state.chat_history || "").split("\n").reverse();
     const lastPatientLine = historyLines.find(
       (line) => line.includes(`${state.patient_name}:`) || line.toLowerCase().includes("paciente:")
     ) || historyLines[0] || "";
 
-    // Obtém a primeira palavra significativa (>4 chars) para o ilike
-    const searchWord = lastPatientLine
-      .replace(/^\[[\d:]+\]\s*[^:]+:\s*/, "")
-      .trim()
-      .split(/\s+/)
-      .find((w) => w.length > 4) || "";
+    const cleanedLine = lastPatientLine.replace(/^\[[\d:]+\]\s*[^:]+:\s*/, "").trim();
 
-    if (searchWord) {
-      const { data: examples } = await (supabase as any)
-        .from("knowledge_base")
-        .select("pergunta, resposta_ideal")
-        .eq("categoria", "copiloto_feedback")
-        .ilike("pergunta", `%${searchWord}%`)
-        .order("created_at", { ascending: false })
-        .limit(3);
+    // Busca em paralelo: ilike no Supabase + semantica no vault + respostas aprovadas do vault
+    const searchWord = cleanedLine.split(/\s+/).find((w) => w.length > 4) || "";
 
-      if (examples && examples.length > 0) {
-        fewShotBlock =
-          `\n\nEXEMPLOS DE RESPOSTAS APROVADAS PELA SECRETÁRIA (use como referência de tom e formato):\n` +
-          examples
-            .map(
-              (ex: any, i: number) =>
-                `[${i + 1}] Resposta aprovada: "${ex.resposta_ideal}"`
-            )
-            .join("\n");
-        console.log(`🎯 [Copiloto RAG] ${examples.length} exemplo(s) encontrado(s) para "${searchWord}".`);
-      }
+    type KBExample = { pergunta: string; resposta_ideal: string };
+
+    const [ilikeFetch, vaultSemanticFetch, vaultApprovedFetch] = await Promise.allSettled([
+      // 1. ilike no Supabase (legado, rapido)
+      searchWord
+        ? supabase
+            .from("knowledge_base")
+            .select("pergunta, resposta_ideal")
+            .eq("categoria", "copiloto_feedback")
+            .ilike("pergunta", `%${searchWord}%`)
+            .order("created_at", { ascending: false })
+            .limit(3)
+            .then((res) => (res.data || []) as KBExample[])
+        : Promise.resolve([] as KBExample[]),
+
+      // 2. Busca semantica no vault (por significado)
+      cleanedLine.length > 10
+        ? semanticSearchSimple(cleanedLine, 3)
+        : Promise.resolve([] as string[]),
+
+      // 3. Respostas aprovadas compiladas do vault
+      isVaultAvailable().then((available) => {
+        if (!available) return null;
+        return getVaultService()
+          .readNote("agents/copilot/approved-responses.md")
+          .then((n) => n.content)
+          .catch(() => null);
+      }),
+    ]);
+
+    const ilikExamples = ilikeFetch.status === "fulfilled" ? ilikeFetch.value : [];
+    const semanticResults = vaultSemanticFetch.status === "fulfilled" ? vaultSemanticFetch.value : [];
+    const approvedContent = vaultApprovedFetch.status === "fulfilled" ? vaultApprovedFetch.value : null;
+
+    const parts: string[] = [];
+
+    if (ilikExamples.length > 0) {
+      parts.push(
+        ilikExamples
+          .map((ex, i) => `[${i + 1}] Resposta aprovada: "${ex.resposta_ideal}"`)
+          .join("\n")
+      );
+      console.log(`[Copiloto RAG] ${ilikExamples.length} exemplo(s) ilike para "${searchWord}".`);
+    }
+
+    if (semanticResults.length > 0) {
+      parts.push(
+        semanticResults
+          .map((content, i) => `[Vault ${i + 1}] ${content}`)
+          .join("\n")
+      );
+      console.log(`[Copiloto RAG] ${semanticResults.length} resultado(s) semantico(s) do vault.`);
+    }
+
+    if (approvedContent && approvedContent.trim().length > 20) {
+      parts.push(`[Respostas compiladas]\n${approvedContent.slice(0, 500)}`);
+    }
+
+    if (parts.length > 0) {
+      fewShotBlock =
+        `\n\nEXEMPLOS DE RESPOSTAS APROVADAS PELA SECRETARIA (use como referencia de tom e formato):\n` +
+        parts.join("\n\n");
     }
   } catch (ragError) {
-    // RAG é best-effort: falha silenciosamente para não bloquear a sugestão
+    // RAG e best-effort: falha silenciosamente para nao bloquear a sugestao
     console.warn("[Copiloto RAG] Falha na busca de exemplos:", ragError);
   }
   // ─────────────────────────────────────────────────────────────────────────

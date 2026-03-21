@@ -1,8 +1,11 @@
-import { BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
+import { MEMORY_TYPES, mapLegacyType } from "./memory_types";
+import { stripPIIAndReferences, isGeneralizablePattern } from "./memory_quality";
+import { manageLongTermMemoryTool } from "./tools";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -14,10 +17,13 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 // STATE DEFINITION
 // ─────────────────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MessageRow = Record<string, any>;
+
 export interface ChatAnalysisState {
     chat_id: number;
-    messages: any[]; // Mensagens brutas do banco
-    formatted_transcript: string; // Mensagens formatadas para a IA ler
+    messages: MessageRow[];
+    formatted_transcript: string;
     insights: {
         topico: string | null;
         nota_atendimento: number | null;
@@ -30,7 +36,7 @@ export interface ChatAnalysisState {
     learnings: Array<{
         memory_type: string;
         content: string;
-    }>; // Novos conhecimentos identificados (inserções no clara_memories)
+    }>;
 }
 
 const stateChannels = {
@@ -39,8 +45,8 @@ const stateChannels = {
         default: () => 0,
     },
     messages: {
-        reducer: (old: any[], current: any[]) => current ?? old,
-        default: () => [] as any[],
+        reducer: (old: MessageRow[], current: MessageRow[]) => current ?? old,
+        default: (): MessageRow[] => [],
     },
     formatted_transcript: {
         reducer: (old: string, current: string) => current ?? old,
@@ -101,7 +107,7 @@ async function fetchDataNode(state: ChatAnalysisState): Promise<Partial<ChatAnal
     }
 
     const timeline = data
-        .map((row: any) => {
+        .map((row: MessageRow) => {
             const content = (
                 row.message_text?.trim() ||
                 row.user_message?.trim() ||
@@ -124,8 +130,7 @@ async function fetchDataNode(state: ChatAnalysisState): Promise<Partial<ChatAnal
     };
 }
 
-// Marcadores exatos que indicam transcrição vazia — NÃO usar startsWith("[") pois
-// todas as transcrições válidas também começam com "[LABEL]: texto".
+// Marcadores exatos que indicam transcrição vazia
 const EMPTY_TRANSCRIPT_MARKERS: string[] = [
     "[Nenhuma mensagem encontrada para este chat.]",
     "[Apenas mensagens de mídia na conversa.]",
@@ -162,9 +167,9 @@ async function analyzeConversationNode(state: ChatAnalysisState): Promise<Partia
         decisao: z.string().describe("Qual foi o desfecho? (ex: 'Agendou consulta', 'Visualizou as informações mas não respondeu mais', 'Desistiu por preço')."),
         resumo_analise: z.string().describe("Um parágrafo resumindo o que aconteceu na conversa e o motivo do desfecho."),
         novos_aprendizados: z.array(z.object({
-            memory_type: z.string().describe("Categoria do aprendizado (ex: 'preferencia_paciente', 'reacao_a_preco', 'novo_convenio_solicitado')."),
-            content: z.string().describe("Fato importante a ser lembrado para o futuro sobre este paciente ou processo.")
-        })).describe("Fatos novos e importantes revelados na conversa que devem ser salvos na memória da IA.")
+            memory_type: z.string().describe(`Categoria do aprendizado. Valores válidos: ${MEMORY_TYPES.join(", ")}`),
+            content: z.string().describe("Padrao generalizavel identificado (NUNCA dados individuais de pacientes).")
+        })).describe("Padroes generalizaveis revelados na conversa. NAO incluir dados individuais de pacientes.")
     });
 
     const structuredModel = model.withStructuredOutput(schema);
@@ -185,12 +190,13 @@ INSTRUÇÕES:
 - Identifique a nota do atendimento, objeções, gargalos, decisão do cliente e crie um resumo cronologicamente preciso.
 - No campo "decisao", mencione quando aconteceu o desfecho (ex: "Agendou consulta em 28/02/2026").
 - No campo "resumo_analise", deixe claro o período em que a conversa ocorreu.
-- Identifique novos aprendizados importantes que devem ir para a memória de longo prazo.`
+- No campo "novos_aprendizados": APENAS padrões generalizáveis que se aplicam a múltiplos casos. NUNCA dados individuais (nomes, endereços, telefones de pacientes específicos).`
     );
 
     const humanMessage = new HumanMessage(`Analise a seguinte conversa do chat_id ${state.chat_id}:\n\n${state.formatted_transcript}`);
 
     try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const analysisResult = await structuredModel.invoke([systemMessage, humanMessage]) as any;
 
         return {
@@ -222,11 +228,9 @@ INSTRUÇÕES:
     }
 }
 
-async function extractKnowledgeNode(state: ChatAnalysisState): Promise<Partial<ChatAnalysisState>> {
-    // Neste nó, preparamos as memórias identificadas para facilitar o insert ou
-    // até acionar o Supabase Vector futuramente se quisermos "Upsert Semântico" aqui mesmo.
-    // Como `analyze_conversation_node` já extraiu as `learnings`, retornamos diretamente
-    // ou poderíamos acrescentar lógicas extras aqui (verificação de similaridade).
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function extractKnowledgeNode(_state: ChatAnalysisState): Promise<Partial<ChatAnalysisState>> {
+    // Pass-through — analyse_conversation_node já extraiu learnings
     return {};
 }
 
@@ -257,24 +261,22 @@ async function saveToDbNode(state: ChatAnalysisState): Promise<Partial<ChatAnaly
             console.error("Erro ao salvar insights:", insightsError);
         }
 
-        // 2. Inserir novos aprendizados na tabela clara_memories
+        // 2. Salvar aprendizados via manageLongTermMemoryTool (com dedup semântico + quality gate + vault sync)
         if (state.learnings && state.learnings.length > 0) {
-            // Como não temos acesso aos embeddings no LangGraph rapidamente sem usar a tool,
-            // salvaremos diretamento. Se for necessário Upsert Semântico igual na Tool "manage_long_term_memory",
-            // devemos adicionar a criação de embbedding aqui via GoogleGenerativeAIEmbeddings.
-            const msgsData = state.learnings.map(l => ({
-                memory_type: l.memory_type,
-                content: l.content,
-                source_role: "analyzer_bot",
-                updated_at: new Date().toISOString(),
-            }));
-
-            const { error: memoriesError } = await supabase
-                .from("clara_memories")
-                .insert(msgsData);
-
-            if (memoriesError) {
-                console.error("Erro ao salvar memories:", memoriesError);
+            for (const learning of state.learnings) {
+                const cleaned = stripPIIAndReferences(learning.content);
+                if (cleaned && isGeneralizablePattern(cleaned)) {
+                    try {
+                        await manageLongTermMemoryTool.invoke({
+                            action: "salvar",
+                            memory_type: mapLegacyType(learning.memory_type),
+                            content: cleaned,
+                            source_role: "analyzer_bot",
+                        });
+                    } catch (err) {
+                        console.error("Erro ao salvar learning:", err);
+                    }
+                }
             }
         }
     }
@@ -289,7 +291,7 @@ async function saveToDbNode(state: ChatAnalysisState): Promise<Partial<ChatAnaly
 const workflow = new StateGraph<ChatAnalysisState>({ channels: stateChannels })
     .addNode("fetch_data", fetchDataNode)
     .addNode("analyze_conversation", analyzeConversationNode)
-    .addNode("extract_knowledge", extractKnowledgeNode) // Opcional/pass-through por enquanto
+    .addNode("extract_knowledge", extractKnowledgeNode)
     .addNode("save_to_db", saveToDbNode)
     // ...
     .addEdge(START, "fetch_data")

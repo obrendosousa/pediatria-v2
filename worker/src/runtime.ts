@@ -3,6 +3,9 @@ import { runAutomationSchedulerGraph } from "./langgraph/graphs/automationSchedu
 import { markDispatchRun, markSchedulerRun, markWorkerError } from "./health";
 import type { WorkerConfig } from "./config";
 import { RobustCronManager, type CronJobSnapshot } from "./cron/robustCron";
+import { vaultDailyTask, vaultWeeklyTask, vaultMonthlyTask } from "./cron/vaultCrons";
+import { claraTaskExecutorTask } from "./cron/claraTaskExecutor";
+import { memoryConsolidationTask } from "./cron/memoryCrons";
 
 export interface WorkerRuntimeController {
   stop: () => Promise<void>;
@@ -58,6 +61,49 @@ export async function startWorkerRuntime(config: WorkerConfig): Promise<WorkerRu
     maxBackoffMs: Math.max(config.schedulerIntervalMs * 10, 300_000),
     runOnStart: true,
     task: runScheduler,
+  });
+
+  // Vault consolidation — roda a cada 60s mas so executa na hora certa (BRT)
+  cron.register({
+    name: "vault-daily",
+    intervalMs: 60_000,
+    maxBackoffMs: 300_000,
+    runOnStart: false,
+    task: vaultDailyTask,
+  });
+
+  cron.register({
+    name: "vault-weekly",
+    intervalMs: 60_000,
+    maxBackoffMs: 300_000,
+    runOnStart: false,
+    task: vaultWeeklyTask,
+  });
+
+  cron.register({
+    name: "vault-monthly",
+    intervalMs: 60_000,
+    maxBackoffMs: 600_000,
+    runOnStart: false,
+    task: vaultMonthlyTask,
+  });
+
+  // Clara scheduled tasks — polls Supabase a cada 30s para tasks agendadas
+  cron.register({
+    name: "clara-task-executor",
+    intervalMs: 30_000,
+    maxBackoffMs: 300_000,
+    runOnStart: false,
+    task: claraTaskExecutorTask,
+  });
+
+  // Memory consolidation — dedup, arquivo morto e re-categorização semanal (quarta 02h BRT)
+  cron.register({
+    name: "memory-consolidation",
+    intervalMs: 60_000,
+    maxBackoffMs: 300_000,
+    runOnStart: false,
+    task: memoryConsolidationTask,
   });
 
   await cron.start();

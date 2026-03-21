@@ -14,6 +14,7 @@ import { postgresCheckpointer } from "./checkpointer";
 
 import { claraTools, setCurrentTemporalAnchor } from "./tools";
 import { getFilteredChatsListTool, getChatCascadeHistoryTool, getAggregatedInsightsTool } from "@/ai/analyst/tools";
+import { claraVaultTools } from "@/ai/vault/tools";
 import { researcherGraph } from "./researcher_graph";
 import { buildClaraSystemPrompt, CLARA_SYSTEM_PROMPT } from "./system_prompt";
 import { CLARA_COMPANY } from "./company";
@@ -80,8 +81,10 @@ const MAX_TOOL_CALL_ITERATIONS = 20;
 
 // Clara 2.0: removidas deepResearchChatsTool e gerarRelatorioQualidadeTool.
 // Adicionadas: analyzeRawConversationsTool, askUserQuestionTool, updateChatClassificationTool (via claraTools).
+// Vault tools: acesso completo ao cerebro compartilhado (leitura, busca, escrita de memorias, config, decisoes).
 const simpleAgentTools = [
   ...claraTools,
+  ...claraVaultTools,
   getFilteredChatsListTool,
   getChatCascadeHistoryTool,
   getAggregatedInsightsTool,
@@ -586,7 +589,7 @@ Escreva um brief conciso (máx 250 palavras).`;
 
   if (state.is_planning_mode) {
     const planMessage = new AIMessage(
-      `📋 **Plano de Pesquisa**\n\n${brief}\n\n---\n*Para executar este plano, envie a mesma mensagem sem o prefixo [PLANEJAR].*`
+      `${brief}\n\n📋 **Plano gerado.** Clique em ▶ Executar para iniciar.`
     );
     return {
       research_brief: brief,

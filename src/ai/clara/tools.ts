@@ -8,8 +8,19 @@ import { preValidateQuery, postValidateResults } from "./query_validator";
 import { analyzeRawConversationsTool } from "./raw_data_analyzer";
 import { askUserQuestionTool } from "./interactive_questions";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
+import { MEMORY_TYPES, MEMORY_TYPE_DESCRIPTIONS } from "./memory_types";
+import { stripPIIAndReferences, isGeneralizablePattern } from "./memory_quality";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { TemporalAnchor } from "./temporal_anchor";
+import {
+  syncMemoryToVault,
+  syncConfigToVault,
+  syncReportToVault,
+  syncChatNoteToVault,
+  syncKnowledgeToVault,
+} from "@/ai/vault/sync";
+import { getVaultService, isVaultAvailable } from "@/ai/vault/service";
+import type { DecisionInput } from "@/ai/vault/types";
 
 // ── Temporal Anchor isolado por invocação (thread-safe via AsyncLocalStorage) ──
 const temporalAnchorStorage = new AsyncLocalStorage<TemporalAnchor | null>();
@@ -56,6 +67,14 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 // Brain files agora persistidos no Supabase (tabela agent_config)
 // para que atualizações entrem em vigor imediatamente sem restart.
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Helper: loga decisao no vault (fire-and-forget, nao bloqueia a tool principal)
+function logDecisionToVault(input: DecisionInput): void {
+  isVaultAvailable().then((available) => {
+    if (!available) return;
+    getVaultService().logDecision(input).catch(() => {});
+  }).catch(() => {});
+}
 
 // Módulos editáveis pela Clara (soul é imutável — definido em system_prompt.ts)
 const EDITABLE_MODULES = ["company", "rules", "voice_rules"] as const;
@@ -118,6 +137,15 @@ export const updateBrainFileTool = new DynamicStructuredTool({
           updated_at: new Date().toISOString(),
         }, { onConflict: "agent_id,config_key" });
       if (error) throw error;
+      // Dual-write: sync para o vault
+      syncConfigToVault(module, new_content).catch(() => {});
+      // Decision tracking: registrar mudanca de configuracao
+      logDecisionToVault({
+        summary: `Config '${module}' atualizada pela Clara`,
+        decided_by: "clara",
+        category: "operacional",
+        context: `Modulo '${MODULE_LABELS[module]}' foi atualizado com novo conteudo.`,
+      });
       return `O módulo '${MODULE_LABELS[module]}' foi atualizado com sucesso. As alterações já estão em vigor.`;
     } catch (error: unknown) {
       return `Erro ao salvar configuração para revisão: ${error instanceof Error ? error.message : String(error)}`;
@@ -127,56 +155,73 @@ export const updateBrainFileTool = new DynamicStructuredTool({
 
 export const manageLongTermMemoryTool = new DynamicStructuredTool({
   name: "manage_long_term_memory",
-  description: "Salva fatos importantes ou consulta aprendizados passados na tabela 'clara_memories'. No modo salvar faz Upsert Semântico para não duplicar informações similiares.",
+  description: `Salva PADRÕES GENERALIZÁVEIS ou consulta aprendizados passados na memória de longo prazo.
+No modo salvar faz Upsert Semântico para não duplicar informações similares.
+Categorias: ${MEMORY_TYPES.join(", ")}.
+NUNCA salve dados individuais de pacientes (nomes, CPFs, endereços). Salve apenas padrões reutilizáveis.`,
   schema: z.object({
     action: z.enum(["salvar", "consultar"]),
-    memory_type: z.string().describe("Categoria da memória (ex: 'preferencia_paciente')."),
-    content: z.string().optional().describe("O fato a ser salvo ou a palavra-chave para busca."),
+    memory_type: z.string().describe(
+      `Categoria da memória. Valores válidos: ${MEMORY_TYPES.join(", ")}. ${Object.entries(MEMORY_TYPE_DESCRIPTIONS).map(([k, v]) => `${k}: ${v}`).join(". ")}`
+    ),
+    content: z.string().optional().describe("O padrão/fato a ser salvo ou a palavra-chave para busca."),
     source_role: z.string().optional().default("system").describe("O autor/fonte do conhecimento (ex: 'admin', 'doctor', 'system')."),
   }),
   func: async ({ action, memory_type, content, source_role }) => {
     if (action === "salvar") {
       if (!content) return "Erro: 'content' é obrigatório para salvar.";
 
-      try {
-        const embedding = await embedText768(content);
+      // Quality gate: limpar PII e validar padrão generalizável
+      const cleaned = stripPIIAndReferences(content);
+      if (!cleaned) {
+        return "Memória rejeitada: conteúdo contém apenas dados pessoais/específicos ou ficou muito curto após limpeza.";
+      }
+      if (!isGeneralizablePattern(cleaned)) {
+        return "Memória rejeitada: observação individual, não um padrão generalizável. Reformule como um padrão que se aplica a múltiplos casos.";
+      }
 
-        // Chamar a RPC para achar similares (Passo 3)
+      try {
+        const embedding = await embedText768(cleaned);
+
         const { data: matches, error: rpcError } = await supabase.rpc("match_memories", {
           query_embedding: embedding,
-          match_threshold: 0.85,
+          match_threshold: 0.80,
           match_count: 1
         });
 
         if (rpcError) throw rpcError;
 
         if (matches && matches.length > 0) {
-          // Upsert Semântico - Encontrou memória muito similar
           const matchedId = matches[0].id;
           const { error: updateError } = await supabase
             .from("clara_memories")
             .update({
-              content,
+              content: cleaned,
+              memory_type,
               embedding,
               updated_at: new Date().toISOString()
             })
             .eq("id", matchedId);
 
           if (updateError) throw updateError;
-          return `Memória atualizada com sucesso (Upsert Semântico sobrescrevendo info antiga) na categoria '${memory_type}'.`;
+          syncMemoryToVault(matchedId, memory_type, cleaned, source_role).catch(() => {});
+          return `Memória atualizada com sucesso (Upsert Semântico) na categoria '${memory_type}'.`;
         } else {
-          // Inserção normal
-          const { error: insertError } = await supabase
+          const { data: insertData, error: insertError } = await supabase
             .from("clara_memories")
             .insert({
               memory_type,
-              content,
+              content: cleaned,
               embedding,
               source_role: source_role || "system",
               updated_at: new Date().toISOString()
-            });
+            })
+            .select("id")
+            .single();
 
           if (insertError) throw insertError;
+          const newId = (insertData as { id: number } | null)?.id ?? 0;
+          syncMemoryToVault(newId, memory_type, cleaned, source_role).catch(() => {});
           return `Nova memória salva com sucesso na categoria '${memory_type}'.`;
         }
       } catch (e: unknown) {
@@ -255,6 +300,8 @@ Use action='write' para criar ou atualizar. action='read' para consultar explici
         { onConflict: "chat_id" }
       );
     if (error) return `Erro ao salvar observações: ${error instanceof Error ? error.message : String(error)}`;
+    // Dual-write: sync para o vault
+    syncChatNoteToVault(chat_id, notes!.trim()).catch(() => {});
     return `Observações do chat ${chat_id} atualizadas com sucesso.`;
   },
 });
@@ -274,6 +321,15 @@ export const extractAndSaveKnowledgeTool = new DynamicStructuredTool({
       .from("knowledge_base")
       .insert({ pergunta, resposta_ideal, categoria, tags });
     if (error) return `Erro ao salvar na base de conhecimento: ${error instanceof Error ? error.message : String(error)}`;
+    // Dual-write: sync para o vault
+    syncKnowledgeToVault(pergunta, resposta_ideal, categoria).catch(() => {});
+    // Decision tracking: registrar novo conhecimento
+    logDecisionToVault({
+      summary: `Novo gabarito salvo: ${categoria}`,
+      decided_by: "clara",
+      category: "operacional",
+      context: `Pergunta: ${pergunta.slice(0, 100)}`,
+    });
     return `Gabarito salvo com sucesso na base de conhecimento. (Categoria: ${categoria})`;
   },
 });
@@ -338,6 +394,8 @@ export const saveReportTool = new DynamicStructuredTool({
 
       if (error) throw error;
       const reportId = (data as { id: number } | null)?.id;
+      // Dual-write: sync para o vault
+      if (reportId) syncReportToVault(reportId, titulo, conteudo_markdown, tipo).catch(() => {});
       return `Relatório salvo com sucesso! ID: ${reportId}. O gestor pode acessá-lo em /relatorios/${reportId}.`;
     } catch (error: unknown) {
       return `Erro ao salvar relatório: ${error instanceof Error ? error.message : String(error)}`;
@@ -1004,7 +1062,16 @@ export const criarAgendamentoTool = new DynamicStructuredTool({
         .update({ stage: "agendando" })
         .eq("id", chat_id);
 
-      // 6. Formata confirmação em BRT
+      // 6. Decision tracking: registrar agendamento
+      logDecisionToVault({
+        summary: `Agendamento criado: ${patient_name} — ${tipo} em ${data_hora}`,
+        decided_by: "clara",
+        category: "clinico",
+        context: `Paciente: ${patient_name}, Tipo: ${tipo}, Medico: ${resolvedDoctorName}${motivo ? `, Motivo: ${motivo}` : ""}`,
+        related_chats: [chat_id],
+      });
+
+      // 7. Formata confirmação em BRT
       const dataFormatada = new Intl.DateTimeFormat("pt-BR", {
         timeZone: "America/Sao_Paulo",
         weekday: "long",
@@ -1093,7 +1160,179 @@ Faz log de auditoria de cada alteração.`,
       });
     } catch { /* best-effort audit */ }
 
+    // Decision tracking: registrar reclassificacao
+    logDecisionToVault({
+      summary: `Chat ${chat_id} reclassificado: ${stage ? `stage → ${stage}` : ""}${sentiment ? `sentiment → ${sentiment}` : ""}`,
+      decided_by: "clara",
+      category: "operacional",
+      context: reason,
+      related_chats: [chat_id],
+    });
+
     return `✅ ${logEntry}`;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CAMADA 13: Tarefas Agendadas — schedule_task / list / cancel
+// Clara pode agendar tarefas para si mesma executar no futuro (proatividade).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MAX_ACTIVE_TASKS = 20;
+const MAX_MONITOR_REPEATS = 8;
+
+export const scheduleTaskTool = new DynamicStructuredTool({
+  name: "schedule_task",
+  description: `Agendar uma tarefa para VOCÊ MESMA executar no futuro.
+Tipos: check_and_act (verificar condição e agir), study (estudar tema), report (gerar relatório), monitor (checar periodicamente), remind (lembrete).
+A instrução será enviada a você como mensagem no horário agendado. Máximo 20 tasks ativas. TTL máximo 7 dias.
+NÃO use para enviar mensagens diretamente a pacientes — apenas tarefas internas.`,
+
+  schema: z.object({
+    task_type: z.string()
+      .describe("Tipo da tarefa. Valores válidos: check_and_act, study, report, monitor, remind"),
+    title: z.string().describe("Título curto (ex: 'Checar resposta chat #42')"),
+    description: z.string().describe("O que precisa ser feito e por quê"),
+    instruction: z.string().describe("Comando exato que você receberá quando a tarefa for executada. Seja específica e detalhada."),
+    run_at: z.string().describe("Quando executar (ISO 8601 com timezone BRT, ex: '2026-03-22T14:00:00-03:00')"),
+    priority: z.string().optional().describe("Prioridade: low, medium ou high (default: medium)"),
+    repeat_interval_minutes: z.number().optional().describe("Repetir a cada N minutos (só para tipo 'monitor')"),
+    max_repeats: z.number().optional().describe("Máximo de repetições (default: 1, monitor max: 8)"),
+    context: z.string().optional().describe("JSON string com metadata extra (chat_id, patient_id, etc.)"),
+  }),
+
+  func: async ({ task_type, title, description, instruction, run_at, priority, repeat_interval_minutes, max_repeats, context }) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const adminSb = getSupabaseAdminClient() as any;
+
+      // Validar limite de tasks ativas
+      const { count } = await adminSb.from("clara_scheduled_tasks").select("*", { count: "exact", head: true }).in("status", ["pending", "running"]);
+
+      if ((count ?? 0) >= MAX_ACTIVE_TASKS) {
+        return `Erro: Limite de ${MAX_ACTIVE_TASKS} tarefas ativas atingido. Cancele tarefas antigas antes de criar novas.`;
+      }
+
+      // Validar monitor
+      const effectiveMaxRepeats = task_type === "monitor"
+        ? Math.min(max_repeats || 4, MAX_MONITOR_REPEATS)
+        : max_repeats || 1;
+
+      if (repeat_interval_minutes && task_type !== "monitor") {
+        return "Erro: repeat_interval_minutes só pode ser usado com task_type 'monitor'.";
+      }
+
+      // Validar run_at no futuro
+      const runAtDate = new Date(run_at);
+      if (isNaN(runAtDate.getTime())) {
+        return "Erro: run_at inválido. Use formato ISO 8601 (ex: '2026-03-22T14:00:00-03:00').";
+      }
+      if (runAtDate.getTime() < Date.now() - 60000) {
+        return "Erro: run_at deve ser no futuro.";
+      }
+
+      // INSERT
+      // Parsear context se for string JSON
+      let parsedContext = {};
+      if (context) {
+        try { parsedContext = JSON.parse(context); } catch { parsedContext = { raw: context }; }
+      }
+
+      const { data, error } = await adminSb.from("clara_scheduled_tasks").insert({ task_type, title, description, instruction, run_at: runAtDate.toISOString(), priority: priority || "medium", repeat_interval_minutes: repeat_interval_minutes || null, max_repeats: effectiveMaxRepeats, context: parsedContext }).select("id, run_at, expires_at").single();
+
+      if (error) return `Erro ao agendar: ${error.message}`;
+
+      const taskData = data as { id: number; run_at: string; expires_at: string };
+
+      // Vault sync (fire-and-forget)
+      import("@/ai/vault/sync").then(({ syncScheduledTaskToVault }) => {
+        syncScheduledTaskToVault(taskData.id, title, task_type, instruction, run_at, "pending").catch(() => {});
+      }).catch(() => {});
+
+      return `✅ Tarefa #${taskData.id} agendada: "${title}" (${task_type})
+⏰ Execução: ${new Date(taskData.run_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+⏳ Expira: ${new Date(taskData.expires_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}${repeat_interval_minutes ? `\n🔄 Repetição: a cada ${repeat_interval_minutes}min (max ${effectiveMaxRepeats}x)` : ""}`;
+    } catch (e) {
+      return `Erro inesperado: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  },
+});
+
+export const listScheduledTasksTool = new DynamicStructuredTool({
+  name: "list_scheduled_tasks",
+  description: "Listar suas tarefas agendadas. Use para verificar o que está pendente, em execução ou concluído.",
+
+  schema: z.object({
+    status: z.enum(["pending", "running", "completed", "failed", "cancelled", "expired", "all"])
+      .optional()
+      .describe("Filtrar por status (default: pending)"),
+    limit: z.number().optional().describe("Máximo de resultados (default: 10)"),
+  }),
+
+  func: async ({ status, limit }) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const adminSb = getSupabaseAdminClient() as any;
+      const effectiveLimit = Math.min(limit || 10, 50);
+
+      let query = adminSb.from("clara_scheduled_tasks").select("id, task_type, title, status, priority, run_at, execution_count, max_repeats, executed_at, error, created_at").order("run_at", { ascending: true }).limit(effectiveLimit);
+
+      if (status && status !== "all") {
+        query = query.eq("status", status);
+      }
+
+      const { data, error } = await query;
+      if (error) return `Erro: ${error.message}`;
+
+      const tasks = data as Array<{
+        id: number; task_type: string; title: string; status: string;
+        priority: string; run_at: string; execution_count: number;
+        max_repeats: number; executed_at: string | null; error: string | null; created_at: string;
+      }>;
+
+      if (!tasks || tasks.length === 0) {
+        return `Nenhuma tarefa ${status === "all" ? "" : `com status '${status || "pending"}'`} encontrada.`;
+      }
+
+      const lines = tasks.map((t) => {
+        const runAt = new Date(t.run_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        const statusIcon = { pending: "⏳", running: "🔄", completed: "✅", failed: "❌", cancelled: "🚫", expired: "⌛" }[t.status] || "❓";
+        const repeatInfo = t.max_repeats > 1 ? ` (${t.execution_count}/${t.max_repeats})` : "";
+        return `${statusIcon} #${t.id} [${t.task_type}/${t.priority}] "${t.title}" — ${runAt}${repeatInfo}${t.error ? ` — Erro: ${t.error.slice(0, 80)}` : ""}`;
+      });
+
+      return `📋 Tarefas (${tasks.length}):\n${lines.join("\n")}`;
+    } catch (e) {
+      return `Erro: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  },
+});
+
+export const cancelScheduledTaskTool = new DynamicStructuredTool({
+  name: "cancel_scheduled_task",
+  description: "Cancelar uma tarefa agendada que não é mais necessária. Só pode cancelar tarefas com status 'pending'.",
+
+  schema: z.object({
+    task_id: z.number().describe("ID da tarefa a cancelar"),
+    reason: z.string().describe("Por que está cancelando"),
+  }),
+
+  func: async ({ task_id, reason }) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const adminSb = getSupabaseAdminClient() as any;
+
+      const { data, error } = await adminSb.from("clara_scheduled_tasks").update({ status: "cancelled", result: `Cancelada: ${reason}`, executed_at: new Date().toISOString() }).eq("id", task_id).eq("status", "pending").select("id, title").single();
+
+      if (error) return `Erro ao cancelar: ${error.message}`;
+
+      const task = data as { id: number; title: string } | null;
+      if (!task) return `Tarefa #${task_id} não encontrada ou não está pendente.`;
+
+      return `🚫 Tarefa #${task.id} "${task.title}" cancelada. Motivo: ${reason}`;
+    } catch (e) {
+      return `Erro: ${e instanceof Error ? e.message : String(e)}`;
+    }
   },
 });
 
@@ -1120,6 +1359,9 @@ export const claraTools = [
   generateDeepReportTool,           // ⭐ NOVA — super relatório via Gemini Pro + PDF
   analisarChatEspecificoTool,       // Mantida para análise estruturada individual
   criarAgendamentoTool,
+  scheduleTaskTool,                 // Proatividade: agendar tarefas futuras
+  listScheduledTasksTool,           // Listar tarefas agendadas
+  cancelScheduledTaskTool,          // Cancelar tarefa agendada
 ];
 
 // Ferramentas expostas aos Researchers do subgrafo de pesquisa paralela.

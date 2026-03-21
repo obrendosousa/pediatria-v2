@@ -11,13 +11,17 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
 import { allResearchTools } from "./tools";
 import { getFilteredChatsListTool, getChatCascadeHistoryTool, getAggregatedInsightsTool } from "@/ai/analyst/tools";
+import { vaultReadTool, vaultSearchTool, vaultSemanticSearchTool } from "@/ai/vault/tools";
 
-// allResearchTools NÃO inclui analyst tools — adicionados aqui uma única vez, sem duplicatas.
+// allResearchTools NÃO inclui analyst tools nem vault tools — adicionados aqui uma única vez, sem duplicatas.
 const researcherTools = [
   ...allResearchTools,
   getFilteredChatsListTool,
   getChatCascadeHistoryTool,
   getAggregatedInsightsTool,
+  vaultReadTool,
+  vaultSearchTool,
+  vaultSemanticSearchTool,
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

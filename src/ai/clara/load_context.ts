@@ -6,6 +6,7 @@
 
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { GoogleGenAI } from "@google/genai";
+import { getVaultService, isVaultAvailable } from "@/ai/vault/service";
 
 export interface LoadedContext {
   relevant_memories: string[];
@@ -13,6 +14,8 @@ export interface LoadedContext {
   relevant_knowledge: string[];
   memory_count: number;
   last_memory_date: string;
+  vault_scratchpad?: string;
+  vault_recent_decisions?: string[];
 }
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY! });
@@ -36,7 +39,7 @@ export async function loadContextForInteraction(
 ): Promise<LoadedContext> {
   const supabase = getSupabaseAdminClient();
 
-  const [memoriesResult, chatNotesResult, knowledgeResult, statsResult] =
+  const [memoriesResult, chatNotesResult, knowledgeResult, statsResult, vaultResult] =
     await Promise.allSettled([
       // 1. AUTO-RAG: Busca semântica na clara_memories
       (async () => {
@@ -97,7 +100,24 @@ export async function loadContextForInteraction(
             : "N/A",
         };
       })(),
+
+      // 5. Contexto do vault (scratchpad + decisoes recentes)
+      (async () => {
+        if (!(await isVaultAvailable())) return { scratchpad: undefined, decisions: [] as string[] };
+        const vault = getVaultService();
+        const [scratchpad, recentDecisions] = await Promise.all([
+          vault.readNote("agents/clara/scratchpad.md").then((n) => n.content).catch(() => undefined),
+          vault.listNotes("decisions/", { limit: 3, sortBy: "mtime", order: "desc" })
+            .then((notes) => notes.map((d) => (d.frontmatter.summary as string) || d.path))
+            .catch(() => [] as string[]),
+        ]);
+        return { scratchpad, decisions: recentDecisions };
+      })(),
     ]);
+
+  const vaultData = vaultResult.status === "fulfilled"
+    ? vaultResult.value
+    : { scratchpad: undefined, decisions: [] as string[] };
 
   return {
     relevant_memories: memoriesResult.status === "fulfilled" ? memoriesResult.value : [],
@@ -105,5 +125,7 @@ export async function loadContextForInteraction(
     relevant_knowledge: knowledgeResult.status === "fulfilled" ? knowledgeResult.value : [],
     memory_count: statsResult.status === "fulfilled" ? (statsResult.value as { count: number; last_date: string }).count : 0,
     last_memory_date: statsResult.status === "fulfilled" ? (statsResult.value as { count: number; last_date: string }).last_date : "N/A",
+    vault_scratchpad: vaultData.scratchpad,
+    vault_recent_decisions: vaultData.decisions.length > 0 ? vaultData.decisions : undefined,
   };
 }

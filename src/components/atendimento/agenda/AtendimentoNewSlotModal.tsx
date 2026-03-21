@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
+import { createClient } from '@/lib/supabase/client';
 import { X, User, Ban, FileText, Phone, Calendar, Clock, Stethoscope, Loader2, Save, Wallet, Cake } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { isValidISODate, checkTimeConflict, checkBlockConflict } from '@/utils/scheduling/validation';
 
 const supabase = createSchemaClient('atendimento');
+const pubSupabase = createClient();
 
 interface Props {
   isOpen: boolean;
@@ -85,7 +87,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
   useEffect(() => {
     if (isOpen) {
       (async () => {
-        const { data } = await supabase.from('doctors').select('id, name').eq('active', true).order('name');
+        const { data } = await pubSupabase.from('doctors').select('id, name').eq('active', true).order('name');
         if (data && data.length > 0) {
           setDoctors(data);
           setSelectedDoctorId(prev => prev ?? data[0].id);

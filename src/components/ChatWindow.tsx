@@ -985,6 +985,7 @@ export default function ChatWindow({ chat }: { chat: Chat | null }) {
           isLoadingAISuggestion={isLoadingAISuggestion}
           onRequestAISuggestion={handleRequestAISuggestion}
           onSendSticker={handleSendSticker}
+          isClaraChat={chat.phone === '00000000000'}
         />
 
         {/* Toast de sugestão da Clara (20s, depois minimiza) */}

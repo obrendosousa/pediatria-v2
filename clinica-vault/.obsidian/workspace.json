@@ -1,0 +1,214 @@
+{
+  "main": {
+    "id": "8caa21d514cab4a6",
+    "type": "split",
+    "children": [
+      {
+        "id": "3cd4f1db35293691",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2d5202abb0e37aaf",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Visualização em gráfico"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "8b552a6b4fb53800",
+    "type": "split",
+    "children": [
+      {
+        "id": "9de8c5fe4884f65a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "5a5e41bf201f38a1",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de arquivos"
+            }
+          },
+          {
+            "id": "cd3d9a816ca90c83",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Procurar"
+            }
+          },
+          {
+            "id": "29c5d74094978266",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "fe3e191d6bd37486",
+    "type": "split",
+    "children": [
+      {
+        "id": "9753d312082d0444",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9232bf3942367942",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Links inversos"
+            }
+          },
+          {
+            "id": "1530df821e2cbe3a",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Links de saída"
+            }
+          },
+          {
+            "id": "3117bb82adbbc53f",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "c056a1c8241b8a73",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas as propriedades"
+            }
+          },
+          {
+            "id": "6a6f88b768297734",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Sumário"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir a troca rápida": false,
+      "graph:Abrir visualização em gráfico": false,
+      "canvas:Criar novo canvas": false,
+      "daily-notes:Abrir a nota de hoje": false,
+      "templates:Inserir modelo": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Criar nova base": false
+    }
+  },
+  "active": "2d5202abb0e37aaf",
+  "lastOpenFiles": [
+    "Sem título.canvas",
+    "memories/_moc-padrao-comportamental.md",
+    "memories/padrao-comportamental/pacientes-comecaram-a-relatar-objecao-de-preco-r-500-00-citando-concorrencia.md",
+    "decisions/2026-03-21-consultas-de-retorno-passam-a-custar-r-200-00-a-partir-de-a.md",
+    "decisions/2026-03-21-config-company-atualizada-pela-clara.md",
+    "memories/padrao-comportamental/pacientes-demonstram-preferencia-por-agendamentos-em-dias-especificos-da-semana.md",
+    "memories/_moc-regra-negocio.md",
+    "memories/regra-negocio/a-clinica-altera-o-valor-da-consulta-de-pediatria-de-rn-para-valor-comum-mais-c.md",
+    "memories/_tema-politica-de-precificacao-e-reajustes.md",
+    "memories/padrao-comportamental/paciente-o-valor-de-r-50000-para-consulta-com-a-dra-fernanda-santana-sem-ques.md",
+    "memories/regra-negocio/o-valor-da-consulta-com-a-dra-fernanda-santana-e-de-r-50000.md",
+    "memories/padrao-comportamental/o-valor-da-consulta-com-a-dra-fernanda-santana-e-de-r-50000.md",
+    "memories/regra-negocio/o-valor-da-consulta-particular-da-dra-fernanda-santana-e-r-50000.md",
+    "memories/padrao-comportamental/a-consulta-de-500-reais-da-dra-fernanda-santana-inclui-acompanhamento-mensal-at.md",
+    "memories/regra-negocio/o-valor-da-consulta-com-a-dra-fernanda-santana-no-centro-medico-alianca-kids-e.md",
+    "memories/padrao-comportamental/a-coleta-antecipada-de-dados-cadastrais-e-fiscais-via-whatsapp-demonstra-organiz.md",
+    "memories/_index.md",
+    "memories/_tema-atendimento-multidisciplinar-e-familiar.md",
+    "memories/_tema-gestao-de-urgencias-e-sintomas-agudos.md",
+    "memories/_tema-protocolos-de-exames-e-triagem-neonatal.md",
+    "memories/_tema-continuidade-do-cuidado-e-preferencia-por-profissionais.md",
+    "memories/_tema-logistica-e-pacientes-de-outras-regioes.md",
+    "memories/_tema-comunicacao-digital-e-atendimento-via-whatsapp.md",
+    "memories/_tema-gestao-de-fluxo-e-ordem-de-chegada.md",
+    "memories/_moc-recurso-equipe.md",
+    "memories/_moc-conhecimento-medico.md",
+    "memories/recurso-equipe",
+    "memories/conhecimento-medico",
+    "memories/protocolo-clinico",
+    "memories/feedback-melhoria",
+    "memories/padrao-comportamental",
+    "memories/processo-operacional"
+  ]
+}

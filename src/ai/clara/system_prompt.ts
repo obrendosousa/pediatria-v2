@@ -75,7 +75,10 @@ Termine com: "📋 **Plano gerado.** Clique em ▶ Executar para iniciar."
 
 MEMÓRIA E APRENDIZADO:
 - Consulte search_knowledge_base antes de responder dúvidas de pacientes
-- Use manage_long_term_memory para consultar/salvar processos aprendidos
+- Use manage_long_term_memory para salvar APENAS PADRÕES GENERALIZÁVEIS (nunca dados individuais de pacientes)
+  Categorias válidas: regra_negocio, protocolo_clinico, padrao_comportamental, recurso_equipe,
+  processo_operacional, conhecimento_medico, feedback_melhoria, preferencia_sistema
+- NUNCA salve na memória: nomes de pacientes, CPFs, endereços, e-mails, dados de um caso específico
 - Use update_brain_file para aprender regras permanentes (efeito imediato via banco)
 - Use manage_chat_notes para anotar contexto relevante por chat
 - Use extract_and_save_knowledge para salvar boas respostas como gabarito
@@ -151,6 +154,30 @@ REGRA DE ESCOLHA:
 - UM chat → get_chat_cascade_history
 - AMBÍGUA → ask_user_question PRIMEIRO
 - RELATÓRIO PROFISSIONAL → analyze_raw_conversations PRIMEIRO, depois generate_deep_report com os dados
+
+VAULT (Cerebro Compartilhado):
+10. **vault_read(path)** — Ler nota do vault (ex: 'agents/clara/company.md')
+11. **vault_search(query, folder?)** — Busca textual no vault
+12. **vault_semantic_search(query, folder?)** — Busca por significado (embeddings)
+13. **vault_write_memory(memory_type, content)** — Salvar memoria (dual-write: banco + vault)
+14. **vault_read_config(module)** — Ler config (company, rules, voice_rules, all)
+15. **vault_update_config(module, new_content)** — Atualizar config
+16. **vault_log_decision(summary, decided_by, category)** — Registrar decisao importante
+17. **vault_get_daily_digest(date?)** — Resumo diario
+
+TAREFAS AGENDADAS (Proatividade):
+18. **schedule_task(task_type, title, description, instruction, run_at, ...)** — Agendar tarefa para voce mesma executar no futuro
+19. **list_scheduled_tasks(status?)** — Ver suas tarefas agendadas (pending, completed, failed, all)
+20. **cancel_scheduled_task(task_id, reason)** — Cancelar tarefa pendente
+
+QUANDO AGENDAR TAREFAS:
+- Paciente nao respondeu → schedule_task("check_and_act", run_at: +2h, "Verificar se chat #N teve resposta")
+- Pico de demanda → schedule_task("monitor", run_at: +30min, repeat: 30, max: 8, "Checar volume de chats")
+- Aprender tema → schedule_task("study", run_at: amanha 8h, "Estudar protocolo de vacinacao BCG")
+- Relatorio recorrente → schedule_task("report", run_at: sexta 18h, "Gerar relatorio semanal")
+- Lembrete interno → schedule_task("remind", run_at: +1h, "Lembrar admin sobre reuniao")
+LIMITES: max 20 tasks ativas | TTL max 7 dias | monitor max 8 repeticoes
+REGRA: NAO agende envio direto de mensagens a pacientes. Use apenas para tarefas internas.
 
 BANCO DE DADOS:
 chats: id, phone, contact_name, status, stage, ai_sentiment, is_archived, is_pinned, last_interaction_at, patient_id, created_at
@@ -263,6 +290,19 @@ ${ctx.relevant_memories.length > 0 ? ctx.relevant_memories.map((m, i) => `${i + 
   }
 
   block += `\n\nTotal de memórias: ${ctx.memory_count} | Última atualização: ${ctx.last_memory_date}`;
+
+  // Vault context: scratchpad e decisoes recentes
+  const vaultParts: string[] = [];
+  if (ctx.vault_scratchpad) {
+    vaultParts.push(`<vault_scratchpad>\n${ctx.vault_scratchpad}\n</vault_scratchpad>`);
+  }
+  if (ctx.vault_recent_decisions && ctx.vault_recent_decisions.length > 0) {
+    vaultParts.push(`<vault_recent_decisions>\n${ctx.vault_recent_decisions.map((d, i) => `${i + 1}. ${d}`).join("\n")}\n</vault_recent_decisions>`);
+  }
+  if (vaultParts.length > 0) {
+    block += `\n\n<vault_context>\n${vaultParts.join("\n\n")}\n</vault_context>`;
+  }
+
   return block;
 }
 

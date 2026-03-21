@@ -86,17 +86,17 @@ export async function generateVoiceForMessages(
 
 // ─── GERAÇÃO + UPLOAD ─────────────────────────────────────────────────────────
 // Backend selecionado por TTS_BACKEND ou presença de ELEVENLABS_API_KEY
-export async function generateAndUploadVoice(text: string): Promise<string | null> {
+export async function generateAndUploadVoice(text: string, voiceOverride?: string): Promise<string | null> {
     try {
         const backend =
             process.env.TTS_BACKEND ||
             (process.env.ELEVENLABS_API_KEY ? "elevenlabs" : "kokoro");
 
-        console.log(`[Voice] Gerando via ${backend} (${text.length} chars)`);
+        console.log(`[Voice] Gerando via ${backend} (${text.length} chars)${voiceOverride ? ` voice=${voiceOverride}` : ''}`);
 
         let audioBuffer: Buffer | null = null;
-        const mimeType = "audio/mpeg";
-        const ext = "mp3";
+        let mimeType = "audio/mpeg";
+        let ext = "mp3";
 
         if (backend === "elevenlabs") {
             audioBuffer = await generateWithElevenLabs(text);
@@ -107,7 +107,9 @@ export async function generateAndUploadVoice(text: string): Promise<string | nul
         } else if (backend === "openai") {
             audioBuffer = await generateWithOpenAI(text);
         } else {
-            audioBuffer = await generateWithKokoro(text);
+            audioBuffer = await generateWithKokoro(text, voiceOverride);
+            // Kokoro retorna WAV por padrao
+            if (audioBuffer) { mimeType = "audio/wav"; ext = "wav"; }
         }
 
         if (!audioBuffer) return null;
@@ -135,14 +137,14 @@ export async function generateAndUploadVoice(text: string): Promise<string | nul
 
 // ─── BACKEND: Kokoro (VPS / produção — CPU, sem GPU) ─────────────────────────
 // ~2-4s por frase, API compatível com OpenAI, voz feminina PT-BR: pf_dora
-async function generateWithKokoro(text: string): Promise<Buffer | null> {
+async function generateWithKokoro(text: string, voiceOverride?: string): Promise<Buffer | null> {
     const res = await fetch(`${KOKORO_BASE_URL}/v1/audio/speech`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             model: "kokoro",
             input: text,
-            voice: KOKORO_VOICE,
+            voice: voiceOverride || KOKORO_VOICE,
             lang_code: "p",         // "p" = PT-BR no Kokoro
             response_format: "mp3",
         }),

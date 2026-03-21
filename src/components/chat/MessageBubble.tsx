@@ -444,22 +444,27 @@ function MessageBubble({
       );
     }
 
-    const isPlanModeCard = text.includes('\u{1F4CB} *Plano gerado.*') && isAIChat && !isMe;
+    const isPlanModeCard = /📋.*Plano gerado/i.test(text) && isAIChat && !isMe;
 
     if (isPlanModeCard) {
+      // Remove o marcador "📋 **Plano gerado.**..." do texto — o botão substitui
+      const planContent = text
+        .replace(/📋\s*\*{0,2}Plano gerado\.\*{0,2}[^\n]*/giu, '')
+        .replace(/📋\s*\*{0,2}Plano de Pesquisa\*{0,2}/giu, '')
+        .replace(/---\s*\n?\*Para executar[^\n]*/giu, '')
+        .trim();
       return (
-        <div className="pt-1 w-full max-w-[280px]">
-          <FormattedMessage text={text} />
-          <div className="mt-3 flex gap-2 w-full">
+        <div className="pt-1">
+          <ClaraMarkdownMessage text={planContent} />
+          <div className="mt-4 pt-3 border-t border-white/10">
             <button
               onClick={() => {
-                const planText = text.replace(/\u{1F4CB} \*Plano gerado\.\*|Clique em 'Executar' na aba abaixo para iniciar\./giu, '').trim();
-                window.dispatchEvent(new CustomEvent('clara:execute_plan', { detail: planText }));
+                window.dispatchEvent(new CustomEvent('clara:execute_plan', { detail: planContent }));
               }}
-              className="flex-1 bg-[var(--chat-accent-secondary)] hover:opacity-90 text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors flex items-center justify-center gap-1.5"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
-              <Play size={14} />
-              Executar
+              <Play size={16} fill="currentColor" />
+              Executar plano
             </button>
           </div>
         </div>

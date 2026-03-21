@@ -2,7 +2,7 @@
 
  
 import { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Paperclip, X, Smile, Trash2, Sparkles, Loader2, Upload } from 'lucide-react';
+import { Send, Mic, Paperclip, X, Smile, Trash2, Sparkles, Loader2, Upload, ClipboardList } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sendButtonVariants } from '@/lib/animations';
 import dynamic from 'next/dynamic';
@@ -44,6 +44,8 @@ interface ChatInputProps {
   onRequestAISuggestion?: () => void;
   // Stickers
   onSendSticker?: (url: string) => void;
+  // Modo plano (Clara)
+  isClaraChat?: boolean;
 }
 
 export default function ChatInput({
@@ -60,10 +62,12 @@ export default function ChatInput({
   isLoadingAISuggestion = false,
   onRequestAISuggestion,
   onSendSticker,
+  isClaraChat = false,
 }: ChatInputProps) {
   const { toast } = useToast();
   // --- ESTADOS ---
   const [message, setMessage] = useState('');
+  const [planMode, setPlanMode] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [pickerTab, setPickerTab] = useState<'emojis' | 'stickers'>(() => {
     if (typeof window === 'undefined') return 'emojis';
@@ -208,10 +212,12 @@ export default function ChatInput({
   const handleSend = () => {
     const text = getTextFromHtml();
     if (text) {
-      onSendMessage(text, 'text', undefined, { replyTo, editingMessage });
+      const finalText = planMode ? `[PLANEJAR] ${text}` : text;
+      onSendMessage(finalText, 'text', undefined, { replyTo, editingMessage });
       setMessage('');
       if (inputRef.current) inputRef.current.innerHTML = '';
       setShowEmojiPicker(false);
+      if (planMode) setPlanMode(false);
     }
   };
 
@@ -540,6 +546,16 @@ export default function ChatInput({
           >
             <Paperclip size={24} className="rotate-45" />
           </button>
+
+          {isClaraChat && (
+            <button
+              onClick={() => setPlanMode(!planMode)}
+              className={`p-2 rounded-full transition-colors duration-200 cursor-pointer ${planMode ? 'text-amber-500 bg-amber-500/15' : 'text-[var(--chat-text-muted)] hover:bg-gray-200 dark:hover:bg-white/10 hover:text-amber-500'}`}
+              title={planMode ? 'Modo plano ativo — Clara vai mostrar o plano antes de executar' : 'Ativar modo plano'}
+            >
+              <ClipboardList size={22} />
+            </button>
+          )}
           <input
             type="file"
             ref={fileInputRef}
@@ -550,7 +566,24 @@ export default function ChatInput({
           />
         </div>
 
-        <div className="flex-1 bg-white dark:bg-[var(--chat-surface)] rounded-xl border border-gray-200/60 dark:border-white/5 focus-within:border-[var(--chat-accent)]/30 transition-all duration-200 min-h-[42px] relative flex flex-col justify-center my-1">
+        <div className={`flex-1 bg-white dark:bg-[var(--chat-surface)] rounded-xl border transition-all duration-200 min-h-[42px] relative flex flex-col justify-center my-1 ${planMode ? 'border-amber-500/40 ring-1 ring-amber-500/20' : 'border-gray-200/60 dark:border-white/5 focus-within:border-[var(--chat-accent)]/30'}`}>
+          <AnimatePresence>
+          {planMode && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border-b border-amber-500/20 rounded-t-xl text-xs text-amber-600 dark:text-amber-400"
+            >
+              <ClipboardList size={14} />
+              <span className="font-medium">Modo plano</span>
+              <span className="text-amber-500/70">Clara vai mostrar o plano antes de executar</span>
+              <button onClick={() => setPlanMode(false)} className="ml-auto p-0.5 hover:bg-amber-500/20 rounded cursor-pointer">
+                <X size={12} />
+              </button>
+            </motion.div>
+          )}
+          </AnimatePresence>
           <AnimatePresence>
           {(replyTo || editingMessage) && (
             <motion.div

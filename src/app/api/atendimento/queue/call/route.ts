@@ -8,6 +8,23 @@ const supabase = createClient(
   { db: { schema: 'atendimento' } }
 );
 
+const supabasePublic = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+async function getSavedVoice(): Promise<string | undefined> {
+  try {
+    const { data } = await supabasePublic
+      .from('agent_config')
+      .select('content')
+      .eq('agent_id', 'tv_panel')
+      .eq('config_key', 'kokoro_voice')
+      .maybeSingle();
+    return data?.content || undefined;
+  } catch { return undefined; }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -32,10 +49,16 @@ export async function POST(req: NextRequest) {
     const spokenTicket = ticketNumber.replace(/([A-Z])(\d+)/, '$1 $2');
     const text = `Senha ${spokenTicket}, ${patientName}, por favor dirija-se ao ${servicePointName}.`;
 
+    console.log('[Queue Call] Texto TTS:', text);
+
+    // Buscar voz configurada no painel TV
+    const savedVoice = await getSavedVoice();
+
     // Gerar audio via TTS (Kokoro/ElevenLabs conforme TTS_BACKEND)
     let audioUrl: string | null = null;
     try {
-      audioUrl = await generateAndUploadVoice(text);
+      audioUrl = await generateAndUploadVoice(text, savedVoice);
+      console.log('[Queue Call] Audio URL gerado:', audioUrl);
     } catch (e) {
       console.error('[Queue TTS] Erro na geracao de voz:', e);
       // Nao bloqueia a chamada se TTS falhar
@@ -60,7 +83,7 @@ export async function POST(req: NextRequest) {
       tts_audio_url: audioUrl || undefined,
     };
 
-    await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`, {
+    const broadcastRes = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -69,12 +92,13 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         messages: [{
-          topic: 'tv-queue',
+          topic: 'realtime:tv-queue',
           event: 'call',
           payload,
         }],
       }),
-    }).catch((e) => console.error('[Queue Broadcast] Erro:', e));
+    }).catch((e) => { console.error('[Queue Broadcast] Erro:', e); return null; });
+    console.log('[Queue Broadcast] Status:', broadcastRes?.status, broadcastRes?.statusText);
 
     return NextResponse.json({ success: true, audioUrl });
   } catch (error) {
