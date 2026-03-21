@@ -225,7 +225,7 @@ export default function ReceptionAppointmentModal({
       toast.error('Informe a data de nascimento do paciente.');
       return;
     }
-    if (parseCurrency(form.totalAmount) <= 0) {
+    if (appointment.appointment_type !== 'retorno' && parseCurrency(form.totalAmount) <= 0) {
       toast.error('Informe o valor da consulta.');
       return;
     }

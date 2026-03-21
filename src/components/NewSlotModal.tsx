@@ -198,7 +198,7 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         return;
       }
 
-      if (parseCurrency(formData.totalAmount) <= 0) {
+      if (formData.appointment_type === 'consulta' && parseCurrency(formData.totalAmount) <= 0) {
         toast.error('Informe o valor da consulta.');
         return;
       }

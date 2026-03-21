@@ -208,7 +208,7 @@ export default function AppointmentModal({
       return;
     }
 
-    if (parseCurrency(formData.totalAmount) <= 0) {
+    if (formData.appointmentType === 'consulta' && parseCurrency(formData.totalAmount) <= 0) {
       toast.error('Informe o valor da consulta.');
       return;
     }

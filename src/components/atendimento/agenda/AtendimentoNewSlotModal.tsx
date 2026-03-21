@@ -114,7 +114,7 @@ export default function AtendimentoNewSlotModal({ isOpen, onClose, onSuccess, in
       if (!formData.patient_name.trim()) { toast.error('Preencha o nome do paciente.'); return; }
       if (!selectedDoctorId) { toast.error('Selecione um profissional.'); return; }
       if (!formData.type) { toast.error('Selecione o tipo de atendimento.'); return; }
-      if (parseCurrency(formData.totalAmount) <= 0) { toast.error('Informe o valor da consulta.'); return; }
+      if (formData.type === 'consulta' && parseCurrency(formData.totalAmount) <= 0) { toast.error('Informe o valor da consulta.'); return; }
     } else {
       if (!formData.notes.trim()) { toast.error('Informe o motivo do bloqueio.'); return; }
     }
