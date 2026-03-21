@@ -96,7 +96,7 @@ async function fetchAllMemories(): Promise<MemoryRecord[]> {
   return (data as AnyRow[]).map((m) => ({
     ...m,
     filePath: memoryToFilePath(m),
-  }));
+  })) as MemoryRecord[];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
