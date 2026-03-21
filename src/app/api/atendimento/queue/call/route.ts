@@ -45,9 +45,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Formatar senha para fala: "G001" → "G 001"
-    const spokenTicket = ticketNumber.replace(/([A-Z])(\d+)/, '$1 $2');
-    const text = `Senha ${spokenTicket}, ${patientName}, por favor dirija-se ao ${servicePointName}.`;
+    // Formatar destino para fala: "Guiche 1" → "Guichê 1", "Consultorio 2" → "Consultório 2"
+    const spokenDest = servicePointName
+      .replace(/\bGuiche\b/i, 'Guichê')
+      .replace(/\bConsultorio\b/i, 'Consultório');
+    const text = `${patientName}, por favor dirija-se ao ${spokenDest}.`;
 
     console.log('[Queue Call] Texto TTS:', text);
 

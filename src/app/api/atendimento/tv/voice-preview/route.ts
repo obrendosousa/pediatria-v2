@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 const KOKORO_BASE_URL = process.env.KOKORO_TTS_URL || 'http://localhost:8880';
-const PREVIEW_PHRASE = 'Atenção, senha G zero zero um, Maria Silva, por favor dirija-se ao guichê de atendimento.';
+const PREVIEW_PHRASE = 'Maria Silva, por favor dirija-se ao Consultório 2.';
 const BUCKET = 'whatsapp_media';
 const AGENT_ID = 'tv_panel';
 const CONFIG_KEY = 'voice_previews';

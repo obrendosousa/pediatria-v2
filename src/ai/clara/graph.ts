@@ -378,7 +378,14 @@ claraWorkflow.addNode("classify_node", async (state: ClaraState) => {
   const isActionRequest = ACTION_VERBS.some(
     (v) => lower.startsWith(v + " ") || lower.startsWith(v + ",")
   );
-  if (isGreeting || isActionRequest) {
+  // Palavras que indicam análise — não devem ser capturadas pelo fast-path
+  const ANALYSIS_KEYWORDS = ["analis", "relat", "desempenho", "qualidade", "gargalo", "obje", "avali", "funil", "perda", "atendimento"];
+  const looksLikeAnalysis = ANALYSIS_KEYWORDS.some(k => lower.includes(k));
+
+  if (isGreeting) {
+    return { ...researchStateReset, is_deep_research: false };
+  }
+  if (isActionRequest && !looksLikeAnalysis) {
     return { ...researchStateReset, is_deep_research: false };
   }
 
@@ -388,28 +395,30 @@ claraWorkflow.addNode("classify_node", async (state: ClaraState) => {
 
 Hoje: ${today}
 
-REGRA FUNDAMENTAL:
-"simple" = a resposta pode vir de MÉTRICAS, LISTAS, DADOS ESTRUTURADOS, ou VERIFICAÇÃO DE UM CHAT ESPECÍFICO.
-"research" = SOMENTE quando é necessário LER e ANALISAR o TEXTO BRUTO de MÚLTIPLAS conversas para análise semântica profunda.
+REGRA DE DECISÃO:
+"simple" = CONTAGEM, BUSCA, AÇÃO ou verificação de UM chat específico.
+"research" = AVALIAR, CLASSIFICAR, COMPARAR ou ANALISAR conversas/desempenho/qualidade.
 
 → EXEMPLOS "simple":
-  • "Quantas conversas tivemos esta semana?" → simple
-  • "Volume de chats dia a dia" → simple
-  • "Quais os principais gargalos de atendimento?" → simple (usa analyze_raw_conversations)
-  • "Relatório de qualidade desta semana" → simple (usa analyze_raw_conversations)
-  • "Quais as principais objeções dos clientes?" → simple (usa analyze_raw_conversations)
-  • "Como os clientes reagiram ao preço?" → simple (usa analyze_raw_conversations)
-  • "Porcentagem de agendamentos confirmados" → simple (execute_sql)
-  • "Como estão os atendimentos?" → simple (get_volume_metrics)
-  • "Me mostra a conversa da Karol" → simple
-  • "Faz uma mensagem de confirmação de consulta" → simple
+  • "Quantas conversas tivemos esta semana?" → simple (contagem)
+  • "Volume de chats dia a dia" → simple (métrica)
+  • "Porcentagem de agendamentos confirmados" → simple (SQL)
+  • "Me mostra a conversa da Karol" → simple (busca 1 chat)
+  • "Faz uma mensagem de confirmação de consulta" → simple (ação)
+  • "Lembra que o horário mudou" → simple (memória)
 
-→ EXEMPLOS "research" — pipeline completo com múltiplos researchers (RARO, só quando pedido explicitamente):
+→ EXEMPLOS "research" (pipeline profundo com múltiplos pesquisadores):
+  • "Quais os principais gargalos de atendimento?" → research
+  • "Relatório de qualidade desta semana" → research
+  • "Quais as principais objeções dos clientes?" → research
+  • "Como os clientes reagiram ao preço?" → research
+  • "Como estão os atendimentos?" → research
+  • "Me dá uma análise de desempenho" → research
+  • "Onde estamos perdendo pacientes?" → research
   • "Faça uma pesquisa profunda sobre o tom das conversas" → research
-  • "Analise detalhadamente o script que a secretária usa em cada conversa" → research
-  • "Quero um relatório aprofundado comparando argumentos de venda" → research
+  • "Analise o script da secretária" → research
 
-REGRA DE OURO: Verificar UM chat, consultar memória = SEMPRE "simple". "research" é APENAS para padrões em MÚLTIPLAS conversas.`;
+REGRA: Se a resposta exige AVALIAR qualidade, IDENTIFICAR padrões, ANALISAR desempenho ou CLASSIFICAR conversas → research. SEMPRE.`;
 
   try {
     const classifierModel = new ChatGoogleGenerativeAI({
@@ -596,7 +605,14 @@ FERRAMENTAS:
 • get_filtered_chats_list — listar chats com filtros
 • get_chat_cascade_history — histórico de um chat
 
-Escreva um brief conciso (máx 250 palavras).`;
+REGRAS DO BRIEF:
+1. SEMPRE inclua tarefa QUALITATIVA: analyze_raw_conversations com per_chat_classification=true e analysis_goals detalhados
+2. SEMPRE inclua tarefa QUANTITATIVA: execute_sql (funil por stage, contagens) ou get_volume_metrics
+3. Se envolve pacientes/leads: cruzamento chats × stages × sentimentos via SQL
+4. Especifique analysis_goals DETALHADOS (ex: "classificar cada chat: agendou/desistiu/preço/vaga/sem resposta")
+5. Inclua tarefa para identificar FUROS FINANCEIROS: pacientes perdidos por falta de vaga, demora, preço
+
+Escreva um brief conciso (máx 300 palavras) com tarefas numeradas e ferramentas explícitas.`;
 
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3-flash-preview",
@@ -705,9 +721,14 @@ FERRAMENTAS:
 • get_chat_cascade_history
 
 REGRAS:
-1. Iteração 1 → OBRIGATORIAMENTE action="conduct_research"
-2. Tarefas explícitas com ferramenta e parâmetros
-3. "research_complete" só se raw_notes tem dados reais`;
+1. Iteração 1 → OBRIGATORIAMENTE action="conduct_research" com PELO MENOS 2 tarefas:
+   - Uma QUALITATIVA: analyze_raw_conversations(per_chat_classification=true) ou get_chat_cascade_history de chats específicos
+   - Uma QUANTITATIVA: execute_sql (funil por stage, contagens, cruzamentos) ou get_volume_metrics
+2. Tarefas explícitas com ferramenta e parâmetros EXATOS
+3. Se dados coletados só têm números sem contexto qualitativo → gere tarefas qualitativas (ler conversas)
+4. Se dados coletados são só qualitativos sem números → gere tarefas SQL para cruzar
+5. "research_complete" só se raw_notes tem PROFUNDIDADE: números + exemplos concretos + links de chat
+6. PRIORIZE: funil de conversão (new→won), pacientes perdidos (lost), motivos de perda, oportunidades financeiras`;
 
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3-flash-preview",
@@ -852,12 +873,43 @@ INSTRUÇÕES DO RELATÓRIO FINAL
 ════════════════════════════════════════════
 BRIEF: ${state.research_brief}${periodInfo}
 
+FORMATO OBRIGATÓRIO DO RELATÓRIO:
+
+## Visão Geral do Período
+Números-chave: total de conversas, taxa de conversão, distribuição por stage.
+
+## Análise por Categoria
+Para cada categoria relevante (agendados, perdidos, em triagem, etc.):
+- Quantidade e % do total
+- Exemplos concretos com links [[chat:ID|Nome (Telefone)]]
+- Padrões identificados
+
+## Problemas Críticos Encontrados
+Listar cada problema com:
+- Descrição objetiva
+- Quantidade de casos afetados
+- Exemplos específicos com links
+- Impacto estimado (R$ se possível)
+
+## Oportunidades e Impacto Financeiro
+- Pacientes perdidos por motivos evitáveis (falta de vaga, demora, preço)
+- Cálculo: X pacientes × ticket médio = R$ Y de receita perdida
+- Ações sugeridas para recuperar
+
+## Recomendações Prioritárias
+Top 3-5 ações concretas, ordenadas por impacto.
+
+## Chats de Destaque
+Casos que merecem atenção individual com links.
+
 REGRAS:
 1. SIGILO: NUNCA mencione "pesquisadores", "researchers", "SQL", "query", "tabelas", "LangGraph".
 2. VERACIDADE: É PROIBIDO inventar nomes, IDs, telefones, números. Use APENAS os dados abaixo.
 3. Se dados vazios, não gere relatório — peça desculpas.
 4. Preserve links [[chat:ID|Nome (Telefone)]] exatamente como recebidos.
 5. Data de referência: ${today}.
+6. CADA afirmação deve ter PROVA (número do banco ou link de chat).
+7. Se não há dados financeiros exatos, ESTIME com base nos chats perdidos × ticket médio da clínica.
 
 DADOS COLETADOS:
 ${rawNotesText || "[Nenhum dado encontrado.]"}`;

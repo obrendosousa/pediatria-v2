@@ -10,6 +10,7 @@ import { generateReportPdf } from '@/lib/reportPdf';
 
 // Ignorar erro de self-signed certificate no node-fetch (usado pela LangChain/PostgresSaver)
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// v3: researcher tool_calls parsing fix + routing fix
 
 // Cliente Admin (Service Role) para bypassar RLS se necessário
 const supabase = createClient(

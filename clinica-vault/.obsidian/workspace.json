@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "3cd4f1db35293691",
+        "id": "4b7152542a90a045",
         "type": "tabs",
         "children": [
           {
-            "id": "2d5202abb0e37aaf",
+            "id": "3f7faf6fbb1f9827",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -176,8 +176,10 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "2d5202abb0e37aaf",
+  "active": "3f7faf6fbb1f9827",
   "lastOpenFiles": [
+    "memories/padrao-comportamental/pacientes-que-ja-possuem-vinculo-previo-com-a-clinica-ex-consulta-de-pre-natal.md",
+    "memories/padrao-comportamental/miguel-e-o-paciente-a-este-contato.md",
     "Sem título.canvas",
     "memories/_moc-padrao-comportamental.md",
     "memories/padrao-comportamental/pacientes-comecaram-a-relatar-objecao-de-preco-r-500-00-citando-concorrencia.md",
@@ -203,7 +205,6 @@
     "memories/_tema-comunicacao-digital-e-atendimento-via-whatsapp.md",
     "memories/_tema-gestao-de-fluxo-e-ordem-de-chegada.md",
     "memories/_moc-recurso-equipe.md",
-    "memories/_moc-conhecimento-medico.md",
     "memories/recurso-equipe",
     "memories/conhecimento-medico",
     "memories/protocolo-clinico",

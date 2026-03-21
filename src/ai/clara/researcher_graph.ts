@@ -108,7 +108,18 @@ SCHEMA E MAPEAMENTO DE REMETENTES (CRÍTICO — leia antes de escrever qualquer 
   • Mensagens de pacientes → execute_sql: SELECT cm.message_text, c.contact_name FROM chat_messages cm JOIN chats c ON c.id = cm.chat_id WHERE cm.sender = 'CUSTOMER' AND cm.message_text IS NOT NULL ORDER BY cm.created_at DESC LIMIT 200
   • Contagem por tipo → execute_sql: SELECT sender, COUNT(*) FROM chat_messages WHERE created_at >= '2026-02-01T00:00:00-03:00'::timestamptz GROUP BY sender
 
-• chat_insights: id, chat_id, nota_atendimento (0-10), sentimento, objecoes (text[]), gargalos (text[]), decisao, updated_at`;
+• chat_insights: id, chat_id, nota_atendimento (0-10), sentimento, objecoes (text[]), gargalos (text[]), decisao, updated_at
+
+• patients: id, name, phone, email, birth_date, created_at
+• appointments: id, patient_id, scheduled_date, status (confirmed|cancelled|no_show|completed), notes, created_at
+• financial_transactions: id, patient_id, description, amount, type (revenue|expense), status, created_at
+
+SQL TEMPLATES FINANCEIROS E DE FUNIL:
+• Funil de conversão → execute_sql: SELECT stage, COUNT(*) as total FROM chats WHERE last_interaction_at >= '...' GROUP BY stage ORDER BY total DESC
+• Pacientes perdidos → execute_sql: SELECT c.id, c.contact_name, c.phone, c.stage, c.ai_sentiment FROM chats c WHERE c.stage = 'lost' AND c.last_interaction_at >= '...' ORDER BY c.last_interaction_at DESC LIMIT 50
+• Cruzamento chat × insights → execute_sql: SELECT c.id, c.contact_name, c.stage, ci.nota_atendimento, ci.sentimento, ci.decisao, ci.objecoes FROM chats c JOIN chat_insights ci ON ci.chat_id = c.id WHERE c.last_interaction_at >= '...' ORDER BY ci.nota_atendimento ASC LIMIT 50
+
+REGRA ANTI-SUPERFICIALIDADE: Não retorne apenas contagens agregadas. Para cada categoria, extraia EXEMPLOS CONCRETOS com nomes, IDs de chat e contexto. Inclua sempre o chat.id para gerar links [[chat:ID|Nome (Telefone)]].`;
 
 // Helper ultra-seguro para não quebrar o TypeScript do LangChain
 function isToolMessageSafe(m: any): boolean {
@@ -129,21 +140,66 @@ async function researcherNode(state: ResearcherState): Promise<Partial<Researche
     return { iteration: state.iteration };
   }
 
-  // Temperatura zero para forçar LLM a usar tools ao invés de tagarelar
+  const today = new Date().toISOString().slice(0, 10);
+
+  const initialPrompt = `${RESEARCHER_SYSTEM}\n\nHoje é ${today}.\nTópico OBRIGATÓRIO a investigar via ferramenta agora:\n"${state.research_topic}"\n\nATENÇÃO: Não responda com texto livre. Emita a chamada de função (tool_call) imediatamente para buscar os dados.`;
+
+  // Construir mensagens do ZERO a cada iteração para evitar erros do Gemini
+  // com sequências inválidas (AI sem tool_calls seguido de Human).
+  // Mantém apenas pares válidos: AI(tool_calls) → ToolMessage(s)
+  const toolPairs: BaseMessage[] = [];
+  const msgs = state.researcher_messages;
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i] as any;
+    const isAI = m instanceof AIMessage || m._getType?.() === "ai" || m.type === "ai";
+    if (isAI && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
+      toolPairs.push(m);
+      // Coletar todos os ToolMessages subsequentes
+      for (let j = i + 1; j < msgs.length; j++) {
+        if (isToolMessageSafe(msgs[j])) {
+          toolPairs.push(msgs[j]);
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  const messages: BaseMessage[] = [
+    new HumanMessage(initialPrompt),
+    ...toolPairs,
+  ];
+
+  // Temperatura zero + streaming false para forçar AIMessage (não AIMessageChunk)
+  // LangGraph usa streaming interno que retorna AIMessageChunk com tool_call_chunks vazio
+  // mesmo quando Gemini retorna functionCall no content.
   const model = new ChatGoogleGenerativeAI({
     model: "gemini-3-flash-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0,
+    streaming: false,
   }).bindTools(researcherTools);
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  const messages: BaseMessage[] =
-    state.researcher_messages.length === 0
-      ? [new HumanMessage(`${RESEARCHER_SYSTEM}\n\nHoje é ${today}.\nTópico OBRIGATÓRIO a investigar via ferramenta agora:\n"${state.research_topic}"\n\nATENÇÃO: Não responda com texto livre. Emita a chamada de função (tool_call) imediatamente para buscar os dados.`)]
-      : state.researcher_messages;
-
   const response = (await model.invoke(messages)) as AIMessage;
+
+  // Fix: Gemini pode retornar tool calls no content como functionCall
+  // em vez de popular tool_calls (bug no adapter com streaming do LangGraph)
+  if ((!response.tool_calls || response.tool_calls.length === 0) && Array.isArray(response.content)) {
+    const functionCalls = (response.content as any[]).filter(
+      (c: any) => c.type === "functionCall" || c.functionCall
+    );
+    if (functionCalls.length > 0) {
+      response.tool_calls = functionCalls.map((fc: any, idx: number) => {
+        const call = fc.functionCall || fc;
+        return {
+          name: call.name,
+          args: call.args || {},
+          id: `fc_${Date.now()}_${idx}`,
+          type: "tool_call" as const,
+        };
+      });
+    }
+  }
 
   return {
     researcher_messages: [response],
@@ -219,14 +275,22 @@ function researcherRouting(state: ResearcherState): string {
     return "compress_research";
   }
 
-  const lastMsg = state.researcher_messages[state.researcher_messages.length - 1];
+  const lastMsg = state.researcher_messages[state.researcher_messages.length - 1] as any;
+
+  // Verificar tool_calls no campo padrão
   const hasToolCalls =
-    lastMsg instanceof AIMessage &&
-    Array.isArray((lastMsg as any).tool_calls) &&
-    (lastMsg as any).tool_calls.length > 0;
+    (lastMsg instanceof AIMessage || lastMsg?._getType?.() === "ai" || lastMsg?.type === "ai") &&
+    Array.isArray(lastMsg.tool_calls) &&
+    lastMsg.tool_calls.length > 0;
+
+  // Fallback: verificar functionCall no content (formato Gemini via LangGraph streaming)
+  const hasContentToolCalls =
+    !hasToolCalls &&
+    Array.isArray(lastMsg?.content) &&
+    (lastMsg.content as any[]).some((c: any) => c.type === "functionCall" || c.functionCall);
 
   // Se a IA gerou o tool_call, prossegue para a ferramenta
-  if (hasToolCalls) return "researcher_tools";
+  if (hasToolCalls || hasContentToolCalls) return "researcher_tools";
 
   // Se a IA não gerou tool_call, vamos verificar se ela já havia rodado alguma ferramenta com sucesso antes
   const hasExecutedTool = state.researcher_messages.some(isToolMessageSafe);
