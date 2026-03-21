@@ -360,6 +360,7 @@ claraWorkflow.addNode("classify_node", async (state: ClaraState) => {
     supervisor_messages: [] as BaseMessage[],
     supervisor_iteration: 0,
     is_planning_mode: false,
+    tool_call_count: 0,
   };
 
   console.log(`[classify_node] userText (${userText.length} chars): "${userText.substring(0, 120)}..."`);
@@ -477,6 +478,7 @@ claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
     ])) as AIMessage;
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
+    console.error("[simple_agent] Erro na invocação:", errMsg.substring(0, 300));
     // Se Gemini recusar o formato, tenta com apenas a última HumanMessage (sem histórico)
     if (errMsg.includes("function call turn") || errMsg.includes("function response turn")) {
       console.warn("[simple_agent] Gemini rejeitou histórico, tentando sem contexto anterior...");
@@ -490,11 +492,29 @@ claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
     }
   }
 
+  // Debug: conteúdo da resposta
+  const contentStr = typeof response.content === "string" ? response.content : JSON.stringify(response.content);
+  const hasToolCalls = response.tool_calls && response.tool_calls.length > 0;
+  console.log(`[simple_agent] response: content=${contentStr.length} chars, tool_calls=${hasToolCalls ? response.tool_calls!.length : 0}`);
+
   // Limita a 1 tool call por turno para evitar o mesmo problema no próximo ciclo
   if (response.tool_calls && response.tool_calls.length > 1) {
     return {
       messages: [new AIMessage({ content: response.content, tool_calls: [response.tool_calls[0]] })],
     };
+  }
+
+  // Guard: se não tem tool calls E content é vazio, retry com prompt simplificado
+  if (!hasToolCalls && contentStr.trim().length === 0) {
+    console.warn("[simple_agent] Resposta vazia sem tool calls — tentando retry...");
+    const lastHuman = [...compactedMessages].reverse().find((m) => m._getType?.() === "human") || new HumanMessage("Olá.");
+    const retryResponse = (await modelWithTools.invoke([
+      new SystemMessage(systemPrompt),
+      lastHuman,
+    ])) as AIMessage;
+    const retryContent = typeof retryResponse.content === "string" ? retryResponse.content : JSON.stringify(retryResponse.content);
+    console.log(`[simple_agent] retry: content=${retryContent.length} chars`);
+    return { messages: [retryResponse] };
   }
 
   return { messages: [response] };
