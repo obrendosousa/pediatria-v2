@@ -895,6 +895,11 @@ export default function CRMPage() {
           setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
           fetchData();
         }}
+        onDelete={(id) => {
+          setAppointments(prev => prev.filter(a => a.id !== id));
+          setSelectedAppointmentForEdit(null);
+          fetchData();
+        }}
       />
 
       <ReceptionCheckoutModal

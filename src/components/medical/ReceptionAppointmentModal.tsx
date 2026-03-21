@@ -6,12 +6,14 @@ const supabase = createClient();
 import { Appointment } from '@/types/medical';
 import {
   X, Edit2, FileText, CalendarDays, Clock, Stethoscope, User, Phone,
-  Save, Wallet, Info, Loader2, Cake
+  Save, Wallet, Info, Loader2, Cake, Trash2
 } from 'lucide-react';
 import { saveAppointmentDateTime } from '@/utils/dateUtils';
 import { formatDateToDisplay, formatDateToISO, formatCurrency, parseCurrency } from '@/app/agenda/utils/agendaUtils';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { logAudit } from '@/lib/audit';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { CanonicalPaymentSplit, normalizePaymentSplits } from '@/lib/finance';
 import { createFinancialTransaction } from '@/lib/financialTransactions';
 
@@ -36,13 +38,15 @@ type ReceptionAppointmentModalProps = {
   appointment: Appointment | null;
   onClose: () => void;
   onSave: (updated: Appointment) => void;
+  onDelete?: (id: number) => void;
 };
 
 export default function ReceptionAppointmentModal({
   isOpen,
   appointment,
   onClose,
-  onSave
+  onSave,
+  onDelete
 }: ReceptionAppointmentModalProps) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -50,6 +54,7 @@ export default function ReceptionAppointmentModal({
   const [form, setForm] = useState(initialForm);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [paymentMode, setPaymentMode] = useState<'pix' | 'cash' | 'credit_card' | 'debit_card' | 'mixed'>('pix');
   const [pendingAmount, setPendingAmount] = useState('');
   const [mixedPayments, setMixedPayments] = useState({
@@ -283,6 +288,22 @@ export default function ReceptionAppointmentModal({
     }
   };
 
+  const handleDeleteConfirm = async () => {
+    if (!appointment) return;
+    setConfirmDeleteOpen(false);
+    try {
+      const { error } = await supabase.from('appointments').delete().eq('id', appointment.id);
+      if (error) throw error;
+      if (user?.id) await logAudit({ userId: user.id, action: 'delete', entityType: 'appointment', entityId: String(appointment.id), details: { patient_name: appointment.patient_name } });
+      toast.success('Agendamento excluído com sucesso!');
+      onDelete?.(appointment.id);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao excluir agendamento.');
+    }
+  };
+
   if (!appointment) return null;
 
   const totalDisplay = appointment.total_amount ?? 0;
@@ -291,6 +312,7 @@ export default function ReceptionAppointmentModal({
   const pendingAmountValue = parseCurrency(pendingAmount);
   const remainingAfterCurrentInput = Math.max(0, remainingDisplay - pendingAmountValue);
   return (
+    <>
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white dark:bg-[#202c33] w-full max-w-lg rounded-2xl shadow-lg border border-slate-200 dark:border-[#3d3d48] overflow-hidden animate-scale-in">
         {/* Header */}
@@ -684,6 +706,13 @@ export default function ReceptionAppointmentModal({
             <>
               <button
                 type="button"
+                onClick={() => setConfirmDeleteOpen(true)}
+                className="px-3 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Trash2 size={14} /> Excluir
+              </button>
+              <button
+                type="button"
                 onClick={() => setIsEditing(true)}
                 className="flex-1 bg-rose-500 hover:bg-rose-600 text-white py-2 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
               >
@@ -701,5 +730,15 @@ export default function ReceptionAppointmentModal({
         </div>
       </div>
     </div>
+    <ConfirmModal
+      isOpen={confirmDeleteOpen}
+      onClose={() => setConfirmDeleteOpen(false)}
+      onConfirm={handleDeleteConfirm}
+      title="Excluir agendamento"
+      message={`Deseja realmente excluir o agendamento de ${appointment.patient_name || 'este paciente'}?`}
+      type="danger"
+      confirmText="Excluir"
+    />
+    </>
   );
 }
