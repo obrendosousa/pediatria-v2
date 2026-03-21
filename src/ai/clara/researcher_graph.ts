@@ -208,9 +208,16 @@ async function researcherNode(state: ResearcherState): Promise<Partial<Researche
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NODE 2: researcher_tools_node
+// NODE 2: researcher_tools_node (wrapper para usar researcher_messages em vez de messages)
 // ─────────────────────────────────────────────────────────────────────────────
-const researcherToolsNode = new ToolNode(researcherTools);
+const _innerToolNode = new ToolNode(researcherTools);
+
+async function researcherToolsNode(state: ResearcherState): Promise<Partial<ResearcherState>> {
+  // ToolNode espera { messages: BaseMessage[] }. Researcher usa researcher_messages.
+  const result = await _innerToolNode.invoke({ messages: state.researcher_messages });
+  const toolMessages = (result as any).messages || [];
+  return { researcher_messages: toolMessages };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NODE 3: reprimand_node (O Nó da Bronca para evitar recusa de tool_call)
