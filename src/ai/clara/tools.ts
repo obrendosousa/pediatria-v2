@@ -435,7 +435,7 @@ O relatório é salvo automaticamente e gera PDF.`,
       const { generateReportPdf } = await import("@/lib/reportPdf");
 
       const proModel = new ChatGoogleGenerativeAI({
-        model: "gemini-2.5-pro-preview-06-05",
+        model: "gemini-3.1-pro-preview",
         apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
         temperature: 0.3,
       });
