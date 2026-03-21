@@ -362,7 +362,11 @@ claraWorkflow.addNode("classify_node", async (state: ClaraState) => {
     is_planning_mode: false,
   };
 
-  if (userText.trim().startsWith("[PLANEJAR]")) {
+  console.log(`[classify_node] userText (${userText.length} chars): "${userText.substring(0, 120)}..."`);
+
+  // Detecta [PLANEJAR] em qualquer posição (pode ser precedido por [NOTAS INTERNAS...])
+  if (userText.includes("[PLANEJAR]")) {
+    console.log("[classify_node] → PLANEJAR detectado → research + planning_mode");
     return { ...researchStateReset, is_deep_research: true, is_planning_mode: true };
   }
 
@@ -537,13 +541,13 @@ claraWorkflow.addNode("write_research_brief_node", async (state: ClaraState) => 
   const lastMessage = state.messages[state.messages.length - 1];
   const userText =
     typeof lastMessage?.content === "string"
-      ? lastMessage.content.replace(/^\[PLANEJAR\]\s*/i, "").trim()
+      ? lastMessage.content.replace(/\[PLANEJAR\]\s*/gi, "").trim()
       : Array.isArray(lastMessage?.content)
         ? (lastMessage.content as Array<{ type: string; text?: string }>)
           .filter((c) => c.type === "text")
           .map((c) => c.text ?? "")
           .join(" ")
-          .replace(/^\[PLANEJAR\]\s*/i, "")
+          .replace(/\[PLANEJAR\]\s*/gi, "")
           .trim()
         : "";
 

@@ -245,11 +245,16 @@ export async function POST(req: Request) {
                 ? String(rawContent)
                 : '⚠️ Não consegui gerar uma resposta. Verifique os logs.';
 
-          console.log(`💾 [Clara] Salvando resposta final no banco... (finalMessages: ${finalMessages.length}, chars: ${aiResponseText.length})`);
+          // Fallback: se a resposta for vazia (Gemini às vezes retorna content vazio), avisa o usuário
+          const safeFinalText = aiResponseText.trim().length > 0
+            ? aiResponseText
+            : '⚠️ Minha resposta ficou vazia — provavelmente um erro temporário do modelo. Tente novamente!';
+
+          console.log(`💾 [Clara] Salvando resposta final no banco... (finalMessages: ${finalMessages.length}, chars: ${safeFinalText.length})`);
 
           // Parse síncrono — identifica segmentos <voice> e <text>
           // TEMP: força tudo como texto (ElevenLabs sem créditos)
-          const segments: { type: 'text' | 'voice'; content: string }[] = [{ type: 'text', content: aiResponseText.replace(/<\/?voice>/g, '') }];
+          const segments: { type: 'text' | 'voice'; content: string }[] = [{ type: 'text', content: safeFinalText.replace(/<\/?voice>/g, '') }];
           const baseTs = Date.now();
 
           // Pré-gera todos os áudios SEQUENCIALMENTE antes de inserir no banco.
@@ -352,7 +357,7 @@ export async function POST(req: Request) {
           await supabase.from('chats').update({
             last_message: savedReportId
               ? `📄 Relatório #${savedReportId}.pdf`
-              : (lastSeg?.content || aiResponseText),
+              : (lastSeg?.content || safeFinalText),
             last_message_type: savedReportId ? 'document' : (lastSeg?.type || 'text'),
             last_message_sender: 'contact',
             last_message_status: 'read',
