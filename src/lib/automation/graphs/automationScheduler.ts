@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { END, START, StateGraph, MemorySaver } from "@langchain/langgraph";
+const randomUUID = () => crypto.randomUUID();
 import { schedulerRunCommandSchema, workerAckSchema, type SchedulerRunCommandContract, type WorkerAckContract } from "@/lib/automation/contracts";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { getAppointmentsNeedingReminder, getPatientWithRelations, getPatientsReachingMilestone, getReturnsNeedingReminder, hasSentMilestoneAutomation, recordAutomationSent } from "@/lib/automation/automationUtilsServer";

@@ -13,10 +13,10 @@ tags:
 ## Categorias
 - [[_moc-regra-negocio|Regras de Negocio]] (26)
 - [[_moc-processo-operacional|Processos Operacionais]] (49)
-- [[_moc-padrao-comportamental|Padroes Comportamentais]] (655)
+- [[_moc-padrao-comportamental|Padroes Comportamentais]] (658)
 - [[_moc-feedback-melhoria|Feedback e Melhorias]] (9)
-- [[_moc-protocolo-clinico|Protocolos Clinicos]] (3)
-- [[_moc-conhecimento-medico|Conhecimento Medico]] (5)
+- [[_moc-protocolo-clinico|Protocolos Clinicos]] (4)
+- [[_moc-conhecimento-medico|Conhecimento Medico]] (1)
 - [[_moc-recurso-equipe|Recursos e Equipe]] (3)
 
 ## Temas Transversais

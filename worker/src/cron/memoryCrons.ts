@@ -87,6 +87,7 @@ async function runConsolidation(): Promise<HealthReport> {
   const { data, error } = await supabase
     .from("clara_memories")
     .select("id, memory_type, content, embedding, updated_at")
+    .eq("archived", false)
     .order("updated_at", { ascending: false });
 
   if (error || !data) {
@@ -146,12 +147,16 @@ async function runConsolidation(): Promise<HealthReport> {
     }
   }
 
-  // 5. Deletar marcados
+  // 5. Soft delete marcados (NUNCA hard delete no cron — cleanup-memories.mts faz isso)
   if (toDelete.size > 0) {
     const ids = Array.from(toDelete);
     for (let i = 0; i < ids.length; i += 50) {
       const batch = ids.slice(i, i + 50);
-      await supabase.from("clara_memories").delete().in("id", batch);
+      await supabase.from("clara_memories").update({
+        archived: true,
+        archived_at: new Date().toISOString(),
+        archive_reason: "weekly_consolidation",
+      }).in("id", batch);
     }
   }
 
@@ -177,6 +182,7 @@ async function saveHealthReport(report: HealthReport): Promise<void> {
 - **Re-categorizadas:** ${report.recategorized}
 - **Total depois:** ${report.total_after}
 - **Redução:** ${report.total_before - report.total_after} memórias (${((1 - report.total_after / report.total_before) * 100).toFixed(1)}%)
+- **Método exclusão:** soft delete (archived=true)
 `;
 
     await vault.writeNote(notePath, content, {

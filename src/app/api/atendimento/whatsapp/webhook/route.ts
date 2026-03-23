@@ -771,16 +771,21 @@ async function ingestMessageToAtendimento(message: EvolutionWebhookData) {
     // Upsert chat no schema atendimento
     const chat = await ensureChatExistsInAtendimento(phone, pushName, isMe);
 
-    // Buscar foto de perfil em background (usa instância atendimento)
+    // Buscar foto de perfil em background (atendimento, com fallback para pediatria)
     if (!isMe && phone && !chat.profile_pic) {
-      fetchProfilePictureFromEvolution(phone, 'EVOLUTION_ATENDIMENTO_INSTANCE').then(async (url) => {
-        if (!url) return;
-        const supabase = getSupabase();
-        await supabase.from('chats').update({ profile_pic: url }).eq('id', chat.id);
-        console.log(`[ATD/ProfilePic] Foto atualizada: chat=${chat.id} phone=${phone}`);
-      }).catch((e) => {
-        console.warn(`[ATD/ProfilePic] Erro ao buscar foto para ${phone}:`, (e as Error).message);
-      });
+      (async () => {
+        try {
+          let url = await fetchProfilePictureFromEvolution(phone, 'EVOLUTION_ATENDIMENTO_INSTANCE');
+          // Fallback: usa instância pediatria se atendimento não retornar foto
+          if (!url) url = await fetchProfilePictureFromEvolution(phone, 'EVOLUTION_INSTANCE');
+          if (!url) return;
+          const supabase = getSupabase();
+          await supabase.from('chats').update({ profile_pic: url }).eq('id', chat.id);
+          console.log(`[ATD/ProfilePic] Foto atualizada: chat=${chat.id} phone=${phone}`);
+        } catch (e) {
+          console.warn(`[ATD/ProfilePic] Erro ao buscar foto para ${phone}:`, (e as Error).message);
+        }
+      })();
     }
 
     // Extrair informações de mensagem citada (reply-to / contextInfo)

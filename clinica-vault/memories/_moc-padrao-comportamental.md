@@ -1,14 +1,14 @@
 ---
 type: moc
 memory_type: padrao_comportamental
-count: 655
+count: 658
 tags:
   - moc
   - padrao-comportamental
 ---
 # Padroes Comportamentais
 
-> MOC (Map of Content) — 655 memorias
+> MOC (Map of Content) — 658 memorias
 
 ## Temas Relacionados
 - [[_tema-politica-de-precificacao-e-reajustes|Política de Precificação e Reajustes]]
@@ -676,6 +676,9 @@ tags:
 - [[padrao-comportamental/o-paciente-o-pacote-de-r-75000-pediatra-nutricionista-ao-entender-que-pode|O paciente o pacote de R$ 750,00 (Pediatra + Nutricionista) ao entender que poderia realizar apenas ]]
 - [[padrao-comportamental/a-clinica-nao-realiza-o-teste-do-coracaozinho-apenas-o-do-olhinho|A clínica não realiza o teste do coraçãozinho, apenas o do olhinho.]]
 - [[padrao-comportamental/a-recusa-de-encaixe-em-casos-de-criancas-sem-comer-ha-varios-dias-gera-perda-ime|A recusa de encaixe em casos de crianças sem comer há vários dias gera perda imediata de conversão e]]
+- [[padrao-comportamental/paciente-zinco-baixo|Paciente (zinco baixo); prescrito Zinc True Source ou Zintrix.]]
+- [[padrao-comportamental/paciente-e-faz-uso-de-hidratante-com-melhora-no-ressecamento|Paciente faz uso de hidratante com melhora no ressecamento.]]
+- [[padrao-comportamental/crianca-apresentou-quadro-de-tosse-coriza-espirros-e-diarreia-em-marco2026-f|Criança com tosse, coriza, espirros e diarreia em março/2026; usou Ebastel e Provance mini.]]
 
 ## Outras Categorias
 - [[_moc-regra-negocio|Regras de Negocio]]

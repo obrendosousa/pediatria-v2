@@ -7,6 +7,7 @@
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { GoogleGenAI } from "@google/genai";
 import { getVaultService, isVaultAvailable } from "@/ai/vault/service";
+import { getMemoryIndex } from "@/ai/vault/memory-index";
 
 export interface LoadedContext {
   relevant_memories: string[];
@@ -41,16 +42,22 @@ export async function loadContextForInteraction(
 
   const [memoriesResult, chatNotesResult, knowledgeResult, statsResult, vaultResult] =
     await Promise.allSettled([
-      // 1. AUTO-RAG: Busca semântica na clara_memories
+      // 1. AUTO-RAG: Busca local no vault (GraphRAG)
       (async () => {
         const queryEmbedding = await embedQuery(userMessage);
-        // @ts-expect-error — match_memories RPC not in generated Supabase types
-        const { data } = await supabase.rpc("match_memories", {
-          query_embedding: queryEmbedding,
-          match_threshold: 0.65,
-          match_count: 5,
-        });
-        return (data || []).map((m: { content: string }) => m.content);
+        const index = await getMemoryIndex();
+        if (index.size === 0) return [];
+
+        // Busca vetorial local → top 3 seeds
+        const seeds = index.search(queryEmbedding, 3);
+        if (seeds.length === 0) return [];
+
+        // Expansão de grafo → vizinhos fortes (1 hop)
+        const seedSlugs = seeds.map(r => r.entry.slug);
+        const expanded = index.graphExpand(seedSlugs, 8);
+
+        // Retornar conteúdos únicos (seeds já incluídos pelo graphExpand)
+        return expanded.map(e => e.content);
       })(),
 
       // 2. Chat notes do chat atual
@@ -82,23 +89,23 @@ export async function loadContextForInteraction(
         return (data || []).map((k: { category: string; content: string }) => `[${k.category}] ${k.content}`);
       })(),
 
-      // 4. Stats de memória
+      // 4. Stats de memória (vault local)
       (async () => {
-        const { count } = await supabase
-          .from("clara_memories")
-          .select("*", { count: "exact", head: true });
-        const { data: latest } = await supabase
-          .from("clara_memories")
-          .select("updated_at")
-          .order("updated_at", { ascending: false })
-          .limit(1);
-        const latestTyped = latest as Array<{ updated_at: string }> | null;
-        return {
-          count: count || 0,
-          last_date: latestTyped?.[0]?.updated_at
-            ? new Date(latestTyped[0].updated_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
-            : "N/A",
-        };
+        try {
+          const index = await getMemoryIndex();
+          const allEntries = index.getAllEntries();
+          const lastEntry = allEntries.sort((a, b) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          )[0];
+          return {
+            count: index.size,
+            last_date: lastEntry?.updated_at
+              ? new Date(lastEntry.updated_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
+              : "N/A",
+          };
+        } catch {
+          return { count: 0, last_date: "N/A" };
+        }
       })(),
 
       // 5. Contexto do vault (scratchpad + decisoes recentes)
@@ -119,13 +126,16 @@ export async function loadContextForInteraction(
     ? vaultResult.value
     : { scratchpad: undefined, decisions: [] as string[] };
 
+  // Scratchpad só é injetado em sessões admin/internas (não em chats de pacientes)
+  const isAdminSession = chatId === 0 || chatId === -1;
+
   return {
     relevant_memories: memoriesResult.status === "fulfilled" ? memoriesResult.value : [],
     chat_notes: chatNotesResult.status === "fulfilled" ? chatNotesResult.value : null,
     relevant_knowledge: knowledgeResult.status === "fulfilled" ? knowledgeResult.value : [],
     memory_count: statsResult.status === "fulfilled" ? (statsResult.value as { count: number; last_date: string }).count : 0,
     last_memory_date: statsResult.status === "fulfilled" ? (statsResult.value as { count: number; last_date: string }).last_date : "N/A",
-    vault_scratchpad: vaultData.scratchpad,
+    vault_scratchpad: isAdminSession ? vaultData.scratchpad : undefined,
     vault_recent_decisions: vaultData.decisions.length > 0 ? vaultData.decisions : undefined,
   };
 }

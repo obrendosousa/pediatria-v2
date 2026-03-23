@@ -26,6 +26,10 @@ ENV LANGGRAPH_CHECKPOINT_POSTGRES_URI=$LANGGRAPH_CHECKPOINT_POSTGRES_URI
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# Pré-baixa o modelo Kokoro ONNX para evitar delay na primeira requisição TTS
+RUN node scripts/preload-kokoro.mjs
+
 RUN npm run build
 
 # Estágio de Produção

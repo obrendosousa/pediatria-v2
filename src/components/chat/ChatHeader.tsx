@@ -4,7 +4,7 @@
 import { MoreVertical, Trash2, UserCog, Sparkles, Loader2, Bot } from 'lucide-react';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 import { Chat } from '@/types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import EditContactModal from './modals/EditContactModal';
@@ -25,6 +25,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const moduleCtx = useModuleSafe();
   const schema = moduleCtx?.config?.schema || 'public';
 
@@ -33,6 +34,17 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
   useEffect(() => {
     setAvatarError(false);
   }, [chat?.id, chat?.profile_pic]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
 
   const handleClearChatClick = () => {
     setConfirmClearOpen(true);
@@ -75,7 +87,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
             onUpdate={handleUpdate}
         />
 
-        <div className="bg-[var(--chat-surface)] dark:bg-[#202c33] px-4 py-2.5 border-l border-gray-300 dark:border-[#3d3d48] flex items-center justify-between z-10 shadow-sm transition-colors duration-300">
+        <div className="relative bg-[var(--chat-surface)] dark:bg-[#202c33] px-4 py-2.5 border-l border-gray-300 dark:border-[#3d3d48] flex items-center justify-between z-20 shadow-sm transition-colors duration-300">
             <div className="flex items-center gap-3">
                 {isAIChat ? (
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm border border-indigo-400/30">
@@ -154,11 +166,11 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                 )}
                 
                 {!isAIChat && (
-                  <div className="relative">
+                  <div className="relative" ref={menuRef}>
                       <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer" aria-label="Menu">
                           <MoreVertical size={20} className="text-gray-600 dark:text-[#d4d4d8]" />
                       </button>
-                  
+
                       {isMenuOpen && (
                           <div className="absolute right-0 top-10 bg-white dark:bg-[#1c1c21] shadow-xl rounded-lg border border-gray-100 dark:border-[#3d3d48] py-1 w-48 z-50 animate-in fade-in zoom-in-95 duration-100 overflow-hidden">
                               <button

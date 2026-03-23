@@ -48,7 +48,13 @@ export async function claimScheduledMessages(batchSize: number, workerId: string
     return (joined.data || []) as unknown as ClaimedScheduledMessage[];
   }
 
-  throw new Error(`claim_scheduled_messages_rpc_failed:${rpcRes.error?.message || "unknown_error"}`);
+  // Erros de rede (fetch failed) não são críticos — retornar vazio silenciosamente
+  const msg = rpcRes.error?.message || "unknown_error";
+  if (msg.includes("fetch failed") || msg.includes("ECONNREFUSED") || msg.includes("network")) {
+    console.warn(`[Dispatch] Erro de rede ao buscar mensagens agendadas (tentativa ignorada): ${msg}`);
+    return [];
+  }
+  throw new Error(`claim_scheduled_messages_rpc_failed:${msg}`);
 }
 
 export async function markDispatchedSuccess(

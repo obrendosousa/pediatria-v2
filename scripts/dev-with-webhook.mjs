@@ -87,31 +87,9 @@ const workerDev = spawn("npx", ["tsx", "-r", "dotenv/config", "worker/src/main.t
 });
 pipeOutput("worker", workerDev);
 
-// Kokoro TTS via Python nativo (CPU)
-// Caminhos diferentes entre Windows e Unix
-const venvPython = isWindows ? ".venv/Scripts/python.exe" : ".venv/bin/python";
-const venvPip    = isWindows ? ".venv/Scripts/pip.exe"    : ".venv/bin/pip";
-const venvActivate = isWindows ? "source .venv/Scripts/activate" : "source .venv/bin/activate";
-const pythonCmd  = isWindows ? "python" : "python3";
-
-const ttsCommand = `
-  cd src/ai/voice
-  if [ ! -d ".venv" ]; then
-    echo "[TTS] Criando ambiente virtual Python..."
-    ${pythonCmd} -m venv .venv
-  fi
-  ${venvActivate}
-  echo "[TTS] Instalando dependencias (se necessario)..."
-  ${venvPip} install -r requirements.txt -q
-  echo "[TTS] Iniciando Kokoro TTS nativo - voz da Clara (Porta 8880)..."
-  ${venvPython} server.py
-`;
-
-const ttsDev = spawn("bash", ["-c", ttsCommand], {
-  stdio: ["inherit", "pipe", "pipe"],
-  env: process.env,
-});
-pipeOutput("kokoro-tts", ttsDev);
+// Kokoro TTS agora roda via kokoro-js (ONNX) direto no Node.js — sem servidor Python separado.
+// O modelo é baixado do HuggingFace na primeira requisição TTS e cacheado automaticamente.
+log("[TTS] Kokoro via kokoro-js (ONNX) — modelo carrega na primeira requisição de voz.");
 
 let cloudflared = null;
 
@@ -138,13 +116,11 @@ function shutdown() {
 
   nextDev.kill("SIGTERM");
   workerDev.kill("SIGTERM");
-  ttsDev.kill("SIGTERM");
   if (cloudflared) cloudflared.kill("SIGTERM");
 
   setTimeout(() => {
     nextDev.kill("SIGKILL");
     workerDev.kill("SIGKILL");
-    ttsDev.kill("SIGKILL");
     if (cloudflared) cloudflared.kill("SIGKILL");
     process.exit(0);
   }, 2000);

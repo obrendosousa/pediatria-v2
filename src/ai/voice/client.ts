@@ -1,14 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
-import { randomUUID } from "node:crypto";
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// URL base do Kokoro-FastAPI (sem path — o path é /v1/audio/speech)
-const KOKORO_BASE_URL = process.env.KOKORO_TTS_URL || "http://localhost:8880";
-// Voz feminina PT-BR do Kokoro: pf_dora (padrão) ou pf_nicola
+// Voz padrão PT-BR do Kokoro
 const KOKORO_VOICE = process.env.KOKORO_VOICE || "pf_dora";
 
 export interface ParsedVoiceResponse {
@@ -17,8 +14,61 @@ export interface ParsedVoiceResponse {
     mediaUrl?: string;
 }
 
+// ─── KOKORO-JS: roda o modelo ONNX direto no Node.js, sem servidor Python ─────
+// O modelo (~300MB) é baixado do HuggingFace na primeira chamada e cacheado.
+// O singleton persiste enquanto o processo Node.js estiver rodando.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _kokoro: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _kokoroLoading: Promise<any> | null = null;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getKokoro(): Promise<any> {
+    if (_kokoro) return _kokoro;
+    if (_kokoroLoading) return _kokoroLoading;
+    _kokoroLoading = (async () => {
+        console.log("[Voice] Carregando modelo Kokoro ONNX (primeira vez pode demorar)...");
+        const { KokoroTTS } = await import("kokoro-js");
+        _kokoro = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", { dtype: "fp32" });
+        _kokoroLoading = null;
+        console.log("[Voice] Kokoro pronto.");
+        return _kokoro;
+    })();
+    return _kokoroLoading;
+}
+
+/** Converte Float32Array de PCM mono para um buffer WAV válido. */
+function float32ToWav(samples: Float32Array, sampleRate: number): Buffer {
+    const dataSize = samples.length * 2; // 16-bit = 2 bytes por sample
+    const buf = Buffer.allocUnsafe(44 + dataSize);
+    buf.write("RIFF", 0);
+    buf.writeUInt32LE(36 + dataSize, 4);
+    buf.write("WAVE", 8);
+    buf.write("fmt ", 12);
+    buf.writeUInt32LE(16, 16);
+    buf.writeUInt16LE(1, 20);            // PCM
+    buf.writeUInt16LE(1, 22);            // mono
+    buf.writeUInt32LE(sampleRate, 24);
+    buf.writeUInt32LE(sampleRate * 2, 28);
+    buf.writeUInt16LE(2, 32);
+    buf.writeUInt16LE(16, 34);
+    buf.write("data", 36);
+    buf.writeUInt32LE(dataSize, 40);
+    for (let i = 0; i < samples.length; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        buf.writeInt16LE(Math.round(s < 0 ? s * 32768 : s * 32767), 44 + i * 2);
+    }
+    return buf;
+}
+
+async function generateWithKokoro(text: string, voiceOverride?: string): Promise<Buffer | null> {
+    const tts = await getKokoro();
+    const voice = voiceOverride || KOKORO_VOICE;
+    const result = await tts.generate(text, { voice });
+    return float32ToWav(result.audio as Float32Array, result.sampling_rate ?? 24000);
+}
+
 // ─── SYNC: parse das tags <voice>/<text> sem chamadas de API ─────────────────
-// Chamado antes de salvar no DB para permitir salvar texto imediatamente
 export function parseVoiceSegments(
     aiResponseText: string
 ): Array<{ type: "text" | "voice"; content: string }> {
@@ -53,7 +103,6 @@ export function parseVoiceSegments(
 }
 
 // ─── ASYNC: gera voz e atualiza mensagens no DB (fire-and-forget) ─────────────
-// Chamado APÓS o texto já ter sido salvo no banco, sem bloquear a resposta
 export async function generateVoiceForMessages(
     segments: Array<{ id: number; content: string }>
 ): Promise<void> {
@@ -74,53 +123,31 @@ export async function generateVoiceForMessages(
                     console.log(`[Voice] ✅ Áudio atualizado para mensagem ${seg.id}`);
                 }
             } else {
-                console.warn(`[Voice] ⚠️ Nenhum áudio gerado para segmento ${i + 1} (msg_id: ${seg.id}) — pulando`);
+                console.warn(`[Voice] ⚠️ Sem áudio para segmento ${i + 1} (msg_id: ${seg.id})`);
             }
         } catch (e) {
-            console.error(`[Voice] ❌ Erro inesperado no segmento ${i + 1} (msg_id: ${seg.id}):`, e);
-            // Continua para o próximo segmento mesmo em caso de erro
+            console.error(`[Voice] ❌ Erro no segmento ${i + 1} (msg_id: ${seg.id}):`, e);
         }
     }
     console.log(`[Voice] Geração concluída para ${segments.length} segmento(s).`);
 }
 
 // ─── GERAÇÃO + UPLOAD ─────────────────────────────────────────────────────────
-// Backend selecionado por TTS_BACKEND ou presença de ELEVENLABS_API_KEY
 export async function generateAndUploadVoice(text: string, voiceOverride?: string): Promise<string | null> {
     try {
-        const backend =
-            process.env.TTS_BACKEND ||
-            (process.env.ELEVENLABS_API_KEY ? "elevenlabs" : "kokoro");
+        const voice = voiceOverride || KOKORO_VOICE;
+        console.log(`[Voice] Gerando via kokoro-js (${text.length} chars) voice=${voice}`);
 
-        console.log(`[Voice] Gerando via ${backend} (${text.length} chars)${voiceOverride ? ` voice=${voiceOverride}` : ''}`);
-
-        let audioBuffer: Buffer | null = null;
-        let mimeType = "audio/mpeg";
-        let ext = "mp3";
-
-        if (backend === "elevenlabs") {
-            audioBuffer = await generateWithElevenLabs(text);
-            if (!audioBuffer) {
-                console.warn("[Voice] ⚠️ ElevenLabs falhou. Iniciando fallback para o OpenAI TTS...");
-                audioBuffer = await generateWithOpenAI(text);
-            }
-        } else if (backend === "openai") {
-            audioBuffer = await generateWithOpenAI(text);
-        } else {
-            audioBuffer = await generateWithKokoro(text, voiceOverride);
-            // Kokoro retorna WAV por padrao
-            if (audioBuffer) { mimeType = "audio/wav"; ext = "wav"; }
-        }
-
+        const audioBuffer = await generateWithKokoro(text, voice);
         if (!audioBuffer) return null;
 
-        const fileName = `clara_voice_${Date.now()}_${randomUUID().split("-")[0]}.${ext}`;
+        const fileName = `clara_voice_${Date.now()}_${crypto.randomUUID().split("-")[0]}.wav`;
         const { error } = await supabase.storage
             .from("whatsapp_media")
-            .upload(fileName, audioBuffer, { contentType: mimeType, upsert: false });
+            .upload(fileName, audioBuffer, { contentType: "audio/wav", upsert: false });
 
         if (error) {
-            console.error(`[Voice] Erro no upload:`, error);
+            console.error("[Voice] Erro no upload:", error);
             return null;
         }
 
@@ -133,102 +160,6 @@ export async function generateAndUploadVoice(text: string, voiceOverride?: strin
         console.error("[Voice] Falha ao gerar voz:", error);
         return null;
     }
-}
-
-// ─── BACKEND: Kokoro (VPS / produção — CPU, sem GPU) ─────────────────────────
-// ~2-4s por frase, API compatível com OpenAI, voz feminina PT-BR: pf_dora
-async function generateWithKokoro(text: string, voiceOverride?: string): Promise<Buffer | null> {
-    const res = await fetch(`${KOKORO_BASE_URL}/v1/audio/speech`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            model: "kokoro",
-            input: text,
-            voice: voiceOverride || KOKORO_VOICE,
-            lang_code: "p",         // "p" = PT-BR no Kokoro
-            response_format: "mp3",
-        }),
-        signal: AbortSignal.timeout(60_000),
-    });
-
-    if (!res.ok) {
-        const err = await res.text();
-        console.error(`[Voice] Kokoro erro ${res.status}: ${err}`);
-        return null;
-    }
-
-    return Buffer.from(await res.arrayBuffer());
-}
-
-// ─── BACKEND: ElevenLabs (fallback cloud) ─────────────────────────────────────
-// Rápido (~1-3s), sem GPU, suporta PT-BR com clonagem de voz (Roberta)
-async function generateWithElevenLabs(text: string): Promise<Buffer | null> {
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    const voiceId = process.env.ELEVENLABS_VOICE_ID;
-
-    if (!apiKey || !voiceId) {
-        console.error("[Voice] ELEVENLABS_API_KEY ou ELEVENLABS_VOICE_ID não configurados");
-        return null;
-    }
-
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-        method: "POST",
-        headers: {
-            "xi-api-key": apiKey,
-            "Content-Type": "application/json",
-            Accept: "audio/mpeg",
-        },
-        body: JSON.stringify({
-            text,
-            model_id: "eleven_multilingual_v2",
-            voice_settings: {
-                stability: 0.65,
-                similarity_boost: 0.3,
-                style: 0.0,
-                use_speaker_boost: true,
-            },
-        }),
-        signal: AbortSignal.timeout(30_000),
-    });
-
-    if (!res.ok) {
-        const err = await res.text();
-        console.error(`[Voice] ElevenLabs erro ${res.status}: ${err}`);
-        return null;
-    }
-
-    return Buffer.from(await res.arrayBuffer());
-}
-
-// ─── BACKEND: OpenAI TTS (cloud, sem Python, funciona em qualquer SO) ─────────
-// Rápido (~1-2s), suporta PT-BR naturalmente, usa a OPENAI_API_KEY já configurada
-async function generateWithOpenAI(text: string): Promise<Buffer | null> {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-        console.error("[Voice] OPENAI_API_KEY não configurada");
-        return null;
-    }
-
-    const voice = process.env.OPENAI_TTS_VOICE || "nova"; // nova = voz feminina natural
-    const model = process.env.OPENAI_TTS_MODEL || "tts-1";
-
-    const res = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ model, input: text, voice, response_format: "mp3" }),
-        signal: AbortSignal.timeout(30_000),
-    });
-
-    if (!res.ok) {
-        const err = await res.text();
-        console.error(`[Voice] OpenAI TTS erro ${res.status}: ${err}`);
-        return null;
-    }
-
-    return Buffer.from(await res.arrayBuffer());
 }
 
 // ─── COMPAT: mantida para uso legado ─────────────────────────────────────────

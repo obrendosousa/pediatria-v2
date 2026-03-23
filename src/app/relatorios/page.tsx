@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileText, Calendar, Clock, ArrowRight, FileSearch, Sparkles, Filter, ChevronRight, BarChart2, Trash2 } from 'lucide-react';
+import { FileText, Calendar, Clock, FileSearch, Sparkles, Filter, ChevronRight, BarChart2, Trash2, Activity } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Link from 'next/link';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
+import ClaraLiveTab from './ClaraLiveTab';
 
 const supabase = createClient();
 
@@ -23,6 +24,7 @@ export default function RelatoriosPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
+    const [activeTab, setActiveTab] = useState<'reports' | 'live'>('reports');
     const [confirmDelete, setConfirmDelete] = useState<Report | null>(null);
     const { toast } = useToast();
 
@@ -154,38 +156,76 @@ export default function RelatoriosPage() {
             {/* Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
 
-                {/* Filters Toolbar */}
+                {/* Tabs + Filters Toolbar */}
                 <div className="px-8 pt-6 pb-2 z-10">
                     <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-[#a1a1aa] mr-2 shrink-0">
-                            <Filter className="w-4 h-4" /> Filtros:
-                        </div>
+                        {/* Tab: Relatórios */}
                         <button
-                            onClick={() => setTypeFilter('all')}
-                            className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold transition-all shrink-0 ${typeFilter === 'all'
+                            onClick={() => setActiveTab('reports')}
+                            className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold transition-all shrink-0 ${activeTab === 'reports'
                                 ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900'
                                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#08080b] dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/5'
-                                }`}
+                            }`}
                         >
-                            Todos
+                            Relatórios
                         </button>
-                        {uniqueTypes.map(type => (
-                            <button
-                                key={type}
-                                onClick={() => setTypeFilter(type)}
-                                className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold transition-all shrink-0 ${typeFilter === type
-                                    ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#08080b] dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/5'
+
+                        {/* Tab: Clara Live */}
+                        <button
+                            onClick={() => setActiveTab('live')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all shrink-0 ${activeTab === 'live'
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#08080b] dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/5'
+                            }`}
+                        >
+                            <Activity className="w-3.5 h-3.5" />
+                            Clara Live
+                            <span className="flex h-2 w-2"><span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" /></span>
+                        </button>
+
+                        {/* Filtros de tipo — só visíveis na aba Relatórios */}
+                        {activeTab === 'reports' && (
+                            <>
+                                <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-[#a1a1aa] ml-2 mr-1 shrink-0">
+                                    <Filter className="w-4 h-4" />
+                                </div>
+                                <button
+                                    onClick={() => setTypeFilter('all')}
+                                    className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold transition-all shrink-0 ${typeFilter === 'all'
+                                        ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900'
+                                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#08080b] dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/5'
                                     }`}
-                            >
-                                {getReportTypeLabel(type)}
-                            </button>
-                        ))}
+                                >
+                                    Todos
+                                </button>
+                                {uniqueTypes.map(type => (
+                                    <button
+                                        key={type}
+                                        onClick={() => setTypeFilter(type)}
+                                        className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold transition-all shrink-0 ${typeFilter === type
+                                            ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900'
+                                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-[#08080b] dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/5'
+                                        }`}
+                                    >
+                                        {getReportTypeLabel(type)}
+                                    </button>
+                                ))}
+                            </>
+                        )}
                     </div>
                 </div>
 
-                {/* List */}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
+                {/* Clara Live Tab */}
+                {activeTab === 'live' && (
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
+                        <div className="max-w-7xl mx-auto pb-12">
+                            <ClaraLiveTab />
+                        </div>
+                    </div>
+                )}
+
+                {/* List — só visível na aba Relatórios */}
+                {activeTab === 'reports' && <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
                     <div className="max-w-7xl mx-auto pb-12">
 
                         {loading ? (
@@ -262,7 +302,8 @@ export default function RelatoriosPage() {
                             </div>
                         )}
                     </div>
-                </div>
+                </div>}
+
             </div>
 
             <ConfirmModal

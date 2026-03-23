@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import { END, START, StateGraph, MemorySaver } from "@langchain/langgraph";
+const randomUUID = () => crypto.randomUUID();
 import { dispatchRunCommandSchema, workerAckSchema, type DispatchRunCommandContract, type WorkerAckContract } from "@/lib/automation/contracts";
 import type { ClaimedScheduledMessage } from "@/lib/automation/adapters/dispatchRepository";
 import {

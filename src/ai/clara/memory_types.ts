@@ -340,3 +340,62 @@ export function mapLegacyType(legacyType: string): MemoryType {
   // Fallback
   return "padrao_comportamental";
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TRUST LEVELS — define o que cada source_role pode salvar
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type TrustLevel = {
+  /** Pode salvar em Tier 1 (regra_negocio, protocolo_clinico, recurso_equipe) */
+  can_write_tier1: boolean;
+  /** Pode salvar em Tier 2 (padrões aprendidos) */
+  can_write_tier2: boolean;
+  /** Tipos permitidos em Tier 2. undefined = todos */
+  allowed_tier2_types?: MemoryType[];
+};
+
+export const TIER1_TYPES: MemoryType[] = ['regra_negocio', 'protocolo_clinico', 'recurso_equipe'];
+
+export const TRUST_LEVELS: Record<string, TrustLevel> = {
+  admin: {
+    can_write_tier1: true,
+    can_write_tier2: true,
+  },
+  doctor: {
+    can_write_tier1: false,
+    can_write_tier2: true,
+    allowed_tier2_types: ['protocolo_clinico', 'conhecimento_medico', 'padrao_comportamental'],
+  },
+  system: {
+    can_write_tier1: false,
+    can_write_tier2: true,
+  },
+  consolidation: {
+    can_write_tier1: false,
+    can_write_tier2: true,
+  },
+  vault_seed: {
+    can_write_tier1: false,
+    can_write_tier2: true,
+  },
+};
+
+export function getTrustLevel(source_role: string): TrustLevel {
+  return TRUST_LEVELS[source_role] ?? TRUST_LEVELS['system'];
+}
+
+/**
+ * Verifica se source_role tem permissão para salvar o memory_type dado.
+ */
+export function canSaveType(source_role: string, memory_type: MemoryType): boolean {
+  const trust = getTrustLevel(source_role);
+
+  if (TIER1_TYPES.includes(memory_type)) {
+    return trust.can_write_tier1;
+  }
+
+  if (!trust.can_write_tier2) return false;
+  if (trust.allowed_tier2_types && !trust.allowed_tier2_types.includes(memory_type)) return false;
+
+  return true;
+}

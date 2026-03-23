@@ -1,5 +1,9 @@
-import { AIMessage, BaseMessage, SystemMessage } from "@langchain/core/messages";
+import { AIMessage, BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — @langchain/langgraph ships without declaration files; global d.ts in src/types/langgraph.d.ts
 import { START, StateGraph } from "@langchain/langgraph";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — @langchain/langgraph/prebuilt ships without declaration files
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { autonomousTools } from "./tools";
@@ -22,7 +26,7 @@ const autonomousWorkflow = new StateGraph<AutonomousAgentState>({
       default: () => [],
     },
     dormant_chats: {
-      reducer: (x, y) => y ?? x,
+      reducer: (x: AutonomousAgentState["dormant_chats"], y: AutonomousAgentState["dormant_chats"]) => y ?? x,
       default: () => [],
     },
   },
@@ -31,7 +35,7 @@ const autonomousWorkflow = new StateGraph<AutonomousAgentState>({
 autonomousWorkflow.addNode("agent", async (state: AutonomousAgentState) => {
   // Inicializamos o modelo dentro do nó para garantir a leitura do .env
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     apiKey: process.env.GOOGLE_API_KEY,
     temperature: 0.2, // Temperatura baixa para respostas mais objetivas e focadas
   });
@@ -62,6 +66,7 @@ ${chatsContext || "Nenhum chat dormente no momento."}`;
 
   const response = (await modelWithTools.invoke([
     new SystemMessage(DYNAMIC_SYSTEM_PROMPT),
+    new HumanMessage("Analise os chats dormentes listados e gere os rascunhos de resgate agora."),
     ...state.messages,
   ])) as AIMessage;
 
@@ -70,11 +75,8 @@ ${chatsContext || "Nenhum chat dormente no momento."}`;
 
 autonomousWorkflow.addNode("tools", new ToolNode(autonomousTools));
 
-// @ts-expect-error - Tipagem dinâmica do LangGraph no runtime
 autonomousWorkflow.addEdge(START, "agent");
-// @ts-expect-error - Retorno nativo da condition
 autonomousWorkflow.addConditionalEdges("agent", toolsCondition);
-// @ts-expect-error - Retorno cíclico
 autonomousWorkflow.addEdge("tools", "agent");
 
 export const autonomousGraph = autonomousWorkflow.compile();

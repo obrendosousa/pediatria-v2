@@ -129,6 +129,7 @@ export default function AtendimentoCRMPage() {
   const [isManualCallOpen, setIsManualCallOpen] = useState(false);
   const [manualCallText, setManualCallText] = useState('');
   const [isManualCallSending, setIsManualCallSending] = useState(false);
+  const [manualCallServicePoint, setManualCallServicePoint] = useState<import('@/types/queue').ServicePoint | null>(null);
 
   // Modal seletor de ponto de atendimento
   const [servicePointSelector, setServicePointSelector] = useState<{
@@ -387,7 +388,7 @@ export default function AtendimentoCRMPage() {
     }
   };
 
-  /** Disparar chamada manual na TV (texto livre) */
+  /** Disparar chamada manual na TV (texto livre + ponto de atendimento opcional) */
   const handleManualCall = async () => {
     const text = manualCallText.trim();
     if (!text || isManualCallSending) return;
@@ -396,7 +397,11 @@ export default function AtendimentoCRMPage() {
       const res = await fetch('/api/atendimento/queue/manual-call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          servicePointName: manualCallServicePoint?.name,
+          servicePointCode: manualCallServicePoint?.code,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
@@ -404,6 +409,7 @@ export default function AtendimentoCRMPage() {
       }
       toast.success('Chamada enviada para a TV!');
       setManualCallText('');
+      setManualCallServicePoint(null);
       setIsManualCallOpen(false);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Tente novamente.';
@@ -871,19 +877,19 @@ export default function AtendimentoCRMPage() {
               </div>
               <button
                 type="button"
-                onClick={() => { setIsManualCallOpen(false); setManualCallText(''); }}
+                onClick={() => { setIsManualCallOpen(false); setManualCallText(''); setManualCallServicePoint(null); }}
                 className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors"
               >
                 <X className="w-4 h-4 text-slate-400" />
               </button>
             </div>
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-3">
               <textarea
                 value={manualCallText}
                 onChange={(e) => setManualCallText(e.target.value)}
-                placeholder="Ex: Senha G001, Maria Silva, por favor dirija-se ao Guichê 1"
+                placeholder="Ex: Maria Silva, por favor dirija-se ao atendimento"
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-[#252530] bg-slate-50 dark:bg-[#0e0e14] text-sm text-slate-800 dark:text-gray-200 placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-400 resize-none"
-                rows={3}
+                rows={2}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -892,10 +898,32 @@ export default function AtendimentoCRMPage() {
                   }
                 }}
               />
-              <div className="flex items-center justify-end gap-2">
+
+              {/* Seletor de posto de atendimento */}
+              <div>
+                <p className="text-xs font-medium text-slate-500 dark:text-gray-400 mb-2">Destino (opcional)</p>
+                <div className="flex flex-wrap gap-2">
+                  {servicePoints.filter(sp => sp.status === 'active').map(sp => (
+                    <button
+                      key={sp.id}
+                      type="button"
+                      onClick={() => setManualCallServicePoint(prev => prev?.id === sp.id ? null : sp)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                        manualCallServicePoint?.id === sp.id
+                          ? 'bg-amber-500 border-amber-500 text-white'
+                          : 'border-slate-200 dark:border-[#2d2d36] text-slate-600 dark:text-gray-400 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400'
+                      }`}
+                    >
+                      {sp.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => { setIsManualCallOpen(false); setManualCallText(''); }}
+                  onClick={() => { setIsManualCallOpen(false); setManualCallText(''); setManualCallServicePoint(null); }}
                   className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
                 >
                   Cancelar

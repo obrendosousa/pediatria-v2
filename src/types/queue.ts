@@ -57,4 +57,6 @@ export interface TVCallPayload {
   doctor_name?: string;
   is_priority: boolean;
   tts_audio_url?: string;
+  /** Texto exato para o browser falar via Web Speech API quando não há tts_audio_url */
+  spoken_text?: string;
 }

@@ -19,6 +19,8 @@ export async function register() {
 
   console.log("[Instrumentation] Iniciando crons embutidos...");
 
+  const { markCronStart, markCronSuccess, markCronError } = await import("@/lib/claraActivityStore");
+
   // Import dinâmico para evitar carregar código server-side no build
   const { runAutomationSchedulerGraph } = await import(
     "@/lib/automation/graphs/automationScheduler"
@@ -26,8 +28,6 @@ export async function register() {
   const { runScheduledDispatchGraph } = await import(
     "@/lib/automation/graphs/scheduledDispatch"
   );
-  const { randomUUID } = await import("node:crypto");
-
   let schedulerRunning = false;
   let dispatchRunning = false;
   let autonomousRunning = false;
@@ -37,15 +37,18 @@ export async function register() {
   setInterval(async () => {
     if (schedulerRunning) return;
     schedulerRunning = true;
+    markCronStart("scheduler");
     try {
       await runAutomationSchedulerGraph({
         contractVersion: "v1",
-        runId: randomUUID(),
+        runId: crypto.randomUUID(),
         triggerAt: new Date().toISOString(),
         dryRun: false,
       });
+      markCronSuccess("scheduler");
     } catch (err) {
       console.error("[Instrumentation][Scheduler] Erro:", err);
+      markCronError("scheduler", err);
     } finally {
       schedulerRunning = false;
     }
@@ -56,15 +59,18 @@ export async function register() {
   setInterval(async () => {
     if (dispatchRunning) return;
     dispatchRunning = true;
+    markCronStart("dispatch");
     try {
       await runScheduledDispatchGraph({
         contractVersion: "v1",
-        runId: randomUUID(),
+        runId: crypto.randomUUID(),
         batchSize: 25,
         dryRun: false,
       });
+      markCronSuccess("dispatch");
     } catch (err) {
       console.error("[Instrumentation][Dispatch] Erro:", err);
+      markCronError("dispatch", err);
     } finally {
       dispatchRunning = false;
     }
@@ -75,6 +81,7 @@ export async function register() {
   setInterval(async () => {
     if (autonomousRunning) return;
     autonomousRunning = true;
+    markCronStart("autonomous");
     try {
       const { getSupabaseAdminClient } = await import(
         "@/lib/automation/adapters/supabaseAdmin"
@@ -92,10 +99,14 @@ export async function register() {
 
       if (error) {
         console.error("[Instrumentation][Autonomous] Query error:", error.message);
+        markCronError("autonomous", error);
         return;
       }
 
-      if (!dormantChats || dormantChats.length === 0) return;
+      if (!dormantChats || dormantChats.length === 0) {
+        markCronSuccess("autonomous");
+        return;
+      }
 
       const { autonomousGraph } = await import("@/ai/autonomous/graph");
       await autonomousGraph.invoke({
@@ -103,8 +114,10 @@ export async function register() {
         dormant_chats: dormantChats,
       });
       console.log(`[Instrumentation][Autonomous] ${dormantChats.length} rascunhos gerados`);
+      markCronSuccess("autonomous");
     } catch (err) {
       console.error("[Instrumentation][Autonomous] Erro:", err);
+      markCronError("autonomous", err);
     } finally {
       autonomousRunning = false;
     }
@@ -112,16 +125,19 @@ export async function register() {
 
   // Roda scheduler + dispatch imediatamente na primeira vez
   setTimeout(async () => {
+    markCronStart("scheduler");
     try {
       schedulerRunning = true;
       await runAutomationSchedulerGraph({
         contractVersion: "v1",
-        runId: randomUUID(),
+        runId: crypto.randomUUID(),
         triggerAt: new Date().toISOString(),
         dryRun: false,
       });
+      markCronSuccess("scheduler");
     } catch (err) {
       console.error("[Instrumentation][Scheduler] Erro no boot:", err);
+      markCronError("scheduler", err);
     } finally {
       schedulerRunning = false;
     }

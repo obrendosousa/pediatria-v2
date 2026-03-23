@@ -6,6 +6,8 @@ import { RobustCronManager, type CronJobSnapshot } from "./cron/robustCron";
 import { vaultDailyTask, vaultWeeklyTask, vaultMonthlyTask } from "./cron/vaultCrons";
 import { claraTaskExecutorTask } from "./cron/claraTaskExecutor";
 import { memoryConsolidationTask } from "./cron/memoryCrons";
+import { memoryHardDeleteTask } from "./cron/memoryHardDeleteCron";
+import { memoryBrainTask } from "./cron/memoryBrainCron";
 
 export interface WorkerRuntimeController {
   stop: () => Promise<void>;
@@ -104,6 +106,24 @@ export async function startWorkerRuntime(config: WorkerConfig): Promise<WorkerRu
     maxBackoffMs: 300_000,
     runOnStart: false,
     task: memoryConsolidationTask,
+  });
+
+  // Memory hard delete — LGPD: remove permanentemente memórias arquivadas >90 dias (sexta 03h BRT)
+  cron.register({
+    name: "memory-hard-delete",
+    intervalMs: 60_000,
+    maxBackoffMs: 300_000,
+    runOnStart: false,
+    task: memoryHardDeleteTask,
+  });
+
+  // Memory brain — consolidação, dedup, poda e reconexão do vault (domingo 03h BRT)
+  cron.register({
+    name: "memory-brain",
+    intervalMs: 60_000,
+    maxBackoffMs: 600_000,
+    runOnStart: false,
+    task: memoryBrainTask,
   });
 
   await cron.start();

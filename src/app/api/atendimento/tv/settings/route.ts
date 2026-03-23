@@ -15,13 +15,18 @@ const CONFIG_KEY = 'kokoro_voice';
  */
 export async function GET() {
   try {
-    const { data } = await supabase
+    // order by updated_at para pegar sempre o mais recente (evita problema de linhas duplicadas)
+    const { data, error } = await supabase
       .from('agent_config')
       .select('content')
       .eq('agent_id', AGENT_ID)
       .eq('config_key', CONFIG_KEY)
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
+    if (error) console.error('[TV Settings GET] Erro DB:', error);
+    console.log('[TV Settings GET] voz lida:', data?.content);
     return NextResponse.json({ voice: data?.content || 'pf_dora' });
   } catch (error) {
     console.error('[TV Settings GET] Erro:', error);
@@ -41,18 +46,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Campo "voice" obrigatorio' }, { status: 400 });
     }
 
-    const { error } = await supabase
+    // Verifica se já existe um registro
+    const { data: existing } = await supabase
       .from('agent_config')
-      .upsert(
-        { agent_id: AGENT_ID, config_key: CONFIG_KEY, content: voice, updated_at: new Date().toISOString() },
-        { onConflict: 'agent_id,config_key' }
-      );
+      .select('id')
+      .eq('agent_id', AGENT_ID)
+      .eq('config_key', CONFIG_KEY)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (error) {
-      console.error('[TV Settings POST] Erro DB:', error);
+    let dbError;
+    if (existing?.id) {
+      // Atualiza o registro existente pelo id
+      const { error } = await supabase
+        .from('agent_config')
+        .update({ content: voice, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+      dbError = error;
+    } else {
+      // Insere novo registro
+      const { error } = await supabase
+        .from('agent_config')
+        .insert({ agent_id: AGENT_ID, config_key: CONFIG_KEY, content: voice, updated_at: new Date().toISOString() });
+      dbError = error;
+    }
+
+    if (dbError) {
+      console.error('[TV Settings POST] Erro DB:', dbError);
       return NextResponse.json({ error: 'Erro ao salvar configuracao' }, { status: 500 });
     }
 
+    console.log('[TV Settings POST] Voz salva:', voice, '| id:', existing?.id ?? 'novo');
     return NextResponse.json({ success: true, voice });
   } catch (error) {
     console.error('[TV Settings POST] Erro:', error);

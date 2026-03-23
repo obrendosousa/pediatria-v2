@@ -8,12 +8,13 @@ import { preValidateQuery, postValidateResults } from "./query_validator";
 import { analyzeRawConversationsTool } from "./raw_data_analyzer";
 import { askUserQuestionTool } from "./interactive_questions";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
-import { MEMORY_TYPES, MEMORY_TYPE_DESCRIPTIONS } from "./memory_types";
-import { stripPIIAndReferences, isGeneralizablePattern } from "./memory_quality";
+import { MEMORY_TYPES, MEMORY_TYPE_DESCRIPTIONS, canSaveType, TIER1_TYPES, type MemoryType } from "./memory_types";
+import { calculateQualityScore, applyQualityPipeline } from "./memory_quality";
+import { checkContradiction, upsertAuthoritativeFact } from "./contradiction_guard";
+import { getMemoryIndex } from "@/ai/vault/memory-index";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { TemporalAnchor } from "./temporal_anchor";
 import {
-  syncMemoryToVault,
   syncConfigToVault,
   syncReportToVault,
   syncChatNoteToVault,
@@ -156,9 +157,10 @@ export const updateBrainFileTool = new DynamicStructuredTool({
 export const manageLongTermMemoryTool = new DynamicStructuredTool({
   name: "manage_long_term_memory",
   description: `Salva PADRÕES GENERALIZÁVEIS ou consulta aprendizados passados na memória de longo prazo.
-No modo salvar faz Upsert Semântico para não duplicar informações similares.
+No modo salvar faz Upsert Semântico (threshold 0.80) para não duplicar informações similares.
 Categorias: ${MEMORY_TYPES.join(", ")}.
-NUNCA salve dados individuais de pacientes (nomes, CPFs, endereços). Salve apenas padrões reutilizáveis.`,
+NUNCA salve dados individuais de pacientes (nomes, CPFs, endereços). Salve apenas padrões reutilizáveis.
+NUNCA salve com memory_type='audit_log' — use 'feedback_melhoria' para registrar problemas.`,
   schema: z.object({
     action: z.enum(["salvar", "consultar"]),
     memory_type: z.string().describe(
@@ -171,96 +173,150 @@ NUNCA salve dados individuais de pacientes (nomes, CPFs, endereços). Salve apen
     if (action === "salvar") {
       if (!content) return "Erro: 'content' é obrigatório para salvar.";
 
-      // Quality gate: limpar PII e validar padrão generalizável
-      const cleaned = stripPIIAndReferences(content);
-      if (!cleaned) {
-        return "Memória rejeitada: conteúdo contém apenas dados pessoais/específicos ou ficou muito curto após limpeza.";
+      // Redirecionar audit_log → feedback_melhoria
+      const effectiveType = memory_type === "audit_log" ? "feedback_melhoria" : memory_type;
+      const effectiveRole = source_role || "system";
+
+      // Verificar permissão por trust level
+      if (!canSaveType(effectiveRole, effectiveType as MemoryType)) {
+        return `Permissão negada: source_role '${effectiveRole}' não pode salvar no tipo '${effectiveType}'. ` +
+          `Tipos Tier 1 (${TIER1_TYPES.join(", ")}) exigem source_role='admin'.`;
       }
-      if (!isGeneralizablePattern(cleaned)) {
-        return "Memória rejeitada: observação individual, não um padrão generalizável. Reformule como um padrão que se aplica a múltiplos casos.";
+
+      // Quality gate completo (strip PII + generalizabilidade + score)
+      const qualityResult = applyQualityPipeline(content);
+      if (!qualityResult) {
+        return "Memória rejeitada pelo quality gate: conteúdo contém apenas dados individuais/PII, " +
+          "ficou muito curto após limpeza, ou é uma observação não-generalizável. " +
+          "Reformule como um padrão que se aplique a múltiplos casos.";
+      }
+      const { cleaned, score } = qualityResult;
+
+      // Contradiction guard (bloqueia contradições com fatos autoritativos em Tier 1)
+      const contradiction = checkContradiction(cleaned, effectiveType, effectiveRole);
+      if (!contradiction.ok) {
+        return `Memória bloqueada pelo Contradiction Guard: ${contradiction.message}`;
+      }
+      if (contradiction.severity === "warn" && contradiction.message) {
+        console.warn(`[ContradictionGuard] ${contradiction.message}`);
       }
 
       try {
         const embedding = await embedText768(cleaned);
+        const index = await getMemoryIndex();
 
-        const { data: matches, error: rpcError } = await supabase.rpc("match_memories", {
-          query_embedding: embedding,
-          match_threshold: 0.80,
-          match_count: 1
-        });
+        // Upsert semântico via vault local (threshold 0.80)
+        const savedSlug = await index.saveEntry(
+          {
+            content: cleaned,
+            memory_type: effectiveType,
+            quality_score: score,
+            source_role: effectiveRole,
+          },
+          embedding
+        );
 
-        if (rpcError) throw rpcError;
-
-        if (matches && matches.length > 0) {
-          const matchedId = matches[0].id;
-          const { error: updateError } = await supabase
-            .from("clara_memories")
-            .update({
-              content: cleaned,
-              memory_type,
-              embedding,
-              updated_at: new Date().toISOString()
-            })
-            .eq("id", matchedId);
-
-          if (updateError) throw updateError;
-          syncMemoryToVault(matchedId, memory_type, cleaned, source_role).catch(() => {});
-          return `Memória atualizada com sucesso (Upsert Semântico) na categoria '${memory_type}'.`;
-        } else {
-          const { data: insertData, error: insertError } = await supabase
-            .from("clara_memories")
-            .insert({
-              memory_type,
-              content: cleaned,
-              embedding,
-              source_role: source_role || "system",
-              updated_at: new Date().toISOString()
-            })
-            .select("id")
-            .single();
-
-          if (insertError) throw insertError;
-          const newId = (insertData as { id: number } | null)?.id ?? 0;
-          syncMemoryToVault(newId, memory_type, cleaned, source_role).catch(() => {});
-          return `Nova memória salva com sucesso na categoria '${memory_type}'.`;
-        }
+        const warnMsg = contradiction.severity === "warn" ? `\n⚠️ ${contradiction.message}` : "";
+        return `Memória salva no vault (${savedSlug}). Score: ${score}/100.${warnMsg}`;
       } catch (e: unknown) {
-        return `Erro ao processar memória com embeddings: ${e instanceof Error ? e.message : String(e)}`;
+        return `Erro ao processar memória: ${e instanceof Error ? e.message : String(e)}`;
       }
     } else {
-      // Busca vetorial (semântica) quando há conteúdo, ilike como fallback
+      // Consulta no vault local
       if (content) {
         try {
           const queryEmbedding = await embedText768(content);
-          const { data: vecMatches, error: vecError } = await supabase.rpc("match_memories", {
-            query_embedding: queryEmbedding,
-            match_threshold: 0.7,
-            match_count: 5,
-          });
-          if (!vecError && vecMatches && vecMatches.length > 0) {
-            return `Memórias encontradas (busca semântica):\n${(vecMatches as Array<{ content: string; similarity: number }>)
-              .map((m) => `- ${m.content} (similaridade: ${(m.similarity * 100).toFixed(0)}%)`)
+          const index = await getMemoryIndex();
+          const results = index.search(queryEmbedding, 5);
+          if (results.length > 0) {
+            return `Memórias encontradas (vault local):\n${results
+              .map(r => `- [score:${r.entry.quality_score}] ${r.entry.content} (sim: ${(r.similarity * 100).toFixed(0)}%)`)
               .join("\n")}`;
           }
-        } catch {
-          // Fallback para ilike se a busca vetorial falhar
-        }
+        } catch { /* fallback abaixo */ }
       }
-      // Fallback: busca por categoria + texto
-      let query = supabase
-        .from("clara_memories")
-        .select("content, created_at")
-        .eq("memory_type", memory_type);
-      if (content) query = query.ilike("content", `%${content}%`);
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(5);
-      if (error) return `Erro ao buscar memórias: ${error instanceof Error ? error.message : String(error)}`;
-      if (!data || data.length === 0) return "Nenhuma memória encontrada com esses critérios.";
-      return `Memórias encontradas:\n${data
-        .map(
-          (m) =>
-            `- ${m.content} (salvo em ${new Date((m as { created_at: string }).created_at).toLocaleDateString()})`
-        )
-        .join("\n")}`;
+      // Fallback: busca por tipo
+      try {
+        const index = await getMemoryIndex();
+        const byType = index.getAllEntries()
+          .filter(e => e.memory_type === memory_type)
+          .filter(e => !content || e.content.toLowerCase().includes(content.toLowerCase()))
+          .sort((a, b) => b.quality_score - a.quality_score)
+          .slice(0, 5);
+        if (byType.length === 0) return "Nenhuma memória encontrada com esses critérios.";
+        return `Memórias encontradas:\n${byType
+          .map(e => `- [score:${e.quality_score}] ${e.content}`)
+          .join("\n")}`;
+      } catch (e) {
+        return `Erro ao buscar memórias: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    }
+  },
+});
+
+export const saveAuthoritativeKnowledgeTool = new DynamicStructuredTool({
+  name: "save_authoritative_knowledge",
+  description: `Salva ou atualiza uma REGRA DEFINITIVA no Tier 1 da memória da Clara.
+Use APENAS quando o admin (Brendo) confirmar explicitamente uma nova regra, preço ou política.
+Automaticamente:
+- Cria/atualiza arquivo em knowledge/operations/ ou memories/regra-negocio/ no vault
+- Registra em decisions/ com decided_by='admin'
+- Atualiza o Contradiction Guard com o novo fato canônico
+- Arquiva memórias de Tier 2 que contradigam o novo fato
+- Exige source_role='admin' — rejeitado para outros roles
+
+OBRIGATÓRIO: confirme com o usuário ANTES de chamar esta ferramenta.`,
+  schema: z.object({
+    description: z.string().describe("Descrição curta do fato (ex: 'Preço consulta padrão')"),
+    content: z.string().describe("O fato completo e definitivo (ex: 'A consulta pediátrica padrão custa R$ 500,00.')"),
+    memory_type: z.enum(["regra_negocio", "protocolo_clinico", "recurso_equipe", "processo_operacional", "conhecimento_medico"]).describe("Categoria Tier 1 ou Tier 2"),
+    source_role: z.string().describe("Deve ser 'admin'. Qualquer outro valor será rejeitado."),
+    vault_folder: z.enum(["knowledge/operations", "memories/regra-negocio", "memories/protocolo-clinico", "memories/recurso-equipe"]).optional().describe("Onde salvar no vault"),
+    canonical_value: z.string().optional().describe("Valor canônico para o Contradiction Guard (ex: 'R$ 500,00')"),
+    canonical_pattern: z.string().optional().describe("Regex string que identifica menções a este fato (ex: 'consulta')"),
+  }),
+  func: async ({ description, content, memory_type, source_role, canonical_value, canonical_pattern }) => {
+    if (source_role !== "admin") {
+      return "❌ Permissão negada. save_authoritative_knowledge exige source_role='admin'.";
+    }
+
+    try {
+      const embedding = await embedText768(content);
+      const score = calculateQualityScore(content);
+      const index = await getMemoryIndex();
+
+      // 1. Salvar no vault (upsert semântico)
+      const savedSlug = await index.saveEntry(
+        { content, memory_type, quality_score: score, source_role: "admin" },
+        embedding
+      );
+
+      // 2. Registrar decision no vault
+      logDecisionToVault({
+        summary: `[Admin] ${description}`,
+        decided_by: "admin",
+        category: "operacional",
+        context: content,
+      });
+
+      // 3. Atualizar Contradiction Guard se canonical_value fornecido
+      if (canonical_value && canonical_pattern) {
+        upsertAuthoritativeFact({
+          description,
+          pattern: new RegExp(canonical_pattern, "i"),
+          canonical_value,
+          wrong_value_pattern: /R\$\s*\d+/,
+          strict_types: ["regra_negocio"],
+          soft_types: ["padrao_comportamental", "processo_operacional"],
+        });
+      }
+
+      return `✅ Regra autoritativa salva no vault!\n` +
+        `📁 Slug: ${savedSlug}\n` +
+        `📊 Quality score: ${score}/100\n` +
+        `🔒 Contradiction Guard atualizado: ${canonical_value ? "sim" : "não"}`;
+    } catch (e: unknown) {
+      return `Erro ao salvar conhecimento autoritativo: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
 });
@@ -1151,13 +1207,12 @@ Faz log de auditoria de cada alteração.`,
 
     const logEntry = `Chat ${chat_id} (${chat.contact_name}): ${stage ? `stage ${chat.stage} → ${stage}` : ""}${stage && sentiment ? ", " : ""}${sentiment ? `sentiment ${chat.ai_sentiment} → ${sentiment}` : ""}. Motivo: ${reason}`;
 
-    // Audit log
+    // Audit log → vault (feedback_melhoria) em vez de clara_memories
     try {
-      // @ts-expect-error — Supabase untyped admin client for clara_memories insert
-      await adminSb.from("clara_memories").insert({
-        content: `[AUDIT] ${logEntry}`,
-        memory_type: "audit_log",
-      });
+      const { getMemoryIndex: getIdx } = await import("@/ai/vault/memory-index");
+      const idx = await getIdx();
+      const emb = await embedText768(`Reclassificação: ${logEntry}`);
+      await idx.saveEntry({ content: `Reclassificação de chat: ${logEntry}`, memory_type: "feedback_melhoria", quality_score: 30, source_role: "system" }, emb);
     } catch { /* best-effort audit */ }
 
     // Decision tracking: registrar reclassificacao
@@ -1352,6 +1407,7 @@ export const claraTools = [
   readBrainFilesTool,
   updateBrainFileTool,
   manageLongTermMemoryTool,
+  saveAuthoritativeKnowledgeTool,
   manageChatNotesTool,
   extractAndSaveKnowledgeTool,
   searchKnowledgeBaseTool,

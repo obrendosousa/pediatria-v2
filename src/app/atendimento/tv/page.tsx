@@ -405,30 +405,57 @@ export default function TVPanelPage() {
     setCallOverlay(data);
 
     if (data.tts_audio_url && soundEnabledRef.current) {
-      console.log('[TV] Tocando audio TTS:', data.tts_audio_url);
-      const audio = new Audio(data.tts_audio_url);
-      audio.play().catch((err) => console.error('[TV] Erro ao tocar audio:', err));
+      console.log('[TV] Tocando audio TTS (2x):', data.tts_audio_url);
+      const playAudio = () => {
+        const audio = new Audio(data.tts_audio_url!);
+        return audio.play().catch((err) => console.error('[TV] Erro ao tocar audio:', err));
+      };
+      playAudio().then(() => {
+        // Aguarda 800ms após o término estimado e toca novamente
+        setTimeout(playAudio, 800);
+      });
     } else if (soundEnabledRef.current) {
-      // Beep fallback
+      // Fallback: Web Speech API (browser TTS nativo) — toca 2x
+      const spokenText = data.spoken_text
+        || (data.ticket_number
+          ? `${data.patient_name}, por favor dirija-se ao ${data.service_point_name}`
+          : data.patient_name);
+      const speak = () => {
+        const utterance = new SpeechSynthesisUtterance(spokenText);
+        utterance.lang = 'pt-BR';
+        utterance.rate = 0.9;
+        utterance.volume = 1;
+        return utterance;
+      };
       try {
-        const ctx = new AudioContext();
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.frequency.value = 800; g.gain.value = 0.3;
-        o.start(); o.stop(ctx.currentTime + 0.15);
-        setTimeout(() => {
-          const o2 = ctx.createOscillator();
-          const g2 = ctx.createGain();
-          o2.connect(g2); g2.connect(ctx.destination);
-          o2.frequency.value = 1000; g2.gain.value = 0.3;
-          o2.start(); o2.stop(ctx.currentTime + 0.2);
-        }, 200);
-      } catch { /* */ }
+        window.speechSynthesis.cancel();
+        const first = speak();
+        first.onend = () => {
+          setTimeout(() => window.speechSynthesis.speak(speak()), 600);
+        };
+        window.speechSynthesis.speak(first);
+        console.log('[TV] Web Speech API (2x):', spokenText);
+      } catch (err) {
+        console.error('[TV] Web Speech API erro:', err);
+      }
     }
 
     overlayTimerRef.current = setTimeout(() => setCallOverlay(null), 10000);
   }, []);
+
+  // SSE stream para chamadas manuais (mais confiável que Supabase broadcast)
+  useEffect(() => {
+    const evtSource = new EventSource('/api/atendimento/tv/stream');
+    evtSource.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data) as TVCallPayload;
+        console.log('[TV] SSE recebido:', data);
+        showCallOverlay(data);
+      } catch { /* parse error */ }
+    };
+    evtSource.onerror = () => console.warn('[TV] SSE desconectado, reconectando...');
+    return () => evtSource.close();
+  }, [showCallOverlay]);
 
   // Realtime: postgres_changes + broadcast para chamadas
   useEffect(() => {
@@ -470,12 +497,16 @@ export default function TVPanelPage() {
   // Desbloquear audio do navegador no primeiro clique em qualquer lugar da pagina
   useEffect(() => {
     const unlock = () => {
+      // Unlock WebAudio
       const ctx = new AudioContext();
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.connect(g); g.connect(ctx.destination);
       g.gain.value = 0;
       o.start(); o.stop(ctx.currentTime + 0.01);
+      // Unlock Web Speech API
+      const u = new SpeechSynthesisUtterance('');
+      window.speechSynthesis.speak(u);
       document.removeEventListener('click', unlock);
     };
     document.addEventListener('click', unlock);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { generateAndUploadVoice } from '@/ai/voice/client';
+import { emitTvCall } from '@/lib/tv-events';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,6 +15,8 @@ async function getSavedVoice(): Promise<string | undefined> {
       .select('content')
       .eq('agent_id', 'tv_panel')
       .eq('config_key', 'kokoro_voice')
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
     return data?.content || undefined;
   } catch { return undefined; }
@@ -26,55 +29,39 @@ async function getSavedVoice(): Promise<string | undefined> {
  */
 export async function POST(req: NextRequest) {
   try {
-    const { text } = await req.json();
+    const { text, servicePointName, servicePointCode } = await req.json();
 
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return NextResponse.json({ error: 'Campo "text" obrigatorio' }, { status: 400 });
     }
 
     const spokenText = text.trim();
+    const spName = servicePointName?.trim() || '';
+    const spoken = spName ? `${spokenText}, por favor dirija-se ao ${spName}` : spokenText;
 
-    // Buscar voz configurada no painel TV
-    const savedVoice = await getSavedVoice();
-
-    // Gerar audio via TTS
-    let audioUrl: string | null = null;
-    try {
-      audioUrl = await generateAndUploadVoice(spokenText, savedVoice);
-      console.log('[Manual Call] Audio URL:', audioUrl);
-    } catch (e) {
-      console.error('[Manual Call] Erro TTS:', e);
-    }
-
-    // Broadcast para TV
-    const payload = {
+    const basePayload = {
       ticket_number: '',
       patient_name: spokenText,
-      service_point_name: '',
-      service_point_code: '',
+      service_point_name: spName,
+      service_point_code: servicePointCode?.trim() || '',
       is_priority: false,
-      tts_audio_url: audioUrl || undefined,
+      spoken_text: spoken,
     };
 
-    const broadcastRes = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-      },
-      body: JSON.stringify({
-        messages: [{
-          topic: 'realtime:tv-queue',
-          event: 'call',
-          payload,
-        }],
-      }),
-    }).catch((e) => { console.error('[Manual Call Broadcast] Erro:', e); return null; });
+    // Emite via SSE imediatamente — TV recebe e fala via Web Speech API
+    emitTvCall(basePayload);
+    console.log('[Manual Call] SSE emitido:', spokenText);
 
-    console.log('[Manual Call Broadcast] Status:', broadcastRes?.status);
+    // TTS em background — se Kokoro estiver online, emite segundo evento com áudio
+    const savedVoice = await getSavedVoice();
+    generateAndUploadVoice(spokenText, savedVoice).then((audioUrl) => {
+      if (audioUrl) {
+        console.log('[Manual Call] Áudio gerado, emitindo SSE com TTS:', audioUrl);
+        emitTvCall({ ...basePayload, tts_audio_url: audioUrl });
+      }
+    }).catch(() => { /* Kokoro offline — Web Speech API já falou */ });
 
-    return NextResponse.json({ success: true, audioUrl });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[Manual Call API] Erro:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
