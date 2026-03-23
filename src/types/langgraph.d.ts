@@ -21,11 +21,13 @@ declare module "@langchain/langgraph" {
   }
    
   export class MemorySaver { constructor(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export function messagesStateReducer(x: any, y: any): any;
 }
 
 declare module "@langchain/langgraph/prebuilt" {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  export class ToolNode { constructor(tools: any[]); }
+  export class ToolNode { constructor(tools: any[]); invoke(input: any): Promise<any>; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   export function toolsCondition(state: any): any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

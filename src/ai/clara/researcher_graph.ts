@@ -5,7 +5,11 @@ import {
   HumanMessage,
   SystemMessage,
 } from "@langchain/core/messages";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — @langchain/langgraph ships without declaration files; global d.ts in src/types/langgraph.d.ts
 import { END, START, StateGraph } from "@langchain/langgraph";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — @langchain/langgraph/prebuilt ships without declaration files
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
@@ -91,7 +95,7 @@ GUIA COMPLETO DE FERRAMENTAS:
    → Passo 2: get_chat_cascade_history(chat_id=ID) para cada chat relevante → lê o histórico completo
    → Use SOMENTE quando precisar LER o texto das mensagens (padrões de linguagem, argumentos, tom)
 
-6. save_report(titulo, conteudo, tipo) → Salvar relatório (apenas se o brief pedir explicitamente)
+6. save_report — NÃO USE. O relatório final é salvo pelo orchestrador após todas as pesquisas. Focar em pesquisar e retornar dados, não em salvar relatórios parciais.
 
 SCHEMA E MAPEAMENTO DE REMETENTES (CRÍTICO — leia antes de escrever qualquer SQL):
 • chats: id, contact_name, phone, stage (new|em_triagem|agendando|fila_espera|qualified|lost|won|done), ai_sentiment (positive|negative|neutral), last_interaction_at, status

@@ -87,9 +87,37 @@ const workerDev = spawn("npx", ["tsx", "-r", "dotenv/config", "worker/src/main.t
 });
 pipeOutput("worker", workerDev);
 
-// Kokoro TTS agora roda via kokoro-js (ONNX) direto no Node.js — sem servidor Python separado.
-// O modelo é baixado do HuggingFace na primeira requisição TTS e cacheado automaticamente.
-log("[TTS] Kokoro via kokoro-js (ONNX) — modelo carrega na primeira requisição de voz.");
+// ── Kokoro TTS Server (porta 8880) ──────────────────────────────────────────
+// Tenta Docker primeiro (cross-platform), depois Python com venv.
+let ttsDev = null;
+
+if (commandExists("docker")) {
+  log("[TTS] Iniciando Kokoro via Docker (ghcr.io/remsky/kokoro-fastapi-cpu)...");
+  // Remove container anterior se existir, depois sobe o novo
+  const rmOld = spawn("docker", ["rm", "-f", "kokoro-tts-dev"], { stdio: "ignore", shell: true });
+  rmOld.on("close", () => {
+    ttsDev = spawn(
+      "docker",
+      ["run", "--rm", "--name", "kokoro-tts-dev", "-p", "8880:8880",
+       "ghcr.io/remsky/kokoro-fastapi-cpu:v0.2.2"],
+      { stdio: ["inherit", "pipe", "pipe"], env: process.env, shell: true }
+    );
+    pipeOutput("kokoro-tts", ttsDev);
+  });
+} else if (commandExists(isWindows ? "python" : "python3")) {
+  log("[TTS] Iniciando Kokoro via Python (venv)...");
+  const cmd = isWindows
+    ? `cd src\\ai\\voice && (if not exist .venv python -m venv .venv) && .venv\\Scripts\\pip install -r requirements.txt -q && .venv\\Scripts\\python server.py`
+    : `cd src/ai/voice && ([ -d .venv ] || python3 -m venv .venv) && source .venv/bin/activate && pip install -r requirements.txt -q && python server.py`;
+  ttsDev = spawn(isWindows ? "cmd" : "bash", [isWindows ? "/c" : "-c", cmd], {
+    stdio: ["inherit", "pipe", "pipe"],
+    env: process.env,
+  });
+  pipeOutput("kokoro-tts", ttsDev);
+} else {
+  log("[TTS] ⚠️  Nem Docker nem Python encontrados. Kokoro TTS não iniciará.");
+  log("[TTS]    Instale Docker Desktop ou Python 3 para ter geração de voz no dev.");
+}
 
 let cloudflared = null;
 
@@ -116,11 +144,18 @@ function shutdown() {
 
   nextDev.kill("SIGTERM");
   workerDev.kill("SIGTERM");
+  if (ttsDev) ttsDev.kill("SIGTERM");
   if (cloudflared) cloudflared.kill("SIGTERM");
+
+  // Para o container Docker do Kokoro se foi iniciado via Docker
+  if (commandExists("docker")) {
+    spawn("docker", ["rm", "-f", "kokoro-tts-dev"], { stdio: "ignore", shell: true });
+  }
 
   setTimeout(() => {
     nextDev.kill("SIGKILL");
     workerDev.kill("SIGKILL");
+    if (ttsDev) ttsDev.kill("SIGKILL");
     if (cloudflared) cloudflared.kill("SIGKILL");
     process.exit(0);
   }, 2000);

@@ -1,0 +1,21 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Kokoro roda no mesmo stack — usa nome do serviço como hostname
+      KOKORO_TTS_URL: http://kokoro:8880
+    env_file:
+      - .env.production
+    depends_on:
+      kokoro:
+        condition: service_started
+
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.2.2
+    restart: unless-stopped
+    # Porta exposta apenas internamente (app acessa via http://kokoro:8880)
+    expose:
+      - "8880"

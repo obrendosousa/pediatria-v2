@@ -107,7 +107,7 @@ function buildBatches(
   allMessages: RawChatMessage[],
   chatNames: Record<number, string>,
   formatMessage: (m: RawChatMessage) => string,
-  targetSize = 12
+  targetSize = 15 // 12→15: menos batches = menos roundtrips de API sem perder qualidade no flash-lite
 ): AnalysisBatch[] {
   const byChat: Record<number, RawChatMessage[]> = {};
   for (const msg of allMessages) {
@@ -254,7 +254,7 @@ async function fanOutAnalyze(
     temperature: 0.1,
   });
 
-  const MAX_CONCURRENCY = 5;
+  const MAX_CONCURRENCY = 8; // 5→8: gemini-flash-lite suporta maior paralelismo, reduz janelas sequenciais
   const results: BatchResult[] = [];
 
   for (let i = 0; i < batches.length; i += MAX_CONCURRENCY) {

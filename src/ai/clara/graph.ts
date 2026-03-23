@@ -6,7 +6,11 @@ import {
   ToolMessage,
 } from "@langchain/core/messages";
 import { z } from "zod";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — @langchain/langgraph ships without declaration files; global d.ts in src/types/langgraph.d.ts
 import { END, START, StateGraph, messagesStateReducer } from "@langchain/langgraph";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — @langchain/langgraph/prebuilt ships without declaration files
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
@@ -72,7 +76,7 @@ export interface ClaraState {
 // CONSTANTES
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MAX_SUPERVISOR_ITERATIONS = 3;
+const MAX_SUPERVISOR_ITERATIONS = 2; // 3→2: rodada 3 foi sistematicamente vazia nos logs (economia ~30-60s)
 const MAX_TOOL_CALL_ITERATIONS = 20;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -207,7 +211,7 @@ const claraWorkflow = new StateGraph<ClaraState>({
       default: () => [] as BaseMessage[],
     },
     chat_id: {
-      reducer: (_x, y) => y ?? _x,
+      reducer: (_x: number, y: number) => y ?? _x,
       default: () => 0,
     },
     current_user_role: {
@@ -396,29 +400,31 @@ claraWorkflow.addNode("classify_node", async (state: ClaraState) => {
 Hoje: ${today}
 
 REGRA DE DECISÃO:
-"simple" = CONTAGEM, BUSCA, AÇÃO ou verificação de UM chat específico.
-"research" = AVALIAR, CLASSIFICAR, COMPARAR ou ANALISAR conversas/desempenho/qualidade.
 
-→ EXEMPLOS "simple":
-  • "Quantas conversas tivemos esta semana?" → simple (contagem)
-  • "Volume de chats dia a dia" → simple (métrica)
-  • "Porcentagem de agendamentos confirmados" → simple (SQL)
-  • "Me mostra a conversa da Karol" → simple (busca 1 chat)
-  • "Faz uma mensagem de confirmação de consulta" → simple (ação)
-  • "Lembra que o horário mudou" → simple (memória)
+"simple" = Clara responde com suas ferramentas diretas (SQL, analyze_raw_conversations, busca).
+           Cobre desde perguntas simples até análises aprofundadas de um tema específico.
 
-→ EXEMPLOS "research" (pipeline profundo com múltiplos pesquisadores):
-  • "Quais os principais gargalos de atendimento?" → research
-  • "Relatório de qualidade desta semana" → research
-  • "Quais as principais objeções dos clientes?" → research
-  • "Como os clientes reagiram ao preço?" → research
-  • "Como estão os atendimentos?" → research
-  • "Me dá uma análise de desempenho" → research
-  • "Onde estamos perdendo pacientes?" → research
-  • "Faça uma pesquisa profunda sobre o tom das conversas" → research
-  • "Analise o script da secretária" → research
+"research" = Pipeline com múltiplos pesquisadores paralelos especializados.
+             Só quando a pergunta exige investigar VÁRIOS EIXOS SIMULTANEAMENTE
+             (ex: qualidade + financeiro + gargalos + script da equipe, tudo junto).
 
-REGRA: Se a resposta exige AVALIAR qualidade, IDENTIFICAR padrões, ANALISAR desempenho ou CLASSIFICAR conversas → research. SEMPRE.`;
+→ EXEMPLOS "simple" (a maioria das situações):
+  • "Quantas conversas tivemos esta semana?" → simple
+  • "Qual o impacto financeiro das urgências?" → simple
+  • "Analise os chats de pacientes que reclamaram de demora" → simple
+  • "Me dá um relatório de objeções de preço" → simple
+  • "Como está o atendimento da Joana?" → simple
+  • "Onde estamos perdendo mais pacientes?" → simple
+  • "Analisa com mais profundidade X" → simple
+  • Qualquer pergunta sobre UM tema específico → simple
+
+→ EXEMPLOS "research" (raramente necessário):
+  • "Relatório executivo completo da semana com análise de qualidade, finanças, gargalos e oportunidades" → research
+  • "Auditoria 360° da operação" → research
+  • "Relatório profissional para apresentar para investidores" → research
+
+REGRA: Na dúvida → simple. O simple_agent é poderoso e responde bem a análises focadas.
+Use research APENAS quando o escopo for genuinamente multi-dimensional e o usuário pedir explicitamente.`;
 
   try {
     const classifierModel = new ChatGoogleGenerativeAI({
@@ -825,8 +831,8 @@ REGRAS:
   );
 
   const newNotes = researchResults
-    .map((r) => (r as ResearcherResult).compressed_research)
-    .filter((n): n is string => typeof n === "string" && n.trim().length > 0);
+    .map((r: ResearcherResult) => r.compressed_research)
+    .filter((n: unknown): n is string => typeof n === "string" && (n as string).trim().length > 0);
 
   const supervisorMsg = new AIMessage(
     `Rodada ${state.supervisor_iteration + 1}: ${tasks.length} researcher(s) executados.`
@@ -960,46 +966,26 @@ ${rawNotesText || "[Nenhum dado encontrado.]"}`;
 // EDGES (Clara 2.0)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addEdge(START, "load_context_node");
-
-// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addEdge("load_context_node", "classify_node");
-
-// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addConditionalEdges("classify_node", (state: ClaraState) => {
   return state.is_deep_research ? "write_research_brief_node" : "simple_agent";
 });
-
-// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addConditionalEdges("simple_agent", (state: ClaraState) => {
-  // Limite de iterações do loop simple_agent ↔ tools
-  if ((state.tool_call_count ?? 0) >= MAX_TOOL_CALL_ITERATIONS) {
-    return END;
-  }
+  if ((state.tool_call_count ?? 0) >= MAX_TOOL_CALL_ITERATIONS) return END;
   return toolsCondition(state);
 });
-
-// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addEdge("tools", "spot_check_node");
-
-// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addEdge("spot_check_node", "simple_agent");
-
-// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addConditionalEdges("write_research_brief_node", (state: ClaraState) => {
   return state.research_complete ? END : "research_supervisor_node";
 });
-
-// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addConditionalEdges("research_supervisor_node", (state: ClaraState) => {
   if (state.research_complete || state.supervisor_iteration >= MAX_SUPERVISOR_ITERATIONS) {
     return "final_report_node";
   }
   return "research_supervisor_node";
 });
-
-// @ts-expect-error — LangGraph StateGraph generic mismatch with string node names
 claraWorkflow.addEdge("final_report_node", END);
 
 export const claraGraph = claraWorkflow.compile({ checkpointer: postgresCheckpointer });
