@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { claraGraph, ClaraState } from '@/ai/clara/graph';
 import { HumanMessage } from "@langchain/core/messages";
+import { setStudySessionRunning, isStudySessionRunning } from '@/lib/claraActivityStore';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,11 +12,8 @@ const supabase = createClient(
 
 const CLARA_CHAT_ID = 1495;
 
-// Lock global — impede sessões paralelas que causam loop de relatórios
-let sessionRunning = false;
-
 export async function POST(request: Request) {
-  if (sessionRunning) {
+  if (isStudySessionRunning()) {
     return NextResponse.json(
       { success: false, message: 'Sessão já em andamento. Aguarde a conclusão antes de iniciar outra.' },
       { status: 429 }
@@ -74,7 +72,7 @@ Use analyze_raw_conversations para cada missão. Seja PROFUNDO e CONCRETO.`;
   });
 
   // Disparar em background (lock liberado ao final)
-  sessionRunning = true;
+  setStudySessionRunning(true);
   (async () => {
     try {
       const result = await claraGraph.invoke(
@@ -105,7 +103,7 @@ Use analyze_raw_conversations para cada missão. Seja PROFUNDO e CONCRETO.`;
     } catch (e) {
       console.error('[StudySession] Erro:', e);
     } finally {
-      sessionRunning = false;
+      setStudySessionRunning(false);
     }
   })();
 

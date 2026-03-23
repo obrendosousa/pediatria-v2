@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { claraGraph, ClaraState } from '@/ai/clara/graph';
 import { HumanMessage } from "@langchain/core/messages";
 import { writeToInbox } from "@/ai/vault/sync";
+import { isStudySessionRunning } from '@/lib/claraActivityStore';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -21,6 +22,11 @@ export async function GET() {
 
     if (!claraChat) {
       return NextResponse.json({ error: "Chat da Clara não encontrado" }, { status: 404 });
+    }
+
+    // Não disparar heartbeat enquanto study-session estiver em andamento
+    if (isStudySessionRunning()) {
+      return NextResponse.json({ success: false, message: "Study session em andamento, heartbeat ignorado." });
     }
 
     const chatId = claraChat.id;

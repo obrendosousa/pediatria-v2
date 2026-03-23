@@ -422,7 +422,7 @@ REGRA: Se a resposta exige AVALIAR qualidade, IDENTIFICAR padrões, ANALISAR des
 
   try {
     const classifierModel = new ChatGoogleGenerativeAI({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.1-flash-lite-preview",
       apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       temperature: 0,
     }).withStructuredOutput(ClassifySchema);
@@ -449,7 +449,7 @@ claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
   const { company, custom_rules, voice_rules } = await loadDynamicPromptParts();
 
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0.5,
   });
@@ -615,7 +615,7 @@ REGRAS DO BRIEF:
 Escreva um brief conciso (máx 300 palavras) com tarefas numeradas e ferramentas explícitas.`;
 
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0,
   });
@@ -731,7 +731,7 @@ REGRAS:
 6. PRIORIZE: funil de conversão (new→won), pacientes perdidos (lost), motivos de perda, oportunidades financeiras`;
 
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0,
   }).withStructuredOutput(SupervisorDecisionSchema);

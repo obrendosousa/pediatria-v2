@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "5bc5a0babcacffd6",
+        "id": "59eab4c1009bb68e",
         "type": "tabs",
         "children": [
           {
-            "id": "54fbf7f23932ad97",
+            "id": "da4eab64f581c3a5",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -176,18 +176,19 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "54fbf7f23932ad97",
+  "active": "da4eab64f581c3a5",
   "lastOpenFiles": [
+    "reports/2026-03-23-analise-de-falha-urgencia-clinica-e-perda-de-conversao-chat-1521.md",
+    "inbox/2026-03-23T16-59-23-clara-heartbeat.md",
+    "reports/2026-03-23-extracao-de-gabaritos-exames-precos-e-neonatal.md",
+    "knowledge/operations/paciente-boa-tarde-paciente-sera-que-os-exames-da-helena-ja-esta-liberado-todo.md",
     "inbox/2026-03-23T19-29-25-clara-heartbeat.md",
     "reports/2026-03-23-relatorio-de-falha-critica-delay-e-redirecionamento-marco-2026.md",
     "reports/2026-03-23-auditoria-de-historico-de-leads-ignorados-1521-1702-243-1497.md",
-    "reports/2026-03-23-analise-de-falha-urgencia-clinica-e-perda-de-conversao-chat-1521.md",
-    "inbox/2026-03-23T16-59-23-clara-heartbeat.md",
     "padrao-comportamental/situacoes-de-urgencia-clinica-exigem-um-protocolo-de-resposta-rapida-para-acalma.md",
     "reports/2026-03-23-analise-de-upsell-e-servicos-complementares-marco-2026.md",
     "padrao-comportamental/pacientes-que-ja-utilizam-outras-especialidades-do-centro-medico-demonstram-maio.md",
     "inbox/2026-03-23T19-32-38-clara-heartbeat.md",
-    "reports/2026-03-23-extracao-de-gabaritos-exames-precos-e-neonatal.md",
     "reports/2026-03-23-auditoria-de-conversao-e-plano-de-acao-marco-2026.md",
     "memories/padrao_comportamental/padrao-objecao-de-preco-por-reajuste-r-350---r-500-frequencia-alt.md",
     "memories/padrao_comportamental/padrao-ansiedade-da-fila-invisivel-frequencia-alta-presente-em-quase.md",
@@ -204,7 +205,6 @@
     "padrao-comportamental/o-paciente-e-clareza-sobre-servicos-ja-realizados-optando-pela-profissional-com.md",
     "memories/_moc-processo-operacional.md",
     "memories/_tema-politica-de-precificacao-e-reajustes.md",
-    "regra-negocio/a-clinica-altera-o-valor-da-consulta-de-pediatria-de-rn-para-valor-comum-mais-c.md",
     "regra-negocio",
     "padrao-comportamental",
     "memories/padrao_comportamental",

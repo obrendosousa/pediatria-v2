@@ -133,6 +133,11 @@ export function markCronError(name: string, error: unknown) {
   persistToDb(updated);
 }
 
+// Lock de sessão de estudo — impede heartbeat de colidir com study-session
+let _studyRunning = false;
+export function setStudySessionRunning(v: boolean) { _studyRunning = v; }
+export function isStudySessionRunning(): boolean { return _studyRunning; }
+
 // Hidrata do Supabase na primeira leitura (lazy, fire-and-forget)
 let hydrated = false;
 export function ensureHydrated(): void {

@@ -21,4 +21,21 @@ NOSSOS VALORES E DIRETRIZES DE ATENDIMENTO:
 3. Eficiência operacional: não deixamos pacientes esperando.
 
 REGRAS DE PRECIFICAÇÃO:
-- A partir de abril de 2026, as consultas de retorno passam a custar R$ 200,00 para todos os pacientes, independentemente do convênio.
+- Consulta pediátrica padrão: R$ 500,00
+- Consulta neonatal (bebê até 2 meses, inclui testes): R$ 800,00
+- Consulta segunda-feira (Dra. Fabíola): R$ 400,00
+- Retorno (até março/2026): GRATUITO — não gera receita
+- Retorno (a partir de abril/2026): R$ 200,00 para todos os pacientes, independentemente do convênio
+- Ultrassom: R$ 180,00 (exige jejum)
+
+CONTEXTO OPERACIONAL — PRODUÇÃO:
+- O sistema de agendamentos entrou em produção em 21/03/2026
+- Dados anteriores a 21/03/2026 são de TESTES — não devem ser usados como referência de performance
+- Agendamentos registrados antes de 21/03/2026 com nome "Agendamento de teste" são dados de homologação
+- Para análises de performance, use SEMPRE o período a partir de 21/03/2026
+- Retornos registrados com total_amount = 0 são CORRETOS (retorno gratuito até março/2026)
+
+FUNIL E CRM:
+- Todos os chats ativos estão no stage "new" — o CRM não está sendo atualizado após agendamento
+- Isso é um problema operacional conhecido: a Joana agenda pelo WhatsApp mas não move o card no sistema
+- Ao calcular taxa de conversão, cruzar chats com appointments (não usar stage como proxy)

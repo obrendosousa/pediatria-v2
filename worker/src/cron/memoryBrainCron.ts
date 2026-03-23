@@ -22,7 +22,7 @@ const MEMORIES_DIR = path.join(VAULT_DIR, "memories");
 
 const EMBEDDING_MODEL = "gemini-embedding-001";
 const EMBEDDING_DIMS = 768;
-const LLM_MODEL = "gemini-2.5-flash";
+const LLM_MODEL = "gemini-3.1-flash-lite-preview";
 
 const MIN_QUALITY_SCORE = 30;  // abaixo disso → poda
 const DEDUP_THRESHOLD    = 0.85; // similaridade para considerar duplicata
