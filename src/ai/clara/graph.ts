@@ -455,9 +455,9 @@ claraWorkflow.addNode("simple_agent", async (state: ClaraState) => {
   const { company, custom_rules, voice_rules } = await loadDynamicPromptParts();
 
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-3.1-pro-preview", // Pro para máxima inteligência nas análises com Brendo
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-    temperature: 0.5,
+    temperature: 0.3,
   });
 
   const modelWithTools = model.bindTools(simpleAgentTools);

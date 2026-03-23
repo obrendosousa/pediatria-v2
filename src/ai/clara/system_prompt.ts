@@ -142,7 +142,28 @@ NUNCA busque um período maior automaticamente sem avisar.
 REGRA 5 — VALIDAÇÃO CRUZADA
 Antes de responder: soma dos parciais confere? Período correto? Nenhum número inventado?
 
-REGRA 9 — DADOS DE PRODUÇÃO (CRÍTICA)
+REGRA 9 — CÁLCULO DE RECEITA PERDIDA (CRÍTICA)
+Para calcular receita perdida de pacientes com INTENÇÃO de agendar:
+- Use SEMPRE o ticket cheio: R$500 (consulta padrão) ou R$800 (neonatal)
+- NUNCA use AVG(total_amount) do banco — esse valor inclui retornos (R$0) e dados de teste
+- NUNCA aplique taxa de conversão ao ticket — se o paciente tinha intenção e foi embora, a perda É o ticket cheio
+- Fórmula correta: N pacientes × R$500 = receita perdida
+
+REGRA 9B — PROJEÇÕES TEMPORAIS (CRÍTICA)
+Quando calcular perda mensal/semanal a partir de uma contagem de casos:
+- SEMPRE identifique o período original dos casos antes de extrapolar
+- Exemplo CORRETO: "encontramos 36 casos em 23 dias (01/03-23/03) → taxa = 36/23 × 30 = ~47/mês → 47 × R$500 = R$23.500/mês"
+- Exemplo ERRADO: pegar 15 casos do mês e dizer "15 por semana" → exagera 4x a perda
+- Se o período original for 1 mês: N casos × R$500 = perda DO MÊS (não multiplique por 4)
+- Se quiser taxa semanal: divida os casos pelo número de semanas do período original
+
+REGRA 10 — ANÁLISE DE CHATS ESPECÍFICOS
+Quando tiver uma lista de IDs específicos para analisar (ex: "os 36 chats de objecao_vaga"):
+- Use analyze_raw_conversations com o parâmetro chat_ids=[ID1, ID2, ...] em vez de start_date/end_date
+- Isso analisa EXATAMENTE esses chats, não todos os chats do período
+- Para obter os IDs: execute_sql("SELECT chat_id FROM chat_insights WHERE 'objecao_vaga' = ANY(objecoes)")
+
+REGRA 11 — DADOS DE PRODUÇÃO (CRÍTICA)
 O sistema entrou em produção em 21/03/2026.
 - Para análises de PERFORMANCE: use SEMPRE período >= 21/03/2026
 - Dados anteriores a 21/03/2026 são de TESTE — não representam operação real

@@ -383,63 +383,96 @@ ${JSON.stringify(classifications, null, 1)}
 export const analyzeRawConversationsTool = new DynamicStructuredTool({
   name: "analyze_raw_conversations",
   description: `Lê e analisa as mensagens BRUTAS diretamente da tabela chat_messages.
-Use esta ferramenta para QUALQUER análise qualitativa: objeções, padrões de atendimento,
-script da secretária, sentimento dos pacientes, gargalos, funil de conversão, etc.
-NÃO depende de tabelas intermediárias — vai direto na fonte.
-ACEITA MÚLTIPLOS OBJETIVOS numa única chamada.
+Use para QUALQUER análise qualitativa: objeções, padrões de atendimento, script da secretária,
+sentimento dos pacientes, gargalos, funil de conversão, etc.
 
-IMPORTANTE: Quando o objetivo exige classificar CADA conversa individualmente
-(ex: funil de conversão, "quantos agendaram", "classificar cada chat"),
-ative per_chat_classification=true para usar o modo fan-out de alta precisão
-que analisa cada conversa em paralelo e agrega os resultados.`,
+DOIS MODOS DE USO:
+1. Por PERÍODO (padrão): start_date + end_date — analisa todos os chats do período
+2. Por LISTA DE IDs: chat_ids=[1234, 5678, ...] — analisa EXATAMENTE esses chats (mais preciso e rápido)
+   → Use quando já tiver os IDs de um subset (ex: os 36 chats de objecao_vaga da análise anterior)
+   → Obter IDs: execute_sql("SELECT chat_id FROM chat_insights WHERE 'objecao_vaga' = ANY(objecoes)")
+
+IMPORTANTE: per_chat_classification=true ativa fan-out paralelo por conversa (melhor para funil).`,
 
   schema: z.object({
-    start_date: z.string().describe("Data início YYYY-MM-DD (BRT)"),
-    end_date: z.string().describe("Data fim YYYY-MM-DD (BRT)"),
+    start_date: z.string().describe("Data início YYYY-MM-DD (BRT). Ignorado se chat_ids for fornecido."),
+    end_date: z.string().describe("Data fim YYYY-MM-DD (BRT). Ignorado se chat_ids for fornecido."),
     analysis_goals: z.array(z.string()).describe("Lista de objetivos de análise"),
     sender_filter: z.enum(["ALL", "CUSTOMER", "HUMAN_AGENT", "AI_AGENT"]).optional()
       .describe("Filtrar por remetente. Default: ALL"),
     include_metadata: z.boolean().optional().default(true),
     per_chat_classification: z.boolean().optional().default(false)
       .describe("Se true, classifica CADA conversa individualmente via fan-out paralelo. Use para funil, desfechos, ou quando precisa analisar cada chat."),
+    chat_ids: z.array(z.number()).optional()
+      .describe("Lista de IDs de chats específicos para analisar. Quando fornecido, ignora start_date/end_date e analisa EXATAMENTE esses chats. Use quando já tiver uma lista de IDs (ex: os 36 chats de objecao_vaga)."),
   }),
 
-  func: async ({ start_date, end_date, analysis_goals, sender_filter, include_metadata, per_chat_classification }) => {
+  func: async ({ start_date, end_date, analysis_goals, sender_filter, include_metadata, per_chat_classification, chat_ids }) => {
    try {
     const supabase = getSupabaseAdminClient();
-    const startTs = `${start_date}T00:00:00-03:00`;
-    const endTs = `${end_date}T23:59:59.999-03:00`;
 
     // ── PASSO 1: Carregar mensagens brutas com paginação ──
     let allMessages: RawChatMessage[] = [];
     let offset = 0;
     const BATCH = 1000;
 
-    while (true) {
-      let query = supabase
-        .from("chat_messages")
-        .select("id, chat_id, sender, message_text, created_at")
-        .gte("created_at", startTs)
-        .lte("created_at", endTs)
-        .not("message_text", "is", null)
-        .order("created_at", { ascending: true })
-        .range(offset, offset + BATCH - 1);
-
-      if (sender_filter && sender_filter !== "ALL") {
-        query = query.eq("sender", sender_filter);
+    // Modo chat_ids: busca diretamente pelos IDs específicos (mais preciso e rápido)
+    if (chat_ids && chat_ids.length > 0) {
+      console.log(`[analyze_raw] chat_ids mode: ${chat_ids.length} chats específicos`);
+      while (true) {
+        let query = supabase
+          .from("chat_messages")
+          .select("id, chat_id, sender, message_text, created_at")
+          .in("chat_id", chat_ids)
+          .not("message_text", "is", null)
+          .order("created_at", { ascending: true })
+          .range(offset, offset + BATCH - 1);
+        if (sender_filter && sender_filter !== "ALL") {
+          query = query.eq("sender", sender_filter);
+        }
+        const { data, error } = await query;
+        if (error) return `Erro ao buscar mensagens por chat_ids: ${error.message}`;
+        if (!data || data.length === 0) break;
+        allMessages = allMessages.concat(data);
+        if (data.length < BATCH) break;
+        offset += BATCH;
       }
+    } else {
+      // Modo data range (padrão)
+      const startTs = `${start_date}T00:00:00-03:00`;
+      const endTs = `${end_date}T23:59:59.999-03:00`;
 
-      const { data, error } = await query;
-      if (error) return `Erro ao buscar mensagens: ${error.message}`;
-      if (!data || data.length === 0) break;
-      allMessages = allMessages.concat(data);
-      if (data.length < BATCH) break;
-      offset += BATCH;
+      while (true) {
+        let query = supabase
+          .from("chat_messages")
+          .select("id, chat_id, sender, message_text, created_at")
+          .gte("created_at", startTs)
+          .lte("created_at", endTs)
+          .not("message_text", "is", null)
+          .order("created_at", { ascending: true })
+          .range(offset, offset + BATCH - 1);
+
+        if (sender_filter && sender_filter !== "ALL") {
+          query = query.eq("sender", sender_filter);
+        }
+
+        const { data, error } = await query;
+        if (error) return `Erro ao buscar mensagens: ${error.message}`;
+        if (!data || data.length === 0) break;
+        allMessages = allMessages.concat(data);
+        if (data.length < BATCH) break;
+        offset += BATCH;
+      }
     }
 
     console.log(`[analyze_raw] ${start_date} → ${end_date} | sender=${sender_filter || "ALL"} | ${allMessages.length} msgs`);
 
     if (allMessages.length === 0) {
+      if (chat_ids && chat_ids.length > 0) {
+        return `Nenhuma mensagem encontrada para os ${chat_ids.length} chat_ids fornecidos.`;
+      }
+      const startTs = `${start_date}T00:00:00-03:00`;
+      const endTs = `${end_date}T23:59:59.999-03:00`;
       const { count } = await supabase
         .from("chat_messages")
         .select("*", { count: "exact", head: true })
