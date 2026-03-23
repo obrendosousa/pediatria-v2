@@ -72,6 +72,15 @@ export async function POST(request: Request) {
     }
     if (!message) {
       return NextResponse.json({ error: "Campo 'message' é obrigatório." }, { status: 400 });
+
+    // ── Comando /new: limpa histórico e inicia nova sessão ──────────────────
+    if (message === "/new" || message === "/New" || message === "/NEW") {
+      const res = await fetch(new URL("/api/ai/clara/new-session", request.url).toString(), {
+        method: "POST",
+      });
+      const data = await res.json() as { success?: boolean; message?: string };
+      return NextResponse.json({ reply: data.message ?? "Nova sessão iniciada.", tool_calls: [] });
+    }
     }
 
     const adminSupabase = getSupabaseAdminClient();
