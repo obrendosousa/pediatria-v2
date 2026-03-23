@@ -1,14 +1,14 @@
 {
   "main": {
-    "id": "8caa21d514cab4a6",
+    "id": "2ab6763d8b568f94",
     "type": "split",
     "children": [
       {
-        "id": "5bc5a0babcacffd6",
+        "id": "a7ebd37151afe3bc",
         "type": "tabs",
         "children": [
           {
-            "id": "54fbf7f23932ad97",
+            "id": "8ceb52402f369f10",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -23,15 +23,15 @@
     "direction": "vertical"
   },
   "left": {
-    "id": "8b552a6b4fb53800",
+    "id": "25aeb91978f190bc",
     "type": "split",
     "children": [
       {
-        "id": "9de8c5fe4884f65a",
+        "id": "0b0a73cbecbe9c79",
         "type": "tabs",
         "children": [
           {
-            "id": "5a5e41bf201f38a1",
+            "id": "6990ba9482ff92e1",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -44,7 +44,7 @@
             }
           },
           {
-            "id": "cd3d9a816ca90c83",
+            "id": "687e35a2d70fd780",
             "type": "leaf",
             "state": {
               "type": "search",
@@ -61,7 +61,7 @@
             }
           },
           {
-            "id": "29c5d74094978266",
+            "id": "ed0eefed34cbe29f",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -77,15 +77,15 @@
     "width": 300
   },
   "right": {
-    "id": "fe3e191d6bd37486",
+    "id": "852a81d285747da3",
     "type": "split",
     "children": [
       {
-        "id": "9753d312082d0444",
+        "id": "b68356e68df7365c",
         "type": "tabs",
         "children": [
           {
-            "id": "9232bf3942367942",
+            "id": "8bb47a28f586e828",
             "type": "leaf",
             "state": {
               "type": "backlink",
@@ -103,7 +103,7 @@
             }
           },
           {
-            "id": "1530df821e2cbe3a",
+            "id": "30c296b1f3ff2800",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
@@ -116,7 +116,7 @@
             }
           },
           {
-            "id": "3117bb82adbbc53f",
+            "id": "452f8fcc66cc6a13",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -131,7 +131,7 @@
             }
           },
           {
-            "id": "c056a1c8241b8a73",
+            "id": "e724f7bfb26f568c",
             "type": "leaf",
             "state": {
               "type": "all-properties",
@@ -145,7 +145,7 @@
             }
           },
           {
-            "id": "6a6f88b768297734",
+            "id": "437163bdeaeb8159",
             "type": "leaf",
             "state": {
               "type": "outline",
@@ -176,45 +176,10 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "54fbf7f23932ad97",
+  "active": "8ceb52402f369f10",
   "lastOpenFiles": [
-    "inbox/2026-03-23T19-29-25-clara-heartbeat.md",
-    "reports/2026-03-23-relatorio-de-falha-critica-delay-e-redirecionamento-marco-2026.md",
-    "reports/2026-03-23-auditoria-de-historico-de-leads-ignorados-1521-1702-243-1497.md",
-    "reports/2026-03-23-analise-de-falha-urgencia-clinica-e-perda-de-conversao-chat-1521.md",
-    "inbox/2026-03-23T16-59-23-clara-heartbeat.md",
-    "padrao-comportamental/situacoes-de-urgencia-clinica-exigem-um-protocolo-de-resposta-rapida-para-acalma.md",
-    "reports/2026-03-23-analise-de-upsell-e-servicos-complementares-marco-2026.md",
-    "padrao-comportamental/pacientes-que-ja-utilizam-outras-especialidades-do-centro-medico-demonstram-maio.md",
-    "inbox/2026-03-23T19-32-38-clara-heartbeat.md",
-    "reports/2026-03-23-extracao-de-gabaritos-exames-precos-e-neonatal.md",
-    "reports/2026-03-23-auditoria-de-conversao-e-plano-de-acao-marco-2026.md",
-    "memories/padrao_comportamental/padrao-objecao-de-preco-por-reajuste-r-350---r-500-frequencia-alt.md",
-    "memories/padrao_comportamental/padrao-ansiedade-da-fila-invisivel-frequencia-alta-presente-em-quase.md",
-    "memories/feedback_melhoria/padrao-furo-de-registro-agenda-fantasma-frequencia-critica-100-do.md",
-    "memories/processo_operacional/padrao-abandono-por-falta-de-encaixe-de-urgencia-febrevomito-frequenci.md",
-    "memories/padrao_comportamental/padrao-dependencia-de-logistica-intermunicipal-carros-de-linha-frequenc.md",
-    "padrao-comportamental/pacientes-utilizam-o-canal-para-cobrar-resultados-de-exames-proatividade-na-ent.md",
-    "Sem título.base",
-    "agents/clara/company.md",
-    "agents/clara/identity.md",
-    "chat-notes/chat-185.md",
-    "chat-notes/chat-1495.md",
-    "knowledge/operations/clinica-audio-recebido-paciente-teste-paciente-testando-se-a-ia-esta-funci.md",
-    "padrao-comportamental/o-paciente-e-clareza-sobre-servicos-ja-realizados-optando-pela-profissional-com.md",
-    "memories/_moc-processo-operacional.md",
-    "memories/_tema-politica-de-precificacao-e-reajustes.md",
-    "regra-negocio/a-clinica-altera-o-valor-da-consulta-de-pediatria-de-rn-para-valor-comum-mais-c.md",
-    "regra-negocio",
-    "padrao-comportamental",
-    "memories/padrao_comportamental",
-    "memories/feedback_melhoria",
-    "memories/processo_operacional",
-    "inbox",
-    "Sem título 1.canvas",
-    "Sem título.canvas",
-    "memories/_index.md.tmp.2128.1774269391535",
-    "memories/_moc-padrao-comportamental.md.tmp.2128.1774269383087",
-    "memories/_moc-padrao-comportamental.md.tmp.2128.1774269357518"
+    "scripts/roleplay-test.mts",
+    "clinica-vault/padrao-comportamental/situacoes-de-urgencia-clinica-exigem-um-protocolo-de-resposta-rapida-para-acalma.md",
+    "node_modules/eslint-plugin-react/README.md"
   ]
 }

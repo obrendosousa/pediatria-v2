@@ -249,7 +249,7 @@ async function fanOutAnalyze(
   chatNames: Record<number, string>
 ): Promise<{ classifications: ChatClassification[]; errors: number }> {
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0.1,
   });
@@ -498,7 +498,7 @@ que analisa cada conversa em paralelo e agrega os resultados.`,
     // ESTRATÉGIA B: SINGLE PASS (análise agregada em uma chamada)
     // ═══════════════════════════════════════════════════════════════════════
     const model = new ChatGoogleGenerativeAI({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       temperature: 0.1,
     });

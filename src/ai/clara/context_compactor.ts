@@ -37,7 +37,7 @@ export async function compactMessages(
 
   try {
     const compactModel = new ChatGoogleGenerativeAI({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       temperature: 0,
       maxOutputTokens: 300,

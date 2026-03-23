@@ -11,7 +11,16 @@ const supabase = createClient(
 
 const CLARA_CHAT_ID = 1495;
 
+// Lock global — impede sessões paralelas que causam loop de relatórios
+let sessionRunning = false;
+
 export async function POST(request: Request) {
+  if (sessionRunning) {
+    return NextResponse.json(
+      { success: false, message: 'Sessão já em andamento. Aguarde a conclusão antes de iniciar outra.' },
+      { status: 429 }
+    );
+  }
   const { prompt } = await request.json() as { prompt?: string };
 
   const studyPrompt = prompt ?? `[SESSÃO DE ESTUDO PROFUNDO]
@@ -64,7 +73,8 @@ Use analyze_raw_conversations para cada missão. Seja PROFUNDO e CONCRETO.`;
     wpp_id: `study_${Date.now()}`,
   });
 
-  // Disparar em background
+  // Disparar em background (lock liberado ao final)
+  sessionRunning = true;
   (async () => {
     try {
       const result = await claraGraph.invoke(
@@ -94,6 +104,8 @@ Use analyze_raw_conversations para cada missão. Seja PROFUNDO e CONCRETO.`;
       console.log('[StudySession] Sessão concluída. Memórias salvas.');
     } catch (e) {
       console.error('[StudySession] Erro:', e);
+    } finally {
+      sessionRunning = false;
     }
   })();
 

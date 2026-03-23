@@ -27,7 +27,7 @@ function todayBRT(): string {
 /** Chama Gemini Flash para sintetizar texto */
 async function llmSynthesize(systemPrompt: string, content: string): Promise<string> {
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0.2,
   });

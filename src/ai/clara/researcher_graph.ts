@@ -174,7 +174,7 @@ async function researcherNode(state: ResearcherState): Promise<Partial<Researche
   // LangGraph usa streaming interno que retorna AIMessageChunk com tool_call_chunks vazio
   // mesmo quando Gemini retorna functionCall no content.
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0,
     streaming: false,
@@ -236,7 +236,7 @@ async function reprimandNode(state: ResearcherState): Promise<Partial<Researcher
 // ─────────────────────────────────────────────────────────────────────────────
 async function compressResearchNode(state: ResearcherState): Promise<Partial<ResearcherState>> {
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0,
   });
