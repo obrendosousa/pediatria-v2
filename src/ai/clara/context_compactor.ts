@@ -6,8 +6,8 @@
 import { BaseMessage, HumanMessage } from "@langchain/core/messages";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
-const MAX_FULL_MESSAGES = 8;
-const COMPACTION_TRIGGER = 14;
+const MAX_FULL_MESSAGES = 20;
+const COMPACTION_TRIGGER = 30;
 
 /**
  * Compacta mensagens quando o histórico excede COMPACTION_TRIGGER.

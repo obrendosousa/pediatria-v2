@@ -45,3 +45,8 @@ next-env.d.ts
 
 # cursor
 .cursor/
+
+# python virtual environments
+.venv/
+__pycache__/
+*.pyc

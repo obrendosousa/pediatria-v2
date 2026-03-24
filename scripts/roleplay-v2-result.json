@@ -1,0 +1,34 @@
+{
+  "fase1": {
+    "question": "Preciso de um diagnóstico completo da clínica nos últimos 30 dias. Quero saber:\n",
+    "time_s": "296",
+    "response_chars": 65,
+    "numbers": {}
+  },
+  "fase2": {
+    "question": "Desses pacientes que desistiram por causa de preço, me dá a lista completa com n",
+    "time_s": "31",
+    "response_chars": 1844
+  },
+  "fase3": {
+    "question": "Considerando que a consulta custa R$ 500,00, quanto exatamente perdemos com esse",
+    "time_s": "36",
+    "response_chars": 1215
+  },
+  "fase4": {
+    "question": "E quantos desses eram urgência?",
+    "time_s": "21",
+    "response_chars": 733
+  },
+  "gabarito": {
+    "totalChats": 324,
+    "chatsComHumano": 103,
+    "totalMsgs": 1000
+  },
+  "fullResponses": {
+    "r1": "⚠️ Erro crítico no meu motor de raciocínio. Verifique o terminal.",
+    "r2": "📅 Período analisado: 21/03/2026 a 24/03/2026\n\nIdentifiquei **4 pacientes** que desistiram ou pararam de responder especificamente após a apresentação dos valores. \n\nAqui está o detalhamento de cada caso:\n\n*   [[chat:1555|Dalila Minervina💕 (+55 99 8823-6208)]]\n**O que aconteceu:** A paciente desistiu porque o valor da consulta incluía obrigatoriamente o acompanhamento de uma nutricionista. Como ela já tem esse profissional, achou que não compensava pagar pelo pacote completo (\"Pq pra mim não sair em conta pagar a nutricionista\").\n*   [[chat:198|. (+55 99 9103-2952)]]\n**O que aconteceu:** A paciente perguntou os horários, mas logo em seguida reclamou diretamente do valor (\"Pq e muito caro viu\") e encerrou o contato sem tentar negociar.\n*   [[chat:1722|Wanderson Santos (+55 99 9212-4233)]]\n**O que aconteceu:** Entrou em contato buscando o teste do pezinho e perguntou ativamente se havia algum desconto. Após a secretária passar o valor final, ele recusou o agendamento de forma direta (\"Não .. obrigada\").\n*   [[chat:203|Manoel (+55 99 8420-4150)]]\n**O que aconteceu:** Consultou o preço para atendimento de um recém-nascido. A secretária enviou as opções de valores e profissionais, mas o paciente visualizou e não deu mais continuidade (típico abandono pós-preço).\n\n**Padrão identificado:**\nA objeção de preço não está atrelada apenas ao valor absoluto da consulta, mas à **percepção de valor do pacote**. O caso da Dalila (Chat 1555) mostra um gargalo claro: estamos perdendo pacientes que só querem a pediatra porque os forçamos a pagar por um combo (pediatra + nutri) que eles não precisam. Além disso, há uma sensibilidade a descontos em exames isolados (teste do pezinho).\n\nConsiderando o ticket médio padrão (R$ 500), essas 4 desistências representam **R$ 2.000 de receita perdida** apenas nestes últimos 4 dias de operação.",
+    "r3": "📅 Período analisado: 21/03/2026 a 24/03/2026\n\nA perda exata é de **R$ 2.000,00** (4 pacientes × R$ 500,00).\n\nSobre oferecer um desconto de 10% (reduzindo o valor para R$ 450,00), minha estimativa é que converteríamos **apenas 1 ou no máximo 2** desses pacientes. O motivo está na raiz da objeção de cada um:\n\n*   [[chat:1722|Wanderson Santos]]: **Alta chance de conversão.** Ele pediu ativamente por um desconto. Oferecer os 10% na hora provavelmente teria fechado a venda.\n*   [[chat:1555|Dalila Minervina💕]]: **Zero chance.** O desconto de 10% (R$ 50) não resolve o problema dela. Ela não quer pagar pela nutricionista do pacote porque já tem uma. Para ela, a solução é desmembrar o serviço, não dar desconto.\n*   [[chat:198|.]] e [[chat:203|Manoel]]: **Baixa chance.** Quem acha \"muito caro\" de forma abrupta ou simplesmente some após ver a tabela geralmente tem uma barreira de preço maior, que R$ 50,00 de desconto dificilmente reverte.\n\n**Recomendação estratégica:** Em vez de uma política de 10% de desconto para todos, o ideal seria dar autonomia para a Joana negociar com quem pede desconto explicitamente (como o Wanderson) e criar um \"Plano B\" sem a nutricionista para resgatar pacientes como a Dalila.",
+    "r4": "📅 Período analisado: 21/03/2026 a 24/03/2026\n\n**Nenhum** desses 4 casos era de urgência. \n\nAnalisando o contexto de cada um:\n*   [[chat:1722|Wanderson Santos]] procurava o teste do pezinho (exame de rotina neonatal).\n*   [[chat:203|Manoel]] buscava uma primeira consulta para recém-nascido (rotina).\n*   [[chat:1555|Dalila Minervina💕]] queria apenas acompanhamento pediátrico padrão, sem a nutricionista.\n*   [[chat:198|.]] apenas perguntou horários e reclamou do preço, sem relatar nenhum sintoma ou pressa.\n\nGeralmente, pacientes com urgência real (criança com febre, dor, etc.) não costumam travar no preço — a objeção principal deles costuma ser a **falta de vaga imediata** (como vimos nos casos de objeção de logística/vaga)."
+  }
+}

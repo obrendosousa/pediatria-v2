@@ -211,9 +211,11 @@ INSTRUÇÕES: A pergunta é sobre ESTE paciente. Use o histórico acima e ferram
             metadata: { scope },
           });
 
+          // Thread fixo por chat — mantém memória de conversa entre mensagens
+          // A compactação do context_compactor.ts cuida de não estourar a janela
           const events = claraGraph.streamEvents(inputs, {
             version: "v2",
-            configurable: { thread_id: `copilot_${chatId}_${Date.now()}` },
+            configurable: { thread_id: `clara_chat_${chatId}` },
             streamMode: "values"
           });
 

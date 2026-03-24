@@ -77,7 +77,7 @@ Use analyze_raw_conversations para cada missão. Seja PROFUNDO e CONCRETO.`;
     try {
       const result = await claraGraph.invoke(
         { messages: [new HumanMessage(studyPrompt)], chat_id: CLARA_CHAT_ID },
-        { configurable: { thread_id: `clara_study_${Date.now()}` } }
+        { configurable: { thread_id: `clara_chat_${CLARA_CHAT_ID}` } }
       ) as unknown as ClaraState;
 
       const response = result.messages[result.messages.length - 1]?.content?.toString() ?? '';

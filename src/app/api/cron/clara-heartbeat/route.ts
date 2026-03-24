@@ -49,7 +49,7 @@ Sua missão agora é:
             messages: [new HumanMessage(studyCommand)],
             chat_id: chatId
           },
-          { configurable: { thread_id: "clara_heartbeat_cron" } }
+          { configurable: { thread_id: `clara_chat_${chatId}` } }
         ) as unknown as ClaraState;
 
         const aiResponseText = result.messages[result.messages.length - 1].content.toString();
