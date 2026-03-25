@@ -120,13 +120,9 @@ analystWorkflow.addNode("analyst_agent", async (state: AnalystAgentState) => {
 
 analystWorkflow.addNode("tools", new ToolNode(allAnalystTools));
 
-// @ts-expect-error Tipagem dos nomes de node no StateGraph nao acompanha nodes dinamicos, mas o runtime funciona corretamente.
 analystWorkflow.addEdge(START, "load_vault_context");
-// @ts-expect-error Tipagem dos nomes de node no StateGraph nao acompanha nodes dinamicos, mas o runtime funciona corretamente.
 analystWorkflow.addEdge("load_vault_context", "analyst_agent");
-// @ts-expect-error toolsCondition retorna rota valida para "tools" ou END em runtime.
 analystWorkflow.addConditionalEdges("analyst_agent", toolsCondition);
-// @ts-expect-error Tipagem dos nomes de node no StateGraph nao acompanha nodes dinamicos, mas o runtime funciona corretamente.
 analystWorkflow.addEdge("tools", "analyst_agent");
 
 let compiledGraphPromise: Promise<ReturnType<typeof analystWorkflow.compile>> | null = null;
