@@ -58,14 +58,14 @@ async function getCompiledDispatchGraph() {
       const checkpointer = new MemorySaver();
       const graph = new StateGraph<DispatchState>({
         channels: {
-          runId: { reducer: (_, y) => y, default: () => randomUUID() },
-          workerId: { reducer: (_, y) => y, default: () => "worker-default" },
-          batchSize: { reducer: (_, y) => y, default: () => 25 },
-          dryRun: { reducer: (_, y) => y, default: () => false },
-          claimed: { reducer: (_, y) => y, default: () => [] },
-          sentCount: { reducer: (_, y) => y, default: () => 0 },
-          failedCount: { reducer: (_, y) => y, default: () => 0 },
-          deadLetterCount: { reducer: (_, y) => y, default: () => 0 },
+          runId: { reducer: (_: string, y: string) => y, default: () => randomUUID() },
+          workerId: { reducer: (_: string, y: string) => y, default: () => "worker-default" },
+          batchSize: { reducer: (_: number, y: number) => y, default: () => 25 },
+          dryRun: { reducer: (_: boolean, y: boolean) => y, default: () => false },
+          claimed: { reducer: (_: ClaimedScheduledMessage[], y: ClaimedScheduledMessage[]) => y, default: () => [] as ClaimedScheduledMessage[] },
+          sentCount: { reducer: (_: number, y: number) => y, default: () => 0 },
+          failedCount: { reducer: (_: number, y: number) => y, default: () => 0 },
+          deadLetterCount: { reducer: (_: number, y: number) => y, default: () => 0 },
         },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }) as any;

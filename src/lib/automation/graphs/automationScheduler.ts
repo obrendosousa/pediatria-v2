@@ -314,11 +314,8 @@ async function getCompiledSchedulerGraph() {
         return { createdCount };
       });
 
-      // @ts-expect-error LangGraph tipagem dinâmica de nós
       graph.addEdge(START, "load_rules");
-      // @ts-expect-error LangGraph tipagem dinâmica de nós
       graph.addEdge("load_rules", "evaluate_and_enqueue");
-      // @ts-expect-error LangGraph tipagem dinâmica de nós
       graph.addEdge("evaluate_and_enqueue", END);
       return graph.compile({ checkpointer });
     })();

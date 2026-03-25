@@ -21,15 +21,15 @@ const copilotWorkflow = new StateGraph<CopilotState>({
       default: () => [],
     },
     chat_id: {
-      reducer: (x, y) => y ?? x,
+      reducer: (x: number, y: number) => y ?? x,
       default: () => 0,
     },
     patient_name: {
-      reducer: (x, y) => y ?? x,
+      reducer: (x: string, y: string) => y ?? x,
       default: () => "Paciente",
     },
     chat_history: {
-      reducer: (x, y) => y ?? x,
+      reducer: (x: string, y: string) => y ?? x,
       default: () => "",
     },
   },
@@ -212,11 +212,8 @@ Analise o histórico acima e acione a ferramenta adequada agora.`;
 
 copilotWorkflow.addNode("tools", new ToolNode(copilotTools));
 
-// @ts-expect-error - Tipagem dinâmica do LangGraph no runtime
 copilotWorkflow.addEdge(START, "agent");
-// @ts-expect-error - Retorno nativo da condition do Langchain
 copilotWorkflow.addConditionalEdges("agent", toolsCondition);
-// @ts-expect-error - Retorno cíclico
 copilotWorkflow.addEdge("tools", "agent");
 
 export const copilotGraph = copilotWorkflow.compile();

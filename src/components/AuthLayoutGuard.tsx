@@ -105,7 +105,7 @@ export default function AuthLayoutGuard({ children }: { children: React.ReactNod
         <SidebarWrapper>
           <Navigation />
         </SidebarWrapper>
-        <main className="flex-1 min-w-0 overflow-hidden relative w-full h-full transition-all duration-500 ease-in-out print:overflow-visible print:h-auto">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden relative w-full h-full transition-all duration-500 ease-in-out print:overflow-visible print:h-auto">
           {children}
         </main>
       </div>

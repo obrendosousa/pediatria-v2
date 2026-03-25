@@ -88,7 +88,6 @@ function streamGraphResponse(inputs: ClaraState, chatId: number): Response {
         controller.enqueue(encoder.encode(JSON.stringify(payload) + "\n"));
 
       try {
-        // @ts-expect-error — LangGraph streamEvents type mismatch with ClaraState
         const events = claraGraph.streamEvents(inputs, {
           version: "v2",
           configurable: { thread_id: `copilot_answer_${chatId}_${Date.now()}` },

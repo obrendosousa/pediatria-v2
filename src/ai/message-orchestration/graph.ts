@@ -9,10 +9,10 @@ export interface MessageOrchestrationState {
 
 const workflow = new StateGraph<MessageOrchestrationState>({
   channels: {
-    input: { reducer: (_, y) => y ?? ({} as DeleteOrchestrationInput), default: () => ({} as DeleteOrchestrationInput) },
-    result: { reducer: (_, y) => y ?? null, default: () => null },
+    input: { reducer: (_: DeleteOrchestrationInput, y: DeleteOrchestrationInput) => y ?? ({} as DeleteOrchestrationInput), default: () => ({} as DeleteOrchestrationInput) },
+    result: { reducer: (_: DeleteOrchestrationResult | null, y: DeleteOrchestrationResult | null) => y ?? null, default: () => null },
   },
-}) as any;
+}) as unknown as StateGraph<MessageOrchestrationState>;
 
 workflow.addNode("orchestrate", (state: MessageOrchestrationState) => {
   const result = orchestrateDelete(state.input);
