@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { usePathname } from 'next/navigation';
 import { MessageCircle, X } from 'lucide-react';
 import { useInternalChat } from '@/contexts/InternalChatContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,13 +9,8 @@ import InternalChatModal from './InternalChatModal';
 export default function InternalChatFab() {
   const { user } = useAuth();
   const { isOpen, setIsOpen, totalUnread } = useInternalChat();
-  const pathname = usePathname();
 
-  // Ocultar na tela de prontuário
-  const hiddenRoutes = ['/atendimento/clients/'];
-  const isHidden = hiddenRoutes.some(route => pathname?.startsWith(route));
-
-  if (!user || isHidden) return null;
+  if (!user) return null;
 
   return (
     <>
