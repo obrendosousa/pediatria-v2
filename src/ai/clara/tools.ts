@@ -1392,6 +1392,132 @@ export const cancelScheduledTaskTool = new DynamicStructuredTool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET DAILY KPIs — KPIs pré-computados (TIER 1 — mais rápido)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getDailyKpisTool = new DynamicStructuredTool({
+  name: "get_daily_kpis",
+  description: `Retorna KPIs pré-computados da clínica por período. Muito mais rápido que analisar conversas.
+Use ANTES de analyze_raw_conversations para qualquer pergunta sobre métricas, desempenho, objeções, conversão.
+Cobre: receita, funil, objeções, operacional, sentimento, urgências.
+Disponível para qualquer dia desde 21/03/2026.`,
+
+  schema: z.object({
+    start_date: z.string().describe("Data início YYYY-MM-DD"),
+    end_date: z.string().optional().describe("Data fim YYYY-MM-DD (opcional, default = start_date)"),
+    kpi_group: z.enum(["all", "receita", "funil", "objecoes", "operacional", "crescimento"]).optional()
+      .default("all")
+      .describe("Grupo de KPIs para retornar. Default: all"),
+  }),
+
+  func: async ({ start_date, end_date, kpi_group }) => {
+    try {
+      const endDate = end_date || start_date;
+      const adminSb = getSupabaseAdminClient();
+
+      const { data, error } = await adminSb
+        .from("daily_kpi_snapshots")
+        .select("*")
+        .gte("date", start_date)
+        .lte("date", endDate)
+        .order("date", { ascending: true });
+
+      if (error) return `Erro ao buscar KPIs: ${error.message}`;
+
+      // Gerar lista de todas as datas no range
+      const allDates: string[] = [];
+      const cur = new Date(start_date + "T12:00:00Z");
+      const end = new Date(endDate + "T12:00:00Z");
+      while (cur <= end) {
+        allDates.push(cur.toISOString().slice(0, 10));
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      const dataMap = new Map<string, Record<string, unknown>>();
+      if (data) {
+        for (const row of data as Record<string, unknown>[]) {
+          dataMap.set(row.date as string, row);
+        }
+      }
+
+      const group = kpi_group || "all";
+
+      const results = allDates.map((date) => {
+        const row = dataMap.get(date);
+        if (!row) {
+          return { date, status: "not_computed", hint: "Use analyze_raw_conversations para esse período" };
+        }
+
+        if (group === "all") return row;
+
+        // Filtrar por grupo
+        const base: Record<string, unknown> = { date: row.date, computed_at: row.computed_at };
+
+        if (group === "receita") {
+          return {
+            ...base,
+            receita_confirmada: row.receita_confirmada,
+            receita_potencial_perdida: row.receita_potencial_perdida,
+            ticket_medio: row.ticket_medio,
+            agendamentos_novos: row.agendamentos_novos,
+            agendamentos_retorno: row.agendamentos_retorno,
+          };
+        }
+        if (group === "funil") {
+          return {
+            ...base,
+            novos_contatos: row.novos_contatos,
+            chats_com_resposta: row.chats_com_resposta,
+            chats_sem_resposta: row.chats_sem_resposta,
+            taxa_resposta: row.taxa_resposta,
+            tempo_medio_resposta_min: row.tempo_medio_resposta_min,
+            taxa_conversao: row.taxa_conversao,
+          };
+        }
+        if (group === "objecoes") {
+          return {
+            ...base,
+            objecao_preco: row.objecao_preco,
+            objecao_vaga: row.objecao_vaga,
+            objecao_distancia: row.objecao_distancia,
+            objecao_especialidade: row.objecao_especialidade,
+            ghosting_pos_preco: row.ghosting_pos_preco,
+            details_top_objections: (row.details as Record<string, unknown>)?.top_objections,
+            details_perdas_por_preco: (row.details as Record<string, unknown>)?.perdas_por_preco,
+          };
+        }
+        if (group === "operacional") {
+          return {
+            ...base,
+            msgs_por_chat_media: row.msgs_por_chat_media,
+            chats_fora_horario: row.chats_fora_horario,
+            urgencias_identificadas: row.urgencias_identificadas,
+            urgencias_atendidas: row.urgencias_atendidas,
+            total_chats_analisados: row.total_chats_analisados,
+            total_mensagens: row.total_mensagens,
+            details_urgencias: (row.details as Record<string, unknown>)?.urgencias,
+          };
+        }
+        if (group === "crescimento") {
+          return {
+            ...base,
+            sentimento_positivo: row.sentimento_positivo,
+            sentimento_neutro: row.sentimento_neutro,
+            sentimento_negativo: row.sentimento_negativo,
+          };
+        }
+
+        return row;
+      });
+
+      return JSON.stringify(results, null, 2);
+    } catch (err) {
+      return `Erro: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // EXPORTS: Ferramentas da Clara 2.0
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1400,6 +1526,7 @@ export const cancelScheduledTaskTool = new DynamicStructuredTool({
 // ask_user_question e update_chat_classification.
 export const claraTools = [
   askUserQuestionTool,              // ⭐ NOVA — perguntas interativas com sugestões
+  getDailyKpisTool,                 // ⭐ TIER 1 — KPIs pré-computados (<2s)
   getVolumeMetricsTool,             // Rápida e determinística — use primeiro para volume
   executeSqlTool,                   // SQL direto para qualquer outra consulta
   analyzeRawConversationsTool,      // ⭐ NOVA — análise direta na fonte (substitui gerar_relatorio + deep_research)
@@ -1422,6 +1549,7 @@ export const claraTools = [
 
 // Ferramentas expostas aos Researchers do subgrafo de pesquisa paralela.
 export const allResearchTools = [
+  getDailyKpisTool,
   getVolumeMetricsTool,
   executeSqlTool,
   analyzeRawConversationsTool,

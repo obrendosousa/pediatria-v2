@@ -27,7 +27,7 @@ export function ProntuarioLayout({ patientId, patientData, onRefresh, config }: 
   const screenComponents = config.screens as Record<ProntuarioTabKey, React.ComponentType<ProntuarioScreenProps>>;
 
   return (
-    <div className="flex flex-1 h-full bg-[#f8f9fb] dark:bg-[#08080b]">
+    <div className="flex flex-1 min-h-0 bg-[#f8f9fb] dark:bg-[#08080b]">
       <ProntuarioSidebar
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -44,7 +44,7 @@ export function ProntuarioLayout({ patientId, patientData, onRefresh, config }: 
             <div
               key={tabKey}
               style={{ display: activeTab === tabKey ? 'block' : 'none' }}
-              className="h-full"
+              className="min-h-full"
             >
               <ScreenComponent
                 patientId={patientId}

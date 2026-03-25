@@ -285,19 +285,17 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
       let photoUrl = null;
       if (imagePreview && fileInputRef.current?.files?.[0]) {
         const file = fileInputRef.current.files[0];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `patients/${fileName}`;
+        const formData = new FormData();
+        formData.append('file', file);
 
-        const { error: uploadError } = await supabase.storage
-          .from('patient-photos')
-          .upload(filePath, file);
+        const uploadRes = await fetch('/api/upload/patient-photo', {
+          method: 'POST',
+          body: formData,
+        });
 
-        if (!uploadError) {
-          const { data: publicUrlData } = await supabase.storage
-            .from('patient-photos')
-            .getPublicUrl(filePath);
-          photoUrl = publicUrlData.publicUrl;
+        if (uploadRes.ok) {
+          const { url } = await uploadRes.json();
+          photoUrl = url;
         }
       }
 

@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPIs — Support Clinic Pediatria</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0f0f13;
+    color: #e4e4e7;
+    padding: 40px;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding: 40px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 24px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .header h1 {
+    font-size: 2.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .header .subtitle {
+    font-size: 1rem;
+    color: #a1a1aa;
+    font-weight: 400;
+  }
+  .header .periodo {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 6px 16px;
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #a5b4fc;
+    font-weight: 500;
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .kpi-card {
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.2s;
+  }
+  .kpi-card:hover { border-color: #3f3f46; transform: translateY(-2px); }
+  .kpi-card .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #71717a;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .kpi-card .value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fafafa;
+    line-height: 1;
+  }
+  .kpi-card .value.green { color: #4ade80; }
+  .kpi-card .value.red { color: #f87171; }
+  .kpi-card .value.purple { color: #a78bfa; }
+  .kpi-card .value.blue { color: #60a5fa; }
+  .kpi-card .value.amber { color: #fbbf24; }
+  .kpi-card .detail {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: #71717a;
+  }
+
+  .section {
+    margin-bottom: 40px;
+  }
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fafafa;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title span { font-size: 1.2rem; }
+
+  .chart-container {
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 16px;
+    padding: 24px;
+    overflow-x: auto;
+  }
+
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 180px;
+    padding-top: 20px;
+  }
+  .bar-chart .bar-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 24px;
+  }
+  .bar-chart .bar {
+    width: 100%;
+    max-width: 28px;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .bar-chart .bar:hover { opacity: 0.8; }
+  .bar-chart .bar-label {
+    font-size: 0.6rem;
+    color: #52525b;
+    margin-top: 6px;
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    max-height: 60px;
+    overflow: hidden;
+  }
+
+  .table-container {
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: #a1a1aa;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #1f1f23;
+    border-bottom: 1px solid #27272a;
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #1f1f23;
+    color: #d4d4d8;
+  }
+  tr:hover td { background: rgba(99,102,241,0.05); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+  td.green { color: #4ade80; }
+  td.red { color: #f87171; }
+  td.amber { color: #fbbf24; }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .pill-green { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .pill-red { background: rgba(248,113,113,0.15); color: #f87171; }
+  .pill-amber { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .pill-purple { background: rgba(167,139,250,0.15); color: #a78bfa; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  .footer {
+    text-align: center;
+    padding: 32px;
+    color: #52525b;
+    font-size: 0.75rem;
+  }
+
+  @media print {
+    body { background: #fff; color: #111; padding: 20px; }
+    .kpi-card { background: #f9fafb; border-color: #e5e7eb; }
+    .kpi-card .value { color: #111; }
+    .chart-container, .table-container { background: #fff; border-color: #e5e7eb; }
+    th { background: #f3f4f6; }
+    td { border-color: #e5e7eb; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>Relatório de KPIs</h1>
+    <div class="subtitle">Support Clinic — Setor Pediatria</div>
+    <div class="periodo">2026-02-02 a 2026-03-24</div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="label">Receita Confirmada</div>
+      <div class="value green">R$ 75.7k</div>
+      <div class="detail">168 consultas + 199 retornos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Receita Perdida</div>
+      <div class="value red">R$ 58.0k</div>
+      <div class="detail">27 por preço + 38 por vaga</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Taxa de Conversão</div>
+      <div class="value purple">39.2%</div>
+      <div class="detail">367 de 937 chats</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Urgências</div>
+      <div class="value amber">119</div>
+      <div class="detail">identificadas no período</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="label">Total Mensagens</div>
+      <div class="value">8.0k</div>
+      <div class="detail">937 chats ativos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Sentimento</div>
+      <div class="value blue">37% pos</div>
+      <div class="detail">335 pos / 459 neu / 123 neg</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Consultas Novas</div>
+      <div class="value green">168</div>
+      <div class="detail">R$ 84.0k estimados</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Retornos</div>
+      <div class="value blue">199</div>
+      <div class="detail">gratuitos até mar/2026</div>
+    </div>
+  </div>
+
+  <!-- Gráfico: Receita por Semana -->
+  <div class="section">
+    <div class="section-title"><span>📊</span> Receita por Semana</div>
+    <div class="chart-container">
+      <div class="bar-chart">
+        <div class="bar-group">
+            <div class="bar" style="height:4px;background:linear-gradient(180deg,#818cf8,#6366f1);" title="R$ 0 | 0 agend"></div>
+            <div class="bar-label">02-03</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:5.787234042553191px;background:linear-gradient(180deg,#818cf8,#6366f1);" title="R$ 850 | 5 agend"></div>
+            <div class="bar-label">02-10</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:39.829787234042556px;background:linear-gradient(180deg,#818cf8,#6366f1);" title="R$ 5850 | 31 agend"></div>
+            <div class="bar-label">02-17</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:68.08510638297872px;background:linear-gradient(180deg,#818cf8,#6366f1);" title="R$ 10000 | 60 agend"></div>
+            <div class="bar-label">02-24</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:115.74468085106383px;background:linear-gradient(180deg,#818cf8,#6366f1);" title="R$ 17000 | 80 agend"></div>
+            <div class="bar-label">03-03</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:88.51063829787235px;background:linear-gradient(180deg,#818cf8,#6366f1);" title="R$ 13000 | 58 agend"></div>
+            <div class="bar-label">03-10</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:160px;background:linear-gradient(180deg,#818cf8,#6366f1);" title="R$ 23500 | 103 agend"></div>
+            <div class="bar-label">03-17</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:37.4468085106383px;background:linear-gradient(180deg,#818cf8,#6366f1);" title="R$ 5500 | 30 agend"></div>
+            <div class="bar-label">03-24</div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico: Receita Diária -->
+  <div class="section">
+    <div class="section-title"><span>📈</span> Receita Diária</div>
+    <div class="chart-container">
+      <div class="bar-chart">
+        <div class="bar-group">
+            <div class="bar" style="height:2px;background:#3f3f46;" title="R$ 0 em 2026-02-02"></div>
+            <div class="bar-label">02-02</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:2px;background:#3f3f46;" title="R$ 0 em 2026-02-13"></div>
+            <div class="bar-label">02-13</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:10px;background:#60a5fa;" title="R$ 500 em 2026-02-14"></div>
+            <div class="bar-label">02-14</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:7px;background:#60a5fa;" title="R$ 350 em 2026-02-19"></div>
+            <div class="bar-label">02-19</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:40px;background:#818cf8;" title="R$ 2000 em 2026-02-20"></div>
+            <div class="bar-label">02-20</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:70px;background:#818cf8;" title="R$ 3500 em 2026-02-21"></div>
+            <div class="bar-label">02-21</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:2px;background:#3f3f46;" title="R$ 0 em 2026-02-22"></div>
+            <div class="bar-label">02-22</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:40px;background:#818cf8;" title="R$ 2000 em 2026-02-23"></div>
+            <div class="bar-label">02-23</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:70px;background:#818cf8;" title="R$ 3500 em 2026-02-24"></div>
+            <div class="bar-label">02-24</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:60px;background:#818cf8;" title="R$ 3000 em 2026-02-25"></div>
+            <div class="bar-label">02-25</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:10px;background:#60a5fa;" title="R$ 500 em 2026-02-26"></div>
+            <div class="bar-label">02-26</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:10px;background:#60a5fa;" title="R$ 500 em 2026-02-27"></div>
+            <div class="bar-label">02-27</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:10px;background:#60a5fa;" title="R$ 500 em 2026-02-28"></div>
+            <div class="bar-label">02-28</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:90px;background:#4ade80;" title="R$ 4500 em 2026-03-02"></div>
+            <div class="bar-label">03-02</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:60px;background:#818cf8;" title="R$ 3000 em 2026-03-03"></div>
+            <div class="bar-label">03-03</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:80px;background:#4ade80;" title="R$ 4000 em 2026-03-04"></div>
+            <div class="bar-label">03-04</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:10px;background:#60a5fa;" title="R$ 500 em 2026-03-05"></div>
+            <div class="bar-label">03-05</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:90px;background:#4ade80;" title="R$ 4500 em 2026-03-06"></div>
+            <div class="bar-label">03-06</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:10px;background:#60a5fa;" title="R$ 500 em 2026-03-07"></div>
+            <div class="bar-label">03-07</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:40px;background:#818cf8;" title="R$ 2000 em 2026-03-09"></div>
+            <div class="bar-label">03-09</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:30px;background:#60a5fa;" title="R$ 1500 em 2026-03-10"></div>
+            <div class="bar-label">03-10</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:30px;background:#60a5fa;" title="R$ 1500 em 2026-03-11"></div>
+            <div class="bar-label">03-11</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:40px;background:#818cf8;" title="R$ 2000 em 2026-03-12"></div>
+            <div class="bar-label">03-12</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:60px;background:#818cf8;" title="R$ 3000 em 2026-03-13"></div>
+            <div class="bar-label">03-13</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:50px;background:#818cf8;" title="R$ 2500 em 2026-03-14"></div>
+            <div class="bar-label">03-14</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:10px;background:#60a5fa;" title="R$ 500 em 2026-03-15"></div>
+            <div class="bar-label">03-15</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:90px;background:#4ade80;" title="R$ 4500 em 2026-03-16"></div>
+            <div class="bar-label">03-16</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:160px;background:#4ade80;" title="R$ 8000 em 2026-03-17"></div>
+            <div class="bar-label">03-17</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:80px;background:#4ade80;" title="R$ 4000 em 2026-03-18"></div>
+            <div class="bar-label">03-18</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:40px;background:#818cf8;" title="R$ 2000 em 2026-03-19"></div>
+            <div class="bar-label">03-19</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:50px;background:#818cf8;" title="R$ 2500 em 2026-03-20"></div>
+            <div class="bar-label">03-20</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:40px;background:#818cf8;" title="R$ 2000 em 2026-03-21"></div>
+            <div class="bar-label">03-21</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:70px;background:#818cf8;" title="R$ 3500 em 2026-03-23"></div>
+            <div class="bar-label">03-23</div>
+          </div><div class="bar-group">
+            <div class="bar" style="height:40px;background:#818cf8;" title="R$ 2000 em 2026-03-24"></div>
+            <div class="bar-label">03-24</div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela: Dados Diários -->
+  <div class="section">
+    <div class="section-title"><span>📋</span> Detalhamento Diário</div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Dia</th>
+            <th>Msgs</th>
+            <th>Chats</th>
+            <th>Consultas</th>
+            <th>Retornos</th>
+            <th>Receita</th>
+            <th>Conversão</th>
+            <th>Desist.</th>
+            <th>Ghost</th>
+            <th>Urg.</th>
+            <th>Sent.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+              <td><strong>02-02</strong></td>
+              <td class="num">8</td>
+              <td class="num">1</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="num ">R$ 0</td>
+              <td class="num amber">0%</td>
+              <td class="num ">0</td>
+              <td class="num ">0</td>
+              <td class="num">0</td>
+              <td>0/1/0</td>
+            </tr><tr>
+              <td><strong>02-13</strong></td>
+              <td class="num">19</td>
+              <td class="num">7</td>
+              <td class="num">0</td>
+              <td class="num">1</td>
+              <td class="num ">R$ 0</td>
+              <td class="num amber">14%</td>
+              <td class="num ">0</td>
+              <td class="num ">0</td>
+              <td class="num">2</td>
+              <td>1/5/1</td>
+            </tr><tr>
+              <td><strong>02-14</strong></td>
+              <td class="num">19</td>
+              <td class="num">5</td>
+              <td class="num">1</td>
+              <td class="num">2</td>
+              <td class="num green">R$ 500</td>
+              <td class="num green">60%</td>
+              <td class="num ">0</td>
+              <td class="num ">0</td>
+              <td class="num">1</td>
+              <td>1/4/0</td>
+            </tr><tr>
+              <td><strong>02-19</strong></td>
+              <td class="num">132</td>
+              <td class="num">29</td>
+              <td class="num">3</td>
+              <td class="num">8</td>
+              <td class="num green">R$ 350</td>
+              <td class="num ">38%</td>
+              <td class="num ">0</td>
+              <td class="num ">0</td>
+              <td class="num">3</td>
+              <td>12/13/2</td>
+            </tr><tr>
+              <td><strong>02-20</strong></td>
+              <td class="num">378</td>
+              <td class="num">41</td>
+              <td class="num">4</td>
+              <td class="num">7</td>
+              <td class="num green">R$ 2000</td>
+              <td class="num amber">27%</td>
+              <td class="num ">3</td>
+              <td class="num ">0</td>
+              <td class="num">3</td>
+              <td>13/22/3</td>
+            </tr><tr>
+              <td><strong>02-21</strong></td>
+              <td class="num">185</td>
+              <td class="num">20</td>
+              <td class="num">7</td>
+              <td class="num">2</td>
+              <td class="num green">R$ 3500</td>
+              <td class="num ">45%</td>
+              <td class="num ">2</td>
+              <td class="num ">0</td>
+              <td class="num">3</td>
+              <td>8/10/2</td>
+            </tr><tr>
+              <td><strong>02-22</strong></td>
+              <td class="num">9</td>
+              <td class="num">4</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="num ">R$ 0</td>
+              <td class="num amber">0%</td>
+              <td class="num ">0</td>
+              <td class="num ">0</td>
+              <td class="num">1</td>
+              <td>0/1/1</td>
+            </tr><tr>
+              <td><strong>02-23</strong></td>
+              <td class="num">367</td>
+              <td class="num">44</td>
+              <td class="num">4</td>
+              <td class="num">10</td>
+              <td class="num green">R$ 2000</td>
+              <td class="num ">32%</td>
+              <td class="num red">7</td>
+              <td class="num ">0</td>
+              <td class="num">7</td>
+              <td>14/19/10</td>
+            </tr><tr>
+              <td><strong>02-24</strong></td>
+              <td class="num">453</td>
+              <td class="num">54</td>
+              <td class="num">7</td>
+              <td class="num">9</td>
+              <td class="num green">R$ 3500</td>
+              <td class="num amber">30%</td>
+              <td class="num red">10</td>
+              <td class="num ">1</td>
+              <td class="num">8</td>
+              <td>18/28/8</td>
+            </tr><tr>
+              <td><strong>02-25</strong></td>
+              <td class="num">414</td>
+              <td class="num">32</td>
+              <td class="num">6</td>
+              <td class="num">8</td>
+              <td class="num green">R$ 3000</td>
+              <td class="num ">44%</td>
+              <td class="num red">5</td>
+              <td class="num ">1</td>
+              <td class="num">3</td>
+              <td>14/14/4</td>
+            </tr><tr>
+              <td><strong>02-26</strong></td>
+              <td class="num">237</td>
+              <td class="num">36</td>
+              <td class="num">1</td>
+              <td class="num">4</td>
+              <td class="num green">R$ 500</td>
+              <td class="num amber">14%</td>
+              <td class="num red">5</td>
+              <td class="num ">2</td>
+              <td class="num">3</td>
+              <td>8/21/6</td>
+            </tr><tr>
+              <td><strong>02-27</strong></td>
+              <td class="num">257</td>
+              <td class="num">30</td>
+              <td class="num">1</td>
+              <td class="num">6</td>
+              <td class="num green">R$ 500</td>
+              <td class="num amber">23%</td>
+              <td class="num red">4</td>
+              <td class="num ">1</td>
+              <td class="num">5</td>
+              <td>7/16/7</td>
+            </tr><tr>
+              <td><strong>02-28</strong></td>
+              <td class="num">98</td>
+              <td class="num">19</td>
+              <td class="num">1</td>
+              <td class="num">3</td>
+              <td class="num green">R$ 500</td>
+              <td class="num amber">21%</td>
+              <td class="num ">0</td>
+              <td class="num ">2</td>
+              <td class="num">1</td>
+              <td>3/10/2</td>
+            </tr><tr>
+              <td><strong>03-02</strong></td>
+              <td class="num">211</td>
+              <td class="num">32</td>
+              <td class="num">5</td>
+              <td class="num">8</td>
+              <td class="num green">R$ 4500</td>
+              <td class="num ">41%</td>
+              <td class="num ">1</td>
+              <td class="num amber">4</td>
+              <td class="num">4</td>
+              <td>10/14/5</td>
+            </tr><tr>
+              <td><strong>03-03</strong></td>
+              <td class="num">377</td>
+              <td class="num">39</td>
+              <td class="num">6</td>
+              <td class="num">8</td>
+              <td class="num green">R$ 3000</td>
+              <td class="num ">36%</td>
+              <td class="num ">3</td>
+              <td class="num ">2</td>
+              <td class="num">9</td>
+              <td>14/17/8</td>
+            </tr><tr>
+              <td><strong>03-04</strong></td>
+              <td class="num">424</td>
+              <td class="num">34</td>
+              <td class="num">8</td>
+              <td class="num">9</td>
+              <td class="num green">R$ 4000</td>
+              <td class="num green">50%</td>
+              <td class="num ">1</td>
+              <td class="num ">1</td>
+              <td class="num">7</td>
+              <td>15/16/3</td>
+            </tr><tr>
+              <td><strong>03-05</strong></td>
+              <td class="num">297</td>
+              <td class="num">34</td>
+              <td class="num">7</td>
+              <td class="num">11</td>
+              <td class="num green">R$ 500</td>
+              <td class="num green">53%</td>
+              <td class="num red">4</td>
+              <td class="num ">0</td>
+              <td class="num">4</td>
+              <td>14/14/5</td>
+            </tr><tr>
+              <td><strong>03-06</strong></td>
+              <td class="num">338</td>
+              <td class="num">31</td>
+              <td class="num">9</td>
+              <td class="num">6</td>
+              <td class="num green">R$ 4500</td>
+              <td class="num ">48%</td>
+              <td class="num red">4</td>
+              <td class="num ">2</td>
+              <td class="num">3</td>
+              <td>13/15/3</td>
+            </tr><tr>
+              <td><strong>03-07</strong></td>
+              <td class="num">77</td>
+              <td class="num">16</td>
+              <td class="num">1</td>
+              <td class="num">2</td>
+              <td class="num green">R$ 500</td>
+              <td class="num amber">19%</td>
+              <td class="num red">4</td>
+              <td class="num ">1</td>
+              <td class="num">2</td>
+              <td>3/9/4</td>
+            </tr><tr>
+              <td><strong>03-09</strong></td>
+              <td class="num">274</td>
+              <td class="num">30</td>
+              <td class="num">4</td>
+              <td class="num">6</td>
+              <td class="num green">R$ 2000</td>
+              <td class="num ">33%</td>
+              <td class="num red">5</td>
+              <td class="num ">2</td>
+              <td class="num">4</td>
+              <td>8/18/4</td>
+            </tr><tr>
+              <td><strong>03-10</strong></td>
+              <td class="num">207</td>
+              <td class="num">24</td>
+              <td class="num">3</td>
+              <td class="num">6</td>
+              <td class="num green">R$ 1500</td>
+              <td class="num ">38%</td>
+              <td class="num ">2</td>
+              <td class="num ">1</td>
+              <td class="num">4</td>
+              <td>7/13/4</td>
+            </tr><tr>
+              <td><strong>03-11</strong></td>
+              <td class="num">87</td>
+              <td class="num">19</td>
+              <td class="num">3</td>
+              <td class="num">3</td>
+              <td class="num green">R$ 1500</td>
+              <td class="num ">32%</td>
+              <td class="num ">2</td>
+              <td class="num ">2</td>
+              <td class="num">1</td>
+              <td>5/11/3</td>
+            </tr><tr>
+              <td><strong>03-12</strong></td>
+              <td class="num">139</td>
+              <td class="num">25</td>
+              <td class="num">4</td>
+              <td class="num">5</td>
+              <td class="num green">R$ 2000</td>
+              <td class="num ">36%</td>
+              <td class="num red">4</td>
+              <td class="num ">2</td>
+              <td class="num">2</td>
+              <td>5/17/3</td>
+            </tr><tr>
+              <td><strong>03-13</strong></td>
+              <td class="num">163</td>
+              <td class="num">26</td>
+              <td class="num">6</td>
+              <td class="num">6</td>
+              <td class="num green">R$ 3000</td>
+              <td class="num ">46%</td>
+              <td class="num red">4</td>
+              <td class="num ">1</td>
+              <td class="num">3</td>
+              <td>10/12/4</td>
+            </tr><tr>
+              <td><strong>03-14</strong></td>
+              <td class="num">108</td>
+              <td class="num">22</td>
+              <td class="num">5</td>
+              <td class="num">5</td>
+              <td class="num green">R$ 2500</td>
+              <td class="num ">45%</td>
+              <td class="num ">2</td>
+              <td class="num amber">3</td>
+              <td class="num">3</td>
+              <td>10/9/2</td>
+            </tr><tr>
+              <td><strong>03-15</strong></td>
+              <td class="num">11</td>
+              <td class="num">3</td>
+              <td class="num">1</td>
+              <td class="num">1</td>
+              <td class="num green">R$ 500</td>
+              <td class="num green">67%</td>
+              <td class="num ">0</td>
+              <td class="num ">1</td>
+              <td class="num">0</td>
+              <td>1/2/0</td>
+            </tr><tr>
+              <td><strong>03-16</strong></td>
+              <td class="num">326</td>
+              <td class="num">33</td>
+              <td class="num">9</td>
+              <td class="num">14</td>
+              <td class="num green">R$ 4500</td>
+              <td class="num green">70%</td>
+              <td class="num ">1</td>
+              <td class="num ">1</td>
+              <td class="num">1</td>
+              <td>20/10/3</td>
+            </tr><tr>
+              <td><strong>03-17</strong></td>
+              <td class="num">331</td>
+              <td class="num">48</td>
+              <td class="num">16</td>
+              <td class="num">12</td>
+              <td class="num green">R$ 8000</td>
+              <td class="num green">58%</td>
+              <td class="num ">3</td>
+              <td class="num ">1</td>
+              <td class="num">6</td>
+              <td>24/17/6</td>
+            </tr><tr>
+              <td><strong>03-18</strong></td>
+              <td class="num">312</td>
+              <td class="num">37</td>
+              <td class="num">8</td>
+              <td class="num">11</td>
+              <td class="num green">R$ 4000</td>
+              <td class="num green">51%</td>
+              <td class="num red">4</td>
+              <td class="num ">0</td>
+              <td class="num">6</td>
+              <td>17/15/5</td>
+            </tr><tr>
+              <td><strong>03-19</strong></td>
+              <td class="num">157</td>
+              <td class="num">26</td>
+              <td class="num">4</td>
+              <td class="num">7</td>
+              <td class="num green">R$ 2000</td>
+              <td class="num ">42%</td>
+              <td class="num ">3</td>
+              <td class="num ">2</td>
+              <td class="num">1</td>
+              <td>13/11/2</td>
+            </tr><tr>
+              <td><strong>03-20</strong></td>
+              <td class="num">324</td>
+              <td class="num">34</td>
+              <td class="num">5</td>
+              <td class="num">8</td>
+              <td class="num green">R$ 2500</td>
+              <td class="num ">38%</td>
+              <td class="num red">5</td>
+              <td class="num amber">3</td>
+              <td class="num">6</td>
+              <td>14/18/2</td>
+            </tr><tr>
+              <td><strong>03-21</strong></td>
+              <td class="num">239</td>
+              <td class="num">20</td>
+              <td class="num">4</td>
+              <td class="num">4</td>
+              <td class="num green">R$ 2000</td>
+              <td class="num ">40%</td>
+              <td class="num ">1</td>
+              <td class="num ">2</td>
+              <td class="num">2</td>
+              <td>7/11/1</td>
+            </tr><tr>
+              <td><strong>03-23</strong></td>
+              <td class="num">637</td>
+              <td class="num">45</td>
+              <td class="num">14</td>
+              <td class="num">3</td>
+              <td class="num green">R$ 3500</td>
+              <td class="num ">38%</td>
+              <td class="num red">7</td>
+              <td class="num ">2</td>
+              <td class="num">5</td>
+              <td>17/23/5</td>
+            </tr><tr>
+              <td><strong>03-24</strong></td>
+              <td class="num">356</td>
+              <td class="num">31</td>
+              <td class="num">10</td>
+              <td class="num">3</td>
+              <td class="num green">R$ 2000</td>
+              <td class="num ">42%</td>
+              <td class="num red">5</td>
+              <td class="num ">1</td>
+              <td class="num">6</td>
+              <td>8/19/4</td>
+            </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Objeções -->
+  <div class="section">
+    <div class="two-col">
+      <div>
+        <div class="section-title"><span>🚫</span> Objeções Acumuladas</div>
+        <div class="chart-container" style="padding:20px;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span>Falta de vaga / horário</span>
+              <span class="pill pill-red">38</span>
+            </div>
+            <div style="width:100%;height:8px;background:#27272a;border-radius:4px;overflow:hidden;">
+              <div style="width:100%;height:100%;background:#f87171;border-radius:4px;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span>Preço</span>
+              <span class="pill pill-amber">27</span>
+            </div>
+            <div style="width:100%;height:8px;background:#27272a;border-radius:4px;overflow:hidden;">
+              <div style="width:71%;height:100%;background:#fbbf24;border-radius:4px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title"><span>💚</span> Sentimento Geral</div>
+        <div class="chart-container" style="padding:20px;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span>Positivo</span>
+                <span class="pill pill-green">335 (37%)</span>
+              </div>
+              <div style="width:100%;height:8px;background:#27272a;border-radius:4px;overflow:hidden;">
+                <div style="width:37%;height:100%;background:#4ade80;border-radius:4px;"></div>
+              </div>
+            
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span>Neutro</span>
+                <span class="pill pill-purple">459 (50%)</span>
+              </div>
+              <div style="width:100%;height:8px;background:#27272a;border-radius:4px;overflow:hidden;">
+                <div style="width:50%;height:100%;background:#71717a;border-radius:4px;"></div>
+              </div>
+            
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span>Negativo</span>
+                <span class="pill pill-red">123 (13%)</span>
+              </div>
+              <div style="width:100%;height:8px;background:#27272a;border-radius:4px;overflow:hidden;">
+                <div style="width:13%;height:100%;background:#f87171;border-radius:4px;"></div>
+              </div>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- SEÇÃO DESTAQUE: URGÊNCIAS PERDIDAS + PLANO DE AÇÃO -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+
+  <div class="section" style="margin-top:48px;">
+    <div style="background:linear-gradient(135deg,#1a0000,#2d0a0a);border:2px solid #7f1d1d;border-radius:20px;padding:32px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-30px;right:-30px;width:200px;height:200px;background:radial-gradient(circle,rgba(239,68,68,0.15),transparent 70%);border-radius:50%;"></div>
+
+      <h2 style="font-size:1.5rem;font-weight:800;color:#fca5a5;margin-bottom:4px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.8rem;">🚨</span> Urgências Perdidas — Pacientes que Precisavam e Não Foram Atendidos
+      </h2>
+      <p style="color:#fca5a5;opacity:0.7;font-size:0.85rem;margin-bottom:24px;">
+        33 crianças com quadros urgentes (febre, vômito, diarreia) que buscaram a clínica e não conseguiram atendimento.
+        Impacto estimado: <strong style="color:#f87171;">R$ 16.500</strong> em receita + risco reputacional.
+      </p>
+
+      <!-- Tabela de urgências perdidas -->
+      <div style="background:rgba(0,0,0,0.3);border-radius:12px;overflow:hidden;margin-bottom:24px;">
+        <table style="width:100%;font-size:0.8rem;">
+          <thead>
+            <tr style="background:rgba(127,29,29,0.3);">
+              <th style="padding:10px 14px;color:#fca5a5;font-size:0.7rem;">Paciente</th>
+              <th style="padding:10px 14px;color:#fca5a5;font-size:0.7rem;">O que aconteceu</th>
+              <th style="padding:10px 14px;color:#fca5a5;font-size:0.7rem;">Frase do paciente</th>
+              <th style="padding:10px 14px;color:#fca5a5;font-size:0.7rem;">Motivo da perda</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Te Amo Filha ❤️</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">O paciente tentou repetidamente um encaixe para uma criança com febre, mas a clínica não tinha disponibilidade, levando à desistência.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"minha filha hj está com 3 dias de febre"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">falta de vaga</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">John ,Kelly e Bryan👨‍👩‍👦😍</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">O paciente buscou atendimento de urgência para uma criança com sintomas gastrointestinais, mas desistiu ao ser informado que não havia vaga para o mes</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Ele está com diarréia , dorzinha de estômago e vomitando."</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">Falta de vaga imediata</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Raylane Araújo 🌹</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">Paciente buscou atendimento de emergência, mas informou que já conseguiu resolver o problema.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Já consegui. Muito obrigada!"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">informacao_apenas</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Karol</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">O paciente relatou piora nos sintomas do filho. A clínica orientou o comparecimento à tarde, mas o paciente questionou a possibilidade de atendimento </td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Não teria como ser agora pela manhã?"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">Horário de atendimento</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Euziane Abreu</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">Houve falha na comunicação sobre a agenda da médica, causando transtorno. O paciente busca atendimento urgente devido a diarreia.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Como a diarreia dele tá forte, prefiro que seja hoje msm"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">Disponibilidade da médica</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Sandra</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">O paciente buscou atendimento por sintomas de diarreia. A clínica orientou que ele precisa de uma nova consulta caso os sintomas persistam.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Théo começou com uma diarreia desde cedo"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">em_andamento</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Andresa Alves❤️</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">Paciente busca atendimento para recém-nascido prematuro. A clínica informou o valor e aguarda retorno.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Tive nenê domingo"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">em_andamento</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Pathy Mello</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">Apesar da urgência relatada, o paciente desistiu do agendamento após ser informado sobre o reajuste no valor da consulta.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Vishe, tudo isso?"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">Valor da consulta</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Alicevania Sousa</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">Paciente buscou atendimento de urgência para criança de 2 anos. Como não havia vaga para o dia, a conversa não avançou.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Eu queria com urgência"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">falta de vaga</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Karol</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">Paciente buscou atendimento para criança com febre de 4 dias. A clínica não tinha vaga para o dia e a conversa não prosseguiu.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"queria pra hoje logo pq ele tá com febre a quatro dias"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">falta de vaga</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">😍😍</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">O paciente buscava atendimento urgente para uma criança, mas como não havia vaga para o dia, desistiu do agendamento.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"ele tá com muita afita da boca"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">falta de vaga</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Nalva</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">O paciente buscou consulta urgente para cirurgia, mas a agenda do médico estava completa. A clínica tentou oferecer outra data, mas não houve conclusã</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Queria pra amanhã"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">agenda completa</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Jhelica </td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">O paciente entrou em contato para tirar dúvidas sobre sintomas da bebê e verificar a disponibilidade de um hidratante na clínica.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Mulher n teria como ver com dra Fernanda algo que pudesse aliviar a coceira"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">informacao_apenas</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">.</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">O paciente buscou agendar um retorno para o filho devido a sintomas persistentes. Embora tenha demonstrado preocupação, a conversa esfriou após a menç</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Pq e muito caro viu"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">preço</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">🥰isabel🥰benjamin0924</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">O paciente tentou agendar consulta urgente, mas a clínica não tinha disponibilidade. O paciente demonstrou frustração com a falta de vagas.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"ES por q ES urgente"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">falta de vaga imediata</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Hortemila Moraes</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">O paciente buscou atendimento de urgência, mas após ser informado do valor de R$ 500,00, não confirmou o agendamento. A clínica tentou follow-up, mas </td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Eu vou retornar se precisar"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">preço</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Raimunda Penha</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">Paciente buscou atendimento urgente devido a febre, mas a clínica não tinha vaga imediata. A conversa parou quando a secretária não entendeu o endereç</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"Está com febre"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">falta de disponibilidade imediata</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Eduarda Arruda</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">Paciente relata sintomas de urgência e aguarda orientação da médica. A clínica está intermediando a comunicação.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"To bastante preocupada"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">em_andamento</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">🐈‍⬛</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">Paciente busca retorno para criança com sintomas recorrentes. A clínica informou que, devido ao tempo, seria uma nova consulta e ficou de verificar a </td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"se puderes me retornar ainda hoje agradeço muito,pois ele tá daquele jeito que e"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">em_andamento</span></td></tr><tr style="border-bottom:1px solid rgba(127,29,29,0.2);"><td style="padding:10px 14px;color:#fecaca;font-weight:600;">Cibelly🩷</td><td style="padding:10px 14px;color:#d4d4d8;font-size:0.78rem;">Paciente buscou atendimento para bebê com febre e vômito. A clínica não ofereceu encaixe, apenas vaga para data futura, resultando em desistência.</td><td style="padding:10px 14px;color:#fbbf24;font-style:italic;font-size:0.78rem;">"É pq ela não tá bem. Aí tava procurando pra hoje"</td><td style="padding:10px 14px;"><span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;">falta de vaga imediata</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Análise do padrão -->
+      <div style="background:rgba(0,0,0,0.4);border-radius:12px;padding:20px;margin-bottom:24px;border-left:4px solid #ef4444;">
+        <h3 style="color:#fca5a5;font-size:0.95rem;font-weight:700;margin-bottom:12px;">Por que estamos perdendo essas urgências?</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <p style="color:#d4d4d8;font-size:0.82rem;line-height:1.6;">
+              <strong style="color:#f87171;">1. Sem protocolo de encaixe:</strong> Quando o paciente liga com urgência (febre, vômito),
+              a resposta padrão é "não temos vaga". Não existe fila de espera ativa nem vaga-pulmão reservada para emergências.
+            </p>
+            <p style="color:#d4d4d8;font-size:0.82rem;line-height:1.6;margin-top:8px;">
+              <strong style="color:#f87171;">2. Resposta binária:</strong> A Joana responde "sim, tem vaga" ou "não, não tem".
+              Não existe meio-termo como "posso te colocar na lista de espera prioritária" ou "se alguém cancelar, você é a primeira".
+            </p>
+          </div>
+          <div>
+            <p style="color:#d4d4d8;font-size:0.82rem;line-height:1.6;">
+              <strong style="color:#f87171;">3. Paciente vai para concorrência:</strong> Mães desesperadas com filhos doentes não esperam.
+              Se não tem vaga HOJE, procuram outro pediatra. Citação real: <em style="color:#fbbf24;">"vou procurar em outro lugar que sabe eu consigo"</em>.
+            </p>
+            <p style="color:#d4d4d8;font-size:0.82rem;line-height:1.6;margin-top:8px;">
+              <strong style="color:#f87171;">4. Perda dupla:</strong> Além da consulta perdida (R$ 500), perdemos o retorno (R$ 200 a partir de abril)
+              e toda a cadeia de acompanhamento. Paciente que vai para outro pediatra dificilmente volta.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLANO DE AÇÃO -->
+      <div style="background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #059669;border-radius:16px;padding:24px;">
+        <h3 style="color:#6ee7b7;font-size:1.1rem;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.3rem;">💡</span> Plano de Ação: Sistema de Vaga-Pulmão
+        </h3>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:16px;">
+            <h4 style="color:#34d399;font-size:0.85rem;font-weight:700;margin-bottom:8px;">Ação 1 — Reservar 2 Vagas-Pulmão/Dia</h4>
+            <p style="color:#d1d5db;font-size:0.8rem;line-height:1.5;">
+              Bloquear 2 horários por dia na agenda da Dra. Fernanda exclusivamente para urgências.
+              Se até 14h não forem usadas, liberar para agendamento normal.
+            </p>
+            <div style="margin-top:8px;padding:6px 10px;background:rgba(52,211,153,0.1);border-radius:8px;">
+              <span style="color:#6ee7b7;font-size:0.75rem;font-weight:600;">Impacto: até 10 urgências atendidas/semana → R$ 5.000/semana</span>
+            </div>
+          </div>
+
+          <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:16px;">
+            <h4 style="color:#34d399;font-size:0.85rem;font-weight:700;margin-bottom:8px;">Ação 2 — Lista de Espera Prioritária</h4>
+            <p style="color:#d1d5db;font-size:0.8rem;line-height:1.5;">
+              Script para Joana: "Entendo a urgência. Não tenho vaga agora, mas vou te colocar como <strong>prioridade</strong>.
+              Assim que alguém cancelar, você é a primeira que eu ligo. Pode me passar o nome e idade da criança?"
+            </p>
+            <div style="margin-top:8px;padding:6px 10px;background:rgba(52,211,153,0.1);border-radius:8px;">
+              <span style="color:#6ee7b7;font-size:0.75rem;font-weight:600;">Impacto: reter 50%+ dos pacientes que hoje vão embora</span>
+            </div>
+          </div>
+
+          <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:16px;">
+            <h4 style="color:#34d399;font-size:0.85rem;font-weight:700;margin-bottom:8px;">Ação 3 — Triagem por Gravidade</h4>
+            <p style="color:#d1d5db;font-size:0.8rem;line-height:1.5;">
+              Joana pergunta: "Há quanto tempo está com febre? Tem vômito ou diarreia?"
+              Se for grave (febre > 3 dias, vômito + diarreia): encaixe imediato na vaga-pulmão.
+              Se for moderado: lista de espera prioritária.
+            </p>
+            <div style="margin-top:8px;padding:6px 10px;background:rgba(52,211,153,0.1);border-radius:8px;">
+              <span style="color:#6ee7b7;font-size:0.75rem;font-weight:600;">Impacto: zero urgências graves perdidas</span>
+            </div>
+          </div>
+
+          <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:16px;">
+            <h4 style="color:#34d399;font-size:0.85rem;font-weight:700;margin-bottom:8px;">Ação 4 — Follow-up Automático</h4>
+            <p style="color:#d1d5db;font-size:0.8rem;line-height:1.5;">
+              Para pacientes que desistiram por vaga: enviar mensagem no dia seguinte:
+              "Oi! Conseguimos uma vaga para hoje com a Dra. Fernanda. O(a) [nome da criança] ainda precisa da consulta?"
+            </p>
+            <div style="margin-top:8px;padding:6px 10px;background:rgba(52,211,153,0.1);border-radius:8px;">
+              <span style="color:#6ee7b7;font-size:0.75rem;font-weight:600;">Impacto: recuperar 20-30% dos perdidos do dia anterior</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;padding:14px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:10px;text-align:center;">
+          <p style="color:#6ee7b7;font-size:0.9rem;font-weight:700;">
+            Projeção com as 4 ações implementadas:
+            <span style="font-size:1.2rem;color:#4ade80;"> +R$ 20.000 a R$ 30.000/mês </span>
+            em receita recuperada
+          </p>
+          <p style="color:#a7f3d0;font-size:0.75rem;margin-top:4px;">
+            Baseado em 33 urgências perdidas × 50% taxa de recuperação × R$ 500 ticket × 4 semanas
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Gerado automaticamente por Clara IA — Support Clinic Pediatria<br>
+    24/03/2026, 20:11:01
+  </div>
+
+</div>
+</body>
+</html>

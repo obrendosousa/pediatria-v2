@@ -18,18 +18,7 @@ const sb: AnySupabase = createClient(
 const CLARA_CHAT_ID = 1495;
 
 async function sendToClara(message: string): Promise<string> {
-  // 1. Insere a mensagem do usuário no banco
-  await sb.from("chat_messages").insert({
-    chat_id: CLARA_CHAT_ID,
-    phone: "00000000000",
-    sender: "HUMAN_AGENT",
-    message_text: message,
-    message_type: "text",
-    status: "read",
-    created_at: new Date().toISOString(),
-    wpp_id: `test_${Date.now()}`,
-  });
-
+  // NÃO insere no banco — o study-session já faz isso
   const startTime = Date.now();
 
   // 2. Esperar o lock liberar (se sessão anterior ainda rodando)

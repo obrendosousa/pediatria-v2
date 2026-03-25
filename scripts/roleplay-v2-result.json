@@ -1,34 +1,36 @@
 {
   "fase1": {
     "question": "Preciso de um diagnóstico completo da clínica nos últimos 30 dias. Quero saber:\n",
-    "time_s": "296",
-    "response_chars": 65,
-    "numbers": {}
+    "time_s": "108",
+    "response_chars": 389,
+    "numbers": {
+      "agendados": "11"
+    }
   },
   "fase2": {
     "question": "Desses pacientes que desistiram por causa de preço, me dá a lista completa com n",
-    "time_s": "31",
-    "response_chars": 1844
+    "time_s": "305",
+    "response_chars": 42
   },
   "fase3": {
     "question": "Considerando que a consulta custa R$ 500,00, quanto exatamente perdemos com esse",
-    "time_s": "36",
-    "response_chars": 1215
+    "time_s": "52",
+    "response_chars": 2099
   },
   "fase4": {
     "question": "E quantos desses eram urgência?",
-    "time_s": "21",
-    "response_chars": 733
+    "time_s": "26",
+    "response_chars": 813
   },
   "gabarito": {
-    "totalChats": 324,
-    "chatsComHumano": 103,
+    "totalChats": 325,
+    "chatsComHumano": 105,
     "totalMsgs": 1000
   },
   "fullResponses": {
-    "r1": "⚠️ Erro crítico no meu motor de raciocínio. Verifique o terminal.",
-    "r2": "📅 Período analisado: 21/03/2026 a 24/03/2026\n\nIdentifiquei **4 pacientes** que desistiram ou pararam de responder especificamente após a apresentação dos valores. \n\nAqui está o detalhamento de cada caso:\n\n*   [[chat:1555|Dalila Minervina💕 (+55 99 8823-6208)]]\n**O que aconteceu:** A paciente desistiu porque o valor da consulta incluía obrigatoriamente o acompanhamento de uma nutricionista. Como ela já tem esse profissional, achou que não compensava pagar pelo pacote completo (\"Pq pra mim não sair em conta pagar a nutricionista\").\n*   [[chat:198|. (+55 99 9103-2952)]]\n**O que aconteceu:** A paciente perguntou os horários, mas logo em seguida reclamou diretamente do valor (\"Pq e muito caro viu\") e encerrou o contato sem tentar negociar.\n*   [[chat:1722|Wanderson Santos (+55 99 9212-4233)]]\n**O que aconteceu:** Entrou em contato buscando o teste do pezinho e perguntou ativamente se havia algum desconto. Após a secretária passar o valor final, ele recusou o agendamento de forma direta (\"Não .. obrigada\").\n*   [[chat:203|Manoel (+55 99 8420-4150)]]\n**O que aconteceu:** Consultou o preço para atendimento de um recém-nascido. A secretária enviou as opções de valores e profissionais, mas o paciente visualizou e não deu mais continuidade (típico abandono pós-preço).\n\n**Padrão identificado:**\nA objeção de preço não está atrelada apenas ao valor absoluto da consulta, mas à **percepção de valor do pacote**. O caso da Dalila (Chat 1555) mostra um gargalo claro: estamos perdendo pacientes que só querem a pediatra porque os forçamos a pagar por um combo (pediatra + nutri) que eles não precisam. Além disso, há uma sensibilidade a descontos em exames isolados (teste do pezinho).\n\nConsiderando o ticket médio padrão (R$ 500), essas 4 desistências representam **R$ 2.000 de receita perdida** apenas nestes últimos 4 dias de operação.",
-    "r3": "📅 Período analisado: 21/03/2026 a 24/03/2026\n\nA perda exata é de **R$ 2.000,00** (4 pacientes × R$ 500,00).\n\nSobre oferecer um desconto de 10% (reduzindo o valor para R$ 450,00), minha estimativa é que converteríamos **apenas 1 ou no máximo 2** desses pacientes. O motivo está na raiz da objeção de cada um:\n\n*   [[chat:1722|Wanderson Santos]]: **Alta chance de conversão.** Ele pediu ativamente por um desconto. Oferecer os 10% na hora provavelmente teria fechado a venda.\n*   [[chat:1555|Dalila Minervina💕]]: **Zero chance.** O desconto de 10% (R$ 50) não resolve o problema dela. Ela não quer pagar pela nutricionista do pacote porque já tem uma. Para ela, a solução é desmembrar o serviço, não dar desconto.\n*   [[chat:198|.]] e [[chat:203|Manoel]]: **Baixa chance.** Quem acha \"muito caro\" de forma abrupta ou simplesmente some após ver a tabela geralmente tem uma barreira de preço maior, que R$ 50,00 de desconto dificilmente reverte.\n\n**Recomendação estratégica:** Em vez de uma política de 10% de desconto para todos, o ideal seria dar autonomia para a Joana negociar com quem pede desconto explicitamente (como o Wanderson) e criar um \"Plano B\" sem a nutricionista para resgatar pacientes como a Dalila.",
-    "r4": "📅 Período analisado: 21/03/2026 a 24/03/2026\n\n**Nenhum** desses 4 casos era de urgência. \n\nAnalisando o contexto de cada um:\n*   [[chat:1722|Wanderson Santos]] procurava o teste do pezinho (exame de rotina neonatal).\n*   [[chat:203|Manoel]] buscava uma primeira consulta para recém-nascido (rotina).\n*   [[chat:1555|Dalila Minervina💕]] queria apenas acompanhamento pediátrico padrão, sem a nutricionista.\n*   [[chat:198|.]] apenas perguntou horários e reclamou do preço, sem relatar nenhum sintoma ou pressa.\n\nGeralmente, pacientes com urgência real (criança com febre, dor, etc.) não costumam travar no preço — a objeção principal deles costuma ser a **falta de vaga imediata** (como vimos nos casos de objeção de logística/vaga)."
+    "r1": "Dos 11 agendamentos confirmados desde o dia 21/03, **2 foram casos de urgência**:\n\n1. **Maria Bianca de Moura:** A mãe relatou uma situação \"um pouco urgente\" e conseguiu vaga para o dia seguinte.\n2. **Samuel Ferreira Teixeira:** A mãe entrou em contato relatando estar \"desesperada\" e conseguiu agendamento para o mesmo dia.\n\nAmbos foram encaixados com sucesso na agenda da Dra. Fernanda.",
+    "r2": "TIMEOUT: Clara não respondeu em 5 minutos.",
+    "r3": "📅 Período analisado: 22/02/2026 a 24/03/2026\n\nConsiderando o ticket cheio, a perda com 4 pacientes desistindo na boca do funil representa um impacto direto de **R$ 2.000,00** em receita perdida. \n\nAqui está o raio-X exato de quem são e o que aconteceu em cada conversa:\n\n*   [[chat:1555|Dalila Minervina (+55 99 8823-6208)]]: Queria a consulta de introdução alimentar apenas com a pediatra. A clínica exigiu o pacote \"casado\" com a nutricionista (R$ 750). Como ela já tinha nutricionista por fora, achou que não compensava pagar a mais e pediu explicitamente para desmarcar.\n*   [[chat:1722|Wanderson Santos (+55 99 9212-4233)]]: Queria fazer o Teste do Pezinho (R$ 260). Ele é motorista do hospital regional e pediu um desconto de parceria. A secretária disse apenas que \"tinha desconto no dinheiro\", mas não falou o valor. Ele desistiu na hora.\n*   [[chat:198|Contato (+55 99 9103-2952)]]: Mãe do paciente Joaquim. Ao tentar agendar, reclamou abertamente do valor enviando áudio e dizendo: *\"Pq e muito caro viu\"*. \n*   [[chat:1726|Neia (+55 99 9120-5069)]]: Assustou-se com o reajuste do psiquiatra infantil, que subiu de R$ 500 para R$ 700 (*\"Era 500 😬\"*). *Nota: Após muita argumentação da secretária sobre o valor do profissional, ela acabou agendando, mas o atrito gerado pelo preço foi altíssimo.*\n\n**Um desconto de 10% (R$ 50) salvaria essas vendas?**\nProvavelmente **apenas 1 ou 2 deles**. \n\n*   **Wanderson** certamente converteria. Ele só queria um gatilho de exclusividade/parceria. Um desconto de 10% fecharia a venda na hora.\n*   **Mãe do Joaquim** possivelmente converteria, pois o desconto quebra a objeção imediata do \"tá caro\".\n*   **Dalila NÃO converteria.** O problema dela não era o preço absoluto, mas ser obrigada a pagar por um serviço que não precisava (a nutricionista). \n\n**Insight Estratégico:** O nosso maior gargalo aqui não é a falta de desconto, é a **rigidez na formatação dos serviços**. Se tivéssemos a flexibilidade de desmembrar a consulta da Dalila (vendendo só a pediatra por R$ 500), teríamos recuperado essa receita sem precisar dar 1 centavo de desconto.",
+    "r4": "📅 Período analisado: 22/02/2026 a 24/03/2026\n\nDesses 4 pacientes, **3 apresentaram urgência ou pressa** no atendimento:\n\n*   [[chat:198|Contato (+55 99 9103-2952)]]: Pediu encaixe explícito dizendo *\"É urgente\"*, pois o bebê estava com o nariz entupido, tossindo muito e sem conseguir dormir.\n*   [[chat:1555|Dalila Minervina (+55 99 8823-6208)]]: O quadro do bebê agravou durante o período de contato, evoluindo para crise de tosse, coriza e diarreia, com a mãe relatando estar *\"muito preocupada\"*.\n*   [[chat:1722|Wanderson Santos (+55 99 9212-4233)]]: Tinha pressa operacional, perguntando se conseguiria fazer o Teste do Pezinho no mesmo dia (*\"Precisava pra fazer hj teria como ?\"*).\n\nApenas o caso da Neia ([[chat:1726|(+55 99 9120-5069)]]) era um agendamento eletivo/de rotina para o psiquiatra infantil."
   }
 }

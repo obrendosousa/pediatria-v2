@@ -8,6 +8,8 @@ import { claraTaskExecutorTask } from "./cron/claraTaskExecutor";
 import { memoryConsolidationTask } from "./cron/memoryCrons";
 import { memoryHardDeleteTask } from "./cron/memoryHardDeleteCron";
 import { memoryBrainTask } from "./cron/memoryBrainCron";
+import { chatClassificationTask } from "./cron/chatClassificationCron";
+import { dailyKpiTask } from "./cron/dailyKpiCron";
 
 export interface WorkerRuntimeController {
   stop: () => Promise<void>;
@@ -124,6 +126,24 @@ export async function startWorkerRuntime(config: WorkerConfig): Promise<WorkerRu
     maxBackoffMs: 600_000,
     runOnStart: false,
     task: memoryBrainTask,
+  });
+
+  // Chat classification — classifica chats automaticamente a cada 15 minutos
+  cron.register({
+    name: "chat-classification",
+    intervalMs: 60_000,
+    maxBackoffMs: 300_000,
+    runOnStart: false,
+    task: chatClassificationTask,
+  });
+
+  // Daily KPI — computa KPIs do dia anterior às 03:00 BRT
+  cron.register({
+    name: "daily-kpi",
+    intervalMs: 60_000,
+    maxBackoffMs: 300_000,
+    runOnStart: false,
+    task: dailyKpiTask,
   });
 
   await cron.start();

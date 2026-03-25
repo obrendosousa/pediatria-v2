@@ -16,7 +16,8 @@ import type { Appointment } from '@/types/medical';
 
 export interface PreScheduleData {
   patientName: string | null;
-  parentName: string | null;
+  motherName: string | null;
+  fatherName: string | null;
   phone: string | null;
   suggestedDate: string; // YYYY-MM-DD
   suggestedTime: string; // HH:MM
@@ -162,8 +163,8 @@ export default function AppointmentModal({
 
       setFormData({
         patientName: initialData?.patientName || '',
-        motherName: initialData?.parentName || '',
-        fatherName: '',
+        motherName: initialData?.motherName || '',
+        fatherName: initialData?.fatherName || '',
         phone: chatPhone || initialData?.phone || '',
         date: initialDate,
         dateDisplay: formatDateToDisplay(initialDate),

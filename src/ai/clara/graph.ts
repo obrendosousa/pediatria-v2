@@ -77,7 +77,7 @@ export interface ClaraState {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MAX_SUPERVISOR_ITERATIONS = 2; // 3→2: rodada 3 foi sistematicamente vazia nos logs (economia ~30-60s)
-const MAX_TOOL_CALL_ITERATIONS = 20;
+const MAX_TOOL_CALL_ITERATIONS = 10; // 20→10: previne recursion limit e custo desnecessário
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FERRAMENTAS DO SIMPLE_AGENT
@@ -988,4 +988,7 @@ claraWorkflow.addConditionalEdges("research_supervisor_node", (state: ClaraState
 });
 claraWorkflow.addEdge("final_report_node", END);
 
-export const claraGraph = claraWorkflow.compile({ checkpointer: postgresCheckpointer });
+export const claraGraph = claraWorkflow.compile({
+  checkpointer: postgresCheckpointer,
+  recursionLimit: 75, // default=25 → 75: acomoda tool calls + checkpointer state
+});

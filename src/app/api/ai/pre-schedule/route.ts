@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     // Formata conversa simples para economizar tokens
     const conversationText = messages
       .slice(-30) // Pega apenas as últimas 30 mensagens para contexto recente
-      .map((m: any) => {
+      .map((m: { sender?: string; message_text?: string; message?: string }) => {
         const sender = m.sender === 'HUMAN_AGENT' || m.sender === 'me' ? 'Clínica' : 'Paciente';
         const text = m.message_text || m.message || '[Mídia]';
         return `${sender}: ${text}`;
@@ -73,10 +73,17 @@ INSTRUÇÕES IMPORTANTES:
    - Formate como um resumo clínico profissional mas acessível
    - Exemplo: "Paciente apresenta [sintomas]. Relato de [histórico]. [Observações sobre urgência/contexto]. Recomendação: [sugestão baseada no contexto]"
 
+3. IDENTIFICAÇÃO DOS PAIS:
+   - Identifique separadamente o nome da MÃE e do PAI da criança
+   - Procure por referências como "mãe", "pai", "mamãe", "papai", "minha esposa", "meu marido"
+   - Se a pessoa que está conversando se identifica como mãe ou pai, coloque o nome no campo correspondente
+   - Se não conseguir distinguir quem é mãe ou pai, coloque o nome no campo "motherName" (mais comum em consultas pediátricas)
+
 Retorne APENAS um JSON no seguinte formato, sem markdown ou texto adicional:
 {
   "patientName": "Nome da criança (ou null se não encontrado)",
-  "parentName": "Nome do pai/mãe/responsável (ou null se não encontrado)",
+  "motherName": "Nome da mãe (ou null se não encontrado)",
+  "fatherName": "Nome do pai (ou null se não encontrado)",
   "phone": "Telefone se mencionado na conversa (ou null)",
   "suggestedDate": "YYYY-MM-DD (use a data atual se não especificado, ou a próxima data lógica baseada no contexto)",
   "suggestedTime": "HH:MM (use 09:00 como padrão se não especificado)",
@@ -109,7 +116,8 @@ Se não encontrar informações específicas, use null para os campos opcionais.
     // Validação básica dos campos
     const result = {
       patientName: data.patientName || null,
-      parentName: data.parentName || null,
+      motherName: data.motherName || null,
+      fatherName: data.fatherName || null,
       phone: data.phone || null,
       suggestedDate: data.suggestedDate || new Date().toISOString().split('T')[0],
       suggestedTime: data.suggestedTime || '09:00',
@@ -119,14 +127,15 @@ Se não encontrar informações específicas, use null para os campos opcionais.
 
     return NextResponse.json(result);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro na IA:', error);
-    
+
     // Mensagem de erro mais específica para timeout
-    let errorMessage = error.message || 'Falha ao processar com IA';
-    if (error.message?.includes('timed out') || error.message?.includes('Request timed out')) {
+    const errMsg = error instanceof Error ? error.message : '';
+    let errorMessage = errMsg || 'Falha ao processar com IA';
+    if (errMsg.includes('timed out') || errMsg.includes('Request timed out')) {
       errorMessage = 'Request timed out. A requisição para a OpenAI demorou muito. Tente novamente.';
-    } else if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+    } else if (errMsg.includes('rate limit') || errMsg.includes('429')) {
       errorMessage = 'Muitas requisições. Aguarde alguns instantes e tente novamente.';
     }
     
