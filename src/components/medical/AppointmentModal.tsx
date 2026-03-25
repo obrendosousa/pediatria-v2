@@ -19,10 +19,13 @@ export interface PreScheduleData {
   motherName: string | null;
   fatherName: string | null;
   phone: string | null;
+  birthDate?: string | null; // YYYY-MM-DD
+  address?: string | null;
   suggestedDate: string; // YYYY-MM-DD
   suggestedTime: string; // HH:MM
   reason: string;
   patientSex?: 'M' | 'F' | null;
+  appointmentType?: 'consulta' | 'retorno' | null;
 }
 
 interface AppointmentModalProps {
@@ -161,6 +164,8 @@ export default function AppointmentModal({
       const defaultTime = '09:00';
       const initialDate = initialData?.suggestedDate || today;
 
+      const initialBirthDate = initialData?.birthDate || '';
+
       setFormData({
         patientName: initialData?.patientName || '',
         motherName: initialData?.motherName || '',
@@ -171,9 +176,9 @@ export default function AppointmentModal({
         time: initialData?.suggestedTime || defaultTime,
         reason: initialData?.reason || '',
         patientSex: (initialData?.patientSex as 'M' | 'F' | '') || '',
-        birthDateDisplay: '',
-        birthDate: '',
-        appointmentType: '',
+        birthDateDisplay: initialBirthDate ? formatDateToDisplay(initialBirthDate) : '',
+        birthDate: initialBirthDate,
+        appointmentType: (initialData?.appointmentType as 'consulta' | 'retorno' | '') || '',
         totalAmount: '',
         paidAmount: ''
       });

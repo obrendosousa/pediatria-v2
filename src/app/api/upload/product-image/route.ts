@@ -10,8 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Nenhum arquivo enviado' }, { status: 400 });
     }
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
+    if (!file.type.startsWith('image/')) {
       return NextResponse.json({ error: 'Tipo de arquivo não permitido' }, { status: 400 });
     }
 
@@ -20,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createSchemaAdminClient();
-    const BUCKET = 'patient-photos';
+    const BUCKET = 'product-images';
 
     // Garante que o bucket existe (idempotente)
     const { data: buckets } = await supabase.storage.listBuckets();
@@ -28,9 +27,9 @@ export async function POST(req: NextRequest) {
       await supabase.storage.createBucket(BUCKET, { public: true });
     }
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    const filePath = `patients/${fileName}`;
+    const ext = file.name.split('.').pop() || 'jpg';
+    const fileName = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    const filePath = `products/${fileName}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -39,21 +38,22 @@ export async function POST(req: NextRequest) {
       .from(BUCKET)
       .upload(filePath, buffer, {
         contentType: file.type,
+        cacheControl: '3600',
         upsert: false,
       });
 
     if (uploadError) {
-      console.error('[upload/patient-photo] Upload error:', uploadError);
-      return NextResponse.json({ error: 'Erro ao fazer upload da foto' }, { status: 500 });
+      console.error('[upload/product-image] Upload error:', uploadError);
+      return NextResponse.json({ error: 'Erro ao fazer upload da imagem' }, { status: 500 });
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from('patient-photos')
+    const { data: urlData } = supabase.storage
+      .from('product-images')
       .getPublicUrl(filePath);
 
-    return NextResponse.json({ url: publicUrlData.publicUrl });
+    return NextResponse.json({ url: urlData.publicUrl });
   } catch (err) {
-    console.error('[upload/patient-photo] Unexpected error:', err);
+    console.error('[upload/product-image] Unexpected error:', err);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

@@ -99,21 +99,21 @@ export default function ProductModal({ isOpen, onClose, onSuccess, product }: Pr
 
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop() || 'jpg';
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-      const filePath = `products/${fileName}`;
+      const formData = new FormData();
+      formData.append('file', file);
 
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+      const res = await fetch('/api/upload/product-image', {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (uploadError) throw uploadError;
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Erro no upload');
+      }
 
-      const { data: urlData } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
-
-      setFormData(prev => ({ ...prev, image_url: urlData.publicUrl }));
+      const { url } = await res.json();
+      setFormData(prev => ({ ...prev, image_url: url }));
       toast.success('Imagem enviada!');
     } catch (err) {
       console.error('Erro no upload:', err);
@@ -151,7 +151,15 @@ export default function ProductModal({ isOpen, onClose, onSuccess, product }: Pr
       };
 
       if (product) {
-        await supabase.from('products').update(payload).eq('id', product.id);
+        const res = await fetch('/api/store/products', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: product.id, ...payload }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Erro ao atualizar produto');
+        }
         if (profile?.id) {
           await logAudit({ userId: profile.id, action: 'update', entityType: 'product', entityId: String(product.id), details: { payload } });
         }
@@ -159,8 +167,16 @@ export default function ProductModal({ isOpen, onClose, onSuccess, product }: Pr
         onSuccess();
         onClose();
       } else {
-        const { data, error } = await supabase.from('products').insert({ ...payload, stock: 0 }).select().single();
-        if (error) throw error;
+        const res = await fetch('/api/store/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Erro ao criar produto');
+        }
+        const { data } = await res.json();
         if (profile?.id) {
           await logAudit({ userId: profile.id, action: 'create', entityType: 'product', entityId: String(data.id), details: { payload } });
         }

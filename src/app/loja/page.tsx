@@ -859,8 +859,13 @@ export default function StorePage() {
                         </div>
                      ) : cart.map(item => (
                         <div key={item.id} className="flex gap-3 bg-white dark:bg-[#1c1c21] p-3 rounded-xl border border-slate-100 dark:border-[#3d3d48] shadow-sm items-center">
-                           <div className="w-10 h-10 bg-slate-50 dark:bg-[#111b21] rounded-lg flex items-center justify-center text-xs font-bold text-slate-400 dark:text-[#71717a] shrink-0">
-                              {item.quantity}x
+                           <div className="w-10 h-10 bg-slate-50 dark:bg-[#111b21] rounded-lg flex items-center justify-center text-xs font-bold text-slate-400 dark:text-[#71717a] shrink-0 overflow-hidden relative">
+                              {item.image_url ? (
+                                 <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                              ) : (
+                                 <Package className="w-5 h-5" />
+                              )}
+                              <span className="absolute -bottom-0.5 -right-0.5 bg-rose-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{item.quantity}</span>
                            </div>
                            <div className="flex-1 min-w-0">
                               <p className="font-bold text-sm text-slate-700 dark:text-gray-200 truncate">{item.name}</p>
@@ -1037,8 +1042,13 @@ export default function StorePage() {
                            <tr key={product.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors group">
                               <td className="p-4">
                                  <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-slate-100 dark:bg-[#111b21] rounded-lg flex items-center justify-center text-slate-400 dark:text-[#71717a]">
-                                       <Package className="w-5 h-5" />
+                                    <div className="w-10 h-10 bg-slate-100 dark:bg-[#111b21] rounded-lg flex items-center justify-center text-slate-400 dark:text-[#71717a] overflow-hidden">
+                                       {product.image_url ? (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                                       ) : (
+                                          <Package className="w-5 h-5" />
+                                       )}
                                     </div>
                                     <div>
                                        <p className="font-bold text-sm text-slate-700 dark:text-gray-200">{product.name}</p>

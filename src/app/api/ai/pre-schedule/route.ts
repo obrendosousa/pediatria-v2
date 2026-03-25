@@ -55,43 +55,76 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: `Você é uma assistente de agendamento pediátrico experiente. Analise a conversa abaixo e extraia as informações necessárias para criar um agendamento.
+          content: `Você é uma assistente de agendamento pediátrico experiente. Analise a conversa abaixo e extraia TODAS as informações necessárias para criar um agendamento.
 
-Data atual: ${currentDate}
+Data e hora atual: ${currentDate}
 
-INSTRUÇÕES IMPORTANTES:
+INSTRUÇÕES DE EXTRAÇÃO — leia com atenção:
 
-1. IDENTIFICAÇÃO DO SEXO DA CRIANÇA:
-   - Analise o NOME da criança para identificar o sexo (ex: "Maria" = F, "João" = M, "Ana" = F, "Pedro" = M)
-   - Procure por pronomes na conversa (ele/ela, menino/menina, filho/filha)
-   - Procure por referências explícitas ao sexo (ex: "minha filha", "meu filho", "ela está", "ele está")
-   - Se não conseguir identificar com certeza, use null
+1. NOME DO PACIENTE (CRIANÇA):
+   - Extraia o nome COMPLETO da criança mencionada na conversa.
+   - Atenção: o paciente é a CRIANÇA, não o responsável que está conversando.
 
-2. ANÁLISE DO ATENDIMENTO:
-   - O campo "reason" deve conter uma ANÁLISE COMPLETA do atendimento, não apenas um resumo curto
-   - Inclua: sintomas mencionados, histórico relevante, urgência percebida, contexto da conversa
-   - Formate como um resumo clínico profissional mas acessível
-   - Exemplo: "Paciente apresenta [sintomas]. Relato de [histórico]. [Observações sobre urgência/contexto]. Recomendação: [sugestão baseada no contexto]"
+2. IDENTIFICAÇÃO DO SEXO DA CRIANÇA:
+   - Analise o NOME da criança (ex: "Gabriel" = M, "Maria" = F, "Ana" = F, "Pedro" = M, "Sophia" = F).
+   - Procure pronomes (ele/ela, menino/menina, filho/filha) e referências como "minha filha", "meu filho", "meu menino", "minha menina".
+   - Se não conseguir identificar com certeza, use null.
 
-3. IDENTIFICAÇÃO DOS PAIS:
-   - Identifique separadamente o nome da MÃE e do PAI da criança
-   - Procure por referências como "mãe", "pai", "mamãe", "papai", "minha esposa", "meu marido"
-   - Se a pessoa que está conversando se identifica como mãe ou pai, coloque o nome no campo correspondente
-   - Se não conseguir distinguir quem é mãe ou pai, coloque o nome no campo "motherName" (mais comum em consultas pediátricas)
+3. DATA DE NASCIMENTO DA CRIANÇA:
+   - Procure ATIVAMENTE por data de nascimento na conversa. Pode aparecer como:
+     * "Data de nascimento: DD/MM/AAAA" ou "nascimento: DD/MM/AAAA"
+     * "nasceu em DD/MM/AAAA" ou "nasceu dia DD/MM/AAAA"
+     * "tem X meses" ou "tem X anos" (calcule a data aproximada a partir da data atual)
+     * "DD/MM/AAAA" logo após menção de nascimento
+   - Converta SEMPRE para o formato YYYY-MM-DD (ISO).
+   - Exemplo: "10/02/2023" → "2023-02-10"
+   - Se não encontrar, use null.
 
-Retorne APENAS um JSON no seguinte formato, sem markdown ou texto adicional:
+4. IDENTIFICAÇÃO DOS PAIS/RESPONSÁVEIS:
+   - Identifique separadamente nome da MÃE e do PAI.
+   - Procure por "mãe", "pai", "mamãe", "papai", "responsável", "Nome completo dos pais ou responsáveis".
+   - Se a pessoa que conversa se identifica pelo nome E como mãe/pai, coloque no campo correspondente.
+   - Se houver apenas um nome de responsável sem distinção, coloque em "motherName" (mais comum em pediatria).
+
+5. TELEFONE:
+   - Extraia o número de telefone mencionado na conversa (campo "Telefone para contato" ou similar).
+   - Mantenha apenas dígitos. Se tiver código do país (55), mantenha. Se não tiver, mantenha como está.
+
+6. ENDEREÇO:
+   - Extraia o endereço completo se mencionado na conversa.
+   - Retorne como string única (ex: "Av. Masura Jorge, 190 C").
+
+7. ANÁLISE CLÍNICA (reason):
+   - Faça uma ANÁLISE COMPLETA: sintomas mencionados, histórico, urgência, contexto.
+   - Formato profissional: "Paciente apresenta [sintomas]. Relato de [histórico]. [Urgência/contexto]. Recomendação: [sugestão]."
+   - Mínimo 2-3 frases.
+
+8. TIPO DE ATENDIMENTO:
+   - Determine se é "consulta" (primeira vez ou consulta regular) ou "retorno" (follow-up).
+   - Se o paciente menciona que já foi atendido antes, é "retorno".
+   - Se menciona que é primeira vez ou não há indicação, é "consulta".
+   - Se não conseguir determinar, use "consulta" como padrão.
+
+9. DATA E HORA DA CONSULTA:
+   - Se a conversa menciona uma data/hora desejada, use essa.
+   - Se não, sugira a próxima data útil (segunda a sexta, horário comercial).
+   - Use a data atual se não houver menção específica.
+   - Formato: YYYY-MM-DD para data, HH:MM para hora (padrão 09:00).
+
+Retorne APENAS um JSON válido, sem markdown ou texto adicional:
 {
-  "patientName": "Nome da criança (ou null se não encontrado)",
-  "motherName": "Nome da mãe (ou null se não encontrado)",
-  "fatherName": "Nome do pai (ou null se não encontrado)",
-  "phone": "Telefone se mencionado na conversa (ou null)",
-  "suggestedDate": "YYYY-MM-DD (use a data atual se não especificado, ou a próxima data lógica baseada no contexto)",
-  "suggestedTime": "HH:MM (use 09:00 como padrão se não especificado)",
-  "reason": "ANÁLISE COMPLETA do atendimento incluindo sintomas, histórico, urgência e contexto (mínimo 2-3 frases, formato profissional)",
-  "patientSex": "M ou F (identifique pelo nome ou evidências na conversa, ou null se não conseguir identificar)"
-}
-
-Se não encontrar informações específicas, use null para os campos opcionais. Para a data, se não houver menção específica, sugira a próxima data útil (segunda a sexta, horário comercial).`
+  "patientName": "Nome completo da criança ou null",
+  "motherName": "Nome da mãe ou null",
+  "fatherName": "Nome do pai ou null",
+  "phone": "Telefone (apenas dígitos) ou null",
+  "birthDate": "YYYY-MM-DD ou null",
+  "address": "Endereço completo ou null",
+  "suggestedDate": "YYYY-MM-DD",
+  "suggestedTime": "HH:MM",
+  "reason": "Análise clínica completa (mínimo 2-3 frases)",
+  "patientSex": "M ou F ou null",
+  "appointmentType": "consulta ou retorno"
+}`
         },
         { role: "user", content: conversationText }
       ],
@@ -119,10 +152,13 @@ Se não encontrar informações específicas, use null para os campos opcionais.
       motherName: data.motherName || null,
       fatherName: data.fatherName || null,
       phone: data.phone || null,
+      birthDate: data.birthDate || null,
+      address: data.address || null,
       suggestedDate: data.suggestedDate || new Date().toISOString().split('T')[0],
       suggestedTime: data.suggestedTime || '09:00',
       reason: data.reason || 'Consulta agendada via chat',
-      patientSex: (data.patientSex === 'M' || data.patientSex === 'F') ? data.patientSex : null
+      patientSex: (data.patientSex === 'M' || data.patientSex === 'F') ? data.patientSex : null,
+      appointmentType: (data.appointmentType === 'consulta' || data.appointmentType === 'retorno') ? data.appointmentType : 'consulta'
     };
 
     return NextResponse.json(result);
