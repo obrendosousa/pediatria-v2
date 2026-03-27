@@ -167,7 +167,14 @@
       "Bash(find /Users/brendosousa/Downloads/painel-clinica-main/database -name \"*.sql\" -exec grep -l \"CREATE TABLE\" {} ;)",
       "Bash(find /Users/brendosousa/Downloads/painel-clinica-main/database -name \"*.sql\" -exec grep -l \"medical_records\" {} ;)",
       "Bash(source .env.local)",
-      "Bash(source .env)"
+      "Bash(source .env)",
+      "Bash(__NEW_LINE_f0c99ecc70b16020__ echo \"=== 1. public.patients — Verificando family_members ===\")",
+      "Bash(curl -s \"$SUPABASE_URL/rest/v1/patients?select=id,name,mother_name,father_name,family_members&limit=5&order=id.desc\" -H \"apikey: $SERVICE_KEY\" -H \"Authorization: Bearer $SERVICE_KEY\")",
+      "Bash(SERVICE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\")",
+      "Bash(__NEW_LINE_838561d366fa11b7__ curl -s \"$SUPABASE_URL/rest/v1/patients?select=id,name,mother_name,father_name,family_members&limit=5&order=id.desc\" -H \"apikey: $SERVICE_KEY\" -H \"Authorization: Bearer $SERVICE_KEY\")",
+      "Bash(export SUPABASE_URL=\"https://juctfolupehtaoehjkwl.supabase.co\")",
+      "Bash(export SERVICE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\")",
+      "Bash(curl -s \"$SUPABASE_URL/rest/v1/appointments?select=id,patient_name,mother_name,father_name,guardians&limit=5&order=id.desc\" -H \"apikey: $SERVICE_KEY\" -H \"Authorization: Bearer $SERVICE_KEY\")"
     ],
     "additionalDirectories": [
       "/Users/brendosousa/Downloads/painel-clinica-main",
