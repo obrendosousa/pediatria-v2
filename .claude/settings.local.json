@@ -362,7 +362,11 @@
       "Bash(head -5 grep -rn langchain/langgraph c:/Users/Brendo/Documents/pediatria-v2/src --include=*.d.ts)",
       "Bash(head -5 ls c:/Users/Brendo/Documents/pediatria-v2/src/*.d.ts)",
       "Bash(curl -s http://localhost:8880/v1/audio/speech)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"healthcare pediatric clinic sidebar navigation premium elegant\" --design-system -p \"Pediatria Integrada\")",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"healthcare medical dark mode sidebar elegant clean\" --domain color -n 10)"
     ]
   },
   "hooks": {
