@@ -634,10 +634,17 @@ async function handleContactsEvent(body: Record<string, unknown>) {
     const phone = extractPhoneFromRemoteJid(remoteJid);
     if (!phone || !/^\d{8,15}$/.test(phone)) continue;
 
-    const pushName = typeof c.pushName === "string" ? c.pushName.trim() : null;
+    // Evolution API pode enviar o nome em diferentes campos
+    const contactName = (
+      (typeof c.pushName === "string" && c.pushName.trim()) ||
+      (typeof c.notify === "string" && (c.notify as string).trim()) ||
+      (typeof c.name === "string" && (c.name as string).trim()) ||
+      (typeof c.verifiedName === "string" && (c.verifiedName as string).trim()) ||
+      null
+    ) as string | null;
     const profilePicUrl = typeof c.profilePicUrl === "string" && (c.profilePicUrl as string).startsWith("http") ? c.profilePicUrl as string : null;
 
-    if (!pushName && !profilePicUrl) continue;
+    if (!contactName && !profilePicUrl) continue;
 
     const { data: existingChat } = await supabase
       .from("chats")
@@ -649,12 +656,13 @@ async function handleContactsEvent(body: Record<string, unknown>) {
 
     const updatePayload: Record<string, unknown> = {};
 
-    // Atualizar nome se o atual é vazio ou igual ao telefone
-    if (pushName) {
+    // Atualizar nome: sempre que vier um nome válido do WhatsApp e o atual estiver vazio,
+    // for igual ao telefone, ou for diferente do nome recebido (manter sincronizado)
+    if (contactName) {
       const currentName = (existingChat.contact_name ?? "").trim();
       const normalizedCurrentName = currentName.replace(/\D/g, "");
-      if (!currentName || normalizedCurrentName === phone) {
-        updatePayload.contact_name = pushName;
+      if (!currentName || normalizedCurrentName === phone || currentName !== contactName) {
+        updatePayload.contact_name = contactName;
       }
     }
 

@@ -421,20 +421,27 @@ async function handleContactsEventAtd(body: Record<string, unknown>) {
     const phone = extractPhoneFromRemoteJid(remoteJid);
     if (!phone || !/^\d{8,15}$/.test(phone)) continue;
 
-    const pushName = typeof c.pushName === 'string' ? c.pushName.trim() : null;
+    // Evolution API pode enviar o nome em diferentes campos
+    const contactName = (
+      (typeof c.pushName === 'string' && c.pushName.trim()) ||
+      (typeof c.notify === 'string' && (c.notify as string).trim()) ||
+      (typeof c.name === 'string' && (c.name as string).trim()) ||
+      (typeof c.verifiedName === 'string' && (c.verifiedName as string).trim()) ||
+      null
+    ) as string | null;
     const profilePicUrl = typeof c.profilePicUrl === 'string' && (c.profilePicUrl as string).startsWith('http') ? c.profilePicUrl as string : null;
-    if (!pushName && !profilePicUrl) continue;
+    if (!contactName && !profilePicUrl) continue;
 
     const { data: existingChat } = await supabase
       .from('chats').select('id, contact_name, profile_pic').eq('phone', phone).maybeSingle();
     if (!existingChat) continue;
 
     const updatePayload: Record<string, unknown> = {};
-    if (pushName) {
+    if (contactName) {
       const currentName = (existingChat.contact_name ?? '').trim();
       const normalizedCurrentName = currentName.replace(/\D/g, '');
-      if (!currentName || normalizedCurrentName === phone) {
-        updatePayload.contact_name = pushName;
+      if (!currentName || normalizedCurrentName === phone || currentName !== contactName) {
+        updatePayload.contact_name = contactName;
       }
     }
     if (profilePicUrl) {
@@ -442,6 +449,7 @@ async function handleContactsEventAtd(body: Record<string, unknown>) {
     }
     if (Object.keys(updatePayload).length > 0) {
       await supabase.from('chats').update(updatePayload).eq('id', existingChat.id);
+      console.log(`[ATD/CONTACTS] Atualizado chat ${existingChat.id} (${phone}):`, Object.keys(updatePayload).join(', '));
     }
   }
 }

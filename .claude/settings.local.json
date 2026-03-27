@@ -361,7 +361,8 @@
       "Bash(node scripts/backfill-atd-profile-pics.mjs)",
       "Bash(head -5 grep -rn langchain/langgraph c:/Users/Brendo/Documents/pediatria-v2/src --include=*.d.ts)",
       "Bash(head -5 ls c:/Users/Brendo/Documents/pediatria-v2/src/*.d.ts)",
-      "Bash(curl -s http://localhost:8880/v1/audio/speech)"
+      "Bash(curl -s http://localhost:8880/v1/audio/speech)",
+      "Bash(git stash:*)"
     ]
   },
   "hooks": {

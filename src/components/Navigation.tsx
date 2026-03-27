@@ -96,7 +96,7 @@ export default function Navigation() {
 
   return (
     <div
-      className={`flex shrink-0 flex-col sidebar-slide-in ${isAtendimento ? 'bg-[#0B1120] border-r border-[#1a2744]/60' : 'bg-[#110B18] border-r border-[#2a1538]/60'} dark:shadow-none relative z-10 h-full overflow-hidden sidebar-transition`}
+      className={`flex shrink-0 flex-col sidebar-slide-in ${isAtendimento ? 'bg-[#0C1222] border-r border-[#1c2d4a]/50' : 'bg-[#1E1525] border-r border-[#352342]/40'} dark:shadow-none relative z-10 h-full overflow-hidden sidebar-transition`}
       style={{
         width: isCollapsed ? '80px' : '260px',
         minWidth: isCollapsed ? '80px' : '260px',
@@ -105,8 +105,9 @@ export default function Navigation() {
     >
 
       {/* --- FUNDO DECORATIVO --- */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-30 dark:opacity-10">
-        <div className={`absolute top-[-10%] left-[-20%] w-48 h-48 ${mt.bgBlur} rounded-full blur-[60px]`}></div>
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className={`absolute top-[-10%] left-[-20%] w-48 h-48 ${isAtendimento ? mt.bgBlur : 'bg-rose-400/20'} rounded-full blur-[60px]`}></div>
+        {!isAtendimento && <div className="absolute bottom-[10%] right-[-15%] w-40 h-40 bg-violet-400/10 rounded-full blur-[50px]"></div>}
       </div>
 
       {/* --- PARTÍCULAS --- */}
@@ -127,18 +128,18 @@ export default function Navigation() {
         </div>
       ) : (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[8%] left-[15%] w-1 h-1 bg-white/15 rounded-full animate-[float_6s_ease-in-out_infinite]" />
-          <div className="absolute top-[15%] right-[20%] w-1.5 h-1.5 bg-pink-400/10 rounded-full animate-[float_8s_ease-in-out_infinite_1s]" />
-          <div className="absolute top-[25%] left-[60%] w-1 h-1 bg-white/10 rounded-full animate-[float_7s_ease-in-out_infinite_2s]" />
-          <div className="absolute top-[35%] left-[25%] w-1 h-1 bg-rose-300/10 rounded-full animate-[float_9s_ease-in-out_infinite_0.5s]" />
-          <div className="absolute top-[42%] right-[15%] w-1.5 h-1.5 bg-white/10 rounded-full animate-[float_5s_ease-in-out_infinite_3s]" />
-          <div className="absolute top-[50%] left-[40%] w-1 h-1 bg-pink-400/10 rounded-full animate-[float_10s_ease-in-out_infinite_1.5s]" />
-          <div className="absolute top-[58%] left-[10%] w-1 h-1 bg-white/15 rounded-full animate-[float_6s_ease-in-out_infinite_4s]" />
-          <div className="absolute top-[65%] right-[30%] w-1.5 h-1.5 bg-rose-400/10 rounded-full animate-[float_8s_ease-in-out_infinite_2.5s]" />
-          <div className="absolute top-[72%] left-[50%] w-1 h-1 bg-white/10 rounded-full animate-[float_7s_ease-in-out_infinite_0.8s]" />
-          <div className="absolute top-[80%] left-[20%] w-1 h-1 bg-pink-300/10 rounded-full animate-[float_9s_ease-in-out_infinite_3.5s]" />
-          <div className="absolute top-[88%] right-[25%] w-1.5 h-1.5 bg-white/10 rounded-full animate-[float_5s_ease-in-out_infinite_1.2s]" />
-          <div className="absolute top-[95%] left-[35%] w-1 h-1 bg-rose-300/15 rounded-full animate-[float_11s_ease-in-out_infinite_4.5s]" />
+          <div className="absolute top-[8%] left-[15%] w-1 h-1 bg-rose-200/20 rounded-full animate-[float_6s_ease-in-out_infinite]" />
+          <div className="absolute top-[15%] right-[20%] w-1.5 h-1.5 bg-violet-300/15 rounded-full animate-[float_8s_ease-in-out_infinite_1s]" />
+          <div className="absolute top-[25%] left-[60%] w-1 h-1 bg-pink-200/12 rounded-full animate-[float_7s_ease-in-out_infinite_2s]" />
+          <div className="absolute top-[35%] left-[25%] w-1 h-1 bg-rose-300/15 rounded-full animate-[float_9s_ease-in-out_infinite_0.5s]" />
+          <div className="absolute top-[42%] right-[15%] w-1.5 h-1.5 bg-violet-200/12 rounded-full animate-[float_5s_ease-in-out_infinite_3s]" />
+          <div className="absolute top-[50%] left-[40%] w-1 h-1 bg-pink-300/15 rounded-full animate-[float_10s_ease-in-out_infinite_1.5s]" />
+          <div className="absolute top-[58%] left-[10%] w-1 h-1 bg-rose-200/18 rounded-full animate-[float_6s_ease-in-out_infinite_4s]" />
+          <div className="absolute top-[65%] right-[30%] w-1.5 h-1.5 bg-violet-300/12 rounded-full animate-[float_8s_ease-in-out_infinite_2.5s]" />
+          <div className="absolute top-[72%] left-[50%] w-1 h-1 bg-rose-300/12 rounded-full animate-[float_7s_ease-in-out_infinite_0.8s]" />
+          <div className="absolute top-[80%] left-[20%] w-1 h-1 bg-pink-200/15 rounded-full animate-[float_9s_ease-in-out_infinite_3.5s]" />
+          <div className="absolute top-[88%] right-[25%] w-1.5 h-1.5 bg-violet-200/12 rounded-full animate-[float_5s_ease-in-out_infinite_1.2s]" />
+          <div className="absolute top-[95%] left-[35%] w-1 h-1 bg-rose-300/18 rounded-full animate-[float_11s_ease-in-out_infinite_4.5s]" />
         </div>
       )}
 
@@ -148,7 +149,7 @@ export default function Navigation() {
         {/* Botão Toggle */}
         <button
           onClick={toggleSidebar}
-          className={`absolute top-3 z-50 w-7 h-7 rounded-full ${isAtendimento ? 'bg-[#0B1120]' : 'bg-[#110B18]'} border-2 border-white/10 text-white/60 hover:bg-white/10 shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer`}
+          className={`absolute top-3 z-50 w-7 h-7 rounded-full ${isAtendimento ? 'bg-[#0C1222]' : 'bg-[#1E1525]'} border-2 border-white/10 text-white/60 hover:bg-white/10 shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer`}
           style={{ right: isCollapsed ? '8px' : '12px', transition: 'right 0.4s cubic-bezier(0.22, 1, 0.36, 1)' }}
           aria-label={isCollapsed ? 'Expandir menu' : 'Minimizar menu'}
         >
@@ -170,7 +171,7 @@ export default function Navigation() {
           }}
         >
           <div
-            className={`relative flex items-center justify-center bg-white dark:bg-[#1c1c21] rounded-xl shadow-sm border ${isAtendimento ? 'border-slate-200 dark:border-[#2d2d36]' : 'border-pink-100 dark:border-[#2d2d36]'} p-1 shrink-0`}
+            className={`relative flex items-center justify-center bg-white dark:bg-[#1c1c21] rounded-xl shadow-sm border ${isAtendimento ? 'border-slate-200 dark:border-[#2d2d36]' : 'border-rose-100 dark:border-[#2d2536]'} p-1 shrink-0`}
             style={{
               width: isCollapsed ? '36px' : '40px',
               height: isCollapsed ? '36px' : '40px',
@@ -200,7 +201,7 @@ export default function Navigation() {
 
         {/* Module badge */}
         <span
-          className={`text-[10px] font-bold ${isAtendimento ? `${mt.text} ${mt.bgSubtle}` : 'text-pink-400 bg-pink-950/30'} px-2 rounded-md uppercase tracking-wider w-full text-center whitespace-nowrap overflow-hidden`}
+          className={`text-[10px] font-bold ${isAtendimento ? `${mt.text} ${mt.bgSubtle}` : 'text-rose-300 bg-rose-950/25'} px-2 rounded-md uppercase tracking-wider w-full text-center whitespace-nowrap overflow-hidden`}
           style={{
             opacity: isCollapsed ? 0 : 1,
             maxHeight: isCollapsed ? '0px' : '24px',
@@ -262,15 +263,15 @@ export default function Navigation() {
               background: isCollapsed
                 ? (isAtendimento
                   ? 'radial-gradient(ellipse at center, rgba(255,255,255,0.10) 0%, transparent 70%)'
-                  : 'radial-gradient(ellipse at center, rgba(255,228,237,0.12) 0%, transparent 70%)')
+                  : 'radial-gradient(ellipse at center, rgba(251,200,212,0.14) 0%, transparent 70%)')
                 : (isAtendimento
                   ? 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.08) 70%, rgba(255,255,255,0.15) 100%)'
-                  : 'linear-gradient(90deg, transparent 0%, rgba(255,228,237,0.03) 30%, rgba(255,228,237,0.08) 70%, rgba(255,228,237,0.16) 100%)'),
+                  : 'linear-gradient(90deg, transparent 0%, rgba(251,200,212,0.04) 30%, rgba(251,200,212,0.10) 70%, rgba(251,200,212,0.18) 100%)'),
               border: isCollapsed
                 ? '1px solid transparent'
                 : (isAtendimento
                   ? '1px solid rgba(255,255,255,0.08)'
-                  : '1px solid rgba(255,228,237,0.10)'),
+                  : '1px solid rgba(251,200,212,0.12)'),
             }}
           >
             {isAtendimento ? (
@@ -286,9 +287,9 @@ export default function Navigation() {
               />
             ) : (
               <Heart
-                className="absolute top-1/2 w-3.5 h-3.5 fill-pink-200 text-pink-200"
+                className="absolute top-1/2 w-3.5 h-3.5 fill-rose-300/80 text-rose-300/80"
                 style={{
-                  filter: 'drop-shadow(0 0 6px rgba(255,228,237,0.6)) drop-shadow(0 0 12px rgba(255,228,237,0.25))',
+                  filter: 'drop-shadow(0 0 6px rgba(251,113,133,0.5)) drop-shadow(0 0 14px rgba(251,113,133,0.2))',
                   opacity: isCollapsed ? 0 : 1,
                   right: '10px',
                   transform: `translateY(-50%) scale(${isCollapsed ? 0 : 1})`,
@@ -569,7 +570,7 @@ function NavItem({ icon: Icon, label, path, active, badge }: NavItemProps) {
               transition: isCollapsed
                 ? 'opacity 0.1s ease, max-width 0.2s ease, margin-left 0.2s ease'
                 : 'max-width 0.3s ease 0.15s, margin-left 0.3s ease 0.15s, opacity 0.25s ease 0.2s',
-              overflow: 'hidden',
+              overflow: 'visible',
             }}
           >
             <span className="relative flex items-center justify-center">
