@@ -148,19 +148,27 @@ export default function CRMPage() {
 
   async function fetchData() {
     setLoading(true);
-    
+
+    // Verifica sessão antes de buscar dados (evita queries com token expirado)
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.warn('[CRM] Sessão expirada — redirecionando para login');
+      window.location.href = '/login';
+      return;
+    }
+
     // 1. Busca os Chats (Mantém para o Kanban/Lista)
-    const { data: chatsData } = await supabase.from('chats')
+    const { data: chatsData, error: chatsError } = await supabase.from('chats')
         .select('*')
         .neq('status', 'DELETED')
-        .order('last_interaction_at', { ascending: false }); 
-    
+        .order('last_interaction_at', { ascending: false });
+
     // 2. Busca Pacientes
-    const { data: patientsData } = await supabase.from('patients').select('*');
-    
+    const { data: patientsData, error: patientsError } = await supabase.from('patients').select('*');
+
     // 3. Busca Appointments do dia para recepção (usando função utilitária de timezone)
     const { startOfDay, endOfDay } = getLocalDateRange(selectedDate);
-    const { data: appointmentsData } = await supabase
+    const { data: appointmentsData, error: appointmentsError } = await supabase
       .from('appointments')
       .select('*')
       .gte('start_time', startOfDay)
@@ -168,23 +176,24 @@ export default function CRMPage() {
       .neq('status', 'cancelled')
       .neq('status', 'blocked')
       .order('start_time', { ascending: true });
-    
-    // 4. Log para debug: verificar quantos appointments foram retornados
-    if (appointmentsData) {
-      console.log('[DEBUG] Appointments carregados no CRM:', {
-        total: appointmentsData.length,
-        byStatus: appointmentsData.reduce((acc: any, apt: any) => {
-          acc[apt.status || 'unknown'] = (acc[apt.status || 'unknown'] || 0) + 1;
-          return acc;
-        }, {}),
-        byPatient: appointmentsData.reduce((acc: any, apt: any) => {
-          const pid = apt.patient_id || 'null';
-          acc[pid] = (acc[pid] || 0) + 1;
-          return acc;
-        }, {})
-      });
+
+    // Detecta erro de permissão (RLS / token inválido)
+    if (appointmentsError || chatsError || patientsError) {
+      const err = appointmentsError || chatsError || patientsError;
+      console.error('[CRM] Erro ao buscar dados:', err);
+      if (err?.code === 'PGRST301' || err?.message?.includes('JWT')) {
+        console.warn('[CRM] Erro de autenticação — forçando refresh da sessão');
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          window.location.href = '/login';
+          return;
+        }
+        // Retry após refresh
+        setLoading(false);
+        return fetchData();
+      }
     }
-    
+
     // 5. Busca checkouts pendentes de OUTROS dias (waiting_payment fora do dia selecionado)
     const { startOfDay: todayStart } = getLocalDateRange(selectedDate);
     const { data: overdueData } = await supabase

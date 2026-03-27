@@ -80,6 +80,13 @@ export interface Patient {
   // --- Família ---
   mother_name?: string;
   father_name?: string;
+  family_members?: Array<{
+    name: string;
+    relationship: string;
+    phone?: string;
+    cpf?: string;
+    is_legal_guardian?: boolean;
+  }>;
 
   // --- Relacionamentos (Joined via Supabase) ---
   patient_insurances?: PatientInsurance[];

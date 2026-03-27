@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { familyMemberSchema } from './patientSchema';
 
 export const atendimentoPatientSchema = z.object({
   // Identificação
@@ -48,11 +49,13 @@ export const atendimentoPatientSchema = z.object({
   active: z.boolean().optional(),
   notes: z.string().optional().or(z.literal('')),
 
-  // Família / Responsável
+  // Família / Responsável (campos flat mantidos para backward compat)
   mother_name: z.string().optional().or(z.literal('')),
   father_name: z.string().optional().or(z.literal('')),
   responsible_name: z.string().optional().or(z.literal('')),
   responsible_cpf: z.string().optional().or(z.literal('')),
+  // Novo: array dinâmico de familiares (fonte principal)
+  family_members: z.array(familyMemberSchema).optional(),
 }).superRefine((data, ctx) => {
   if (data.use_social_name && !data.social_name) {
     ctx.addIssue({

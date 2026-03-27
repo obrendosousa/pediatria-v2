@@ -239,30 +239,11 @@ export async function exportChartToPNG(
 }
 
 /**
- * Valida se os valores de entrada são razoáveis
+ * Validação de antropometria — sem restrições de faixa
  */
 export function validateAnthropometryInputs(
-  weightKg?: number | null,
-  heightCm?: number | null,
-  headCircumferenceCm?: number | null
+  ..._args: (number | null | undefined)[]
 ): { field: string; message: string } | null {
-  if (weightKg !== null && weightKg !== undefined) {
-    if (weightKg < 0.5 || weightKg > 200) {
-      return { field: 'weight', message: 'Peso deve estar entre 0.5kg e 200kg' };
-    }
-  }
-
-  if (heightCm !== null && heightCm !== undefined) {
-    if (heightCm < 30 || heightCm > 250) {
-      return { field: 'height', message: 'Altura deve estar entre 30cm e 250cm' };
-    }
-  }
-
-  if (headCircumferenceCm !== null && headCircumferenceCm !== undefined) {
-    if (headCircumferenceCm < 20 || headCircumferenceCm > 70) {
-      return { field: 'headCircumference', message: 'Perímetro cefálico deve estar entre 20cm e 70cm' };
-    }
-  }
-
+  void _args;
   return null;
 }

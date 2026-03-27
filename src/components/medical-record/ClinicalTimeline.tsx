@@ -28,6 +28,14 @@ interface TypeConfig {
 }
 
 const TYPE_CONFIG: Record<TimelineEntryType, TypeConfig> = {
+  consulta: {
+    label: 'Consulta',
+    color: 'text-rose-700 dark:text-rose-400',
+    bgColor: 'bg-rose-50 dark:bg-rose-900/20',
+    borderColor: 'border-rose-200 dark:border-rose-800',
+    dotColor: 'bg-rose-500',
+    icon: Stethoscope,
+  },
   anamnese: {
     label: 'Anamnese',
     color: 'text-blue-700 dark:text-blue-400',
@@ -95,7 +103,7 @@ const TYPE_CONFIG: Record<TimelineEntryType, TypeConfig> = {
 };
 
 const ALL_TYPES: TimelineEntryType[] = [
-  'anamnese', 'evolucao', 'receita', 'atestado', 'laudo',
+  'consulta', 'anamnese', 'evolucao', 'receita', 'atestado', 'laudo',
   'exame_pedido', 'exame_resultado', 'documento',
 ];
 
@@ -104,12 +112,12 @@ const ALL_TYPES: TimelineEntryType[] = [
 interface ClinicalTimelineProps {
   patientId: number;
   refreshTrigger: number;
-  patientData?: unknown;
+  patientData?: Record<string, unknown>;
 }
 
 // ── Componente Principal ─────────────────────────────────────
 
-export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimelineProps) {
+export function ClinicalTimeline({ patientId, refreshTrigger, patientData }: ClinicalTimelineProps) {
   const { entries, doctors, loading, fetchAll, fetchDoctors } = useClinicalTimeline(patientId);
 
   // Filtros
@@ -119,8 +127,9 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
   const [filterDateTo, setFilterDateTo] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Estado de expansão
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Estado de expansão (múltiplos cards podem estar abertos)
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [initialExpanded, setInitialExpanded] = useState(false);
 
   useEffect(() => {
     fetchAll();
@@ -179,14 +188,39 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
   };
 
   const toggleExpand = (key: string) => {
-    setExpandedId((prev) => (prev === key ? null : key));
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
   };
+
+  // Expandir o card mais recente automaticamente ao carregar
+  useEffect(() => {
+    if (!initialExpanded && filtered.length > 0) {
+      const first = filtered[0];
+      setExpandedIds(new Set([`${first.type}-${first.id}`]));
+      setInitialExpanded(true);
+    }
+  }, [filtered, initialExpanded]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
   const handlePrint = async (entry: TimelineEntry) => {
+    // Receitas usam a função de impressão especializada com layout próprio
+    if (entry.type === 'receita' && entry.rawPrescription) {
+      const { printPrescription } = await import(
+        '@/components/medical-record/attendance/screens/Prescriptions'
+      );
+      await printPrescription(
+        { medications: entry.rawPrescription.items, exams: entry.rawPrescription.exam_items, vaccines: entry.rawPrescription.vaccine_items },
+        patientData ?? {},
+      );
+      return;
+    }
+
     const { printWithLetterhead } = await import('@/lib/letterhead');
     const cfg = TYPE_CONFIG[entry.type];
     const doctor = entry.doctorId ? (doctorMap[entry.doctorId] || '') : '';
@@ -344,7 +378,7 @@ export function ClinicalTimeline({ patientId, refreshTrigger }: ClinicalTimeline
                   const cfg = TYPE_CONFIG[entry.type];
                   const Icon = cfg.icon;
                   const entryKey = `${entry.type}-${entry.id}`;
-                  const isExpanded = expandedId === entryKey;
+                  const isExpanded = expandedIds.has(entryKey);
                   const doctorName = entry.doctorId ? (doctorMap[entry.doctorId] || null) : null;
 
                   return (

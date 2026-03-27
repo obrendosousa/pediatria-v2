@@ -4,10 +4,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Play, Square, AlertTriangle,
-  ChevronDown, Phone, ShieldCheck, User, ArrowLeft, MessageSquare, Edit2
+  ChevronDown, Phone, ShieldCheck, User, ArrowLeft, MessageSquare, Edit2, Users
 } from 'lucide-react';
 import { calculatePreciseAge } from '@/lib/dateUtils';
 import { ClinicalSummary } from '@/types/medical';
+
+interface FamilyMember {
+  name: string;
+  relationship: string;
+  phone?: string;
+}
 
 interface PatientStickyHeaderProps {
   patient: {
@@ -16,6 +22,7 @@ interface PatientStickyHeaderProps {
     birth_date?: string;
     phone?: string;
     gender?: string; // 'M' | 'F'
+    family_members?: FamilyMember[];
     [key: string]: unknown;
   };
   summary?: ClinicalSummary | null;
@@ -108,7 +115,23 @@ export function PatientStickyHeader({
                     </span>
                   )}
                </h1>
-               
+
+               {/* Responsáveis / Núcleo Familiar */}
+               {Array.isArray(patient.family_members) && patient.family_members.length > 0 && (
+                 <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 dark:text-[#a1a1aa]">
+                   <Users className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                   <span className="truncate">
+                     {patient.family_members.map((m, i) => (
+                       <span key={i}>
+                         {i > 0 && <span className="mx-1 text-slate-300 dark:text-[#3d3d48]">·</span>}
+                         <span className="font-medium text-slate-600 dark:text-[#d4d4d8]">{m.name}</span>
+                         <span className="text-slate-400 dark:text-[#71717a]"> ({m.relationship})</span>
+                       </span>
+                     ))}
+                   </span>
+                 </div>
+               )}
+
                <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4 mt-1 sm:mt-1.5 text-xs font-medium text-slate-500 dark:text-[#a1a1aa]">
                  {/* Idade Precisa */}
                  <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-[#1c1c21] px-2 py-1 rounded-md flex-shrink-0">

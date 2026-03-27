@@ -15,6 +15,7 @@ export interface PatientSearchOption {
   mother_name: string | null;
   father_name: string | null;
   birth_date: string | null;
+  family_members: Array<{ name: string; relationship: string; phone?: string }> | null;
 }
 
 interface PatientSearchSelectProps {
@@ -24,14 +25,28 @@ interface PatientSearchSelectProps {
   className?: string;
 }
 
-function extractParentName(familyMembers: unknown): string | null {
-  if (!familyMembers || !Array.isArray(familyMembers)) return null;
-  const responsible = familyMembers.find(
-    (m: Record<string, unknown>) => m?.relationship === 'Responsável'
-  );
-  if (responsible?.name) return String(responsible.name).trim();
-  const first = familyMembers[0];
-  return first?.name ? String(first.name).trim() : null;
+function extractParentName(
+  familyMembers: unknown,
+  motherName?: string | null,
+  fatherName?: string | null
+): string | null {
+  // Primeiro: tentar extrair de family_members
+  if (familyMembers && Array.isArray(familyMembers) && familyMembers.length > 0) {
+    const guardian = (familyMembers as Record<string, unknown>[]).find(
+      (m) => m?.is_legal_guardian === true
+    );
+    if (guardian?.name) return String(guardian.name).trim();
+    const responsible = (familyMembers as Record<string, unknown>[]).find(
+      (m) => m?.relationship === 'Responsável Legal' || m?.relationship === 'Responsável'
+    );
+    if (responsible?.name) return String(responsible.name).trim();
+    const first = familyMembers[0] as Record<string, unknown> | undefined;
+    if (first?.name) return String(first.name).trim();
+  }
+  // Fallback: colunas flat
+  if (motherName) return motherName;
+  if (fatherName) return fatherName;
+  return null;
 }
 
 export default function PatientSearchSelect({
@@ -68,16 +83,22 @@ export default function PatientSearchSelect({
         return;
       }
 
-      const options: PatientSearchOption[] = (data || []).map((p: Record<string, unknown>) => ({
-        id: p.id as number,
-        name: (p.name as string) || '',
-        phone: (p.phone as string) || null,
-        biological_sex: (p.biological_sex as 'M' | 'F') || null,
-        parent_name: extractParentName(p.family_members),
-        mother_name: (p.mother_name as string) || null,
-        father_name: (p.father_name as string) || null,
-        birth_date: (p.birth_date as string) || null
-      }));
+      const options: PatientSearchOption[] = (data || []).map((p: Record<string, unknown>) => {
+        const motherName = (p.mother_name as string) || null;
+        const fatherName = (p.father_name as string) || null;
+        const rawFamily = p.family_members as Array<{ name: string; relationship: string; phone?: string }> | null;
+        return {
+          id: p.id as number,
+          name: (p.name as string) || '',
+          phone: (p.phone as string) || null,
+          biological_sex: (p.biological_sex as 'M' | 'F') || null,
+          parent_name: extractParentName(rawFamily, motherName, fatherName),
+          mother_name: motherName,
+          father_name: fatherName,
+          birth_date: (p.birth_date as string) || null,
+          family_members: rawFamily || null,
+        };
+      });
       setResults(options);
     } finally {
       setLoading(false);

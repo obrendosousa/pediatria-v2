@@ -114,6 +114,7 @@ export interface Appointment {
   parent_name?: string | null;
   mother_name?: string | null;
   father_name?: string | null;
+  guardians?: Array<{ name: string; relationship: string; phone?: string }> | null;
   patient_sex?: 'M' | 'F' | null;
   doctor_name: string;
   doctor_id: number | null;

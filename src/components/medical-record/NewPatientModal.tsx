@@ -4,9 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm, UseFormRegister, FieldErrors, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { 
-  X, User, Shield, Save, Loader2, Info, Plus, 
-  MapPin, Phone, HeartPulse, CreditCard, Sparkles, AlertCircle,
-  Camera, Trash2, Users
+  X, User, Shield, Save, Loader2, Info, Plus,
+  MapPin, Phone, CreditCard, Sparkles, AlertCircle,
+  Camera
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +16,8 @@ import { useToast } from '@/contexts/ToastContext';
 const supabase = createClient();
 // Importamos o Base e o Refinements separadamente para fazer o merge limpo
 import { patientBaseSchema, patientRefinements } from '@/schemas/patientSchema';
+import { syncFlatColumnsFromFamilyMembers } from '@/constants/guardianRelationships';
+import FamilyMembersField from '@/components/shared/FamilyMembersField';
 import { z } from 'zod';
 
 // --- SCHEMA EXTENDIDO ---
@@ -162,7 +164,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
   // Array de Familiares
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "family_members" as any
+    name: "family_members" as const
   });
 
   // Watchers
@@ -245,7 +247,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
     console.warn('[NewPatientModal] Validação bloqueou envio sem erros mapeados para campos.');
   };
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: Record<string, unknown>) => {
     setIsSubmitting(true);
     try {
       let photoUrl = null;
@@ -310,8 +312,9 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
         is_deceased: data.is_deceased,
         cause_of_death: data.is_deceased ? data.cause_of_death : null,
         
-        // Campos Novos
+        // Família (array dinâmico + sync colunas flat para backward compat)
         family_members: data.family_members,
+        ...syncFlatColumnsFromFamilyMembers(Array.isArray(data.family_members) ? data.family_members : []),
         // Incluir profile_picture se houver nova foto ou se já existir uma URL
         ...(photoUrl ? { profile_picture: photoUrl } : (patientId && imagePreview && typeof imagePreview === 'string' ? { profile_picture: imagePreview } : {})),
 
@@ -368,9 +371,9 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
       reset();
       setImagePreview(null);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[NewPatientModal] Erro completo:', err);
-      const errorMessage = err.message || err.details || 'Erro desconhecido ao salvar';
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao salvar';
       toast.error('Erro ao salvar: ' + errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -466,6 +469,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
                              transition-all duration-300 group-hover:scale-105 group-hover:border-blue-200 dark:group-hover:border-blue-900
                            `}>
                              {imagePreview ? (
+                               /* eslint-disable-next-line @next/next/no-img-element -- blob URL preview, Next Image não aplicável */
                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                              ) : (
                                <User className="w-10 h-10 text-slate-300 dark:text-slate-600" />
@@ -675,62 +679,15 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
 
                    {/* --- NÚCLEO FAMILIAR DINÂMICO --- */}
                    <div className="space-y-6 pt-4">
-                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                         <div className="flex items-center gap-2">
-                           <Users className="w-4 h-4 text-blue-500" />
-                           <h3 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide">Núcleo Familiar</h3>
-                         </div>
-                         <button 
-                           type="button" 
-                           onClick={() => append({ name: '', relationship: '', phone: '' })}
-                           className="text-xs flex items-center gap-1 font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
-                         >
-                           <Plus className="w-3 h-3" /> Adicionar Parente
-                         </button>
-                      </div>
-
-                      {/* Lista de Parentes */}
-                      <div className="space-y-3">
-                        {fields.length === 0 && (
-                          <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-                             <p className="text-sm text-slate-500">Nenhum familiar cadastrado.</p>
-                          </div>
-                        )}
-
-                        {fields.map((field, index) => (
-                           <div key={field.id} className="grid grid-cols-12 gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 items-start animate-in slide-in-from-left-2">
-                              <div className="col-span-5">
-                                 <ModernInput label="Nome" register={register} name={`family_members.${index}.name`} placeholder="Nome do familiar" />
-                              </div>
-                              <div className="col-span-3">
-                                 <ModernSelect label="Vínculo" register={register} name={`family_members.${index}.relationship`}>
-                                    <option value="">Selecione</option>
-                                    <option value="Mãe">Mãe</option>
-                                    <option value="Pai">Pai</option>
-                                    <option value="Cônjuge">Cônjuge</option>
-                                    <option value="Filho(a)">Filho(a)</option>
-                                    <option value="Irmão(ã)">Irmão(ã)</option>
-                                    <option value="Avó/Avô">Avó/Avô</option>
-                                    <option value="Responsável">Responsável</option>
-                                    <option value="Outro">Outro</option>
-                                 </ModernSelect>
-                              </div>
-                              <div className="col-span-3">
-                                 <ModernInput label="Telefone" register={register} name={`family_members.${index}.phone`} placeholder="(00) 0000-0000" />
-                              </div>
-                              <div className="col-span-1 pt-6 flex justify-center">
-                                 <button 
-                                   type="button" 
-                                   onClick={() => remove(index)}
-                                   className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                   title="Remover"
-                                 >
-                                    <Trash2 className="w-4 h-4" />
-                                 </button>
-                              </div>
-                           </div>
-                        ))}
-                      </div>
+                      <FamilyMembersField
+                        mode="rhf"
+                        register={register as unknown as import('react-hook-form').UseFormRegister<Record<string, unknown>>}
+                        control={control as unknown as import('react-hook-form').Control<Record<string, unknown>>}
+                        fields={fields}
+                        append={append as unknown as import('react-hook-form').UseFieldArrayAppend<Record<string, unknown>>}
+                        remove={remove}
+                        title="Núcleo Familiar"
+                      />
                    </div>
 
                    {/* ÓBITO */}
@@ -851,7 +808,7 @@ export function NewPatientModal({ isOpen, onClose, onSuccess, initialData, patie
 // --- UI KIT REUTILIZÁVEL ---
 
 // 1. Botão de Navegação
-const NavButton = ({ active, label, desc, onClick, icon: Icon }: any) => (
+const NavButton = ({ active, label, desc, onClick, icon: Icon }: { active: boolean; label: string; desc: string; onClick: () => void; icon: React.ElementType }) => (
   <button
     onClick={onClick}
     type="button"
@@ -881,9 +838,10 @@ const NavButton = ({ active, label, desc, onClick, icon: Icon }: any) => (
 // 2. Input Moderno
 interface ModernInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- UseFormRegister é contravariante; any é necessário para componentes genéricos
   register: UseFormRegister<any>;
   name: string;
-  error?: FieldErrors | any;
+  error?: FieldErrors | Record<string, unknown>;
   icon?: React.ReactNode;
   requiredField?: boolean;
 }
@@ -922,7 +880,8 @@ const ModernInput = ({ label, register, name, error, icon, className = "", requi
 );
 
 // 3. Select Moderno
-const ModernSelect = ({ label, register, name, children, ...props }: any) => (
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- UseFormRegister é contravariante
+const ModernSelect = ({ label, register, name, children, ...props }: { label?: string; register: UseFormRegister<any>; name: string; children: React.ReactNode; [key: string]: unknown }) => (
   <div className="w-full group">
     {label && <label className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] mb-1.5 ml-1 block uppercase tracking-wider transition-colors group-focus-within:text-blue-600">{label}</label>}
     <div className="relative">
@@ -947,7 +906,7 @@ const ModernSelect = ({ label, register, name, children, ...props }: any) => (
 );
 
 // 4. Header de Seção
-const SectionHeader = ({ icon: Icon, title }: any) => (
+const SectionHeader = ({ icon: Icon, title }: { icon: React.ElementType; title: string }) => (
   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
     <Icon className="w-4 h-4 text-blue-500" />
     <h3 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide">
@@ -957,7 +916,8 @@ const SectionHeader = ({ icon: Icon, title }: any) => (
 );
 
 // 5. Switch Toggle
-const Switch = ({ register, name, colorClass = "peer-checked:bg-blue-600" }: any) => (
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- UseFormRegister é contravariante
+const Switch = ({ register, name, colorClass = "peer-checked:bg-blue-600" }: { register: UseFormRegister<any>; name: string; colorClass?: string }) => (
   <label className="relative inline-flex items-center cursor-pointer">
     <input type="checkbox" {...register(name)} className="sr-only peer" />
     <div className={`

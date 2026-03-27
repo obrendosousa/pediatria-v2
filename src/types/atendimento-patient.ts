@@ -60,4 +60,11 @@ export interface AtendimentoPatient {
   father_name?: string | null;
   responsible_name?: string | null;
   responsible_cpf?: string | null;
+  family_members?: Array<{
+    name: string;
+    relationship: string;
+    phone?: string;
+    cpf?: string;
+    is_legal_guardian?: boolean;
+  }> | null;
 }

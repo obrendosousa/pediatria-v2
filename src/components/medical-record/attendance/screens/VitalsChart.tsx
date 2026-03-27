@@ -44,10 +44,9 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
   const { record, saveRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
 
   // ── Dados do paciente ───────────────────────────────────────────────────
-  const patientGender = (
-    patientData?.sex?.toLowerCase() === 'masculino' ||
-    patientData?.sex?.toLowerCase() === 'm'
-  ) ? 'male' : 'female';
+  // Suporta ambos os schemas: public (biological_sex) e atendimento (sex)
+  const rawSex = (patientData?.biological_sex || patientData?.sex || '').toLowerCase();
+  const patientGender = (rawSex === 'm' || rawSex === 'masculino' || rawSex === 'male') ? 'male' : 'female';
 
   const patientBirthDate = patientData?.birth_date || '';
 

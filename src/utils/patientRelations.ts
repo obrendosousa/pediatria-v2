@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { cleanPhone } from './formatUtils';
 import { Appointment } from '@/types/medical';
+import { syncFlatColumnsFromFamilyMembers, flatFieldsToFamilyMembers } from '@/constants/guardianRelationships';
 
 export interface PatientPhone {
   id: number;
@@ -277,25 +278,24 @@ export async function createBasicPatientFromAppointment(
       how_found_us: 'Agendamento'
     };
 
-    // Preencher mother_name e father_name diretamente na tabela patients
-    if (appointment.mother_name && appointment.mother_name.trim()) {
-      patientPayload.mother_name = appointment.mother_name.trim();
-    }
-    if (appointment.father_name && appointment.father_name.trim()) {
-      patientPayload.father_name = appointment.father_name.trim();
-    }
+    // Construir family_members como fonte principal a partir dos dados do appointment
+    const guardians = appointment.guardians;
+    const familyMembers = Array.isArray(guardians) && guardians.length > 0
+      ? guardians
+      : flatFieldsToFamilyMembers({
+          mother_name: appointment.mother_name,
+          father_name: appointment.father_name,
+          parent_name: appointment.parent_name,
+        });
 
-    // Manter family_members para compatibilidade
-    const familyMembers: Array<{ name: string; relationship: string; phone: string | null }> = [];
-    if (appointment.mother_name?.trim()) {
-      familyMembers.push({ name: appointment.mother_name.trim(), relationship: 'Mãe', phone: null });
-    }
-    if (appointment.father_name?.trim()) {
-      familyMembers.push({ name: appointment.father_name.trim(), relationship: 'Pai', phone: null });
-    }
     if (familyMembers.length > 0) {
       patientPayload.family_members = familyMembers;
     }
+
+    // Sincronizar colunas flat para backward compat
+    const flat = syncFlatColumnsFromFamilyMembers(familyMembers);
+    if (flat.mother_name) patientPayload.mother_name = flat.mother_name;
+    if (flat.father_name) patientPayload.father_name = flat.father_name;
 
     // Inserir paciente no banco
     const { data: newPatient, error: patientError } = await supabase

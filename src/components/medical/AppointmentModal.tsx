@@ -14,6 +14,8 @@ import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import PatientSearchSelect, { type PatientSearchOption } from '@/components/PatientSearchSelect';
 import type { Appointment } from '@/types/medical';
+import { type FamilyMember, syncFlatColumnsFromFamilyMembers, flatFieldsToFamilyMembers } from '@/constants/guardianRelationships';
+import FamilyMembersField from '@/components/shared/FamilyMembersField';
 
 export interface PreScheduleData {
   patientName: string | null;
@@ -27,6 +29,7 @@ export interface PreScheduleData {
   reason: string;
   patientSex?: 'M' | 'F' | null;
   appointmentType?: 'consulta' | 'retorno' | null;
+  guardians?: FamilyMember[];
 }
 
 interface AppointmentModalProps {
@@ -52,11 +55,10 @@ export default function AppointmentModal({
   const [doctors, setDoctors] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<PatientSearchOption | null>(null);
+  const [guardians, setGuardians] = useState<FamilyMember[]>([]);
 
   const [formData, setFormData] = useState({
     patientName: '',
-    motherName: '',
-    fatherName: '',
     phone: '',
     date: '',
     dateDisplay: '', // Formato DD/MM/YYYY para exibição
@@ -171,10 +173,15 @@ export default function AppointmentModal({
 
       const initialBirthDate = initialData?.birthDate || '';
 
+      // Inicializar guardians a partir de initialData (IA ou edição)
+      const initialGuardians: FamilyMember[] = initialData?.guardians || flatFieldsToFamilyMembers({
+        mother_name: initialData?.motherName,
+        father_name: initialData?.fatherName,
+      });
+      setGuardians(initialGuardians);
+
       setFormData({
         patientName: initialData?.patientName || '',
-        motherName: initialData?.motherName || '',
-        fatherName: initialData?.fatherName || '',
         phone: chatPhone || initialData?.phone || '',
         date: initialDate,
         dateDisplay: formatDateToDisplay(initialDate),
@@ -240,6 +247,10 @@ export default function AppointmentModal({
       const discountVal = Number(formData.discountValue.replace(',', '.')) || 0;
       const discountAmt = computeDiscountAmount(totalAmountNum, formData.discountType, discountVal);
 
+      // Derivar colunas flat dos guardians para backward compat
+      const cleanGuardians = guardians.filter(g => g.name.trim());
+      const flatCols = syncFlatColumnsFromFamilyMembers(cleanGuardians);
+
       const insertData: Record<string, unknown> = {
         doctor_id: selectedDoctorId,
         doctor_name: selectedDoctor.name,
@@ -254,19 +265,13 @@ export default function AppointmentModal({
         amount_paid: 0,
         discount_type: formData.discountType,
         discount_value: discountVal,
-        discount_amount: discountAmt
+        discount_amount: discountAmt,
+        guardians: cleanGuardians.length > 0 ? cleanGuardians : null
       };
 
-      if (formData.motherName.trim()) {
-        insertData.mother_name = formData.motherName.trim();
-      }
-      if (formData.fatherName.trim()) {
-        insertData.father_name = formData.fatherName.trim();
-      }
-      // parent_name para compatibilidade (usa nome da mãe como principal)
-      if (formData.motherName.trim() || formData.fatherName.trim()) {
-        insertData.parent_name = formData.motherName.trim() || formData.fatherName.trim();
-      }
+      if (flatCols.mother_name) insertData.mother_name = flatCols.mother_name;
+      if (flatCols.father_name) insertData.father_name = flatCols.father_name;
+      if (flatCols.parent_name) insertData.parent_name = flatCols.parent_name;
 
       if (formData.patientSex) {
         insertData.patient_sex = formData.patientSex;
@@ -283,10 +288,11 @@ export default function AppointmentModal({
             patient_name: formData.patientName.trim(),
             patient_phone: formData.phone.trim() || null,
             patient_sex: formData.patientSex || null,
-            mother_name: formData.motherName.trim() || null,
-            father_name: formData.fatherName.trim() || null,
-            parent_name: formData.motherName.trim() || formData.fatherName.trim() || null,
-            patient_birth_date: formData.birthDate || null
+            mother_name: flatCols.mother_name,
+            father_name: flatCols.father_name,
+            parent_name: flatCols.parent_name,
+            patient_birth_date: formData.birthDate || null,
+            guardians: cleanGuardians.length > 0 ? cleanGuardians : undefined
           };
           patientId = await createBasicPatientFromAppointment(appointmentData as Appointment);
         }
@@ -350,12 +356,23 @@ export default function AppointmentModal({
               onSelect={(p) => {
                 setSelectedPatient(p);
                 if (p) {
+                  // Popular guardians a partir de family_members ou colunas flat
+                  if (p.family_members && p.family_members.length > 0) {
+                    setGuardians(p.family_members.map(fm => ({
+                      name: fm.name,
+                      relationship: fm.relationship,
+                      phone: fm.phone,
+                    })));
+                  } else {
+                    setGuardians(flatFieldsToFamilyMembers({
+                      mother_name: p.mother_name,
+                      father_name: p.father_name,
+                    }));
+                  }
                   setFormData(prev => ({
                     ...prev,
                     patientName: p.name,
                     phone: p.phone || '',
-                    motherName: p.mother_name || '',
-                    fatherName: p.father_name || '',
                     patientSex: (p.biological_sex || '') as 'M' | 'F' | '',
                     birthDateDisplay: p.birth_date ? formatDateToDisplay(p.birth_date) : '',
                     birthDate: p.birth_date || ''
@@ -384,39 +401,13 @@ export default function AppointmentModal({
             </div>
           </div>
 
-          {/* Nome da Mãe e Nome do Pai */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
-                Nome da Mãe
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                <input
-                  type="text"
-                  value={formData.motherName}
-                  onChange={e => setFormData({...formData, motherName: e.target.value})}
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
-                  placeholder="Nome da mãe"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
-                Nome do Pai
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-                <input
-                  type="text"
-                  value={formData.fatherName}
-                  onChange={e => setFormData({...formData, fatherName: e.target.value})}
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all"
-                  placeholder="Nome do pai"
-                />
-              </div>
-            </div>
-          </div>
+          {/* Responsáveis / Familiares (dinâmico) */}
+          <FamilyMembersField
+            mode="controlled"
+            value={guardians}
+            onChange={setGuardians}
+            compact
+          />
 
           {/* Sexo da Criança */}
           <div>

@@ -64,44 +64,10 @@ export function AttendanceForm({
   const [modelModalType, setModelModalType] = useState<string>('');
   const [currentModelContent, setCurrentModelContent] = useState<string>('');
   const [diagnoses, setDiagnoses] = useState<Array<{ code: string; description: string }>>([]);
-  const [heightDigitsState, setHeightDigitsState] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const weight = watch('weight');
   const height = watch('height');
-
-  // Formatar dígitos para exibição (150 -> 1,50)
-  const formatHeight = (digits: string): string => {
-    if (!digits) return '';
-    const padded = digits.padStart(3, '0');
-    return padded[0] + ',' + padded.slice(1);
-  };
-
-  // Handler de teclas do campo altura
-  const handleHeightKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const key = e.key;
-    
-    // Permitir navegação e seleção
-    if (['ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'].includes(key)) {
-      return;
-    }
-    
-    e.preventDefault(); // Prevenir comportamento padrão para tudo exceto navegação
-    
-    if (/^\d$/.test(key)) {
-      // Adicionar dígito
-      const newDigits = (heightDigitsState + key).slice(0, 3);
-      setHeightDigitsState(newDigits);
-      const heightCm = parseInt(newDigits) || null;
-      setValue('height', heightCm);
-    } else if (key === 'Backspace' || key === 'Delete') {
-      // Remover último dígito
-      const newDigits = heightDigitsState.slice(0, -1);
-      setHeightDigitsState(newDigits);
-      const heightCm = newDigits ? parseInt(newDigits) : null;
-      setValue('height', heightCm);
-    }
-  };
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -120,9 +86,6 @@ export function AttendanceForm({
         setValue('pe', record.vitals.pe || null);
         
         // Atualizar dígitos da altura para o estado
-        if (record.vitals.height) {
-          setHeightDigitsState(String(record.vitals.height));
-        }
       }
     }
   }, [record, setValue]);
@@ -356,14 +319,13 @@ export function AttendanceForm({
               <label className="block text-xs text-slate-600 dark:text-[#a1a1aa] mb-1">Altura</label>
               <div className="flex items-center gap-1">
                 <input
-                  type="text"
-                  value={formatHeight(heightDigitsState)}
-                  onKeyDown={handleHeightKeyDown}
-                  readOnly
-                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center cursor-text"
-                  placeholder="0,00"
+                  {...register('height', { valueAsNumber: true })}
+                  type="number"
+                  step="0.1"
+                  className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center"
+                  placeholder="0"
                 />
-                <span className="text-xs text-slate-500">m</span>
+                <span className="text-xs text-slate-500">cm</span>
               </div>
             </div>
             <div className="flex items-center gap-2 pb-1">

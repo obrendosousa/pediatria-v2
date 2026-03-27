@@ -5,7 +5,7 @@ import { useForm, UseFormRegister, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   X, User, Save, Loader2, MapPin, Phone,
-  CreditCard, Sparkles, Users, BookOpen, Heart,
+  CreditCard, Sparkles, BookOpen, Heart,
 } from 'lucide-react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
 import { useToast } from '@/contexts/ToastContext';
@@ -14,6 +14,8 @@ import {
   type AtendimentoPatientFormData,
 } from '@/schemas/atendimentoPatientSchema';
 import type { AtendimentoPatient } from '@/types/atendimento-patient';
+import { type FamilyMember, syncFlatColumnsFromFamilyMembers, flatFieldsToFamilyMembers } from '@/constants/guardianRelationships';
+import FamilyMembersField from '@/components/shared/FamilyMembersField';
 
 const supabase = createSchemaClient('atendimento');
 
@@ -31,6 +33,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
   const [activeTab, setActiveTab] = useState<TabKey>('personal');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [guardians, setGuardians] = useState<FamilyMember[]>([]);
 
   const {
     register,
@@ -139,10 +142,19 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
       setValue('insurance_accommodation', patient.insurance_accommodation || '');
       setValue('active', patient.active ?? true);
       setValue('notes', patient.notes || '');
-      setValue('mother_name', patient.mother_name || '');
-      setValue('father_name', patient.father_name || '');
-      setValue('responsible_name', patient.responsible_name || '');
-      setValue('responsible_cpf', patient.responsible_cpf || '');
+
+      // Popular guardians do family_members ou fallback dos campos flat
+      const existingMembers = patient.family_members;
+      if (existingMembers && existingMembers.length > 0) {
+        setGuardians(existingMembers as FamilyMember[]);
+      } else {
+        setGuardians(flatFieldsToFamilyMembers({
+          mother_name: patient.mother_name,
+          father_name: patient.father_name,
+          responsible_name: patient.responsible_name,
+          responsible_cpf: patient.responsible_cpf,
+        }));
+      }
     };
     loadPatient();
   }, [patientId, isOpen, setValue]);
@@ -178,7 +190,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
     if (field.startsWith('address_')) return 'address';
     if (['nationality', 'ethnicity', 'religion', 'marital_status', 'education_level', 'profession', 'how_found_us', 'notes'].includes(field)) return 'extra';
     if (field.startsWith('insurance')) return 'insurance';
-    if (['mother_name', 'father_name', 'responsible_name', 'responsible_cpf'].includes(field)) return 'responsible';
+    if (['mother_name', 'father_name', 'responsible_name', 'responsible_cpf', 'family_members'].includes(field)) return 'responsible';
     return 'personal';
   };
 
@@ -208,6 +220,10 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
           }
         : null;
 
+      // Derivar colunas flat dos guardians para backward compat
+      const cleanGuardians = guardians.filter(g => g.name.trim());
+      const flatCols = syncFlatColumnsFromFamilyMembers(cleanGuardians);
+
       const payload = {
         full_name: data.full_name,
         social_name: data.use_social_name ? data.social_name : null,
@@ -236,10 +252,13 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
         insurance_accommodation: data.insurance_accommodation || null,
         active: data.active ?? true,
         notes: data.notes || null,
-        mother_name: data.mother_name || null,
-        father_name: data.father_name || null,
-        responsible_name: data.responsible_name || null,
-        responsible_cpf: data.responsible_cpf || null,
+        // Família: fonte principal = family_members JSONB
+        family_members: cleanGuardians.length > 0 ? cleanGuardians : [],
+        // Colunas flat derivadas para backward compat
+        mother_name: flatCols.mother_name,
+        father_name: flatCols.father_name,
+        responsible_name: flatCols.responsible_name,
+        responsible_cpf: flatCols.responsible_cpf,
       };
 
       if (patientId) {
@@ -260,6 +279,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
       onSuccess();
       onClose();
       reset();
+      setGuardians([]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido';
       toast.error('Erro ao salvar: ' + msg);
@@ -276,7 +296,7 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
     { key: 'address', label: 'Endereço', desc: 'Localização', icon: MapPin },
     { key: 'extra', label: 'Complementares', desc: 'Demografia', icon: BookOpen },
     { key: 'insurance', label: 'Convênio', desc: 'Plano de Saúde', icon: CreditCard },
-    { key: 'responsible', label: 'Responsável', desc: 'Família', icon: Users },
+    { key: 'responsible', label: 'Responsável', desc: 'Família', icon: Heart },
   ];
 
   return (
@@ -545,14 +565,13 @@ export default function NewPatientModal({ isOpen, onClose, onSuccess, patientId 
               {/* ─── Aba 6: Responsável ─── */}
               {activeTab === 'responsible' && (
                 <div className="space-y-8 animate-in slide-in-from-right-4 fade-in duration-300">
-                  <SectionHeader icon={Heart} title="Família e Responsável" />
-                  <div className="grid grid-cols-12 gap-5">
-                    <div className="col-span-6"><ModernInput label="Nome da Mãe" register={register} name="mother_name" /></div>
-                    <div className="col-span-6"><ModernInput label="Nome do Pai" register={register} name="father_name" /></div>
-                    <div className="col-span-12 border-t border-dashed border-slate-200 dark:border-slate-700 my-1" />
-                    <div className="col-span-6"><ModernInput label="Responsável Legal" register={register} name="responsible_name" /></div>
-                    <div className="col-span-6"><ModernInput label="CPF do Responsável" register={register} name="responsible_cpf" placeholder="000.000.000-00" /></div>
-                  </div>
+                  <FamilyMembersField
+                    mode="controlled"
+                    value={guardians}
+                    onChange={setGuardians}
+                    showCpf
+                    title="Família e Responsável"
+                  />
                 </div>
               )}
             </form>

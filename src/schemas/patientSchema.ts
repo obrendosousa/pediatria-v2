@@ -1,11 +1,13 @@
 // src/schemas/patientSchema.ts
 import { z } from 'zod';
 
-// Schema de um familiar individual
-const familyMemberSchema = z.object({
+// Schema de um familiar individual (exportado para reuso em outros schemas)
+export const familyMemberSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
-  relationship: z.string().min(1, "Vínculo é obrigatório"), // Ex: Mãe, Pai, Cônjuge
+  relationship: z.string().min(1, "Vínculo é obrigatório"),
   phone: z.string().optional(),
+  cpf: z.string().optional(),
+  is_legal_guardian: z.boolean().optional(),
 });
 
 export const patientBaseSchema = z.object({
@@ -70,7 +72,7 @@ export const patientBaseSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const patientRefinements = (data: any, ctx: z.RefinementCtx) => {
+export const patientRefinements = (data: z.infer<typeof patientBaseSchema>, ctx: z.RefinementCtx) => {
   if (data.use_social_name && !data.social_name) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

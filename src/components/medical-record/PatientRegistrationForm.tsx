@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   User, Shield, Save, Loader2, Info, Plus,
   MapPin, Phone, Sparkles,
-  Camera, Trash2, Users, X
+  Camera, X
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
@@ -15,6 +15,8 @@ import { patientBaseSchema, patientRefinements } from '@/schemas/patientSchema';
 import { z } from 'zod';
 import { formatCPF, cleanCPF, formatPhone, cleanPhone, formatCEP, cleanCEP, cleanRG } from '@/utils/formatUtils';
 import { addPhoneToPatient } from '@/utils/patientRelations';
+import { syncFlatColumnsFromFamilyMembers } from '@/constants/guardianRelationships';
+import FamilyMembersField from '@/components/shared/FamilyMembersField';
 import { useToast } from '@/contexts/ToastContext';
 
 // --- SCHEMA EXTENDIDO ---
@@ -300,9 +302,9 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
       }
 
       // Limpar formatação dos campos antes de salvar
-      const cleanFamilyMembers = (data.family_members || []).map((member: { name?: string; relationship?: string; phone?: string }) => ({
+      const cleanFamilyMembers = (data.family_members || []).map((member: { name: string; relationship: string; phone?: string }) => ({
         ...member,
-        phone: member.phone ? cleanPhone(member.phone) : null
+        phone: member.phone ? cleanPhone(member.phone) : undefined
       }));
 
       const patientPayload = {
@@ -334,6 +336,7 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
         is_deceased: data.is_deceased || false,
         cause_of_death: data.is_deceased ? (data.cause_of_death || null) : null,
         family_members: cleanFamilyMembers,
+        ...syncFlatColumnsFromFamilyMembers(cleanFamilyMembers),
         profile_picture: photoUrl,
         how_found_us: data.how_found_us || null
       };
@@ -743,69 +746,14 @@ export function PatientRegistrationForm({ appointment, onCancel, onSuccess, chat
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-blue-500" />
-                      <h3 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase">Núcleo Familiar</h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => append({ name: '', relationship: '', phone: '' })}
-                      className="text-xs flex items-center gap-1 font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
-                    >
-                      <Plus className="w-3 h-3" /> Adicionar
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {fields.length === 0 && (
-                      <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-                        <p className="text-sm text-slate-500">Nenhum familiar cadastrado.</p>
-                      </div>
-                    )}
-
-                    {fields.map((field, index) => (
-                      <div key={field.id} className="grid grid-cols-12 gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                        <div className="col-span-5">
-                          <ModernInput label="Nome" register={register} name={`family_members.${index}.name`} placeholder="Nome do familiar" />
-                        </div>
-                        <div className="col-span-3">
-                          <ModernSelect label="Vínculo" register={register} name={`family_members.${index}.relationship`}>
-                            <option value="">Selecione</option>
-                            <option value="Mãe">Mãe</option>
-                            <option value="Pai">Pai</option>
-                            <option value="Cônjuge">Cônjuge</option>
-                            <option value="Filho(a)">Filho(a)</option>
-                            <option value="Irmão(ã)">Irmão(ã)</option>
-                            <option value="Avó/Avô">Avó/Avô</option>
-                            <option value="Responsável">Responsável</option>
-                            <option value="Outro">Outro</option>
-                          </ModernSelect>
-                        </div>
-                        <div className="col-span-3">
-                          <ModernInput
-                            label="Telefone"
-                            register={register}
-                            name={`family_members.${index}.phone`}
-                            placeholder="(00) 0000-0000"
-                            format={formatPhone}
-                            control={control}
-                          />
-                        </div>
-                        <div className="col-span-1 pt-6 flex justify-center">
-                          <button
-                            type="button"
-                            onClick={() => remove(index)}
-                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <FamilyMembersField
+                  mode="rhf"
+                  register={register as unknown as import('react-hook-form').UseFormRegister<Record<string, unknown>>}
+                  control={control as unknown as import('react-hook-form').Control<Record<string, unknown>>}
+                  fields={fields}
+                  append={append as unknown as import('react-hook-form').UseFieldArrayAppend<Record<string, unknown>>}
+                  remove={remove}
+                />
               </div>
             )}
 

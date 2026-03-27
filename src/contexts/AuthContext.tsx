@@ -10,6 +10,7 @@ export type Profile = {
   id: string;
   email: string;
   full_name: string | null;
+  photo_url: string | null;
   role: 'admin' | 'secretary';
   status: 'pending' | 'approved' | 'rejected';
   doctor_id: number | null;
@@ -132,11 +133,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function initializeAuth() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // getUser() valida o token no servidor e força refresh se expirado
+        // (getSession() lê do cache e pode retornar token expirado)
+        const { data: { user: currentUser }, error } = await supabase.auth.getUser();
         if (!isActive) return;
-        await applySessionState(session?.user ?? null);
+
+        if (error || !currentUser) {
+          // Token inválido / refresh falhou — limpar estado e redirecionar
+          await applySessionState(null);
+          router.replace('/login');
+          return;
+        }
+
+        await applySessionState(currentUser);
       } catch (error) {
         console.error('Erro na inicialização da auth:', error);
+        if (isActive) {
+          await applySessionState(null);
+          router.replace('/login');
+        }
       } finally {
         if (!isActive) return;
         isInitializingRef.current = false;
@@ -145,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function handleAuthEvent(event: AuthChangeEvent, session: Session | null) {
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
         await applySessionState(null);
         if (isActive && !isInitializingRef.current) {
           setLoading(false);

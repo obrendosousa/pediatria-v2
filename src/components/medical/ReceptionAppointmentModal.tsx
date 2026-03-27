@@ -17,12 +17,12 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import { CanonicalPaymentSplit, normalizePaymentSplits } from '@/lib/finance';
 import { createFinancialTransaction } from '@/lib/financialTransactions';
 import { computeDiscountAmount, effectiveAmount, DiscountType } from '@/utils/discountUtils';
+import { type FamilyMember, syncFlatColumnsFromFamilyMembers, flatFieldsToFamilyMembers } from '@/constants/guardianRelationships';
+import FamilyMembersField from '@/components/shared/FamilyMembersField';
 
 const initialForm = {
   patient_name: '',
   patient_phone: '',
-  mother_name: '',
-  father_name: '',
   birthDateDisplay: '',
   birthDate: '', // YYYY-MM-DD
   notes: '',
@@ -59,6 +59,11 @@ export default function ReceptionAppointmentModal({
   const [saving, setSaving] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
+  // Desconto inline (modo leitura — bloco de pagamento pendente)
+  const [inlineDiscountOpen, setInlineDiscountOpen] = useState(false);
+  const [inlineDiscType, setInlineDiscType] = useState<DiscountType>('%');
+  const [inlineDiscValue, setInlineDiscValue] = useState('');
+  const [savingDiscount, setSavingDiscount] = useState(false);
   const [paymentMode, setPaymentMode] = useState<'pix' | 'cash' | 'credit_card' | 'debit_card' | 'mixed'>('pix');
   const [pendingAmount, setPendingAmount] = useState('');
   const [mixedPayments, setMixedPayments] = useState({
@@ -67,6 +72,8 @@ export default function ReceptionAppointmentModal({
     credit_card: '',
     debit_card: ''
   });
+  // Responsáveis dinâmicos
+  const [guardians, setGuardians] = useState<FamilyMember[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -84,11 +91,19 @@ export default function ReceptionAppointmentModal({
       const [datePart, timePart] = clean.split('T');
       const dType = (appointment.discount_type as DiscountType) || '%';
       const dVal = appointment.discount_value ?? 0;
+
+      // Popular guardians a partir do appointment
+      const appointmentGuardians = Array.isArray(appointment.guardians) && appointment.guardians.length > 0
+        ? appointment.guardians
+        : flatFieldsToFamilyMembers({
+            mother_name: appointment.mother_name,
+            father_name: appointment.father_name,
+          });
+      setGuardians(appointmentGuardians);
+
       setForm({
         patient_name: appointment.patient_name || '',
         patient_phone: appointment.patient_phone || '',
-        mother_name: appointment.mother_name || '',
-        father_name: appointment.father_name || '',
         birthDateDisplay: appointment.patient_birth_date ? formatDateToDisplay(appointment.patient_birth_date) : '',
         birthDate: appointment.patient_birth_date || '',
         notes: appointment.anamnesis || appointment.notes || '',
@@ -102,6 +117,9 @@ export default function ReceptionAppointmentModal({
         discountValue: dVal > 0 ? String(dVal).replace('.', ',') : ''
       });
       setShowDiscount(dVal > 0);
+      setInlineDiscountOpen(false);
+      setInlineDiscType(dType);
+      setInlineDiscValue(dVal > 0 ? String(dVal).replace('.', ',') : '');
       setPendingAmount('');
       setPaymentMode('pix');
       setMixedPayments({
@@ -121,7 +139,6 @@ export default function ReceptionAppointmentModal({
     return amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  // Função genérica para formatar DD/MM/AAAA enquanto digita
   const handleDateMaskedInput = (value: string, displayField: 'dateDisplay' | 'birthDateDisplay', isoField: 'date' | 'birthDate') => {
     const numbers = value.replace(/\D/g, '').slice(0, 8);
     let formatted = '';
@@ -138,6 +155,46 @@ export default function ReceptionAppointmentModal({
       return;
     }
     setForm(prev => ({ ...prev, [field]: formatted }));
+  };
+
+  /** Salva apenas o desconto sem alterar outros dados */
+  const handleSaveDiscountOnly = async () => {
+    if (!appointment) return;
+    const totalNum = Number(appointment.total_amount ?? 0);
+    if (totalNum <= 0) {
+      toast.error('Defina o valor total antes de aplicar desconto.');
+      return;
+    }
+    const discVal = Number(String(inlineDiscValue).replace(',', '.')) || 0;
+    const discAmt = computeDiscountAmount(totalNum, inlineDiscType, discVal);
+
+    setSavingDiscount(true);
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({
+          discount_type: inlineDiscType,
+          discount_value: discVal,
+          discount_amount: discAmt
+        })
+        .eq('id', appointment.id);
+      if (error) throw error;
+
+      const updated: Appointment = {
+        ...appointment,
+        discount_type: inlineDiscType,
+        discount_value: discVal,
+        discount_amount: discAmt
+      };
+      onSave(updated);
+      setInlineDiscountOpen(false);
+      toast.success(discAmt > 0 ? `Desconto de R$ ${discAmt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} aplicado!` : 'Desconto removido.');
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error('Erro ao salvar desconto.');
+    } finally {
+      setSavingDiscount(false);
+    }
   };
 
   /** Salva apenas o pagamento (valor pago) sem alterar outros dados */
@@ -256,17 +313,19 @@ export default function ReceptionAppointmentModal({
       const discVal = Number(String(form.discountValue).replace(',', '.')) || 0;
       const discAmt = computeDiscountAmount(totalNum, form.discountType, discVal);
 
-      // amount_paid NÃO é editável aqui — todo pagamento deve passar pelo
-      // handleSavePaymentOnly para gerar financial_transaction e garantir
-      // precisão no fechamento de caixa.
+      // Derivar colunas flat dos guardians para backward compat
+      const cleanGuardians = guardians.filter(g => g.name.trim());
+      const flatCols = syncFlatColumnsFromFamilyMembers(cleanGuardians);
+
       const { error } = await supabase
         .from('appointments')
         .update({
           patient_name: form.patient_name || null,
           patient_phone: form.patient_phone || null,
-          mother_name: form.mother_name || null,
-          father_name: form.father_name || null,
-          parent_name: form.mother_name || form.father_name || null,
+          mother_name: flatCols.mother_name,
+          father_name: flatCols.father_name,
+          parent_name: flatCols.parent_name,
+          guardians: cleanGuardians.length > 0 ? cleanGuardians : null,
           patient_birth_date: form.birthDate || null,
           notes: form.notes || null,
           anamnesis: form.notes || null,
@@ -284,9 +343,10 @@ export default function ReceptionAppointmentModal({
         ...appointment,
         patient_name: form.patient_name || null,
         patient_phone: form.patient_phone || null,
-        mother_name: form.mother_name || null,
-        father_name: form.father_name || null,
-        parent_name: form.mother_name || form.father_name || null,
+        mother_name: flatCols.mother_name,
+        father_name: flatCols.father_name,
+        parent_name: flatCols.parent_name,
+        guardians: cleanGuardians.length > 0 ? cleanGuardians : undefined,
         patient_birth_date: form.birthDate || null,
         notes: form.notes || null,
         anamnesis: form.notes || null,
@@ -342,10 +402,24 @@ export default function ReceptionAppointmentModal({
   const editDiscAmt = computeDiscountAmount(editTotalNum, form.discountType, editDiscVal);
   const editFinalAmount = effectiveAmount(editTotalNum, editDiscAmt);
 
+  // Cálculo em tempo real para desconto inline (modo leitura)
+  const inlineDiscVal = Number(String(inlineDiscValue).replace(',', '.')) || 0;
+  const inlineDiscAmt = computeDiscountAmount(totalDisplay, inlineDiscType, inlineDiscVal);
+  const inlineEffective = effectiveAmount(totalDisplay, inlineDiscAmt);
+  const inlineRemaining = Math.max(0, inlineEffective - paidDisplay);
+
+  // Dados para exibição no modo leitura
+  const displayGuardians = Array.isArray(appointment.guardians) && appointment.guardians.length > 0
+    ? appointment.guardians
+    : flatFieldsToFamilyMembers({
+        mother_name: appointment.mother_name,
+        father_name: appointment.father_name,
+      });
+
   return (
     <>
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white dark:bg-[#202c33] w-full max-w-lg rounded-2xl shadow-lg border border-slate-200 dark:border-[#3d3d48] overflow-hidden animate-scale-in">
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-2 animate-fade-in">
+      <div className="bg-white dark:bg-[#202c33] w-full max-w-3xl rounded-2xl shadow-lg border border-slate-200 dark:border-[#3d3d48] overflow-hidden animate-scale-in">
         {/* Header */}
         <div className="p-4 border-b border-slate-200 dark:border-[#3d3d48] flex justify-between items-center bg-rose-50/50 dark:bg-rose-900/10">
           <div className="flex items-center gap-2">
@@ -361,7 +435,7 @@ export default function ReceptionAppointmentModal({
           </button>
         </div>
 
-        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="p-5 space-y-4 max-h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar">
           {/* Bloco de pagamento pendente no topo */}
           {remainingDisplay > 0 && totalDisplay > 0 && !isEditing && (
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-3">
@@ -401,6 +475,94 @@ export default function ReceptionAppointmentModal({
                   </p>
                 </div>
               </div>
+
+              {/* Desconto inline — direto no bloco de pagamento */}
+              {!inlineDiscountOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setInlineDiscountOpen(true)}
+                  className="flex items-center gap-1.5 text-[11px] font-semibold text-orange-600 dark:text-orange-400 hover:underline"
+                >
+                  <Percent size={12} /> {discountDisplay > 0 ? 'Editar desconto' : 'Adicionar desconto'}
+                </button>
+              ) : (
+                <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800/40 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-orange-700 dark:text-orange-300 uppercase flex items-center gap-1">
+                      <Tag size={10} /> Desconto
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setInlineDiscountOpen(false)}
+                      className="text-[10px] text-slate-400 hover:text-red-500"
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex rounded-lg overflow-hidden border border-orange-200 dark:border-orange-700">
+                      {(['%', 'R$'] as DiscountType[]).map(t => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setInlineDiscType(t)}
+                          className={`px-3 py-1.5 text-[11px] font-bold transition-colors ${
+                            inlineDiscType === t
+                              ? 'bg-orange-500 text-white'
+                              : 'bg-white dark:bg-[#1c1c21] text-slate-600 dark:text-[#a1a1aa]'
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={inlineDiscValue}
+                        onChange={e => {
+                          const v = e.target.value.replace(/[^0-9.,]/g, '');
+                          setInlineDiscValue(v);
+                        }}
+                        placeholder={inlineDiscType === '%' ? 'Ex: 10' : 'Ex: 50,00'}
+                        className="w-full text-sm font-bold border border-orange-200 dark:border-orange-700 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1c1c21] text-orange-700 dark:text-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSaveDiscountOnly}
+                      disabled={savingDiscount}
+                      className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[11px] font-bold disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {savingDiscount ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                      Aplicar
+                    </button>
+                  </div>
+                  {inlineDiscAmt > 0 && (
+                    <div className="flex justify-between text-[11px] font-semibold pt-1 border-t border-orange-200/60 dark:border-orange-800/30">
+                      <span className="text-orange-600 dark:text-orange-400">
+                        Desconto: -R$ {inlineDiscAmt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-slate-600 dark:text-slate-300">
+                        Efetivo: R$ {inlineEffective.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-rose-600 dark:text-rose-400">
+                        Falta: R$ {inlineRemaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  {discountDisplay > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { setInlineDiscValue(''); handleSaveDiscountOnly(); }}
+                      className="text-[10px] text-red-500 hover:underline font-semibold"
+                    >
+                      Remover desconto
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <p className="text-[10px] uppercase font-semibold text-slate-500 dark:text-[#a1a1aa]">Forma de pagamento</p>
                 <div className="grid grid-cols-5 gap-1.5">
@@ -458,7 +620,7 @@ export default function ReceptionAppointmentModal({
             </div>
           )}
 
-          {/* Paciente */}
+          {/* Paciente + Tipo lado a lado */}
           <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-[#3d3d48]">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center font-semibold text-lg bg-rose-100 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400">
               {isEditing ? <Edit2 size={18} /> : (appointment.patient_name?.charAt(0) || 'P')}
@@ -492,165 +654,154 @@ export default function ReceptionAppointmentModal({
             </div>
           </div>
 
-          {/* Data de Nascimento */}
-          {isEditing ? (
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-              <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 rounded-md"><Cake size={14} /></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data de Nascimento *</p>
-                <input
-                  type="text"
-                  value={form.birthDateDisplay}
-                  onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')}
-                  placeholder="DD/MM/AAAA"
-                  maxLength={10}
-                  className="w-full text-sm font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-              <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 rounded-md"><Cake size={14} /></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data de Nascimento</p>
-                <p className="text-sm text-slate-700 dark:text-gray-200 font-medium">
-                  {appointment.patient_birth_date
-                    ? formatDateToDisplay(appointment.patient_birth_date)
-                    : 'Não informado'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Data e hora */}
+          {/* Grid 2 colunas: dados do paciente + dados do agendamento */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <CalendarDays size={14} className="text-rose-500 dark:text-rose-400" />
-                <span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data</span>
-              </div>
+            {/* Coluna esquerda: Data de Nascimento, Responsáveis, WhatsApp */}
+            <div className="space-y-2">
               {isEditing ? (
-                <input
-                  type="text"
-                  value={form.dateDisplay}
-                  onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')}
-                  placeholder="DD/MM/AAAA"
-                  maxLength={10}
-                  className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
-                />
-              ) : (
-                <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">
-                  {new Date(appointment.start_time).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </p>
-              )}
-            </div>
-            <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Clock size={14} className="text-rose-500 dark:text-rose-400" />
-                <span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Horário</span>
-              </div>
-              {isEditing ? (
-                <input
-                  type="time"
-                  value={form.time}
-                  onChange={e => setForm(prev => ({ ...prev, time: e.target.value }))}
-                  className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
-                />
-              ) : (
-                <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">
-                  {(() => {
-                    const clean = appointment.start_time ? appointment.start_time.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '') : '';
-                    const [datePart, timePart] = clean.split('T');
-                    if (datePart && timePart) {
-                      const [y, m, d] = datePart.split('-').map(Number);
-                      const [h, min] = timePart.split(':').map(Number);
-                      const dLocal = new Date(y, m - 1, d, h, min || 0, 0);
-                      return dLocal.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
-                    }
-                    return '--:--';
-                  })()}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Médico */}
-          <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-            <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-500 dark:text-indigo-400 rounded-md">
-              <Stethoscope size={14} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Médico</p>
-              {isEditing ? (
-                <select
-                  value={form.doctor_id ?? ''}
-                  onChange={e => setForm(prev => ({ ...prev, doctor_id: e.target.value ? Number(e.target.value) : null }))}
-                  className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
-                >
-                  <option value="">Selecione...</option>
-                  {doctors.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
-              ) : (
-                <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{appointment.doctor_name || 'Não informado'}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Mãe, Pai e WhatsApp */}
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-                <div className="p-1.5 bg-purple-100 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400 rounded-md"><User size={14} /></div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Mãe</p>
-                  {isEditing ? (
+                <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 rounded-md"><Cake size={14} /></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data de Nascimento *</p>
                     <input
                       type="text"
-                      value={form.mother_name}
-                      onChange={e => setForm(prev => ({ ...prev, mother_name: e.target.value }))}
-                      placeholder="Nome da mãe"
-                      className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
+                      value={form.birthDateDisplay}
+                      onChange={e => handleDateMaskedInput(e.target.value, 'birthDateDisplay', 'birthDate')}
+                      placeholder="DD/MM/AAAA"
+                      maxLength={10}
+                      className="w-full text-sm font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
                     />
-                  ) : (
-                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{appointment.mother_name || 'Não informado'}</p>
-                  )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 rounded-md"><User size={14} /></div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Pai</p>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={form.father_name}
-                      onChange={e => setForm(prev => ({ ...prev, father_name: e.target.value }))}
-                      placeholder="Nome do pai"
-                      className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
-                    />
-                  ) : (
-                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{appointment.father_name || 'Não informado'}</p>
-                  )}
+              ) : (
+                <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 rounded-md"><Cake size={14} /></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data de Nascimento</p>
+                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium">
+                      {appointment.patient_birth_date
+                        ? formatDateToDisplay(appointment.patient_birth_date)
+                        : 'Não informado'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-              <div className="p-1.5 bg-green-100 dark:bg-green-900/20 text-green-500 dark:text-green-400 rounded-md"><Phone size={14} /></div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">WhatsApp</p>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={form.patient_phone}
-                    onChange={e => setForm(prev => ({ ...prev, patient_phone: e.target.value }))}
-                    placeholder="(00) 00000-0000"
-                    className="w-full text-sm font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]"
+              )}
+
+              {/* Responsáveis — modo edição usa FamilyMembersField, modo leitura lista compacta */}
+              {isEditing ? (
+                <div className="p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                  <FamilyMembersField
+                    mode="controlled"
+                    value={guardians}
+                    onChange={setGuardians}
+                    compact
                   />
+                </div>
+              ) : (
+                <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                  <div className="p-1.5 bg-purple-100 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400 rounded-md mt-0.5"><User size={14} /></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Responsáveis</p>
+                    {displayGuardians.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {displayGuardians.map((g, i) => (
+                          <p key={i} className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">
+                            {g.name} {g.relationship && <span className="text-[10px] text-slate-400 dark:text-[#71717a]">({g.relationship})</span>}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-700 dark:text-gray-200 font-medium">Não informado</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                <div className="p-1.5 bg-green-100 dark:bg-green-900/20 text-green-500 dark:text-green-400 rounded-md"><Phone size={14} /></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">WhatsApp</p>
+                  {isEditing ? (
+                    <input type="text" value={form.patient_phone} onChange={e => setForm(prev => ({ ...prev, patient_phone: e.target.value }))} placeholder="(00) 00000-0000" className="w-full text-sm font-medium text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]" />
+                  ) : (
+                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium">
+                      {appointment.patient_phone ? appointment.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : 'Não informado'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Coluna direita: Data, Hora, Médico, Observações */}
+            <div className="space-y-2">
+              <div className="p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <CalendarDays size={14} className="text-rose-500 dark:text-rose-400" />
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Data</span>
+                </div>
+                {isEditing ? (
+                  <input type="text" value={form.dateDisplay} onChange={e => handleDateMaskedInput(e.target.value, 'dateDisplay', 'date')} placeholder="DD/MM/AAAA" maxLength={10} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]" />
                 ) : (
-                  <p className="text-sm text-slate-700 dark:text-gray-200 font-medium">
-                    {appointment.patient_phone ? appointment.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : 'Não informado'}
+                  <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">
+                    {new Date(appointment.start_time).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
+              </div>
+
+              <div className="p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Clock size={14} className="text-rose-500 dark:text-rose-400" />
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Horário</span>
+                </div>
+                {isEditing ? (
+                  <input type="time" value={form.time} onChange={e => setForm(prev => ({ ...prev, time: e.target.value }))} className="w-full text-sm font-semibold text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]" />
+                ) : (
+                  <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">
+                    {(() => {
+                      const clean2 = appointment.start_time ? appointment.start_time.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '') : '';
+                      const [datePart2, timePart2] = clean2.split('T');
+                      if (datePart2 && timePart2) {
+                        const [y, m, d] = datePart2.split('-').map(Number);
+                        const [h, min] = timePart2.split(':').map(Number);
+                        const dLocal = new Date(y, m - 1, d, h, min || 0, 0);
+                        return dLocal.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
+                      }
+                      return '--:--';
+                    })()}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-500 dark:text-indigo-400 rounded-md">
+                  <Stethoscope size={14} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Médico</p>
+                  {isEditing ? (
+                    <select value={form.doctor_id ?? ''} onChange={e => setForm(prev => ({ ...prev, doctor_id: e.target.value ? Number(e.target.value) : null }))} className="w-full text-sm text-slate-700 dark:text-gray-200 font-medium border border-slate-200 dark:border-gray-600 rounded-md px-2 py-1.5 focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21]">
+                      <option value="">Selecione...</option>
+                      {doctors.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm text-slate-700 dark:text-gray-200 font-medium truncate">{appointment.doctor_name || 'Não informado'}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Observações na coluna direita */}
+              <div className="p-2.5 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <FileText size={14} className="text-slate-500 dark:text-[#a1a1aa]" />
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Observações</span>
+                </div>
+                {isEditing ? (
+                  <textarea className="w-full p-2 text-sm text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-lg focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21] min-h-[50px] resize-y" value={form.notes} onChange={e => setForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Anotações..." />
+                ) : (
+                  <p className="text-xs text-slate-600 dark:text-[#d4d4d8] leading-relaxed">
+                    {appointment.anamnesis || appointment.notes || 'Nenhuma observação.'}
                   </p>
                 )}
               </div>
@@ -774,26 +925,6 @@ export default function ReceptionAppointmentModal({
             {!isEditing && remainingDisplay > 0 && totalDisplay > 0 && (
               <p className="text-[10px] text-amber-700 dark:text-amber-300 mt-2 font-semibold">
                 Registre o pagamento para liberar a entrada do paciente na consulta.
-              </p>
-            )}
-          </div>
-
-          {/* Observações */}
-          <div className="p-3 bg-slate-50 dark:bg-[#1a1f28] rounded-lg border border-slate-200 dark:border-[#3d3d48]">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText size={14} className="text-slate-500 dark:text-[#a1a1aa]" />
-              <p className="text-[10px] font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase">Observações</p>
-            </div>
-            {isEditing ? (
-              <textarea
-                className="w-full p-2.5 text-sm text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-gray-600 rounded-lg focus:border-rose-400 focus:ring-1 focus:ring-rose-400/20 outline-none bg-white dark:bg-[#1c1c21] min-h-[60px] resize-y"
-                value={form.notes}
-                onChange={e => setForm(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Anotações..."
-              />
-            ) : (
-              <p className="text-xs text-slate-600 dark:text-[#d4d4d8] leading-relaxed">
-                {appointment.anamnesis || appointment.notes || 'Nenhuma observação.'}
               </p>
             )}
           </div>

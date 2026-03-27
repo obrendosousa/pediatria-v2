@@ -323,6 +323,7 @@ export function GrowthChart(props: GrowthChartProps) {
               strokeOpacity={0.85}
               dot={false}
               activeDot={false}
+              connectNulls
               isAnimationActive={false}
             />
           ))}

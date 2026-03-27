@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SidebarProvider } from '@/contexts/SidebarContext';
 import Navigation from '@/components/Navigation';
 import SidebarWrapper from '@/components/SidebarWrapper';
+import TopBar from '@/components/TopBar';
 
 const AUTH_PATHS = ['/login', '/signup', '/recuperar-senha', '/aguardando-aprovacao'];
 
@@ -105,9 +106,12 @@ export default function AuthLayoutGuard({ children }: { children: React.ReactNod
         <SidebarWrapper>
           <Navigation />
         </SidebarWrapper>
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden relative w-full h-full transition-all duration-500 ease-in-out print:overflow-visible print:h-auto">
-          {children}
-        </main>
+        <div className="flex flex-col flex-1 min-w-0 h-full">
+          <TopBar />
+          <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative w-full transition-all duration-500 ease-in-out print:overflow-visible print:h-auto">
+            {children}
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   );

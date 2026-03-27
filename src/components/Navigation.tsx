@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  MessageSquare, CalendarDays, Settings, LogOut, LucideIcon,
+  MessageSquare, CalendarDays, Settings, LucideIcon,
   LayoutDashboard, Trello, Stethoscope, CheckSquare,
-  Store, PieChart, Heart, Sparkles, Users, Moon, Sun,
+  Store, PieChart, Heart, Sparkles, Users,
   ChevronRight, Zap, FileText, ArrowLeftRight, Receipt,
   ClipboardList, Ban, DollarSign, BarChart3, BookOpen, Monitor, ExternalLink,
 } from 'lucide-react';
@@ -19,7 +19,7 @@ import { getModuleFromPathname, type ModuleConfig, type ModuleTheme } from '@/co
 export default function Navigation() {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar } = useSidebar();
-  const { signOut, profile, modules } = useAuth();
+  const { profile, modules } = useAuth();
   const navRef = useRef<HTMLElement>(null);
   const [indicatorStyle, setIndicatorStyle] = useState<{ top: number; height: number; animate: boolean } | null>(null);
   const prevCollapsedRef = useRef(isCollapsed);
@@ -93,37 +93,10 @@ export default function Navigation() {
     requestAnimationFrame(() => measure(true));
   }, [pathname, isCollapsed]);
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window === 'undefined') return 'light';
-    const saved = localStorage.getItem('theme');
-    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return saved === 'dark' || (!saved && systemDark) ? 'dark' : 'light';
-  });
-
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    localStorage.setItem('theme', newTheme);
-  };
 
   return (
     <div
-      className={`flex shrink-0 flex-col sidebar-slide-in ${isAtendimento ? 'bg-[#0B1120] border-r border-[#1a2744]/60' : 'bg-[#110B18] border-r border-[#2a1538]/60'} dark:shadow-none relative z-10 h-screen overflow-hidden sidebar-transition`}
+      className={`flex shrink-0 flex-col sidebar-slide-in ${isAtendimento ? 'bg-[#0B1120] border-r border-[#1a2744]/60' : 'bg-[#110B18] border-r border-[#2a1538]/60'} dark:shadow-none relative z-10 h-full overflow-hidden sidebar-transition`}
       style={{
         width: isCollapsed ? '80px' : '260px',
         minWidth: isCollapsed ? '80px' : '260px',
@@ -456,76 +429,6 @@ export default function Navigation() {
 
       </nav>
 
-      {/* --- FOOTER --- */}
-      <div className={`p-3 border-t border-white/[0.06] ${isAtendimento ? 'bg-[#0B1120]' : 'bg-[#110B18]'} transition-colors space-y-1`}>
-
-        {/* Botão de Tema */}
-        <button
-          onClick={toggleTheme}
-          className="w-full flex items-center p-2.5 rounded-xl hover:bg-white/[0.06] transition-all duration-200 group cursor-pointer relative"
-          style={{ justifyContent: isCollapsed ? 'center' : 'space-between', transition: 'justify-content 0.4s ease' }}
-          title={isCollapsed ? (theme === 'light' ? 'Modo Claro' : 'Modo Escuro') : undefined}
-        >
-          <div className="flex items-center gap-2.5">
-            {theme === 'light' ? (
-              <Sun className="w-4.5 h-4.5 text-amber-500 shrink-0" />
-            ) : (
-              <Moon className="w-4.5 h-4.5 text-blue-400 shrink-0" />
-            )}
-            <span
-              className="text-xs font-bold text-white/50 group-hover:text-white/80 whitespace-nowrap overflow-hidden"
-              style={{
-                opacity: isCollapsed ? 0 : 1,
-                maxWidth: isCollapsed ? '0px' : '120px',
-                transition: isCollapsed
-                  ? 'opacity 0.12s ease, max-width 0.25s cubic-bezier(0.22, 1, 0.36, 1) 0.05s'
-                  : 'max-width 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, opacity 0.25s ease 0.2s',
-              }}
-            >
-              {theme === 'light' ? 'Modo Claro' : 'Modo Escuro'}
-            </span>
-          </div>
-          <div
-            className={`h-4 rounded-full p-0.5 ${theme === 'dark' ? 'bg-sky-500' : 'bg-slate-300'}`}
-            style={{
-              opacity: isCollapsed ? 0 : 1,
-              width: isCollapsed ? '0px' : '32px',
-              transform: `scale(${isCollapsed ? 0.5 : 1})`,
-              transition: isCollapsed
-                ? 'opacity 0.12s ease, width 0.2s ease, transform 0.2s ease'
-                : 'width 0.3s ease 0.15s, transform 0.3s ease 0.15s, opacity 0.25s ease 0.2s',
-              overflow: 'hidden',
-            }}
-          >
-            <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-200 ${theme === 'dark' ? 'translate-x-4' : 'translate-x-0'}`} />
-          </div>
-        </button>
-
-        {/* Botão de Sair */}
-        <button
-          type="button"
-          onClick={() => signOut()}
-          className="w-full flex items-center p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 group cursor-pointer relative"
-          style={{ justifyContent: isCollapsed ? 'center' : 'flex-start', transition: 'justify-content 0.4s ease' }}
-          title={isCollapsed ? 'Sair' : undefined}
-        >
-          <div className="flex items-center gap-2.5">
-            <LogOut className="w-4.5 h-4.5 text-white/40 group-hover:text-red-400 shrink-0" />
-            <span
-              className="text-xs font-bold text-white/50 group-hover:text-red-400 whitespace-nowrap overflow-hidden"
-              style={{
-                opacity: isCollapsed ? 0 : 1,
-                maxWidth: isCollapsed ? '0px' : '60px',
-                transition: isCollapsed
-                  ? 'opacity 0.12s ease, max-width 0.25s cubic-bezier(0.22, 1, 0.36, 1) 0.05s'
-                  : 'max-width 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, opacity 0.25s ease 0.2s',
-              }}
-            >
-              Sair
-            </span>
-          </div>
-        </button>
-      </div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     // Verificar se a chave da API está configurada
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
-        { 
+        {
           error: 'OPENAI_API_KEY não configurada',
           message: 'A chave da API OpenAI não está configurada. Por favor, adicione OPENAI_API_KEY no arquivo .env.local'
         },
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
 
     // Inicializar OpenAI apenas se a chave existir
-    const openai = new OpenAI({ 
+    const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
       timeout: 50000, // 50 segundos de timeout
       maxRetries: 1 // Apenas 1 tentativa para evitar demoras
@@ -80,11 +80,16 @@ INSTRUÇÕES DE EXTRAÇÃO — leia com atenção:
    - Exemplo: "10/02/2023" → "2023-02-10"
    - Se não encontrar, use null.
 
-4. IDENTIFICAÇÃO DOS PAIS/RESPONSÁVEIS:
-   - Identifique separadamente nome da MÃE e do PAI.
-   - Procure por "mãe", "pai", "mamãe", "papai", "responsável", "Nome completo dos pais ou responsáveis".
-   - Se a pessoa que conversa se identifica pelo nome E como mãe/pai, coloque no campo correspondente.
-   - Se houver apenas um nome de responsável sem distinção, coloque em "motherName" (mais comum em pediatria).
+4. IDENTIFICAÇÃO DOS RESPONSÁVEIS / FAMILIARES:
+   - Extraia TODOS os responsáveis/familiares mencionados na conversa.
+   - Para CADA responsável identificado, determine:
+     * "name": nome completo da pessoa
+     * "relationship": o grau de parentesco com a criança
+   - Vínculos possíveis: "Mãe", "Pai", "Avó", "Avô", "Tia", "Tio", "Irmã", "Irmão", "Cônjuge", "Responsável Legal", "Outro"
+   - Procure por: "mãe", "pai", "mamãe", "papai", "avó", "vovó", "avô", "vovô", "tia", "tio", "responsável", "Nome completo dos pais ou responsáveis".
+   - Se a pessoa que conversa se identifica pelo nome E como mãe/pai/avó/etc., inclua com o vínculo correto.
+   - Se houver apenas um nome de responsável sem distinção de parentesco, use "Mãe" (mais comum em pediatria).
+   - Retorne como array de objetos: [{"name": "...", "relationship": "..."}]
 
 5. TELEFONE:
    - Extraia o número de telefone mencionado na conversa (campo "Telefone para contato" ou similar).
@@ -114,8 +119,7 @@ INSTRUÇÕES DE EXTRAÇÃO — leia com atenção:
 Retorne APENAS um JSON válido, sem markdown ou texto adicional:
 {
   "patientName": "Nome completo da criança ou null",
-  "motherName": "Nome da mãe ou null",
-  "fatherName": "Nome do pai ou null",
+  "guardians": [{"name": "Nome do responsável", "relationship": "Mãe"}],
   "phone": "Telefone (apenas dígitos) ou null",
   "birthDate": "YYYY-MM-DD ou null",
   "address": "Endereço completo ou null",
@@ -145,12 +149,37 @@ Retorne APENAS um JSON válido, sem markdown ou texto adicional:
     }
 
     const data = JSON.parse(content);
-    
+
+    // Processar guardians do novo formato
+    const guardians: Array<{ name: string; relationship: string }> = [];
+    if (Array.isArray(data.guardians)) {
+      for (const g of data.guardians) {
+        if (g?.name?.trim()) {
+          guardians.push({ name: g.name.trim(), relationship: g.relationship || 'Mãe' });
+        }
+      }
+    }
+
+    // Derivar motherName/fatherName dos guardians para backward compat
+    const mother = guardians.find(g => g.relationship === 'Mãe');
+    const father = guardians.find(g => g.relationship === 'Pai');
+
+    // Se a IA retornou no formato antigo (motherName/fatherName), converter para guardians
+    if (guardians.length === 0) {
+      if (data.motherName?.trim()) {
+        guardians.push({ name: data.motherName.trim(), relationship: 'Mãe' });
+      }
+      if (data.fatherName?.trim()) {
+        guardians.push({ name: data.fatherName.trim(), relationship: 'Pai' });
+      }
+    }
+
     // Validação básica dos campos
     const result = {
       patientName: data.patientName || null,
-      motherName: data.motherName || null,
-      fatherName: data.fatherName || null,
+      motherName: mother?.name || data.motherName || null,
+      fatherName: father?.name || data.fatherName || null,
+      guardians: guardians.length > 0 ? guardians : undefined,
       phone: data.phone || null,
       birthDate: data.birthDate || null,
       address: data.address || null,
@@ -174,7 +203,7 @@ Retorne APENAS um JSON válido, sem markdown ou texto adicional:
     } else if (errMsg.includes('rate limit') || errMsg.includes('429')) {
       errorMessage = 'Muitas requisições. Aguarde alguns instantes e tente novamente.';
     }
-    
+
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }
