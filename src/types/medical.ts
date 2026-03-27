@@ -124,6 +124,9 @@ export interface Appointment {
   // Campos financeiros
   total_amount?: number;
   amount_paid?: number;
+  discount_type?: '%' | 'R$';
+  discount_value?: number;
+  discount_amount?: number;
   patient_birth_date?: string | null;
   appointment_type?: 'consulta' | 'retorno' | null;
   chat_id?: number | null;

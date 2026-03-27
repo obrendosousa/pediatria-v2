@@ -129,7 +129,22 @@
       "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
       "Bash(find /c/Users/Brendo/Documents/pediatria-v2/src -path *api* -name *pre-schedule* -o -path *api* -name *schedule*)",
       "Bash(grep -E \"\\\\.\\(ts|tsx|md\\)$\")",
-      "Bash(node -e \"try { const d=JSON.parse\\(require\\(''''fs''''\\).readFileSync\\(0,''''utf8''''\\)\\); console.log\\(JSON.stringify\\(d,null,2\\)\\); } catch\\(e\\) { console.log\\(''''Server not running or error''''\\); }\")"
+      "Bash(node -e \"try { const d=JSON.parse\\(require\\(''''fs''''\\).readFileSync\\(0,''''utf8''''\\)\\); console.log\\(JSON.stringify\\(d,null,2\\)\\); } catch\\(e\\) { console.log\\(''''Server not running or error''''\\); }\")",
+      "Bash(xargs -I {} find {} -type f -name \"route.ts\")",
+      "Bash(grep -l \"medical_records\\\\|appointments\\\\|consultations\\\\|anamneses\\\\|evolutions\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(ls /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(find /Users/brendosousa/Downloads/painel-clinica-main -name \"*.sql\" -type f -exec grep -l \"patients.*id.*SERIAL\\\\|appointments.*id.*SERIAL\\\\|medical_records.*id\" {} ;)",
+      "Bash(head -200 /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(grep -A 50 \"^CREATE TABLE.*public.appointments\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(grep -h \"^CREATE TABLE\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(grep -n \"generateDocumentHTML\\\\|generatePrescriptionHTML\\\\|printDocument\\\\|printPrescription\\\\|doctor_name\\\\|Dra\\\\. Fernanda\" /Users/brendosousa/Downloads/painel-clinica-main/src/components/medical-record/attendance/screens/*.tsx)",
+      "Bash(ls -la /Users/brendosousa/Downloads/painel-clinica-main/src/app/api/crm*)",
+      "Bash(grep -l \"CREATE TABLE.*patient\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(ls -la /Users/brendosousa/Downloads/painel-clinica-main/src/app/\\\\\\(auth\\\\\\)/login/)",
+      "Bash(ls -la /Users/brendosousa/Downloads/painel-clinica-main/src/app/\\\\\\(auth\\\\\\)/signup/)",
+      "Bash(grep -r \"photo\\\\|avatar\\\\|profile_pic\\\\|image_url\" /Users/brendosousa/Downloads/painel-clinica-main/src/types/*.ts)",
+      "Bash(grep -l \"user_modules\\\\|CREATE TABLE.*user_modules\" /Users/brendosousa/Downloads/painel-clinica-main/database/*.sql)",
+      "Bash(find /Users/brendosousa/Downloads/painel-clinica-main -name \"*.sql\" -exec grep -l \"user_modules\" {} ;)"
     ],
     "additionalDirectories": [
       "/Users/brendosousa/Downloads/painel-clinica-main",

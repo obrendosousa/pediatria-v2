@@ -516,6 +516,7 @@ export function generatePrescriptionHTML(draft: DraftPrescription, patientData: 
         <div class="signature-line"></div>
         <div class="doctor-name">Dra. Fernanda Santana</div>
         <div class="doctor-crm">CRM 9223 - MA</div>
+        <div class="doctor-crm">RQE-6941</div>
         <div class="footer-date">${dateStr}</div>
       </div>
     </div>

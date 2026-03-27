@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { AttendanceScreenProps } from '@/types/attendance';
 import { useAnthropometry } from '@/hooks/useAnthropometry';
 import { useGrowthReferenceData } from '@/hooks/useGrowthReferenceData';
@@ -14,10 +14,8 @@ import {
   exportChartToPNG,
   validateAnthropometryInputs,
   calculateAgeInMonths,
-  formatXAxisLabel,
+  calculatePreciseAgeBetweenDates,
 } from '@/utils/growthChartUtils';
-import { createClient } from '@/lib/supabase/client';
-const supabase = createClient();
 import {
   Download,
   Plus,
@@ -27,6 +25,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
+import { useConsultation } from '@/contexts/ConsultationContext';
 
 // Seleciona automaticamente o gráfico padrão com base na idade do paciente
 function getDefaultChart(ageMonths: number): string {
@@ -42,6 +41,7 @@ function formatDateBR(iso: string): string {
 
 export function VitalsChart({ patientId, patientData, medicalRecordId }: AttendanceScreenProps) {
   const { toast } = useToast();
+  const { record, saveRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
 
   // ── Dados do paciente ───────────────────────────────────────────────────
   const patientGender = (
@@ -58,7 +58,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
 
   // ── Configuração do gráfico ─────────────────────────────────────────────
   const [selectedChartValue, setSelectedChartValue] = useState<string>('wfa_who_0_5');
-  const [displayMode, setDisplayMode] = useState<'PERCENTILE' | 'Z_SCORE'>('Z_SCORE');
+  const [displayMode, setDisplayMode] = useState<'PERCENTILE' | 'Z_SCORE'>('PERCENTILE');
 
   // Auto-seleciona o gráfico adequado para a idade do paciente (apenas no mount)
   useEffect(() => {
@@ -79,7 +79,6 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
     isLoading: isLoadingEntries,
     addEntry,
     deleteEntry,
-    fetchEntries,
   } = useAnthropometry(patientId);
 
   const {
@@ -105,27 +104,18 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
     return { referenceLines, patientPoints };
   }, [entries, activeChartConfig, patientBirthDate, displayMode, getReferenceLines]);
 
-  // ── Exame físico ────────────────────────────────────────────────────────
+  // ── Exame físico (usa ConsultationContext para não perder dados na finalização) ──
   const [physicalExamContent, setPhysicalExamContent] = useState('');
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
+  // Carrega physical_exam do record do contexto (não mais query direta)
   useEffect(() => {
-    const load = async () => {
-      if (!patientId) return;
-      const { data } = await supabase
-        .from('medical_records')
-        .select('physical_exam')
-        .eq('patient_id', patientId)
-        .eq('status', 'draft')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (data?.physical_exam) setPhysicalExamContent(data.physical_exam);
-    };
-    load();
-  }, [patientId]);
+    if (record?.physical_exam) {
+      setPhysicalExamContent(record.physical_exam);
+    }
+  }, [record]);
 
   // ── Formulário de medição ───────────────────────────────────────────────
   const [isPremature, setIsPremature] = useState(false);
@@ -173,8 +163,8 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
       setHeightCm('');
       setHeadCircumferenceCm('');
       toast.toast.success('Medição adicionada!');
-    } catch (err: any) {
-      toast.toast.error('Erro ao adicionar: ' + err.message);
+    } catch (err: unknown) {
+      toast.toast.error('Erro ao adicionar: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -183,37 +173,29 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
     try {
       await deleteEntry(id);
       toast.toast.success('Medição excluída.');
-    } catch (err: any) {
-      toast.toast.error('Erro ao excluir: ' + err.message);
+    } catch (err: unknown) {
+      toast.toast.error('Erro ao excluir: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
+
+  // Salva physical_exam via ConsultationContext (não mais query direta ao Supabase)
+  const savePhysicalExam = useCallback(async () => {
+    await saveRecord({ physical_exam: physicalExamContent });
+  }, [saveRecord, physicalExamContent]);
+
+  // Registra handler para que saveAllScreens() inclua physical_exam na finalização
+  useEffect(() => {
+    registerSaveHandler('vitals-chart', savePhysicalExam);
+    return () => unregisterSaveHandler('vitals-chart');
+  }, [registerSaveHandler, unregisterSaveHandler, savePhysicalExam]);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const { data: existing } = await supabase
-        .from('medical_records')
-        .select('*')
-        .eq('patient_id', patientId)
-        .eq('status', 'draft')
-        .limit(1)
-        .maybeSingle();
-
-      const payload = {
-        patient_id: patientId,
-        physical_exam: physicalExamContent,
-        status: 'draft',
-      };
-
-      if (existing) {
-        await supabase.from('medical_records').update(payload).eq('id', existing.id);
-      } else {
-        await supabase.from('medical_records').insert(payload);
-      }
-      await fetchEntries();
+      await savePhysicalExam();
       toast.toast.success('Exame físico salvo!');
-    } catch (err: any) {
-      toast.toast.error('Erro ao salvar: ' + err.message);
+    } catch (err: unknown) {
+      toast.toast.error('Erro ao salvar: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSaving(false);
     }
@@ -316,6 +298,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
               displayMode={displayMode}
               xAxisLabel={activeChartConfig.xAxisLabel}
               yAxisLabel={activeChartConfig.yAxisLabel}
+              patientBirthDate={patientBirthDate}
             />
           )}
         </div>
@@ -456,9 +439,6 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
                   </tr>
                 ) : (
                   entries.map((entry) => {
-                    const ageAtMeasurement = patientBirthDate
-                      ? calculateAgeInMonths(patientBirthDate, entry.measurement_date)
-                      : null;
                     return (
                       <tr
                         key={entry.id}
@@ -480,7 +460,9 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
                           {entry.bmi != null ? entry.bmi.toFixed(1) : '—'}
                         </td>
                         <td className="px-4 py-3 text-slate-500 dark:text-[#a1a1aa] text-xs whitespace-nowrap">
-                          {ageAtMeasurement !== null ? formatXAxisLabel(ageAtMeasurement) : '—'}
+                          {patientBirthDate && entry.measurement_date
+                            ? calculatePreciseAgeBetweenDates(patientBirthDate, entry.measurement_date)
+                            : '—'}
                         </td>
                         <td className="px-4 py-3">
                           <button

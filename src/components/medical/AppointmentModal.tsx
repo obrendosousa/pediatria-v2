@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   X, User, Phone, Calendar, Clock, FileText, Sparkles, Loader2, Save,
-  Wallet, Cake
+  Wallet, Cake, Percent, Tag
 } from 'lucide-react';
+import { computeDiscountAmount, effectiveAmount, type DiscountType } from '@/utils/discountUtils';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { linkPatientByPhone, createBasicPatientFromAppointment } from '@/utils/patientRelations';
@@ -67,8 +68,12 @@ export default function AppointmentModal({
     appointmentType: '' as 'consulta' | 'retorno' | '',
     // Campos Financeiros (Strings para controle de input com máscara)
     totalAmount: '',
-    paidAmount: ''
+    paidAmount: '',
+    // Desconto
+    discountType: '%' as DiscountType,
+    discountValue: ''
   });
+  const [showDiscount, setShowDiscount] = useState(false);
 
   // Função para converter YYYY-MM-DD para DD/MM/YYYY
   const formatDateToDisplay = (dateStr: string): string => {
@@ -180,8 +185,11 @@ export default function AppointmentModal({
         birthDate: initialBirthDate,
         appointmentType: (initialData?.appointmentType as 'consulta' | 'retorno' | '') || '',
         totalAmount: '',
-        paidAmount: ''
+        paidAmount: '',
+        discountType: '%' as DiscountType,
+        discountValue: ''
       });
+      setShowDiscount(false);
       setSelectedPatient(null);
     }
   }, [isOpen, initialData, chatPhone, fetchDoctors]);
@@ -227,11 +235,10 @@ export default function AppointmentModal({
 
       const start_time = saveAppointmentDateTime(formData.date, formData.time);
 
-      // Converter valores monetários
+      // Converter valores monetários (com desconto)
       const totalAmountNum = parseCurrency(formData.totalAmount);
-      // amount_paid sempre 0 na criação — pagamento deve ser registrado
-      // via fluxo próprio (handleSavePaymentOnly) para gerar financial_transaction
-      // e garantir precisão no fechamento de caixa.
+      const discountVal = Number(formData.discountValue.replace(',', '.')) || 0;
+      const discountAmt = computeDiscountAmount(totalAmountNum, formData.discountType, discountVal);
 
       const insertData: Record<string, unknown> = {
         doctor_id: selectedDoctorId,
@@ -244,7 +251,10 @@ export default function AppointmentModal({
         appointment_type: formData.appointmentType,
         patient_birth_date: formData.birthDate || null,
         total_amount: totalAmountNum,
-        amount_paid: 0
+        amount_paid: 0,
+        discount_type: formData.discountType,
+        discount_value: discountVal,
+        discount_amount: discountAmt
       };
 
       if (formData.motherName.trim()) {
@@ -558,33 +568,109 @@ export default function AppointmentModal({
               Financeiro do Agendamento
             </h4>
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Valor Total */}
+            {/* Valor Total */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
+                Valor Total (R$)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-gray-500 dark:text-[#a1a1aa] font-bold text-sm">R$</span>
+                <input
+                  type="text"
+                  value={formData.totalAmount}
+                  onChange={e => handleMoneyInput('totalAmount', e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+
+            {/* Botão de desconto */}
+            {!showDiscount ? (
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
-                  Valor Total (R$)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-500 dark:text-[#a1a1aa] font-bold text-sm">R$</span>
-                  <input
-                    type="text"
-                    value={formData.totalAmount}
-                    onChange={e => handleMoneyInput('totalAmount', e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                    placeholder="0,00"
-                  />
+                <button
+                  type="button"
+                  onClick={() => setShowDiscount(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                >
+                  <Tag size={14} /> Desconto
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3 bg-orange-50/50 dark:bg-orange-900/10 p-3 rounded-lg border border-orange-200 dark:border-orange-800/50">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-orange-700 dark:text-orange-300 uppercase flex items-center gap-1.5">
+                    <Percent size={12} /> Desconto
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setShowDiscount(false); setFormData(prev => ({ ...prev, discountValue: '' })); }}
+                    className="text-[10px] text-slate-400 hover:text-red-500 dark:hover:text-red-400 font-semibold transition-colors"
+                  >
+                    Remover
+                  </button>
+                </div>
+                <div className="flex gap-2 items-end">
+                  <div className="flex bg-white dark:bg-[#1c1c21] border border-orange-200 dark:border-orange-800 rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, discountType: '%' as DiscountType }))}
+                      className={`px-3 py-1.5 text-xs font-bold transition-colors ${formData.discountType === '%' ? 'bg-orange-500 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-orange-50 dark:hover:bg-orange-900/20'}`}
+                    >
+                      %
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, discountType: 'R$' as DiscountType }))}
+                      className={`px-3 py-1.5 text-xs font-bold transition-colors ${formData.discountType === 'R$' ? 'bg-orange-500 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-orange-50 dark:hover:bg-orange-900/20'}`}
+                    >
+                      R$
+                    </button>
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={formData.discountValue}
+                      onChange={e => {
+                        const val = e.target.value.replace(/[^0-9.,]/g, '');
+                        setFormData(prev => ({ ...prev, discountValue: val }));
+                      }}
+                      placeholder={formData.discountType === '%' ? 'Ex: 10' : '0,00'}
+                      className="w-full px-3 py-1.5 text-sm font-bold border border-orange-200 dark:border-orange-800 rounded-lg bg-white dark:bg-[#1c1c21] text-orange-700 dark:text-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all"
+                    />
+                  </div>
                 </div>
               </div>
-
-            </div>
+            )}
 
             {/* Resumo — pagamento será registrado na recepção */}
             {totalNum > 0 && (
               <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-[#3d3d48]">
-                <span className="text-sm text-slate-500 dark:text-[#a1a1aa]">Valor a cobrar na recepção:</span>
-                <span className="text-lg font-black text-amber-600 dark:text-amber-400">
-                  R$ {totalNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
+                {(() => {
+                  const dVal = Number(formData.discountValue.replace(',', '.')) || 0;
+                  const dAmt = computeDiscountAmount(totalNum, formData.discountType, dVal);
+                  const fAmt = effectiveAmount(totalNum, dAmt);
+                  return dAmt > 0 ? (
+                    <div className="flex flex-col gap-1 w-full">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-orange-600 dark:text-orange-400 font-semibold">Desconto: -R$ {dAmt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-500 dark:text-[#a1a1aa]">Valor a cobrar na recepção:</span>
+                        <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                          R$ {fAmt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-sm text-slate-500 dark:text-[#a1a1aa]">Valor a cobrar na recepção:</span>
+                      <span className="text-lg font-black text-amber-600 dark:text-amber-400">
+                        R$ {totalNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </>
+                  );
+                })()}
               </div>
             )}
           </div>

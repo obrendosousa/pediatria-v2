@@ -33,6 +33,7 @@ type TransactionRow = {
     patient_name: string | null;
     parent_name: string | null;
     appointment_type: 'consulta' | 'retorno' | null;
+    discount_amount: number | null;
   }> | null;
   sales?: Array<{
     id: number;
@@ -71,6 +72,7 @@ function buildDailyTotals(transactions: TransactionRow[]) {
     retorno: 0,
     loja: 0
   };
+  let totalDiscounts = 0;
 
   for (const transaction of transactions) {
     const amount = round2(Number(transaction.amount || 0));
@@ -88,6 +90,9 @@ function buildDailyTotals(transactions: TransactionRow[]) {
         totalsByMethod[payment.payment_method] + round2(Number(payment.amount || 0))
       );
     }
+    // Acumular desconto do agendamento vinculado (se houver)
+    const discAmt = Number(appointment?.discount_amount ?? 0);
+    if (discAmt > 0) totalDiscounts = round2(totalDiscounts + discAmt);
   }
 
   const totalAmount = round2(
@@ -98,7 +103,8 @@ function buildDailyTotals(transactions: TransactionRow[]) {
     totalsByMethod: { ...totalsByMethod },
     totalsByOrigin: { ...totalsByOrigin },
     totalsByType: { ...totalsByType },
-    totalAmount
+    totalAmount,
+    totalDiscounts
   };
 }
 
@@ -138,6 +144,7 @@ function mapTransactionLog(
     attendance_type: attendanceType,
     patient_name: patientName,
     amount: Number(transaction.amount || 0),
+    discount_amount: Number(appointment?.discount_amount ?? 0),
     payment_methods: transaction.financial_transaction_payments || [],
     notes: transaction.notes,
     items
@@ -171,7 +178,8 @@ async function loadTransactionsByRange(startISO: string, endISO: string) {
         patient_id,
         patient_name,
         parent_name,
-        appointment_type
+        appointment_type,
+        discount_amount
       ),
       sales (
         id,

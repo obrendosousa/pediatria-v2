@@ -6,7 +6,7 @@ const supabase = createClient();
 import { Appointment } from '@/types/medical';
 import {
   X, Edit2, FileText, CalendarDays, Clock, Stethoscope, User, Phone,
-  Save, Wallet, Info, Loader2, Cake, Trash2
+  Save, Wallet, Info, Loader2, Cake, Trash2, Percent, Tag
 } from 'lucide-react';
 import { saveAppointmentDateTime } from '@/utils/dateUtils';
 import { formatDateToDisplay, formatDateToISO, formatCurrency, parseCurrency } from '@/app/agenda/utils/agendaUtils';
@@ -16,6 +16,7 @@ import { logAudit } from '@/lib/audit';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { CanonicalPaymentSplit, normalizePaymentSplits } from '@/lib/finance';
 import { createFinancialTransaction } from '@/lib/financialTransactions';
+import { computeDiscountAmount, effectiveAmount, DiscountType } from '@/utils/discountUtils';
 
 const initialForm = {
   patient_name: '',
@@ -30,7 +31,9 @@ const initialForm = {
   time: '',
   doctor_id: null as number | null,
   totalAmount: '',
-  paidAmount: ''
+  paidAmount: '',
+  discountType: '%' as DiscountType,
+  discountValue: ''
 };
 
 type ReceptionAppointmentModalProps = {
@@ -55,6 +58,7 @@ export default function ReceptionAppointmentModal({
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [showDiscount, setShowDiscount] = useState(false);
   const [paymentMode, setPaymentMode] = useState<'pix' | 'cash' | 'credit_card' | 'debit_card' | 'mixed'>('pix');
   const [pendingAmount, setPendingAmount] = useState('');
   const [mixedPayments, setMixedPayments] = useState({
@@ -78,6 +82,8 @@ export default function ReceptionAppointmentModal({
       const dateStr = appointment.start_time;
       const clean = dateStr ? dateStr.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '') : '';
       const [datePart, timePart] = clean.split('T');
+      const dType = (appointment.discount_type as DiscountType) || '%';
+      const dVal = appointment.discount_value ?? 0;
       setForm({
         patient_name: appointment.patient_name || '',
         patient_phone: appointment.patient_phone || '',
@@ -91,8 +97,11 @@ export default function ReceptionAppointmentModal({
         time: timePart ? timePart.substring(0, 5) : '',
         doctor_id: appointment.doctor_id ?? null,
         totalAmount: appointment.total_amount != null ? formatCurrency(appointment.total_amount) : '',
-        paidAmount: appointment.amount_paid != null ? formatCurrency(appointment.amount_paid) : ''
+        paidAmount: appointment.amount_paid != null ? formatCurrency(appointment.amount_paid) : '',
+        discountType: dType,
+        discountValue: dVal > 0 ? String(dVal).replace('.', ',') : ''
       });
+      setShowDiscount(dVal > 0);
       setPendingAmount('');
       setPaymentMode('pix');
       setMixedPayments({
@@ -137,7 +146,9 @@ export default function ReceptionAppointmentModal({
     const totalNum = Number(appointment.total_amount ?? 0);
     const alreadyPaid = Number(appointment.amount_paid ?? 0);
     const paymentAmount = parseCurrency(pendingAmount);
-    const remainingBeforePayment = Math.max(0, totalNum - alreadyPaid);
+    const discountAmt = Number(appointment.discount_amount ?? 0);
+    const effectiveTotal = effectiveAmount(totalNum, discountAmt);
+    const remainingBeforePayment = Math.max(0, effectiveTotal - alreadyPaid);
 
     if (totalNum <= 0) {
       toast.error('Defina o valor total do agendamento antes de registrar o pagamento.');
@@ -202,7 +213,7 @@ export default function ReceptionAppointmentModal({
         credit_card: '',
         debit_card: ''
       });
-      if (updatedAmountPaid >= totalNum) onClose();
+      if (updatedAmountPaid >= effectiveTotal) onClose();
     } catch (err: unknown) {
       console.error(err);
       const message = err instanceof Error ? err.message : 'Tente novamente.';
@@ -240,6 +251,11 @@ export default function ReceptionAppointmentModal({
       if (!doctor) throw new Error('Médico não encontrado');
       const start_time = saveAppointmentDateTime(form.date, form.time);
       const totalNum = parseCurrency(form.totalAmount);
+
+      // Calcular desconto
+      const discVal = Number(String(form.discountValue).replace(',', '.')) || 0;
+      const discAmt = computeDiscountAmount(totalNum, form.discountType, discVal);
+
       // amount_paid NÃO é editável aqui — todo pagamento deve passar pelo
       // handleSavePaymentOnly para gerar financial_transaction e garantir
       // precisão no fechamento de caixa.
@@ -257,7 +273,10 @@ export default function ReceptionAppointmentModal({
           start_time,
           doctor_id: form.doctor_id,
           doctor_name: doctor.name,
-          total_amount: totalNum
+          total_amount: totalNum,
+          discount_type: form.discountType,
+          discount_value: discVal,
+          discount_amount: discAmt
         })
         .eq('id', appointment.id);
       if (error) throw error;
@@ -275,7 +294,10 @@ export default function ReceptionAppointmentModal({
         doctor_id: form.doctor_id,
         doctor_name: doctor.name,
         total_amount: totalNum,
-        amount_paid: appointment.amount_paid ?? 0
+        amount_paid: appointment.amount_paid ?? 0,
+        discount_type: form.discountType,
+        discount_value: discVal,
+        discount_amount: discAmt
       };
       onSave(updated);
       onClose();
@@ -308,9 +330,18 @@ export default function ReceptionAppointmentModal({
 
   const totalDisplay = appointment.total_amount ?? 0;
   const paidDisplay = appointment.amount_paid ?? 0;
-  const remainingDisplay = Math.max(0, totalDisplay - paidDisplay);
+  const discountDisplay = appointment.discount_amount ?? 0;
+  const effectiveTotalDisplay = effectiveAmount(totalDisplay, discountDisplay);
+  const remainingDisplay = Math.max(0, effectiveTotalDisplay - paidDisplay);
   const pendingAmountValue = parseCurrency(pendingAmount);
   const remainingAfterCurrentInput = Math.max(0, remainingDisplay - pendingAmountValue);
+
+  // Cálculo em tempo real para modo edição
+  const editTotalNum = parseCurrency(form.totalAmount);
+  const editDiscVal = Number(String(form.discountValue).replace(',', '.')) || 0;
+  const editDiscAmt = computeDiscountAmount(editTotalNum, form.discountType, editDiscVal);
+  const editFinalAmount = effectiveAmount(editTotalNum, editDiscAmt);
+
   return (
     <>
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
@@ -338,13 +369,21 @@ export default function ReceptionAppointmentModal({
                 <Wallet size={14} />
                 Pagamento pendente — registre o valor pago
               </p>
-              <div className="grid grid-cols-3 gap-2 items-end text-center">
+              <div className={`grid ${discountDisplay > 0 ? 'grid-cols-4' : 'grid-cols-3'} gap-2 items-end text-center`}>
                 <div>
                   <label className="text-[10px] text-slate-500 dark:text-[#a1a1aa] uppercase block mb-1">Total</label>
                   <p className="text-sm font-bold text-slate-700 dark:text-gray-200">
                     R$ {totalDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
+                {discountDisplay > 0 && (
+                  <div>
+                    <label className="text-[10px] text-orange-600 dark:text-orange-400 uppercase block mb-1">Desc.</label>
+                    <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                      -R$ {discountDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <label className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase font-semibold block mb-1">Entrada desta vez (R$)</label>
                   <input
@@ -629,6 +668,77 @@ export default function ReceptionAppointmentModal({
                   <label className="text-[10px] text-slate-500 dark:text-[#a1a1aa] uppercase">Valor da consulta (R$)</label>
                   <input type="text" value={form.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full text-sm font-bold border border-slate-200 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-400" placeholder="0,00" />
                 </div>
+
+                {/* Desconto — modo edição */}
+                {editTotalNum > 0 && (
+                  <div className="space-y-2">
+                    {!showDiscount ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowDiscount(true)}
+                        className="flex items-center gap-1.5 text-[11px] font-semibold text-orange-600 dark:text-orange-400 hover:underline"
+                      >
+                        <Percent size={12} /> Adicionar desconto
+                      </button>
+                    ) : (
+                      <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800/40 rounded-lg p-2.5 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-orange-700 dark:text-orange-300 uppercase flex items-center gap-1">
+                            <Tag size={10} /> Desconto
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => { setShowDiscount(false); setForm(prev => ({ ...prev, discountValue: '' })); }}
+                            className="text-[10px] text-slate-400 hover:text-red-500"
+                          >
+                            Remover
+                          </button>
+                        </div>
+                        <div className="flex gap-2 items-end">
+                          <div className="flex rounded-lg overflow-hidden border border-orange-200 dark:border-orange-700">
+                            {(['%', 'R$'] as DiscountType[]).map(t => (
+                              <button
+                                key={t}
+                                type="button"
+                                onClick={() => setForm(prev => ({ ...prev, discountType: t }))}
+                                className={`px-3 py-1.5 text-[11px] font-bold transition-colors ${
+                                  form.discountType === t
+                                    ? 'bg-orange-500 text-white'
+                                    : 'bg-white dark:bg-[#1c1c21] text-slate-600 dark:text-[#a1a1aa]'
+                                }`}
+                              >
+                                {t}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={form.discountValue}
+                              onChange={e => {
+                                const v = e.target.value.replace(/[^0-9.,]/g, '');
+                                setForm(prev => ({ ...prev, discountValue: v }));
+                              }}
+                              placeholder={form.discountType === '%' ? 'Ex: 10' : 'Ex: 50,00'}
+                              className="w-full text-sm font-bold border border-orange-200 dark:border-orange-700 rounded-lg px-2 py-1.5 bg-white dark:bg-[#1c1c21] text-orange-700 dark:text-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                            />
+                          </div>
+                        </div>
+                        {editDiscAmt > 0 && (
+                          <div className="flex justify-between text-[11px] font-semibold pt-1 border-t border-orange-200/60 dark:border-orange-800/30">
+                            <span className="text-orange-600 dark:text-orange-400">
+                              Desconto: -R$ {editDiscAmt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                            <span className="text-emerald-600 dark:text-emerald-400">
+                              Final: R$ {editFinalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {paidDisplay > 0 && (
                   <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
                     Pago: R$ {paidDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (registrado via pagamento)
@@ -636,20 +746,28 @@ export default function ReceptionAppointmentModal({
                 )}
               </div>
             ) : (
-              <div className="flex justify-between items-center bg-white dark:bg-black/20 p-2.5 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
-                <div>
-                  <p className="text-[10px] text-slate-500 dark:text-[#a1a1aa] uppercase font-semibold">Total</p>
-                  <p className="text-sm font-bold text-slate-700 dark:text-gray-200">R$ {totalDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 uppercase font-semibold">Pago</p>
-                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">R$ {paidDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-slate-500 dark:text-[#a1a1aa] uppercase font-semibold">Falta</p>
-                  <p className={`text-sm font-black ${remainingDisplay > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-400 dark:text-[#71717a]'}`}>
-                    R$ {remainingDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center bg-white dark:bg-black/20 p-2.5 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
+                  <div>
+                    <p className="text-[10px] text-slate-500 dark:text-[#a1a1aa] uppercase font-semibold">Total</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-gray-200">R$ {totalDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                  </div>
+                  {discountDisplay > 0 && (
+                    <div className="text-center">
+                      <p className="text-[10px] text-orange-600/80 dark:text-orange-400/80 uppercase font-semibold flex items-center gap-0.5"><Tag size={8} /> Desc.</p>
+                      <p className="text-sm font-bold text-orange-600 dark:text-orange-400">-R$ {discountDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  )}
+                  <div className="text-right">
+                    <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 uppercase font-semibold">Pago</p>
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">R$ {paidDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-slate-500 dark:text-[#a1a1aa] uppercase font-semibold">Falta</p>
+                    <p className={`text-sm font-black ${remainingDisplay > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-400 dark:text-[#71717a]'}`}>
+                      R$ {remainingDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
-import { X, User, Ban, FileText, Phone, Calendar, Clock, Stethoscope, Loader2, Save, Wallet, Cake } from 'lucide-react';
+import { X, User, Ban, FileText, Phone, Calendar, Clock, Stethoscope, Loader2, Save, Wallet, Cake, Percent, Tag } from 'lucide-react';
+import { computeDiscountAmount, effectiveAmount, type DiscountType } from '@/utils/discountUtils';
 import { saveAppointmentDateTime } from '@/utils/dateUtils';
 import { linkPatientByPhone, createBasicPatientFromAppointment } from '@/utils/patientRelations';
 import { useToast } from '@/contexts/ToastContext';
@@ -56,8 +57,12 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
     notes: '',
     // Novos campos financeiros
     totalAmount: '',
-    paidAmount: ''
+    paidAmount: '',
+    // Desconto
+    discountType: '%' as DiscountType,
+    discountValue: ''
   });
+  const [showDiscount, setShowDiscount] = useState(false);
 
   // Funções de formatação de moeda
   const formatCurrency = (value: string) => {
@@ -142,8 +147,11 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         appointment_type: (initialPatient?.appointmentType as 'consulta' | 'retorno' | '') || '',
         notes: '',
         totalAmount: '',
-        paidAmount: ''
+        paidAmount: '',
+        discountType: '%' as DiscountType,
+        discountValue: ''
       }));
+      setShowDiscount(false);
       setSelectedPatient(null);
       setSlotType('booked');
     }
@@ -198,7 +206,11 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         return;
       }
 
-      if (formData.appointment_type === 'consulta' && parseCurrency(formData.totalAmount) <= 0) {
+      const totalVal = parseCurrency(formData.totalAmount);
+      const discVal = Number(formData.discountValue.replace(',', '.')) || 0;
+      const discAmt = computeDiscountAmount(totalVal, formData.discountType, discVal);
+      const finalVal = effectiveAmount(totalVal, discAmt);
+      if (formData.appointment_type === 'consulta' && finalVal <= 0 && totalVal <= 0) {
         toast.error('Informe o valor da consulta.');
         return;
       }
@@ -240,13 +252,15 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         insertData.appointment_type = formData.appointment_type;
         insertData.patient_birth_date = formData.birthDate || null;
 
-        // Inserir dados financeiros
+        // Inserir dados financeiros (com desconto)
         const totalAmountNum = parseCurrency(formData.totalAmount);
-        // amount_paid sempre 0 na criação — pagamento deve ser registrado
-        // via fluxo próprio para gerar financial_transaction e garantir
-        // precisão no fechamento de caixa.
+        const discountVal = Number(formData.discountValue.replace(',', '.')) || 0;
+        const discountAmt = computeDiscountAmount(totalAmountNum, formData.discountType, discountVal);
         insertData.total_amount = totalAmountNum;
         insertData.amount_paid = 0;
+        insertData.discount_type = formData.discountType;
+        insertData.discount_value = discountVal;
+        insertData.discount_amount = discountAmt;
 
         if (formData.mother_name.trim()) {
           insertData.mother_name = formData.mother_name.trim();
@@ -586,25 +600,102 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
                   Financeiro do Agendamento
                 </h4>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Valor Total */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
-                      Valor Total (R$)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-gray-500 dark:text-[#a1a1aa] font-bold text-sm">R$</span>
-                      <input
-                        type="text"
-                        value={formData.totalAmount}
-                        onChange={e => handleMoneyInput('totalAmount', e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                        placeholder="0,00"
-                      />
-                    </div>
+                {/* Valor Total */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">
+                    Valor Total (R$)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-500 dark:text-[#a1a1aa] font-bold text-sm">R$</span>
+                    <input
+                      type="text"
+                      value={formData.totalAmount}
+                      onChange={e => handleMoneyInput('totalAmount', e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-gray-700 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                      placeholder="0,00"
+                    />
                   </div>
-
                 </div>
+
+                {/* Botão de desconto */}
+                {!showDiscount ? (
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowDiscount(true)}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                    >
+                      <Tag size={14} /> Desconto
+                    </button>
+                  </div>
+                ) : (
+                  <div className="col-span-full space-y-3 bg-orange-50/50 dark:bg-orange-900/10 p-3 rounded-lg border border-orange-200 dark:border-orange-800/50">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-orange-700 dark:text-orange-300 uppercase flex items-center gap-1.5">
+                        <Percent size={12} /> Desconto
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => { setShowDiscount(false); setFormData(prev => ({ ...prev, discountValue: '' })); }}
+                        className="text-[10px] text-slate-400 hover:text-red-500 dark:hover:text-red-400 font-semibold transition-colors"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                    <div className="flex gap-2 items-end">
+                      {/* Seletor % / R$ */}
+                      <div className="flex bg-white dark:bg-[#1c1c21] border border-orange-200 dark:border-orange-800 rounded-lg overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, discountType: '%' as DiscountType }))}
+                          className={`px-3 py-1.5 text-xs font-bold transition-colors ${formData.discountType === '%' ? 'bg-orange-500 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-orange-50 dark:hover:bg-orange-900/20'}`}
+                        >
+                          %
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, discountType: 'R$' as DiscountType }))}
+                          className={`px-3 py-1.5 text-xs font-bold transition-colors ${formData.discountType === 'R$' ? 'bg-orange-500 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-orange-50 dark:hover:bg-orange-900/20'}`}
+                        >
+                          R$
+                        </button>
+                      </div>
+                      {/* Valor do desconto */}
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={formData.discountValue}
+                          onChange={e => {
+                            const val = e.target.value.replace(/[^0-9.,]/g, '');
+                            setFormData(prev => ({ ...prev, discountValue: val }));
+                          }}
+                          placeholder={formData.discountType === '%' ? 'Ex: 10' : '0,00'}
+                          className="w-full px-3 py-1.5 text-sm font-bold border border-orange-200 dark:border-orange-800 rounded-lg bg-white dark:bg-[#1c1c21] text-orange-700 dark:text-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all"
+                        />
+                      </div>
+                    </div>
+                    {/* Resumo do desconto */}
+                    {(() => {
+                      const tNum = parseCurrency(formData.totalAmount);
+                      const dVal = Number(formData.discountValue.replace(',', '.')) || 0;
+                      const dAmt = computeDiscountAmount(tNum, formData.discountType, dVal);
+                      const fAmt = effectiveAmount(tNum, dAmt);
+                      if (dAmt > 0 && tNum > 0) {
+                        return (
+                          <div className="flex justify-between items-center pt-2 border-t border-orange-200 dark:border-orange-800/50">
+                            <span className="text-xs text-orange-600 dark:text-orange-400 font-semibold">
+                              Desconto: -R$ {dAmt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                            <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                              Final: R$ {fAmt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                )}
               </div>
 
               {/* Motivo/Queixa */}

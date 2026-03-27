@@ -500,6 +500,8 @@ export function generateRequestHTML(draft: any, patientData: any): string {
     <div class="tiss-field" style="width: 15%; flex: none;">
       <span class="tiss-field-label">17-Número no Conselho</span>
       <span class="tiss-field-value">9223</span>
+      <span class="tiss-field-label">RQE</span>
+      <span class="tiss-field-value">6941</span>
     </div>
     <div class="tiss-field" style="width: 5%; flex: none;">
       <span class="tiss-field-label">18-UF</span>
@@ -738,6 +740,7 @@ export function generateRequestHTML(draft: any, patientData: any): string {
         <div class="signature-line"></div>
         <div class="doctor-name">Dra. Fernanda Santana</div>
         <div class="doctor-crm">CRM 9223 - MA</div>
+        <div class="doctor-crm">RQE-6941</div>
         <div class="footer-date">${dateStr}</div>
       </div>
     </div>

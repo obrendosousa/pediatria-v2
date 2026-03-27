@@ -13,7 +13,8 @@ import {
   RefreshCw,
   CalendarRange,
   Download,
-  Pencil
+  Pencil,
+  Tag
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -87,6 +88,7 @@ type ClosureLog = {
   attendance_type: 'consulta' | 'retorno' | 'loja';
   patient_name: string;
   amount: number;
+  discount_amount?: number;
   payment_methods: Array<{ payment_method: 'pix' | 'cash' | 'credit_card' | 'debit_card'; amount: number }>;
   notes: string | null;
   items?: ClosureLogItem[];
@@ -102,6 +104,7 @@ type ClosureResponse = {
     totalsByOrigin: { atendimento: number; loja: number };
     totalsByType?: { consulta: number; retorno: number; loja: number };
     totalAmount: number;
+    totalDiscounts?: number;
   };
   logs: ClosureLog[];
 };
@@ -217,6 +220,7 @@ export default function FinancialDashboardPage() {
 
       const methodLabel: Record<string, string> = { pix: 'Pix', cash: 'Dinheiro', credit_card: 'Crédito', debit_card: 'Débito' };
       const totalGeral = closure.totals.totalAmount;
+      const totalDescontos = closure.totals.totalDiscounts ?? 0;
       const dateLabel = closure.startDate === closure.endDate
         ? new Date(closure.startDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
         : `${closure.startDate} a ${closure.endDate}`;
@@ -235,6 +239,9 @@ export default function FinancialDashboardPage() {
         .total-bar { background: #f0fdf4; border: 2px solid #86efac; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin: 10px 0 16px; }
         .total-bar .label { font-size: 12px; font-weight: bold; color: #166534; }
         .total-bar .value { font-size: 20px; font-weight: 900; color: #166534; }
+        .discount-bar { background: #fff7ed; border: 2px solid #fed7aa; border-radius: 8px; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; margin: 0 0 10px; }
+        .discount-bar .label { font-size: 11px; font-weight: bold; color: #9a3412; }
+        .discount-bar .value { font-size: 16px; font-weight: 900; color: #ea580c; }
         .origin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         .origin-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }
         .origin-card .label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; }
@@ -245,6 +252,7 @@ export default function FinancialDashboardPage() {
         tbody tr:nth-child(even) { background: #f8fafc; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
+        .discount-tag { display: inline-block; font-size: 7px; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; border-radius: 4px; padding: 1px 4px; margin-left: 4px; }
         .footer-note { margin-top: 20px; text-align: center; font-size: 9px; color: #94a3b8; }
       </style></head><body><div class="page">
         <h1>Relatório de Fechamento de Caixa</h1>
@@ -261,6 +269,11 @@ export default function FinancialDashboardPage() {
           <span class="label">TOTAL GERAL</span>
           <span class="value">R$ ${totalGeral.toFixed(2)}</span>
         </div>
+
+        ${totalDescontos > 0 ? `<div class="discount-bar">
+          <span class="label">TOTAL DESCONTOS CONCEDIDOS</span>
+          <span class="value">-R$ ${totalDescontos.toFixed(2)}</span>
+        </div>` : ''}
 
         <p class="section-title">Resumo por Origem</p>
         <div class="origin-grid">
@@ -289,7 +302,7 @@ export default function FinancialDashboardPage() {
               <td>${financialTypeLabel(log.attendance_type)}</td>
               <td>${financialOriginLabel(log.origin)}</td>
               <td>${(log.payment_methods || []).map(p => `${methodLabel[p.payment_method] || p.payment_method} R$${Number(p.amount).toFixed(2)}`).join(' + ')}</td>
-              <td class="text-right font-bold">R$ ${log.amount.toFixed(2)}</td>
+              <td class="text-right font-bold">R$ ${log.amount.toFixed(2)}${(log.discount_amount && log.discount_amount > 0) ? `<span class="discount-tag">desc. -R$${log.discount_amount.toFixed(2)}</span>` : ''}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -449,6 +462,8 @@ export default function FinancialDashboardPage() {
       setSavingEdit(false);
     }
   }
+
+  const totalDescontos = closure?.totals?.totalDiscounts ?? 0;
 
   return (
     <div className="h-full flex flex-col bg-[#f8fafc] dark:bg-black relative overflow-hidden transition-colors duration-300">
@@ -627,11 +642,19 @@ export default function FinancialDashboardPage() {
                   {closingCashier ? 'Gerando PDF...' : 'Baixar Relatório PDF'}
                 </button>
               </div>
-              <div className="grid grid-cols-4 gap-3">
+              <div className={`grid ${totalDescontos > 0 ? 'grid-cols-5' : 'grid-cols-4'} gap-3`}>
                 <SummaryValue label="Pix" value={closure.totals.totalsByMethod.pix} />
                 <SummaryValue label="Dinheiro" value={closure.totals.totalsByMethod.cash} />
                 <SummaryValue label="Crédito" value={closure.totals.totalsByMethod.credit_card} />
                 <SummaryValue label="Débito" value={closure.totals.totalsByMethod.debit_card} />
+                {totalDescontos > 0 && (
+                  <div className="rounded-xl border border-orange-200 dark:border-orange-800/40 bg-orange-50 dark:bg-orange-900/10 p-3">
+                    <p className="text-[11px] uppercase font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                      <Tag className="w-3 h-3" /> Descontos
+                    </p>
+                    <p className="text-lg font-black text-orange-600 dark:text-orange-400">-R$ {totalDescontos.toFixed(2)}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -681,7 +704,15 @@ export default function FinancialDashboardPage() {
                             .map((method) => `${paymentMethodLabel(method.payment_method)} (R$ ${Number(method.amount).toFixed(2)})`)
                             .join(' + ')}
                         </td>
-                        <td className="px-4 py-3 text-right font-bold">R$ {log.amount.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="font-bold">R$ {log.amount.toFixed(2)}</span>
+                          {(log.discount_amount ?? 0) > 0 && (
+                            <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 rounded-full px-1.5 py-0.5">
+                              <Tag className="w-2.5 h-2.5" />
+                              -R$ {log.discount_amount!.toFixed(2)}
+                            </span>
+                          )}
+                        </td>
                         {profile?.role === 'admin' && (
                           <td className="px-4 py-3 text-center">
                             <button

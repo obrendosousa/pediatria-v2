@@ -116,6 +116,7 @@ export function generateDocumentHTML(
       <div class="signature-line"></div>
       <div class="doctor-name">${doctorName}</div>
       <div class="doctor-crm">CRM 9223 - MA</div>
+      <div class="doctor-crm">RQE-6941</div>
       <div class="footer-date">${dateFormatted}</div>
     </div>
   </div>

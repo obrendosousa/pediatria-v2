@@ -6,8 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logAudit } from '@/lib/audit';
 import {
   X, Ban, Edit2, FileText, CalendarDays, Clock, Stethoscope, User, Phone,
-  Save, Trash2, Info, Wallet, Cake
+  Save, Trash2, Info, Wallet, Cake, Percent, Tag
 } from 'lucide-react';
+import { computeDiscountAmount, effectiveAmount, type DiscountType } from '@/utils/discountUtils';
 import { saveAppointmentDateTime } from '@/utils/dateUtils';
 import { formatDateToDisplay, formatDateToISO, formatCurrency, parseCurrency } from '../utils/agendaUtils';
 import { useToast } from '@/contexts/ToastContext';
@@ -32,8 +33,11 @@ const initialEditForm = {
   status: 'scheduled' as string,
   appointment_type: '' as 'consulta' | 'retorno' | '',
   totalAmount: '',
-  paidAmount: ''
+  paidAmount: '',
+  discountType: '%' as DiscountType,
+  discountValue: ''
 };
+
 
 type AppointmentDetailModalProps = {
   selectedAppointment: Appointment & {
@@ -101,7 +105,9 @@ export default function AppointmentDetailModal({
         status: selectedAppointment.status || 'scheduled',
         appointment_type: selectedAppointment.appointment_type || '',
         totalAmount: selectedAppointment.total_amount ? formatCurrency(selectedAppointment.total_amount) : '',
-        paidAmount: selectedAppointment.amount_paid ? formatCurrency(selectedAppointment.amount_paid) : ''
+        paidAmount: selectedAppointment.amount_paid ? formatCurrency(selectedAppointment.amount_paid) : '',
+        discountType: (selectedAppointment.discount_type as DiscountType) || '%',
+        discountValue: selectedAppointment.discount_value ? String(selectedAppointment.discount_value) : ''
       });
       setIsEditing(false);
     }
@@ -141,6 +147,8 @@ export default function AppointmentDetailModal({
       const start_time = saveAppointmentDateTime(editForm.date, editForm.time);
       const totalNum = parseCurrency(editForm.totalAmount);
       const paidNum = parseCurrency(editForm.paidAmount);
+      const editDiscVal = Number(editForm.discountValue.replace(',', '.')) || 0;
+      const editDiscAmt = computeDiscountAmount(totalNum, editForm.discountType, editDiscVal);
       const updateData: Record<string, unknown> = {
         patient_name: editForm.patient_name,
         patient_phone: editForm.patient_phone || null,
@@ -153,7 +161,10 @@ export default function AppointmentDetailModal({
         appointment_type: editForm.appointment_type || null,
         patient_birth_date: editForm.birthDate || null,
         total_amount: totalNum,
-        amount_paid: paidNum
+        amount_paid: paidNum,
+        discount_type: editForm.discountType,
+        discount_value: editDiscVal,
+        discount_amount: editDiscAmt
       };
       if (editForm.mother_name) updateData.mother_name = editForm.mother_name;
       if (editForm.father_name) updateData.father_name = editForm.father_name;
@@ -199,10 +210,15 @@ export default function AppointmentDetailModal({
 
   const totalDisplay = selectedAppointment?.total_amount || 0;
   const paidDisplay = selectedAppointment?.amount_paid || 0;
-  const remainingDisplay = Math.max(0, totalDisplay - paidDisplay);
+  const discountDisplay = selectedAppointment?.discount_amount || 0;
+  const effectiveTotalDisplay = effectiveAmount(totalDisplay, discountDisplay);
+  const remainingDisplay = Math.max(0, effectiveTotalDisplay - paidDisplay);
   const editTotalNum = parseCurrency(editForm.totalAmount);
   const editPaidNum = parseCurrency(editForm.paidAmount);
-  const editRemaining = Math.max(0, editTotalNum - editPaidNum);
+  const editDiscValNum = Number(editForm.discountValue.replace(',', '.')) || 0;
+  const editDiscAmtNum = computeDiscountAmount(editTotalNum, editForm.discountType, editDiscValNum);
+  const editEffective = effectiveAmount(editTotalNum, editDiscAmtNum);
+  const editRemaining = Math.max(0, editEffective - editPaidNum);
 
   return (
     <>
@@ -413,24 +429,45 @@ export default function AppointmentDetailModal({
             <div className="bg-slate-50 dark:bg-[#1a1f28] p-3 rounded-xl border border-slate-200 dark:border-[#3d3d48]">
               <h5 className="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-1"><Wallet size={12}/> Financeiro</h5>
               {isEditing ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] text-slate-400 uppercase">Total (R$)</label>
-                    <input type="text" value={editForm.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full text-sm font-bold border border-slate-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] text-slate-400 uppercase">Total (R$)</label>
+                      <input type="text" value={editForm.totalAmount} onChange={e => handleMoneyInput('totalAmount', e.target.value)} className="w-full text-sm font-bold border border-slate-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 uppercase">Pago (R$)</label>
+                      <input type="text" value={editForm.paidAmount} onChange={e => handleMoneyInput('paidAmount', e.target.value)} className="w-full text-sm font-bold border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 uppercase">Pago (R$)</label>
-                    <input type="text" value={editForm.paidAmount} onChange={e => handleMoneyInput('paidAmount', e.target.value)} className="w-full text-sm font-bold border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400" />
+                  {/* Desconto em modo edição */}
+                  <div className="bg-orange-50/50 dark:bg-orange-900/10 p-2.5 rounded-lg border border-orange-200 dark:border-orange-800/50 space-y-2">
+                    <p className="text-[10px] font-bold text-orange-700 dark:text-orange-300 uppercase flex items-center gap-1">
+                      <Percent size={10} /> Desconto
+                    </p>
+                    <div className="flex gap-2 items-end">
+                      <div className="flex bg-white dark:bg-[#1c1c21] border border-orange-200 dark:border-orange-800 rounded-lg overflow-hidden">
+                        <button type="button" onClick={() => setEditForm(prev => ({ ...prev, discountType: '%' as DiscountType }))} className={`px-2.5 py-1 text-[10px] font-bold transition-colors ${editForm.discountType === '%' ? 'bg-orange-500 text-white' : 'text-slate-500 dark:text-slate-400'}`}>%</button>
+                        <button type="button" onClick={() => setEditForm(prev => ({ ...prev, discountType: 'R$' as DiscountType }))} className={`px-2.5 py-1 text-[10px] font-bold transition-colors ${editForm.discountType === 'R$' ? 'bg-orange-500 text-white' : 'text-slate-500 dark:text-slate-400'}`}>R$</button>
+                      </div>
+                      <input type="text" value={editForm.discountValue} onChange={e => { const val = e.target.value.replace(/[^0-9.,]/g, ''); setEditForm(prev => ({ ...prev, discountValue: val })); }} placeholder={editForm.discountType === '%' ? 'Ex: 10' : '0,00'} className="flex-1 px-2 py-1 text-xs font-bold border border-orange-200 dark:border-orange-800 rounded-lg bg-white dark:bg-[#1c1c21] text-orange-700 dark:text-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-400" />
+                    </div>
+                    {editDiscAmtNum > 0 && <p className="text-[10px] text-orange-600 dark:text-orange-400 font-semibold">Desconto: -R$ {editDiscAmtNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} | Final: R$ {editEffective.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
                   </div>
-                  <div className="col-span-2 text-right text-xs font-bold text-slate-500 dark:text-[#a1a1aa] border-t border-slate-200 dark:border-[#3d3d48] pt-2 mt-1">
+                  <div className="text-right text-xs font-bold text-slate-500 dark:text-[#a1a1aa] border-t border-slate-200 dark:border-[#3d3d48] pt-2">
                     Restante a pagar: <span className={editRemaining > 0 ? 'text-rose-500 dark:text-rose-400 text-sm' : 'text-emerald-500 dark:text-emerald-400 text-sm'}>R$ {editRemaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               ) : (
-                <div className="flex justify-between items-center bg-white dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-[#3d3d48]">
-                  <div><p className="text-[10px] text-slate-400 uppercase font-semibold">Valor Total</p><p className="text-sm font-bold text-slate-700 dark:text-gray-200">R$ {totalDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                  <div className="text-right"><p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 uppercase font-semibold">Valor Pago</p><p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">R$ {paidDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                  <div className="text-right pl-4 border-l border-slate-100 dark:border-[#3d3d48] ml-4"><p className="text-[10px] text-slate-400 uppercase font-semibold">Falta</p><p className={`text-sm font-black ${remainingDisplay > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-400 dark:text-[#71717a]'}`}>R$ {remainingDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center bg-white dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-[#3d3d48]">
+                    <div><p className="text-[10px] text-slate-400 uppercase font-semibold">Valor Total</p><p className="text-sm font-bold text-slate-700 dark:text-gray-200">R$ {totalDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                    {discountDisplay > 0 && (
+                      <div className="text-center"><p className="text-[10px] text-orange-500 uppercase font-semibold flex items-center gap-0.5"><Tag size={8}/>Desconto</p><p className="text-sm font-bold text-orange-600 dark:text-orange-400">-R$ {discountDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                    )}
+                    <div className="text-right"><p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 uppercase font-semibold">Valor Pago</p><p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">R$ {paidDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                    <div className="text-right pl-4 border-l border-slate-100 dark:border-[#3d3d48] ml-4"><p className="text-[10px] text-slate-400 uppercase font-semibold">Falta</p><p className={`text-sm font-black ${remainingDisplay > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-400 dark:text-[#71717a]'}`}>R$ {remainingDisplay.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                  </div>
                 </div>
               )}
             </div>

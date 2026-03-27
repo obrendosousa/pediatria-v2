@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { Save, CheckCircle } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { useConsultation } from '@/contexts/ConsultationContext';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
@@ -35,11 +35,13 @@ interface FormData {
 }
 
 export function AttendanceForm({
-  patientId,
-  appointmentId,
-  onSave,
+  // patientId e appointmentId vêm do ConsultationContext
+  patientId: _patientId,
+  appointmentId: _appointmentId,
+  onSave: _onSave,
   onFinish
 }: AttendanceFormProps) {
+  void _patientId; void _appointmentId; void _onSave;
   const { toast } = useToast();
   const [confirmFinishOpen, setConfirmFinishOpen] = useState(false);
   const { record, isLoading, saveRecord, finishRecord, registerSaveHandler, unregisterSaveHandler } = useConsultation();
@@ -138,7 +140,7 @@ export function AttendanceForm({
 
   // Formatar IMC para exibição (com vírgula)
   const formatIMC = (value: number | null): string => {
-    if (!value) return '0,00';
+    if (!value || !Number.isFinite(value)) return '0,00';
     return value.toFixed(2).replace('.', ',');
   };
 
@@ -182,11 +184,20 @@ export function AttendanceForm({
   // Função reutilizável para salvar dados do formulário
   const saveFormData = useCallback(async () => {
     const data = watch();
+    // Merge com vitals existentes para não sobrescrever campos de outras telas
+    // (temp, sysBP, diaBP, heartRate, respRate, saturation)
+    // Converte null → undefined para compatibilidade com tipo Vitals
+    const existing = record?.vitals || {};
+    const sanitized: Record<string, number | undefined> = {};
+    for (const [k, v] of Object.entries(existing)) {
+      sanitized[k] = typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+    }
     const vitals = {
-      weight: data.weight ?? undefined,
-      height: data.height ?? undefined,
-      imc: data.imc ?? undefined,
-      pe: data.pe ?? undefined,
+      ...sanitized,
+      weight: Number.isFinite(data.weight) ? (data.weight as number) : undefined,
+      height: Number.isFinite(data.height) ? (data.height as number) : undefined,
+      imc: Number.isFinite(data.imc) ? (data.imc as number) : undefined,
+      pe: Number.isFinite(data.pe) ? (data.pe as number) : undefined,
     };
 
     await saveRecord({
@@ -198,7 +209,7 @@ export function AttendanceForm({
       conducts: data.conducts,
       vitals,
     });
-  }, [watch, saveRecord]);
+  }, [watch, saveRecord, record]);
 
   // Registrar save handler para o contexto (usado ao Finalizar atendimento)
   useEffect(() => {
@@ -206,20 +217,15 @@ export function AttendanceForm({
     return () => unregisterSaveHandler('overview');
   }, [registerSaveHandler, unregisterSaveHandler, saveFormData]);
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async () => {
     try {
       await saveFormData();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      // Não chama onRefresh para evitar piscar a tela
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast.toast.error('Erro ao salvar o atendimento. Tente novamente.');
     }
-  };
-
-  const handleFinishClick = () => {
-    setConfirmFinishOpen(true);
   };
 
   const handleFinishConfirm = async () => {
@@ -234,9 +240,9 @@ export function AttendanceForm({
       } else {
         throw new Error('Erro ao salvar o registro antes de finalizar');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao finalizar:', error);
-      toast.toast.error(error?.message || 'Erro ao finalizar o atendimento. Tente novamente.');
+      toast.toast.error(error instanceof Error ? error.message : 'Erro ao finalizar o atendimento. Tente novamente.');
     }
   };
 
@@ -458,9 +464,9 @@ export function AttendanceForm({
               });
             if (error) throw error;
             setModelModalOpen(false);
-          } catch (err: any) {
+          } catch (err: unknown) {
             console.error('Erro ao salvar modelo:', err);
-            toast.toast.error('Erro ao salvar modelo: ' + err.message);
+            toast.toast.error('Erro ao salvar modelo: ' + (err instanceof Error ? err.message : String(err)));
           }
         }}
         type={modelModalType}
