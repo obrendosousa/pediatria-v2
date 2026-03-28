@@ -366,7 +366,11 @@
       "Bash(git checkout:*)",
       "Bash(git add:*)",
       "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"healthcare pediatric clinic sidebar navigation premium elegant\" --design-system -p \"Pediatria Integrada\")",
-      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"healthcare medical dark mode sidebar elegant clean\" --domain color -n 10)"
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"healthcare medical dark mode sidebar elegant clean\" --domain color -n 10)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"healthcare medical clinic light mode sidebar white clean premium\" --domain style -n 8)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"light sidebar navigation white soft warm healthcare\" --domain color -n 8)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"premium dark mode dashboard depth layered neutral SaaS\" --design-system -p \"Pediatria Integrada\")",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"dark mode depth hierarchy layered background linear vercel premium\" --domain style -n 5)"
     ]
   },
   "hooks": {

@@ -244,7 +244,7 @@ const ChatListItem = memo(({
     return (
       <div 
         onClick={isSelectionMode && !isAIChat ? () => onToggleSelection(chat.id) : () => onSelect(chat)}
-        className={`group relative flex items-stretch cursor-pointer transition-colors duration-150 ease-in-out border-b border-gray-100 dark:border-[#2d2d36] min-h-[72px]
+        className={`group relative flex items-stretch cursor-pointer transition-colors duration-150 ease-in-out border-b border-gray-100 dark:border-[#1a1a1f] min-h-[72px]
           ${isSelectionMode && isSelectedInMode 
             ? 'bg-primary/10' 
             : isSelected && !isSelectionMode
@@ -284,7 +284,7 @@ const ChatListItem = memo(({
             </div>
           ) : (
             <div 
-              className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-[#3d3d48]"
+              className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-[#2a2a30]"
               style={!chat.profile_pic || avatarError ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
             >
               {chat.profile_pic && !avatarError ? (
@@ -365,7 +365,7 @@ const ChatListItem = memo(({
           <div
             ref={menuRef}
             data-chat-menu
-            className={`fixed w-52 bg-white dark:bg-[#1c1c21] rounded-lg shadow-lg py-2 z-[9999] border border-gray-100 dark:border-[#3d3d48] transition-all ${!isMenuOpen ? (menuPosition.openUpward ? 'animate-chat-menu-out-upward' : 'animate-chat-menu-out') : (menuPosition.openUpward ? 'animate-chat-menu-in-upward' : 'animate-chat-menu-in')}`}
+            className={`fixed w-52 bg-white dark:bg-[#16161b] rounded-lg shadow-lg py-2 z-[9999] border border-gray-100 dark:border-[#2a2a30] transition-all ${!isMenuOpen ? (menuPosition.openUpward ? 'animate-chat-menu-out-upward' : 'animate-chat-menu-out') : (menuPosition.openUpward ? 'animate-chat-menu-in-upward' : 'animate-chat-menu-in')}`}
             style={{ top: menuPosition.top, left: menuPosition.left, transformOrigin: menuPosition.openUpward ? 'bottom right' : 'top right' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -387,7 +387,7 @@ const ChatListItem = memo(({
             <button onClick={(e) => onAction(e, 'select', chat)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--chat-text-primary)] dark:text-gray-200 text-[14.5px] flex items-center gap-3">
               <CheckCircle2 size={17} className="text-[var(--chat-text-muted)] dark:text-[#a1a1aa]" /> Selecionar
             </button>
-            <div className="my-1 border-t border-gray-100 dark:border-[#3d3d48]"></div>
+            <div className="my-1 border-t border-gray-100 dark:border-[#2a2a30]"></div>
             <button onClick={(e) => onAction(e, 'delete', chat)} className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/10 text-red-500 text-[14.5px] flex items-center gap-3">
               <Trash2 size={17} /> Apagar conversa
             </button>

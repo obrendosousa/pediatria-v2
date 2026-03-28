@@ -37,7 +37,7 @@ export default function TopBar() {
     : '?';
 
   return (
-    <div className="h-12 shrink-0 w-full bg-white dark:bg-[#0f0f14] border-b border-slate-200 dark:border-[#1c1c24] flex items-center justify-between px-4 z-30 print:hidden">
+    <div className="h-12 shrink-0 w-full bg-white dark:bg-[#0c0c10] border-b border-slate-200 dark:border-[#1a1a1f] flex items-center justify-between px-4 z-30 print:hidden">
       {/* Lado esquerdo */}
       <div />
 
@@ -57,7 +57,7 @@ export default function TopBar() {
         </button>
 
         {/* Separador */}
-        <div className="w-px h-6 bg-slate-200 dark:bg-[#2d2d36] mx-1" />
+        <div className="w-px h-6 bg-slate-200 dark:bg-[#2a2a30] mx-1" />
 
         {/* Perfil + Sair */}
         <div className="relative flex items-center">
@@ -66,7 +66,7 @@ export default function TopBar() {
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer group"
           >
-            <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shrink-0 ring-1 ring-slate-200 dark:ring-[#2d2d36]">
+            <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-br from-violet-500 to-rose-400 flex items-center justify-center shrink-0 ring-1 ring-slate-200 dark:ring-[#2a2a30]">
               {profile?.photo_url ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={profile.photo_url} alt="Foto" className="w-full h-full object-cover" />

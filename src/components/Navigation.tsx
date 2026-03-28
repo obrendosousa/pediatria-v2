@@ -25,6 +25,15 @@ export default function Navigation() {
   const prevCollapsedRef = useRef(isCollapsed);
   const isFirstRender = useRef(true);
 
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains('dark'));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
   const isDoctor = modules.length > 0 &&
     modules.every(m => m.role === 'doctor') &&
     profile?.doctor_id != null;
@@ -96,23 +105,29 @@ export default function Navigation() {
 
   return (
     <div
-      className={`flex shrink-0 flex-col sidebar-slide-in ${isAtendimento ? 'bg-[#0C1222] border-r border-[#1c2d4a]/50' : 'bg-[#1E1525] border-r border-[#352342]/40'} dark:shadow-none relative z-10 h-full overflow-hidden sidebar-transition`}
+      className={`flex shrink-0 flex-col sidebar-slide-in ${isAtendimento ? 'border-r border-slate-200/80 dark:border-[#1a1a1f]' : 'border-r border-rose-200/50 dark:border-[#1a1a1f]'} relative z-10 h-full overflow-hidden sidebar-transition`}
       style={{
         width: isCollapsed ? '80px' : '260px',
         minWidth: isCollapsed ? '80px' : '260px',
         maxWidth: isCollapsed ? '80px' : '260px',
+        background: isDark
+          ? '#09090b'
+          : (isAtendimento
+            ? 'linear-gradient(to bottom, #edf2ff, #f8fafc, #eef2f9)'
+            : 'linear-gradient(to bottom, #fdf2f8, #fef7fb, #f9ecf5)'),
+        transition: 'background 0.3s ease',
       }}
     >
 
       {/* --- FUNDO DECORATIVO --- */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className={`absolute top-[-10%] left-[-20%] w-48 h-48 ${isAtendimento ? mt.bgBlur : 'bg-rose-400/20'} rounded-full blur-[60px]`}></div>
-        {!isAtendimento && <div className="absolute bottom-[10%] right-[-15%] w-40 h-40 bg-violet-400/10 rounded-full blur-[50px]"></div>}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-40 dark:opacity-60">
+        <div className={`absolute top-[-10%] left-[-20%] w-48 h-48 ${isAtendimento ? 'bg-blue-400/10 dark:bg-blue-500/8' : 'bg-rose-300/15 dark:bg-rose-500/8'} rounded-full blur-[80px]`}></div>
+        <div className={`absolute bottom-[15%] right-[-15%] w-40 h-40 ${isAtendimento ? 'bg-indigo-400/8 dark:bg-indigo-500/5' : 'bg-pink-200/12 dark:bg-rose-400/5'} rounded-full blur-[70px]`}></div>
       </div>
 
       {/* --- PARTÍCULAS --- */}
       {isAtendimento ? (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden dark:block">
           <div className="absolute top-[8%] left-[15%] w-1 h-1 bg-white/15 rounded-full animate-[float_6s_ease-in-out_infinite]" />
           <div className="absolute top-[15%] right-[20%] w-1.5 h-1.5 bg-blue-400/10 rounded-full animate-[float_8s_ease-in-out_infinite_1s]" />
           <div className="absolute top-[25%] left-[60%] w-1 h-1 bg-white/10 rounded-full animate-[float_7s_ease-in-out_infinite_2s]" />
@@ -127,29 +142,29 @@ export default function Navigation() {
           <div className="absolute top-[95%] left-[35%] w-1 h-1 bg-blue-300/15 rounded-full animate-[float_11s_ease-in-out_infinite_4.5s]" />
         </div>
       ) : (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[8%] left-[15%] w-1 h-1 bg-rose-200/20 rounded-full animate-[float_6s_ease-in-out_infinite]" />
-          <div className="absolute top-[15%] right-[20%] w-1.5 h-1.5 bg-violet-300/15 rounded-full animate-[float_8s_ease-in-out_infinite_1s]" />
-          <div className="absolute top-[25%] left-[60%] w-1 h-1 bg-pink-200/12 rounded-full animate-[float_7s_ease-in-out_infinite_2s]" />
-          <div className="absolute top-[35%] left-[25%] w-1 h-1 bg-rose-300/15 rounded-full animate-[float_9s_ease-in-out_infinite_0.5s]" />
-          <div className="absolute top-[42%] right-[15%] w-1.5 h-1.5 bg-violet-200/12 rounded-full animate-[float_5s_ease-in-out_infinite_3s]" />
-          <div className="absolute top-[50%] left-[40%] w-1 h-1 bg-pink-300/15 rounded-full animate-[float_10s_ease-in-out_infinite_1.5s]" />
-          <div className="absolute top-[58%] left-[10%] w-1 h-1 bg-rose-200/18 rounded-full animate-[float_6s_ease-in-out_infinite_4s]" />
-          <div className="absolute top-[65%] right-[30%] w-1.5 h-1.5 bg-violet-300/12 rounded-full animate-[float_8s_ease-in-out_infinite_2.5s]" />
-          <div className="absolute top-[72%] left-[50%] w-1 h-1 bg-rose-300/12 rounded-full animate-[float_7s_ease-in-out_infinite_0.8s]" />
-          <div className="absolute top-[80%] left-[20%] w-1 h-1 bg-pink-200/15 rounded-full animate-[float_9s_ease-in-out_infinite_3.5s]" />
-          <div className="absolute top-[88%] right-[25%] w-1.5 h-1.5 bg-violet-200/12 rounded-full animate-[float_5s_ease-in-out_infinite_1.2s]" />
-          <div className="absolute top-[95%] left-[35%] w-1 h-1 bg-rose-300/18 rounded-full animate-[float_11s_ease-in-out_infinite_4.5s]" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden dark:block">
+          <div className="absolute top-[8%] left-[15%] w-1 h-1 bg-white/10 rounded-full animate-[float_6s_ease-in-out_infinite]" />
+          <div className="absolute top-[15%] right-[20%] w-1.5 h-1.5 bg-rose-300/10 rounded-full animate-[float_8s_ease-in-out_infinite_1s]" />
+          <div className="absolute top-[25%] left-[60%] w-1 h-1 bg-white/8 rounded-full animate-[float_7s_ease-in-out_infinite_2s]" />
+          <div className="absolute top-[35%] left-[25%] w-1 h-1 bg-rose-200/10 rounded-full animate-[float_9s_ease-in-out_infinite_0.5s]" />
+          <div className="absolute top-[42%] right-[15%] w-1.5 h-1.5 bg-white/8 rounded-full animate-[float_5s_ease-in-out_infinite_3s]" />
+          <div className="absolute top-[50%] left-[40%] w-1 h-1 bg-rose-300/8 rounded-full animate-[float_10s_ease-in-out_infinite_1.5s]" />
+          <div className="absolute top-[58%] left-[10%] w-1 h-1 bg-white/10 rounded-full animate-[float_6s_ease-in-out_infinite_4s]" />
+          <div className="absolute top-[65%] right-[30%] w-1.5 h-1.5 bg-rose-200/8 rounded-full animate-[float_8s_ease-in-out_infinite_2.5s]" />
+          <div className="absolute top-[72%] left-[50%] w-1 h-1 bg-white/8 rounded-full animate-[float_7s_ease-in-out_infinite_0.8s]" />
+          <div className="absolute top-[80%] left-[20%] w-1 h-1 bg-rose-300/8 rounded-full animate-[float_9s_ease-in-out_infinite_3.5s]" />
+          <div className="absolute top-[88%] right-[25%] w-1.5 h-1.5 bg-white/8 rounded-full animate-[float_5s_ease-in-out_infinite_1.2s]" />
+          <div className="absolute top-[95%] left-[35%] w-1 h-1 bg-rose-200/10 rounded-full animate-[float_11s_ease-in-out_infinite_4.5s]" />
         </div>
       )}
 
       {/* --- HEADER / LOGO --- */}
-      <div className="relative z-10 flex flex-col items-center pt-14 pb-4 px-4 border-b border-white/[0.06] overflow-hidden">
+      <div className="relative z-10 flex flex-col items-center pt-14 pb-4 px-4 border-b border-slate-200/60 dark:border-[#1a1a1f] overflow-hidden">
 
         {/* Botão Toggle */}
         <button
           onClick={toggleSidebar}
-          className={`absolute top-3 z-50 w-7 h-7 rounded-full ${isAtendimento ? 'bg-[#0C1222]' : 'bg-[#1E1525]'} border-2 border-white/10 text-white/60 hover:bg-white/10 shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer`}
+          className={`absolute top-3 z-50 w-7 h-7 rounded-full bg-white/90 dark:bg-[#16161b] border-2 ${isAtendimento ? 'border-blue-200/60 dark:border-[#2a2a30]' : 'border-rose-200/60 dark:border-[#2a2a30]'} text-slate-500 dark:text-white/60 hover:bg-white dark:hover:bg-[#1e1e24] shadow-md dark:shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer`}
           style={{ right: isCollapsed ? '8px' : '12px', transition: 'right 0.4s cubic-bezier(0.22, 1, 0.36, 1)' }}
           aria-label={isCollapsed ? 'Expandir menu' : 'Minimizar menu'}
         >
@@ -171,7 +186,7 @@ export default function Navigation() {
           }}
         >
           <div
-            className={`relative flex items-center justify-center bg-white dark:bg-[#1c1c21] rounded-xl shadow-sm border ${isAtendimento ? 'border-slate-200 dark:border-[#2d2d36]' : 'border-rose-100 dark:border-[#2d2536]'} p-1 shrink-0`}
+            className={`relative flex items-center justify-center bg-white dark:bg-[#16161b] rounded-xl shadow-sm border ${isAtendimento ? 'border-slate-200 dark:border-[#2a2a30]' : 'border-rose-100 dark:border-[#2a2a30]'} p-1 shrink-0`}
             style={{
               width: isCollapsed ? '36px' : '40px',
               height: isCollapsed ? '36px' : '40px',
@@ -195,13 +210,13 @@ export default function Navigation() {
                 : 'max-width 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease 0.15s',
             }}
           >
-            <h2 className="text-sm font-bold leading-tight text-white/90">Centro Médico<br />Aliança</h2>
+            <h2 className="text-sm font-bold leading-tight text-slate-800 dark:text-white/90">Centro Médico<br />Aliança</h2>
           </div>
         </div>
 
         {/* Module badge */}
         <span
-          className={`text-[10px] font-bold ${isAtendimento ? `${mt.text} ${mt.bgSubtle}` : 'text-rose-300 bg-rose-950/25'} px-2 rounded-md uppercase tracking-wider w-full text-center whitespace-nowrap overflow-hidden`}
+          className={`text-[10px] font-bold ${isAtendimento ? `${mt.text} ${mt.bgSubtle}` : 'text-rose-500 dark:text-rose-300/80 bg-rose-100 dark:bg-rose-500/10'} px-2 rounded-md uppercase tracking-wider w-full text-center whitespace-nowrap overflow-hidden`}
           style={{
             opacity: isCollapsed ? 0 : 1,
             maxHeight: isCollapsed ? '0px' : '24px',
@@ -220,7 +235,7 @@ export default function Navigation() {
         {hasMultipleModules && !isDoctor && (
           <Link
             href={isAtendimento ? '/' : '/atendimento'}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium w-full justify-center cursor-pointer text-white/40 hover:text-white/70 hover:bg-white/5"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium w-full justify-center cursor-pointer text-slate-400 dark:text-white/40 hover:text-slate-600 dark:hover:text-white/70 hover:bg-slate-100 dark:hover:bg-white/5"
             style={{
               opacity: isCollapsed ? 0 : 1,
               maxHeight: isCollapsed ? '0px' : '32px',
@@ -260,26 +275,34 @@ export default function Navigation() {
               transition: indicatorStyle.animate
                 ? 'top 0.4s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s ease, opacity 0.3s ease, background 0.4s ease'
                 : 'none',
-              background: isCollapsed
-                ? (isAtendimento
-                  ? 'radial-gradient(ellipse at center, rgba(255,255,255,0.10) 0%, transparent 70%)'
-                  : 'radial-gradient(ellipse at center, rgba(251,200,212,0.14) 0%, transparent 70%)')
-                : (isAtendimento
-                  ? 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.08) 70%, rgba(255,255,255,0.15) 100%)'
-                  : 'linear-gradient(90deg, transparent 0%, rgba(251,200,212,0.04) 30%, rgba(251,200,212,0.10) 70%, rgba(251,200,212,0.18) 100%)'),
+              background: isDark
+                ? (isCollapsed
+                  ? (isAtendimento
+                    ? 'radial-gradient(ellipse at center, rgba(255,255,255,0.10) 0%, transparent 70%)'
+                    : 'radial-gradient(ellipse at center, rgba(255,255,255,0.08) 0%, transparent 70%)')
+                  : (isAtendimento
+                    ? 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.08) 70%, rgba(255,255,255,0.15) 100%)'
+                    : 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0.06) 70%, rgba(251,113,133,0.12) 100%)'))
+                : (isCollapsed
+                  ? (isAtendimento
+                    ? 'radial-gradient(ellipse at center, rgba(59,130,246,0.08) 0%, transparent 70%)'
+                    : 'radial-gradient(ellipse at center, rgba(251,113,133,0.10) 0%, transparent 70%)')
+                  : (isAtendimento
+                    ? 'linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.03) 30%, rgba(59,130,246,0.06) 70%, rgba(59,130,246,0.10) 100%)'
+                    : 'linear-gradient(90deg, transparent 0%, rgba(251,113,133,0.04) 30%, rgba(251,113,133,0.08) 70%, rgba(251,113,133,0.14) 100%)')),
               border: isCollapsed
                 ? '1px solid transparent'
-                : (isAtendimento
-                  ? '1px solid rgba(255,255,255,0.08)'
-                  : '1px solid rgba(251,200,212,0.12)'),
+                : isDark
+                  ? (isAtendimento ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(255,255,255,0.06)')
+                  : (isAtendimento ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(251,113,133,0.15)'),
             }}
           >
             {isAtendimento ? (
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-[3px] rounded-full bg-white"
+                className="absolute top-1/2 -translate-y-1/2 w-[3px] rounded-full bg-blue-500 dark:bg-white"
                 style={{
                   height: '55%',
-                  boxShadow: '0 0 8px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.15)',
+                  boxShadow: isDark ? '0 0 8px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.15)' : '0 0 8px rgba(59,130,246,0.4), 0 0 16px rgba(59,130,246,0.1)',
                   right: isCollapsed ? '4px' : '8px',
                   opacity: isCollapsed ? 0.7 : 1,
                   transition: 'right 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease',
@@ -287,9 +310,9 @@ export default function Navigation() {
               />
             ) : (
               <Heart
-                className="absolute top-1/2 w-3.5 h-3.5 fill-rose-300/80 text-rose-300/80"
+                className="absolute top-1/2 w-3.5 h-3.5 fill-rose-400 dark:fill-rose-400/70 text-rose-400 dark:text-rose-400/70"
                 style={{
-                  filter: 'drop-shadow(0 0 6px rgba(251,113,133,0.5)) drop-shadow(0 0 14px rgba(251,113,133,0.2))',
+                  filter: isDark ? 'drop-shadow(0 0 6px rgba(251,113,133,0.4)) drop-shadow(0 0 12px rgba(251,113,133,0.15))' : 'drop-shadow(0 0 4px rgba(251,113,133,0.3))',
                   opacity: isCollapsed ? 0 : 1,
                   right: '10px',
                   transform: `translateY(-50%) scale(${isCollapsed ? 0 : 1})`,
@@ -442,7 +465,7 @@ function MenuGroup({ title, children, moduleTheme, isFirst = false }: { title: s
     <div>
       {/* Título expandido */}
       <p
-        className="px-3 text-[10px] font-bold text-white/40 uppercase tracking-wider flex items-center gap-1 whitespace-nowrap overflow-hidden"
+        className="px-3 text-[10px] font-bold text-slate-400 dark:text-white/40 uppercase tracking-wider flex items-center gap-1 whitespace-nowrap overflow-hidden"
         style={{
           opacity: isCollapsed ? 0 : 1,
           maxHeight: isCollapsed ? '0px' : '20px',
@@ -470,7 +493,7 @@ function MenuGroup({ title, children, moduleTheme, isFirst = false }: { title: s
           }}
         >
           <div
-            className={`rounded-full ${moduleTheme.sparkleColor === 'text-blue-400' ? 'bg-white/10' : 'bg-white/10'}`}
+            className="rounded-full bg-slate-300 dark:bg-white/10"
             style={{ width: '20px', height: '2px' }}
           />
         </div>
@@ -493,9 +516,22 @@ interface NavItemProps {
   moduleTheme: ModuleTheme;
 }
 
-function NavItem({ icon: Icon, label, path, active, badge }: NavItemProps) {
+const iconColorMap: Record<string, string> = {
+  blue: 'text-blue-500 dark:text-blue-400',
+  teal: 'text-teal-500 dark:text-teal-400',
+  purple: 'text-violet-500 dark:text-violet-400',
+  orange: 'text-amber-500 dark:text-amber-400',
+  pink: 'text-rose-500 dark:text-rose-400',
+  rose: 'text-rose-500 dark:text-rose-400',
+  green: 'text-emerald-500 dark:text-emerald-400',
+  indigo: 'text-indigo-500 dark:text-indigo-400',
+  slate: 'text-slate-500 dark:text-slate-400',
+};
+
+function NavItem({ icon: Icon, label, path, active, badge, color }: NavItemProps) {
   const { isCollapsed } = useSidebar();
   const hasBadge = badge !== undefined && badge > 0;
+  const iconColor = iconColorMap[color] || 'text-slate-400 dark:text-white/40';
 
   return (
     <Link href={path} className="block group cursor-pointer" title={isCollapsed ? label : undefined}>
@@ -504,8 +540,8 @@ function NavItem({ icon: Icon, label, path, active, badge }: NavItemProps) {
         className={`
           relative flex items-center py-2.5 rounded-xl text-sm font-medium
           ${active
-            ? 'text-[#fafafa] z-[1]'
-            : 'text-white/50 hover:text-white/90 hover:bg-white/[0.04]'}
+            ? 'text-slate-900 dark:text-[#fafafa] z-[1]'
+            : 'text-slate-500 dark:text-white/50 hover:text-slate-800 dark:hover:text-white/90 hover:bg-slate-100 dark:hover:bg-white/[0.04]'}
         `}
         style={{
           justifyContent: isCollapsed ? 'center' : 'flex-start',
@@ -517,7 +553,7 @@ function NavItem({ icon: Icon, label, path, active, badge }: NavItemProps) {
         {/* Ícone com badge colapsado como wrapper relativo */}
         <div className="relative shrink-0">
           <Icon
-            className={`w-5 h-5 ${active ? 'text-[#fafafa]' : 'text-white/40'}`}
+            className={`w-5 h-5 ${active ? 'text-slate-800 dark:text-[#fafafa]' : iconColor}`}
             style={{ transition: 'color 0.2s ease' }}
           />
           {/* Badge posicionado sobre o ícone quando colapsado */}
