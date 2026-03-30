@@ -318,6 +318,10 @@ export async function saveMessageToDb(payload: {
   } | null;
   /** Dados extras para tool_data (ex: vCard de contato, localização, etc.) */
   extra_tool_data?: Record<string, unknown>;
+  /** Telefone do participante (para mensagens de grupo) */
+  participant_phone?: string;
+  /** Nome do participante (para mensagens de grupo) */
+  participant_name?: string;
 }) {
   const supabase = getSupabase();
 
@@ -342,6 +346,8 @@ export async function saveMessageToDb(payload: {
   };
 
   if (status) insertPayload.status = status;
+  if (payload.participant_phone) insertPayload.participant_phone = payload.participant_phone;
+  if (payload.participant_name) insertPayload.participant_name = payload.participant_name;
 
   // Monta tool_data com forwarded, reply_to e extras (vCard, etc.)
   const toolDataContent: Record<string, unknown> = {};

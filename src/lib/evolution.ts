@@ -76,14 +76,15 @@ export async function evolutionRequest<T = unknown>(
 export async function markMessagesAsRead(
   phone: string,
   messageWppIds: string[],
-  instanceEnvKey?: string
+  instanceEnvKey?: string,
+  groupJid?: string | null
 ): Promise<void> {
   if (!messageWppIds.length) return;
 
   const cleanPhone = phone.replace(/\D/g, '');
-  if (!cleanPhone) return;
+  if (!cleanPhone && !groupJid) return;
 
-  const remoteJid = `${cleanPhone}@s.whatsapp.net`;
+  const remoteJid = groupJid || `${cleanPhone}@s.whatsapp.net`;
 
   try {
     await evolutionRequest('/chat/markMessageAsRead/{instance}', {

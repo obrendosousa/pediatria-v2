@@ -480,7 +480,8 @@ export default function MessageList({
             onToggleSelect={toggleSelectedMessage}
             onStartSelection={startSelectionMode}
             animate={isNewMessage}
-            isAIChat={isAIChat} // Repasse garantido do ID para ativar o avatar
+            isAIChat={isAIChat}
+            isGroupChat={chat?.is_group === true}
           />
         </div>
       );
@@ -503,7 +504,8 @@ export default function MessageList({
     handleForward,
     onReact,
     onSaveSticker,
-    isAIChat
+    isAIChat,
+    chat?.is_group
   ]);
 
   return (

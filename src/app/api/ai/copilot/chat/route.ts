@@ -3,6 +3,7 @@ import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { createClient } from "@/lib/supabase/server";
 import { requireApprovedProfile } from "@/lib/auth/requireApprovedProfile";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
+import { createSchemaAdminClient } from "@/lib/supabase/schemaServer";
 import { claraGraph } from "@/ai/clara/graph";
 import { saveGraphCheckpoint } from "@/ai/clara/interactive_questions";
 import { setFanOutProgressCallback } from "@/ai/clara/raw_data_analyzer";
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
       chatId?: unknown;
       message?: unknown;
       history?: unknown;
+      module?: unknown;
     };
 
     const chatId = typeof body.chatId === "number" ? body.chatId : Number(body.chatId);
@@ -72,18 +74,32 @@ export async function POST(request: Request) {
     }
     if (!message) {
       return NextResponse.json({ error: "Campo 'message' é obrigatório." }, { status: 400 });
+    }
+
+    // ── Module-aware: detecta módulo do request ────────────────────────────
+    const moduleId = typeof body.module === "string" ? body.module : "pediatria";
+    const isAtendimento = moduleId === "atendimento";
+
+    const adminSupabase = isAtendimento
+      ? createSchemaAdminClient("atendimento")
+      : getSupabaseAdminClient();
+
+    const graph = isAtendimento
+      ? (await import("@/ai/clinica-geral/graph")).clinicaGeralGraph
+      : claraGraph;
+
+    const threadPrefix = isAtendimento ? "clinica_geral_chat_" : "clara_chat_";
+    const agentName = isAtendimento ? "Agente Clínica" : "Clara";
+    const newSessionUrl = isAtendimento ? "/api/ai/clinica-geral/new-session" : "/api/ai/clara/new-session";
 
     // ── Comando /new: limpa histórico e inicia nova sessão ──────────────────
     if (message === "/new" || message === "/New" || message === "/NEW") {
-      const res = await fetch(new URL("/api/ai/clara/new-session", request.url).toString(), {
+      const res = await fetch(new URL(newSessionUrl, request.url).toString(), {
         method: "POST",
       });
       const data = await res.json() as { success?: boolean; message?: string };
       return NextResponse.json({ reply: data.message ?? "Nova sessão iniciada.", tool_calls: [] });
     }
-    }
-
-    const adminSupabase = getSupabaseAdminClient();
 
     // Clara 2.0: context separation — classifica escopo ANTES de montar o contexto
     const scope = classifyScope(message);
@@ -93,7 +109,7 @@ export async function POST(request: Request) {
     if (scope === "global") {
       // GLOBAL: remove fisicamente o contexto do paciente
       contextualMessage = `[MODO COPILOTO — CONSULTA GLOBAL]
-Você é a Clara, assistente de IA da clínica. O usuário fez uma pergunta GLOBAL sobre a clínica.
+Você é ${agentName}, assistente de IA da clínica. O usuário fez uma pergunta GLOBAL sobre a clínica.
 
 PERGUNTA DO USUÁRIO: ${message}
 
@@ -135,7 +151,7 @@ INSTRUÇÕES: Use suas ferramentas para buscar dados de TODO o banco. Não limit
 
       if (scope === "hybrid") {
         contextualMessage = `[MODO COPILOTO — CONSULTA HÍBRIDA]
-Você é a Clara, assistente de IA da clínica. O usuário está na tela do chat de: ${patientName} (chat_id: ${chatId}).
+Você é ${agentName}, assistente de IA da clínica. O usuário está na tela do chat de: ${patientName} (chat_id: ${chatId}).
 
 CONTEXTO DO PACIENTE (para referência se necessário):
 ${chatHistory || "Nenhuma mensagem disponível."}
@@ -145,7 +161,7 @@ PERGUNTA DO USUÁRIO: ${message}
 INSTRUÇÕES: A pergunta pode envolver dados gerais e deste paciente. Use as ferramentas adequadas.`;
       } else {
         contextualMessage = `[MODO COPILOTO — CHAT DO PACIENTE]
-Você é a Clara, assistente de IA da clínica. O usuário está na tela do chat de: ${patientName} (chat_id: ${chatId}).
+Você é ${agentName}, assistente de IA da clínica. O usuário está na tela do chat de: ${patientName} (chat_id: ${chatId}).
 
 HISTÓRICO RECENTE (últimas 20 mensagens):
 ------------------------------------------------------
@@ -213,9 +229,9 @@ INSTRUÇÕES: A pergunta é sobre ESTE paciente. Use o histórico acima e ferram
 
           // Thread fixo por chat — mantém memória de conversa entre mensagens
           // A compactação do context_compactor.ts cuida de não estourar a janela
-          const events = claraGraph.streamEvents(inputs, {
+          const events = graph.streamEvents(inputs, {
             version: "v2",
-            configurable: { thread_id: `clara_chat_${chatId}` },
+            configurable: { thread_id: `${threadPrefix}${chatId}` },
             streamMode: "values"
           });
 

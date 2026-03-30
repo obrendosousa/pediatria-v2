@@ -150,13 +150,14 @@ const MEMORY_LIMIT = 30;
 interface CopilotChatProps {
   chatId: number;
   patientName: string;
+  module?: "pediatria" | "atendimento";
 }
 
 // Supabase untyped table helper — avoids `as any` on .from()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UntypedSupabase = { from: (table: string) => any };
 
-export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
+export default function CopilotChat({ chatId, patientName, module }: CopilotChatProps) {
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -226,7 +227,7 @@ export default function CopilotChat({ chatId, patientName }: CopilotChatProps) {
       const response = await fetch("/api/ai/copilot/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chatId, message: clean, history: historyToSend }),
+        body: JSON.stringify({ chatId, message: clean, history: historyToSend, ...(module ? { module } : {}) }),
       });
 
       if (!response.ok || !response.body) {

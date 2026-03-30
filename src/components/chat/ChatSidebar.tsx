@@ -57,6 +57,8 @@ interface ChatSidebarProps {
   // Badge de sugestões da Clara
   claraSuggestionCount?: number;
   onClaraBadgeClick?: () => void;
+  // Módulo ativo (para o copiloto usar o agente correto)
+  module?: "pediatria" | "atendimento";
 }
 
 export default function ChatSidebar({
@@ -84,7 +86,8 @@ export default function ChatSidebar({
   onEditSchedule,
   onCancelSchedule,
   claraSuggestionCount = 0,
-  onClaraBadgeClick
+  onClaraBadgeClick,
+  module
 }: ChatSidebarProps) {
   const [selectedScriptId, setSelectedScriptId] = useState<number | null>(null);
 
@@ -211,7 +214,7 @@ export default function ChatSidebar({
                     {/* --- ABA COPILOTO (sem padding extra, ocupa todo o espaço) --- */}
                     {activeTab === 'copiloto' && (
                         <div className="flex-1 overflow-hidden">
-                            <CopilotChat chatId={chatId} patientName={patientName} />
+                            <CopilotChat chatId={chatId} patientName={patientName} module={module} />
                         </div>
                     )}
 

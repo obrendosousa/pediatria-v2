@@ -578,7 +578,9 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
     }
 
     const cleanPhone = String(activeChat.phone || '').replace(/\D/g, '');
-    const remoteJid = cleanPhone ? `${cleanPhone}@s.whatsapp.net` : '';
+    const remoteJid = activeChat.is_group && activeChat.group_jid
+      ? activeChat.group_jid
+      : (cleanPhone ? `${cleanPhone}@s.whatsapp.net` : '');
     const targetFromMe =
       msg.sender === 'HUMAN_AGENT' || msg.sender === 'AI_AGENT' || msg.sender === 'me';
 

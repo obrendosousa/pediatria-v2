@@ -48,7 +48,13 @@ export async function POST(req: Request) {
     }
 
     const cleanPhone = String(phone).replace(/\D/g, '');
-    const remoteJid = `${cleanPhone}@s.whatsapp.net`;
+    // Verificar se é grupo para usar group_jid como remoteJid
+    const { data: chatRow } = await supabase
+      .from('chats')
+      .select('is_group, group_jid')
+      .eq('phone', cleanPhone)
+      .maybeSingle();
+    const remoteJid = (chatRow?.is_group && chatRow?.group_jid) ? chatRow.group_jid : `${cleanPhone}@s.whatsapp.net`;
     const normalizedText = String(newText).trim();
     const normalizedWppId = typeof wppId === 'string' ? wppId.trim() : '';
 

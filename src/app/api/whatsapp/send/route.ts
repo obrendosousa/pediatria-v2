@@ -396,7 +396,17 @@ export async function POST(req: Request) {
     }
 
     const cleanPhone = String(phone).replace(/\D/g, '');
-    const defaultRemoteJid = `${cleanPhone}@s.whatsapp.net`;
+
+    // Verificar se é um chat de grupo para usar o group_jid como destino
+    const { data: chatInfo } = await supabase
+      .from('chats')
+      .select('is_group, group_jid')
+      .eq('id', chatId)
+      .maybeSingle();
+    const isGroupChat = chatInfo?.is_group === true && chatInfo?.group_jid;
+    const destinationNumber = isGroupChat ? chatInfo.group_jid : phone;
+    const defaultRemoteJid = isGroupChat ? chatInfo.group_jid : `${cleanPhone}@s.whatsapp.net`;
+
     const hasQuotedId = typeof replyTo?.wppId === 'string' && replyTo.wppId.trim().length > 0;
     const quotedPayload = hasQuotedId
       ? {
@@ -422,7 +432,7 @@ export async function POST(req: Request) {
       try {
         await evolutionRequest('/chat/sendPresence/{instance}', {
           method: 'POST',
-          body: { number: phone, presence: pType, delay: 1200 },
+          body: { number: destinationNumber, presence: pType, delay: 1200 },
         });
       } catch (e) { /* Erro não crítico */ }
     };
@@ -433,7 +443,7 @@ export async function POST(req: Request) {
       // Suporta single contact e array de contatos
       const contactList = Array.isArray(options.contact) ? options.contact : [options.contact];
       apiBody = {
-        number: phone,
+        number: destinationNumber,
         contact: contactList.map((c: any) => ({
           fullName: c.fullName || c.displayName || '',
           wuid: String(c.wuid || c.phoneNumber || c.phone || '').replace(/\D/g, ''),
@@ -447,18 +457,18 @@ export async function POST(req: Request) {
     else if (type === 'sticker' && mediaUrl) {
       await setPresence('composing');
       endpoint = '/message/sendSticker/{instance}';
-      apiBody = { number: phone, sticker: mediaUrl };
+      apiBody = { number: destinationNumber, sticker: mediaUrl };
     }
     else if (type === 'audio' && mediaUrl) {
       await setPresence('recording');
       endpoint = '/message/sendWhatsAppAudio/{instance}';
-      apiBody = { number: phone, audio: mediaUrl, delay: 1000, encoding: true };
+      apiBody = { number: destinationNumber, audio: mediaUrl, delay: 1000, encoding: true };
     }
     else if ((type === 'image' || type === 'video' || type === 'document') && mediaUrl) {
       await setPresence('composing');
       endpoint = '/message/sendMedia/{instance}';
       apiBody = {
-        number: phone,
+        number: destinationNumber,
         media: mediaUrl,
         mediatype: type,
         caption: message || '',
@@ -470,7 +480,7 @@ export async function POST(req: Request) {
       await setPresence('composing');
       endpoint = '/message/sendText/{instance}';
       apiBody = {
-        number: phone,
+        number: destinationNumber,
         text: message,
         delay: 1000,
         ...(quotedPayload ? { quoted: quotedPayload, quotedMessage: quotedPayload } : {}),

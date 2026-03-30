@@ -1,0 +1,1569 @@
+import { DynamicStructuredTool } from "@langchain/core/tools";
+import { z } from "zod";
+import { GoogleGenAI } from "@google/genai";
+import { chatAnalyzerGraph } from "./chatAnalyzerGraph";
+import { Pool } from "pg";
+import { preValidateQuery, postValidateResults } from "@/ai/clara/query_validator";
+import { analyzeRawConversationsTool } from "./raw_data_analyzer";
+import { askUserQuestionTool } from "@/ai/clara/interactive_questions";
+import { createSchemaAdminClient } from "@/lib/supabase/schemaServer";
+import { MEMORY_TYPES, MEMORY_TYPE_DESCRIPTIONS, canSaveType, TIER1_TYPES, type MemoryType } from "@/ai/clara/memory_types";
+import { calculateQualityScore, applyQualityPipeline } from "@/ai/clara/memory_quality";
+import { checkContradiction, upsertAuthoritativeFact } from "@/ai/clara/contradiction_guard";
+import { getMemoryIndex } from "@/ai/vault/memory-index";
+import { AsyncLocalStorage } from "node:async_hooks";
+import type { TemporalAnchor } from "@/ai/clara/temporal_anchor";
+import {
+  syncConfigToVault,
+  syncReportToVault,
+  syncChatNoteToVault,
+  syncKnowledgeToVault,
+} from "@/ai/vault/sync";
+import { getVaultService, isVaultAvailable } from "@/ai/vault/service";
+import type { DecisionInput } from "@/ai/vault/types";
+
+// ── Temporal Anchor isolado por invocação (thread-safe via AsyncLocalStorage) ──
+const temporalAnchorStorage = new AsyncLocalStorage<TemporalAnchor | null>();
+
+export function runWithTemporalAnchor<T>(anchor: TemporalAnchor | null, fn: () => T): T {
+  return temporalAnchorStorage.run(anchor, fn);
+}
+
+function getCurrentTemporalAnchor(): TemporalAnchor | null {
+  return temporalAnchorStorage.getStore() ?? null;
+}
+
+// Compatibilidade: setCurrentTemporalAnchor agora é no-op (usar runWithTemporalAnchor)
+let _currentTemporalAnchor: TemporalAnchor | null = null;
+export function setCurrentTemporalAnchor(anchor: TemporalAnchor | null) {
+  _currentTemporalAnchor = anchor;
+}
+// Analyst tools são importados diretamente em graph.ts/researcher_graph.ts — não re-exportar aqui
+
+// Garante bypass de certificado SSL auto-assinado independente da ordem de importação dos módulos.
+// O checkpointer.ts também define isso, mas tools.ts pode ser carregado antes em alguns contextos.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+// Helper para gerar embeddings 768d compatíveis com o schema vector(768) do banco.
+// Usa gemini-embedding-001 via @google/genai (text-embedding-004 não está disponível via v1beta).
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY! });
+async function embedText768(text: string): Promise<number[]> {
+  const response = await genAI.models.embedContent({
+    model: "gemini-embedding-001",
+    contents: text,
+    config: { outputDimensionality: 768 },
+  });
+  return response.embeddings?.[0]?.values ?? [];
+}
+
+// Schema client para o schema 'atendimento'
+const supabase = createSchemaAdminClient('atendimento');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FERRAMENTAS DO AGENTE DE CLÍNICA GERAL
+// Brain files agora persistidos no Supabase (tabela agent_config)
+// para que atualizações entrem em vigor imediatamente sem restart.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Helper: loga decisao no vault (fire-and-forget, nao bloqueia a tool principal)
+function logDecisionToVault(input: DecisionInput): void {
+  isVaultAvailable().then((available) => {
+    if (!available) return;
+    getVaultService().logDecision(input).catch(() => {});
+  }).catch(() => {});
+}
+
+// Módulos editáveis pelo agente (soul é imutável — definido em system_prompt.ts)
+const EDITABLE_MODULES = ["company", "rules", "voice_rules"] as const;
+type EditableModule = (typeof EDITABLE_MODULES)[number];
+
+const MODULE_LABELS: Record<EditableModule, string> = {
+  company: "Contexto da Empresa",
+  rules: "Regras Personalizadas",
+  voice_rules: "Diretrizes de Personalidade da Voz",
+};
+
+export const readBrainFilesTool = new DynamicStructuredTool({
+  name: "read_brain_files",
+  description:
+    "Lê o conteúdo atual do contexto da empresa (company) e das regras personalizadas aprendidas (rules) diretamente do banco de dados. Use para consultar sua configuração atual antes de editar.",
+  schema: z.object({
+    module: z
+      .enum(["company", "rules", "voice_rules", "all"])
+      .optional()
+      .default("all")
+      .describe("Qual módulo ler: 'company', 'rules', 'voice_rules' ou 'all' para todos."),
+  }),
+  func: async ({ module }) => {
+    try {
+      const keys = module === "all" ? EDITABLE_MODULES : [module as EditableModule];
+      const { data, error } = await supabase
+        .from("agent_config")
+        .select("config_key, content")
+        .eq("agent_id", "atendimento_agent")
+        .in("config_key", keys);
+
+      if (error || !data || data.length === 0) return "Nenhum módulo encontrado no banco.";
+
+      const map = Object.fromEntries(data.map((row: { config_key: string; content: string }) => [row.config_key, row.content]));
+      return keys
+        .map((k) => (map[k] ? `### ${MODULE_LABELS[k]}\n${map[k]}` : `### ${MODULE_LABELS[k]}\n(vazio)`))
+        .join("\n\n");
+    } catch (error: unknown) {
+      return `Erro ao ler configurações: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  },
+});
+
+export const updateBrainFileTool = new DynamicStructuredTool({
+  name: "update_brain_file",
+  description:
+    "Atualiza o contexto da empresa ('company') ou as regras personalizadas ('rules') no banco de dados. As alterações entram em vigor IMEDIATAMENTE sem precisar reiniciar. Envie o TEXTO COMPLETO que substituirá o módulo — não use código, apenas texto puro.",
+  schema: z.object({
+    module: z.enum(["company", "rules", "voice_rules"]).describe("Qual módulo atualizar: 'company', 'rules', ou 'voice_rules'."),
+    new_content: z.string().describe("O texto completo e atualizado que substituirá o módulo."),
+  }),
+  func: async ({ module, new_content }) => {
+    try {
+      const { error } = await supabase
+        .from("agent_config")
+        .upsert({
+          agent_id: "atendimento_agent",
+          config_key: module,
+          content: new_content,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "agent_id,config_key" });
+      if (error) throw error;
+      // Dual-write: sync para o vault
+      syncConfigToVault(module, new_content).catch(() => {});
+      // Decision tracking: registrar mudanca de configuracao
+      logDecisionToVault({
+        summary: `Config '${module}' atualizada pelo atendimento_agent`,
+        decided_by: "atendimento_agent",
+        category: "operacional",
+        context: `Modulo '${MODULE_LABELS[module]}' foi atualizado com novo conteudo.`,
+      });
+      return `O módulo '${MODULE_LABELS[module]}' foi atualizado com sucesso. As alterações já estão em vigor.`;
+    } catch (error: unknown) {
+      return `Erro ao salvar configuração para revisão: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  },
+});
+
+export const manageLongTermMemoryTool = new DynamicStructuredTool({
+  name: "manage_long_term_memory",
+  description: `Salva PADRÕES GENERALIZÁVEIS ou consulta aprendizados passados na memória de longo prazo.
+No modo salvar faz Upsert Semântico (threshold 0.80) para não duplicar informações similares.
+Categorias: ${MEMORY_TYPES.join(", ")}.
+NUNCA salve dados individuais de pacientes (nomes, CPFs, endereços). Salve apenas padrões reutilizáveis.
+NUNCA salve com memory_type='audit_log' — use 'feedback_melhoria' para registrar problemas.`,
+  schema: z.object({
+    action: z.enum(["salvar", "consultar"]),
+    memory_type: z.string().describe(
+      `Categoria da memória. Valores válidos: ${MEMORY_TYPES.join(", ")}. ${Object.entries(MEMORY_TYPE_DESCRIPTIONS).map(([k, v]) => `${k}: ${v}`).join(". ")}`
+    ),
+    content: z.string().optional().describe("O padrão/fato a ser salvo ou a palavra-chave para busca."),
+    source_role: z.string().optional().default("system").describe("O autor/fonte do conhecimento (ex: 'admin', 'doctor', 'system')."),
+  }),
+  func: async ({ action, memory_type, content, source_role }) => {
+    if (action === "salvar") {
+      if (!content) return "Erro: 'content' é obrigatório para salvar.";
+
+      // Redirecionar audit_log → feedback_melhoria
+      const effectiveType = memory_type === "audit_log" ? "feedback_melhoria" : memory_type;
+      const effectiveRole = source_role || "system";
+
+      // Verificar permissão por trust level
+      if (!canSaveType(effectiveRole, effectiveType as MemoryType)) {
+        return `Permissão negada: source_role '${effectiveRole}' não pode salvar no tipo '${effectiveType}'. ` +
+          `Tipos Tier 1 (${TIER1_TYPES.join(", ")}) exigem source_role='admin'.`;
+      }
+
+      // Quality gate completo (strip PII + generalizabilidade + score)
+      const qualityResult = applyQualityPipeline(content);
+      if (!qualityResult) {
+        return "Memória rejeitada pelo quality gate: conteúdo contém apenas dados individuais/PII, " +
+          "ficou muito curto após limpeza, ou é uma observação não-generalizável. " +
+          "Reformule como um padrão que se aplique a múltiplos casos.";
+      }
+      const { cleaned, score } = qualityResult;
+
+      // Contradiction guard (bloqueia contradições com fatos autoritativos em Tier 1)
+      const contradiction = checkContradiction(cleaned, effectiveType, effectiveRole);
+      if (!contradiction.ok) {
+        return `Memória bloqueada pelo Contradiction Guard: ${contradiction.message}`;
+      }
+      if (contradiction.severity === "warn" && contradiction.message) {
+        console.warn(`[ContradictionGuard] ${contradiction.message}`);
+      }
+
+      try {
+        const embedding = await embedText768(cleaned);
+        const index = await getMemoryIndex();
+
+        // Upsert semântico via vault local (threshold 0.80)
+        const savedSlug = await index.saveEntry(
+          {
+            content: cleaned,
+            memory_type: effectiveType,
+            quality_score: score,
+            source_role: effectiveRole,
+          },
+          embedding
+        );
+
+        const warnMsg = contradiction.severity === "warn" ? `\n⚠️ ${contradiction.message}` : "";
+        return `Memória salva no vault (${savedSlug}). Score: ${score}/100.${warnMsg}`;
+      } catch (e: unknown) {
+        return `Erro ao processar memória: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    } else {
+      // Consulta no vault local
+      if (content) {
+        try {
+          const queryEmbedding = await embedText768(content);
+          const index = await getMemoryIndex();
+          const results = index.search(queryEmbedding, 5);
+          if (results.length > 0) {
+            return `Memórias encontradas (vault local):\n${results
+              .map(r => `- [score:${r.entry.quality_score}] ${r.entry.content} (sim: ${(r.similarity * 100).toFixed(0)}%)`)
+              .join("\n")}`;
+          }
+        } catch { /* fallback abaixo */ }
+      }
+      // Fallback: busca por tipo
+      try {
+        const index = await getMemoryIndex();
+        const byType = index.getAllEntries()
+          .filter(e => e.memory_type === memory_type)
+          .filter(e => !content || e.content.toLowerCase().includes(content.toLowerCase()))
+          .sort((a, b) => b.quality_score - a.quality_score)
+          .slice(0, 5);
+        if (byType.length === 0) return "Nenhuma memória encontrada com esses critérios.";
+        return `Memórias encontradas:\n${byType
+          .map(e => `- [score:${e.quality_score}] ${e.content}`)
+          .join("\n")}`;
+      } catch (e) {
+        return `Erro ao buscar memórias: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    }
+  },
+});
+
+export const saveAuthoritativeKnowledgeTool = new DynamicStructuredTool({
+  name: "save_authoritative_knowledge",
+  description: `Salva ou atualiza uma REGRA DEFINITIVA no Tier 1 da memória do agente.
+Use APENAS quando o admin (Brendo) confirmar explicitamente uma nova regra, preço ou política.
+Automaticamente:
+- Cria/atualiza arquivo em knowledge/operations/ ou memories/regra-negocio/ no vault
+- Registra em decisions/ com decided_by='admin'
+- Atualiza o Contradiction Guard com o novo fato canônico
+- Arquiva memórias de Tier 2 que contradigam o novo fato
+- Exige source_role='admin' — rejeitado para outros roles
+
+OBRIGATÓRIO: confirme com o usuário ANTES de chamar esta ferramenta.`,
+  schema: z.object({
+    description: z.string().describe("Descrição curta do fato (ex: 'Preço consulta padrão')"),
+    content: z.string().describe("O fato completo e definitivo (ex: 'A consulta padrão custa R$ 300,00.')"),
+    memory_type: z.enum(["regra_negocio", "protocolo_clinico", "recurso_equipe", "processo_operacional", "conhecimento_medico"]).describe("Categoria Tier 1 ou Tier 2"),
+    source_role: z.string().describe("Deve ser 'admin'. Qualquer outro valor será rejeitado."),
+    vault_folder: z.enum(["knowledge/operations", "memories/regra-negocio", "memories/protocolo-clinico", "memories/recurso-equipe"]).optional().describe("Onde salvar no vault"),
+    canonical_value: z.string().optional().describe("Valor canônico para o Contradiction Guard (ex: 'R$ 300,00')"),
+    canonical_pattern: z.string().optional().describe("Regex string que identifica menções a este fato (ex: 'consulta')"),
+  }),
+  func: async ({ description, content, memory_type, source_role, canonical_value, canonical_pattern }) => {
+    if (source_role !== "admin") {
+      return "❌ Permissão negada. save_authoritative_knowledge exige source_role='admin'.";
+    }
+
+    try {
+      const embedding = await embedText768(content);
+      const score = calculateQualityScore(content);
+      const index = await getMemoryIndex();
+
+      // 1. Salvar no vault (upsert semântico)
+      const savedSlug = await index.saveEntry(
+        { content, memory_type, quality_score: score, source_role: "admin" },
+        embedding
+      );
+
+      // 2. Registrar decision no vault
+      logDecisionToVault({
+        summary: `[Admin] ${description}`,
+        decided_by: "admin",
+        category: "operacional",
+        context: content,
+      });
+
+      // 3. Atualizar Contradiction Guard se canonical_value fornecido
+      if (canonical_value && canonical_pattern) {
+        upsertAuthoritativeFact({
+          description,
+          pattern: new RegExp(canonical_pattern, "i"),
+          canonical_value,
+          wrong_value_pattern: /R\$\s*\d+/,
+          strict_types: ["regra_negocio"],
+          soft_types: ["padrao_comportamental", "processo_operacional"],
+        });
+      }
+
+      return `✅ Regra autoritativa salva no vault!\n` +
+        `📁 Slug: ${savedSlug}\n` +
+        `📊 Quality score: ${score}/100\n` +
+        `🔒 Contradiction Guard atualizado: ${canonical_value ? "sim" : "não"}`;
+    } catch (e: unknown) {
+      return `Erro ao salvar conhecimento autoritativo: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  },
+});
+
+export const manageChatNotesTool = new DynamicStructuredTool({
+  name: "manage_chat_notes",
+  description: `Gerencia suas anotações privadas sobre um chat específico.
+Use para registrar e atualizar contexto relevante:
+- Se é chat interno (equipe) ou de cliente/paciente
+- Perfil do contato (interesses, histórico, objeções recorrentes)
+- Decisões importantes tomadas no chat
+- Qualquer contexto que ajude a orientar interações futuras
+As notas são injetadas automaticamente no início de cada conversa como contexto.
+Use action='write' para criar ou atualizar. action='read' para consultar explicitamente.`,
+  schema: z.object({
+    chat_id: z.number().describe("ID numérico do chat"),
+    action: z.enum(["read", "write"]).describe("read: consulta as notas existentes | write: cria ou atualiza as notas"),
+    notes: z.string().optional().describe("Conteúdo das notas (obrigatório quando action=write)"),
+  }),
+  func: async ({ chat_id, action, notes }) => {
+    if (action === "read") {
+      const { data, error } = await supabase
+        .from("chat_notes")
+        .select("notes, updated_at")
+        .eq("chat_id", chat_id)
+        .single();
+      if (error || !data) return "Nenhuma observação registrada para este chat.";
+      const updatedAt = new Date(data.updated_at).toLocaleString("pt-BR");
+      return `Observações sobre o chat ${chat_id} (atualizado em ${updatedAt}):\n\n${data.notes}`;
+    }
+    // action === "write"
+    if (!notes?.trim()) return "Erro: o campo notes é obrigatório para action=write.";
+    const { error } = await supabase
+      .from("chat_notes")
+      .upsert(
+        { chat_id, notes: notes.trim(), updated_at: new Date().toISOString() },
+        { onConflict: "chat_id" }
+      );
+    if (error) return `Erro ao salvar observações: ${error instanceof Error ? error.message : String(error)}`;
+    // Dual-write: sync para o vault
+    syncChatNoteToVault(chat_id, notes!.trim()).catch(() => {});
+    return `Observações do chat ${chat_id} atualizadas com sucesso.`;
+  },
+});
+
+export const extractAndSaveKnowledgeTool = new DynamicStructuredTool({
+  name: "extract_and_save_knowledge",
+  description:
+    "Salva um 'gabarito' de atendimento na Base de Conhecimento (tabela knowledge_base). Use isto quando identificar uma excelente resposta humana para uma dúvida comum.",
+  schema: z.object({
+    pergunta: z.string().describe("A dúvida exata ou intenção do paciente."),
+    resposta_ideal: z.string().describe("A resposta perfeita que a equipe deu (o gabarito)."),
+    categoria: z.string().describe("Categoria (ex: 'Financeiro', 'Agendamento', 'Dúvida Médica')."),
+    tags: z.string().describe("Palavras-chave separadas por vírgula para facilitar a busca."),
+  }),
+  func: async ({ pergunta, resposta_ideal, categoria, tags }) => {
+    const { error } = await supabase
+      .from("knowledge_base")
+      .insert({ pergunta, resposta_ideal, categoria, tags });
+    if (error) return `Erro ao salvar na base de conhecimento: ${error instanceof Error ? error.message : String(error)}`;
+    // Dual-write: sync para o vault
+    syncKnowledgeToVault(pergunta, resposta_ideal, categoria).catch(() => {});
+    // Decision tracking: registrar novo conhecimento
+    logDecisionToVault({
+      summary: `Novo gabarito salvo: ${categoria}`,
+      decided_by: "atendimento_agent",
+      category: "operacional",
+      context: `Pergunta: ${pergunta.slice(0, 100)}`,
+    });
+    return `Gabarito salvo com sucesso na base de conhecimento. (Categoria: ${categoria})`;
+  },
+});
+
+export const searchKnowledgeBaseTool = new DynamicStructuredTool({
+  name: "search_knowledge_base",
+  description:
+    "Busca na sua Base de Conhecimento (gabaritos) se já existe uma resposta padrão aprovada para a dúvida atual de um paciente.",
+  schema: z.object({
+    termo_busca: z.string().describe("Palavra-chave ou tema da dúvida para buscar no gabarito."),
+  }),
+  func: async ({ termo_busca }) => {
+    const { data, error } = await supabase
+      .from("knowledge_base")
+      .select("pergunta, resposta_ideal, categoria")
+      .or(`pergunta.ilike.%${termo_busca.replace(/[%_\\]/g, '\\$&')}%,tags.ilike.%${termo_busca.replace(/[%_\\]/g, '\\$&')}%`)
+      .limit(3);
+
+    if (error) return `Erro ao buscar conhecimento: ${error instanceof Error ? error.message : String(error)}`;
+    if (!data || data.length === 0)
+      return "Nenhum gabarito encontrado para este tema na sua base de conhecimento.";
+
+    return `Gabaritos Encontrados:\n${data
+      .map((d) => `[Categoria: ${d.categoria}]\nQ: ${d.pergunta}\nR: ${d.resposta_ideal}`)
+      .join("\n\n")}`;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FERRAMENTA DE RELATÓRIO — save_report
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const saveReportTool = new DynamicStructuredTool({
+  name: "save_report",
+  description:
+    "Salva um relatório estruturado na tabela 'agent_reports' para visualização como documento HTML formatado. Use após concluir uma análise profunda para disponibilizar o relatório completo ao gestor.",
+  schema: z.object({
+    titulo: z.string().describe("Título do relatório (ex: 'Análise de Objeções — Fev 2026')."),
+    conteudo_markdown: z
+      .string()
+      .describe(
+        "O conteúdo completo do relatório em Markdown. Use títulos, listas e tabelas para estruturar."
+      ),
+    tipo: z
+      .enum(["analise_chats", "financeiro", "agendamento", "geral"])
+      .describe("Categoria do relatório."),
+  }),
+  func: async ({ titulo, conteudo_markdown, tipo }) => {
+    try {
+      const { data, error } = await supabase
+        .from("agent_reports")
+        .insert({
+          titulo,
+          conteudo_markdown,
+          tipo,
+          created_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+      const reportId = (data as { id: number } | null)?.id;
+      // Dual-write: sync para o vault
+      if (reportId) syncReportToVault(reportId, titulo, conteudo_markdown, tipo).catch(() => {});
+      return `Relatório salvo com sucesso! ID: ${reportId}. O gestor pode acessá-lo em /relatorios/${reportId}.`;
+    } catch (error: unknown) {
+      return `Erro ao salvar relatório: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FERRAMENTA DE SUPER RELATÓRIO — generate_deep_report (Gemini Pro)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const generateDeepReportTool = new DynamicStructuredTool({
+  name: "generate_deep_report",
+  description: `Gera um relatório executivo PROFISSIONAL a partir de dados de análise já coletados.
+Usa o modelo Gemini Pro (mais inteligente) para redigir um relatório com:
+- Resumo executivo com conclusões acionáveis
+- Dados e métricas precisas com fontes
+- Citações reais das conversas como provas
+- Recomendações estratégicas fundamentadas
+- Formatação profissional em Markdown
+
+Use APÓS ter feito a análise (via analyze_raw_conversations ou get_volume_metrics).
+Passe os dados brutos da análise no campo analysis_data.
+O relatório é salvo automaticamente e gera PDF.`,
+
+  schema: z.object({
+    titulo: z.string().describe("Título do relatório"),
+    tipo: z.enum(["analise_chats", "financeiro", "agendamento", "geral"]).describe("Categoria"),
+    periodo: z.string().describe("Período analisado (ex: '01/03 a 20/03/2026')"),
+    analysis_data: z.string().describe("Dados brutos da análise (output do analyze_raw_conversations ou outros dados coletados). Cole aqui o resultado completo."),
+    additional_context: z.string().optional().describe("Contexto adicional: perguntas do usuário, conclusões intermediárias, insights já discutidos"),
+  }),
+
+  func: async ({ titulo, tipo, periodo, analysis_data, additional_context }) => {
+    try {
+      const { ChatGoogleGenerativeAI } = await import("@langchain/google-genai");
+      const { generateReportPdf } = await import("@/lib/reportPdf");
+
+      const proModel = new ChatGoogleGenerativeAI({
+        model: "gemini-3.1-pro-preview",
+        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+        temperature: 0.3,
+      });
+
+      const reportPrompt = `Você é um analista de negócios sênior escrevendo um relatório executivo para o CEO de uma clínica médica geral.
+
+MISSÃO: Redigir um relatório profissional, preciso e acionável com base nos dados fornecidos.
+
+ESTRUTURA OBRIGATÓRIA DO RELATÓRIO:
+
+# [Título do Relatório]
+
+## Resumo Executivo
+- 3-5 bullet points com as conclusões mais importantes
+- Cada conclusão deve ter um número que a sustenta
+- Destaque o insight mais urgente
+
+## Metodologia
+- Como os dados foram coletados (análise individual de X conversas)
+- Período analisado
+- Base de dados utilizada
+
+## Análise Detalhada
+
+### [Seção 1: Maior descoberta]
+- Dados quantitativos com tabelas
+- Citações REAIS de conversas como prova (entre aspas, com referência ao chat)
+- Interpretação do dado
+
+### [Seção 2: Segunda descoberta]
+(mesmo padrão)
+
+### [Seções adicionais conforme necessário]
+
+## Impacto Financeiro
+- Calcule em R$ o impacto de cada descoberta
+- Compare cenário atual vs cenário otimizado
+- Use números concretos, não estimativas vagas
+
+## Recomendações Estratégicas
+- Numere cada recomendação
+- Para cada uma: O QUE fazer, POR QUE (dado que sustenta), IMPACTO esperado em R$
+- Ordene por impacto (maior primeiro)
+
+## Anexo: Evidências
+- Lista das citações mais relevantes com chat_id e nome do paciente
+- Dados brutos resumidos em tabelas
+
+REGRAS DE QUALIDADE:
+1. NUNCA invente dados — use APENAS o que está nos dados fornecidos
+2. Cada afirmação DEVE ter um número ou citação que a sustente
+3. Use linguagem profissional mas acessível (o CEO não é técnico)
+4. Tabelas em Markdown para dados comparativos
+5. Destaque números críticos com **negrito**
+6. Não use emojis no corpo do relatório (apenas nos títulos de seção se necessário)
+7. O relatório deve se sustentar sozinho — alguém que não participou da análise deve entender tudo
+
+PERÍODO: ${periodo}
+TÍTULO: ${titulo}
+${additional_context ? `\nCONTEXTO ADICIONAL DO GESTOR:\n${additional_context}` : ""}`;
+
+      const response = await proModel.invoke([
+        { role: "system", content: reportPrompt },
+        { role: "user", content: `DADOS DA ANÁLISE:\n\n${analysis_data}\n\nRedija o relatório executivo completo.` },
+      ]);
+
+      const reportContent = typeof response.content === "string" ? response.content : "";
+
+      if (!reportContent || reportContent.length < 200) {
+        return "Erro: O modelo não gerou conteúdo suficiente para o relatório.";
+      }
+
+      // Salvar no banco
+      const { data, error } = await supabase
+        .from("agent_reports")
+        .insert({
+          titulo,
+          conteudo_markdown: reportContent,
+          tipo,
+          created_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+      const reportId = (data as { id: number } | null)?.id;
+
+      // Gerar PDF
+      let pdfStatus = "PDF não gerado";
+      try {
+        const pdfBuffer = await generateReportPdf({
+          titulo,
+          conteudo_markdown: reportContent,
+          created_at: new Date().toISOString(),
+          reportId: reportId ?? undefined,
+        });
+
+        // Salvar PDF no Supabase Storage
+        const fileName = `relatorios/report-${reportId}.pdf`;
+        const { error: uploadErr } = await supabase.storage
+          .from("documents")
+          .upload(fileName, pdfBuffer, { contentType: "application/pdf", upsert: true });
+
+        if (uploadErr) {
+          pdfStatus = `PDF gerado (${(pdfBuffer.length / 1024).toFixed(0)}KB) mas erro no upload: ${uploadErr.message}`;
+        } else {
+          pdfStatus = `PDF gerado e salvo (${(pdfBuffer.length / 1024).toFixed(0)}KB)`;
+        }
+      } catch (pdfErr: unknown) {
+        pdfStatus = `Erro ao gerar PDF: ${pdfErr instanceof Error ? pdfErr.message : String(pdfErr)}`;
+      }
+
+      return `✅ Relatório executivo gerado com sucesso!
+📄 ID: ${reportId} | Acessar: /relatorios/${reportId}
+📊 ${pdfStatus}
+📝 ${reportContent.length} caracteres | Modelo: Gemini Pro
+
+O relatório completo está disponível na página de relatórios.`;
+    } catch (err: unknown) {
+      return `Erro ao gerar relatório: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PASSO 3: NOVAS FERRAMENTAS DO SUB-GRAFO DE ANÁLISE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const analisarChatEspecificoTool = new DynamicStructuredTool({
+  name: "analisar_chat_especifico",
+  description:
+    "Análise ESTRUTURADA E PROFUNDA de chats via Sub-Grafo de Análise. Extrai objeções, gargalos, sentimento, nota de atendimento e decisão de CADA conversa individualmente, salvando resultados estruturados na tabela chat_insights. Use quando o usuário pedir 'novo grafo', 'nova ferramenta', 'análise profunda estruturada', ou quando precisar de dados persistidos para relatórios posteriores.",
+  schema: z.object({
+    chat_ids: z.array(z.number()).describe("Lista de IDs numéricos dos chats a serem analisados (máx. 30 por chamada)."),
+  }),
+  func: async ({ chat_ids }) => {
+    if (!chat_ids || chat_ids.length === 0) return "Nenhum chat_id fornecido.";
+
+    const safeIds = chat_ids.slice(0, 30);
+
+    // ── Busca o chat interno do agente para enviar status ao indicador ──────
+    const { data: agentChat } = await supabase
+      .from("chats")
+      .select("id")
+      .eq("phone", "00000000001")
+      .single();
+    const agentChatId = (agentChat as { id: number } | null)?.id ?? undefined;
+
+    // ── Envia status ao indicador do agente via Realtime Broadcast ───────────
+    // Aparece no StatusIndicator (header) — NÃO insere mensagem no chat.
+    async function broadcastProgress(status: string): Promise<void> {
+      if (!agentChatId) return;
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+          },
+          body: JSON.stringify({
+            messages: [{ topic: `clara:${agentChatId}`, event: "status", payload: { status } }],
+          }),
+        });
+      } catch { /* falha silenciosa */ }
+    }
+
+    // ── Pré-carrega nomes de contato de todos os chats em uma única query ──
+    const { data: chatsMeta } = await supabase
+      .from("chats")
+      .select("id, contact_name")
+      .in("id", safeIds);
+    const nameMap = new Map<number, string>(
+      ((chatsMeta ?? []) as Array<{ id: number; contact_name: string | null }>).map((c) => [c.id, (c.contact_name) ?? `#${c.id}`])
+    );
+
+    const scratchpadInsights: string[] = [];
+    let successCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < safeIds.length; i++) {
+      const chat_id = safeIds[i];
+      const name = nameMap.get(chat_id) ?? `#${chat_id}`;
+      await broadcastProgress(`tool:🔬 Analisando ${i + 1}/${safeIds.length}: ${name}`);
+
+      try {
+        const finalState = await chatAnalyzerGraph.invoke({ chat_id });
+
+        const ins = (finalState.insights as {
+          topico?: string | null;
+          sentimento?: string | null;
+          nota_atendimento?: number | null;
+          objecoes?: string[];
+          gargalos?: string[];
+          decisao?: string | null;
+          resumo_analise?: string | null;
+        } | null);
+
+        if (ins) {
+          const nota = ins.nota_atendimento;
+          const semTexto = ins.gargalos?.includes("sem_texto_analisavel");
+
+          if (semTexto) {
+            skippedCount++;
+          } else {
+            successCount++;
+          }
+
+          scratchpadInsights.push([
+            `Chat #${chat_id} (${name}):`,
+            `  Tópico: ${ins.topico ?? "N/A"}`,
+            `  Sentimento: ${ins.sentimento ?? "N/A"} | Nota: ${nota ?? "N/A"}/10`,
+            `  Objeções: ${ins.objecoes?.join("; ") || "nenhuma"}`,
+            `  Gargalos: ${ins.gargalos?.join("; ") || "nenhum"}`,
+            `  Decisão: ${ins.decisao ?? "não identificada"}`,
+            `  Resumo: ${ins.resumo_analise ?? ""}`,
+          ].join("\n"));
+        }
+      } catch (e: unknown) {
+        errorCount++;
+        scratchpadInsights.push(`Chat #${chat_id} (${name}): Erro — ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+
+    await broadcastProgress(`tool:✅ Sub-Grafo concluído — ${successCount} analisados, ${skippedCount} sem texto`);
+
+    const header = [
+      `Sub-Grafo concluído. Total processado: ${safeIds.length} chats.`,
+      `  Com análise: ${successCount} | Sem texto suficiente: ${skippedCount} | Erros: ${errorCount}`,
+      `  Insights salvos em chat_insights.`,
+    ].join("\n");
+
+    if (scratchpadInsights.length === 0) return header;
+    return `${header}\n\n## Insights por Chat:\n\n${scratchpadInsights.join("\n\n")}`;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FERRAMENTA SQL DIRETA — execute_sql
+// Padrão "SQL Agent": o modelo principal escreve o SQL; a ferramenta executa.
+// Elimina o LLM intermediário do generateSqlReport e o pg Pool instável.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const dbPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  connectionTimeoutMillis: 8000,
+  idleTimeoutMillis: 30000,
+  max: 5,
+});
+
+export const executeSqlTool = new DynamicStructuredTool({
+  name: "execute_sql",
+  description:
+    "Executa uma query SQL SELECT diretamente no banco PostgreSQL da clínica (schema atendimento). " +
+    "Use para QUALQUER consulta de dados: JOINs, aggregations, agendamentos, financeiro, pacientes, leads. " +
+    "Você escreve o SQL — a ferramenta apenas executa e retorna os resultados brutos. " +
+    "REGRAS OBRIGATÓRIAS: (1) Apenas SELECT/WITH. " +
+    "(2) Datas sempre com offset BRT: '2026-02-24T00:00:00-03:00'::timestamptz. " +
+    "(3) Agrupar por dia BRT: DATE(campo AT TIME ZONE 'America/Sao_Paulo'). " +
+    "(4) Para contar chats: filtre last_interaction_at na tabela chats — NUNCA JOIN com chat_messages para isso. " +
+    "(5) Inclua LIMIT (máx 500).",
+  schema: z.object({
+    sql: z.string().describe(
+      "Query SQL SELECT completa e válida para PostgreSQL. " +
+      "Ex1 — volume por dia: SELECT DATE(last_interaction_at AT TIME ZONE 'America/Sao_Paulo') AS dia, COUNT(*) AS total FROM chats WHERE last_interaction_at >= '2026-02-24T00:00:00-03:00'::timestamptz AND last_interaction_at <= '2026-02-28T23:59:59.999-03:00'::timestamptz GROUP BY 1 ORDER BY 1; " +
+      "Ex2 — breakdown por stage: SELECT stage, COUNT(*) FROM chats WHERE last_interaction_at >= '2026-02-24T00:00:00-03:00'::timestamptz GROUP BY stage;"
+    ),
+  }),
+  func: async ({ sql }) => {
+    try {
+      if (!process.env.DATABASE_URL) {
+        return "Erro: DATABASE_URL não configurada. Use get_volume_metrics para métricas de volume.";
+      }
+
+      // ── PRÉ-VALIDAÇÃO (Camada 3) ──
+      const anchor = getCurrentTemporalAnchor() ?? _currentTemporalAnchor;
+      const preVal = preValidateQuery(sql, anchor);
+      if (!preVal.is_valid && preVal.issues.some((i) => i.includes("rejeitada"))) {
+        return `Segurança: ${preVal.issues.join(" ")}`;
+      }
+      const effectiveSql = (preVal.corrected_sql || sql).trim();
+      const preWarnings = preVal.issues.length > 0 ? `⚠️ Pré-validação: ${preVal.issues.join("; ")}\n` : "";
+
+      const client = await dbPool.connect();
+      try {
+        await client.query("BEGIN READ ONLY");
+        await client.query("SET search_path TO atendimento, public");
+        await client.query("SET LOCAL statement_timeout TO '10000'");
+        const result = await client.query(effectiveSql);
+        await client.query("COMMIT");
+        const rows = result.rows;
+
+        if (rows.length === 0) {
+          return `${preWarnings}Consulta executada — 0 registros encontrados.\nSQL: ${effectiveSql}\nDica: verifique o intervalo de datas e os valores dos filtros.`;
+        }
+
+        // ── PÓS-VALIDAÇÃO (Camada 3) ──
+        const postVal = postValidateResults(effectiveSql, rows, anchor);
+        const postSummary = postVal.summary_for_model ? `\n📋 ${postVal.summary_for_model}` : "";
+        const postWarnings = postVal.issues.length > 0 ? `\n⚠️ Pós-validação: ${postVal.issues.join("; ")}` : "";
+
+        // Se dados fora do range, inclui instrução explícita para retry
+        const retryHint = postVal.data_quality.has_out_of_range_data && anchor
+          ? `\n🔄 AÇÃO NECESSÁRIA: Dados fora do período. Re-execute com filtro de data usando: WHERE campo >= ${anchor.sql_start} AND campo < ${anchor.sql_end}`
+          : "";
+
+        const displayed = rows.slice(0, 500);
+        const truncNote = rows.length > 500 ? ` (mostrando 500 de ${rows.length})` : "";
+        return `${preWarnings}✅ ${rows.length} registro(s)${truncNote}.${postSummary}${postWarnings}${retryHint}\nSQL: ${effectiveSql}\n${JSON.stringify(displayed, null, 2)}`;
+      } catch (queryErr) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw queryErr;
+      } finally {
+        client.release();
+      }
+    } catch (e: unknown) {
+      return `Erro SQL: ${e instanceof Error ? e.message : String(e)}\nSQL tentado: ${sql.substring(0, 400)}\nDica: verifique nomes de tabelas/colunas e syntax PostgreSQL.`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FERRAMENTA DETERMINÍSTICA DE VOLUME — get_volume_metrics
+// Usa o Supabase SDK (cliente admin, sem DATABASE_URL) + agregação em JavaScript.
+// Elimina dependência do pg Pool que pode ter problemas de conexão/SSL.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Converte qualquer timestamp ISO para data YYYY-MM-DD no fuso de Brasília.
+function toBRTDateStr(isoStr: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(isoStr));
+}
+
+// Pagina resultados do Supabase (limite padrão = 1000 por request).
+async function supabaseQueryAll<T>(
+  queryBuilder: (range: [number, number]) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+): Promise<T[]> {
+  const results: T[] = [];
+  const PAGE = 1000;
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await queryBuilder([offset, offset + PAGE - 1]);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    results.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return results;
+}
+
+export const getVolumeMetricsTool = new DynamicStructuredTool({
+  name: "get_volume_metrics",
+  description:
+    "Ferramenta PRIORITÁRIA e DETERMINÍSTICA para relatórios de volume comercial. " +
+    "Retorna contagens precisas de chats ativos e mensagens por dia, usando o Supabase SDK (zero risco de falha de conexão). " +
+    "Use SEMPRE que precisar: 'quantas conversas tivemos esta semana', 'volume dia a dia', " +
+    "'relatório de atividade do período', 'picos de demanda', 'total de interações', 'engajamento'. " +
+    "Retorna: volume diário de chats e mensagens, totais do período, breakdown por stage e sentimento.",
+  schema: z.object({
+    start_date: z.string().describe("Data inicial no formato YYYY-MM-DD (ex: '2026-02-24')."),
+    end_date: z.string().describe("Data final no formato YYYY-MM-DD (ex: '2026-02-28')."),
+  }),
+  func: async ({ start_date, end_date }) => {
+    try {
+      // Timestamps com offset BRT (-03:00) garantem filtro correto no fuso de Brasília
+      const startTs = `${start_date}T00:00:00-03:00`;
+      const endTs = `${end_date}T23:59:59.999-03:00`;
+
+      // Busca chats com atividade no período — paginado via Supabase SDK
+      const chatRows = await supabaseQueryAll<{
+        id: number;
+        last_interaction_at: string;
+        created_at: string | null;
+        stage: string | null;
+        ai_sentiment: string | null;
+        is_archived: boolean | null;
+      }>(([from, to]) =>
+        supabase
+          .from("chats")
+          .select("id, last_interaction_at, created_at, stage, ai_sentiment, is_archived")
+          .gte("last_interaction_at", startTs)
+          .lte("last_interaction_at", endTs)
+          .range(from, to)
+      );
+
+      // Diagnóstico quando nenhum chat encontrado no período
+      if (chatRows.length === 0) {
+        const { data: diagData } = await supabase
+          .from("chats")
+          .select("last_interaction_at")
+          .not("last_interaction_at", "is", null)
+          .order("last_interaction_at", { ascending: false })
+          .limit(1);
+        return JSON.stringify({
+          periodo: { start_date, end_date },
+          aviso: `Nenhum chat com atividade encontrado entre ${start_date} e ${end_date}.`,
+          diagnostico: {
+            ultima_interacao_registrada: (diagData as Array<{ last_interaction_at: string }> | null)?.[0]?.last_interaction_at ?? "N/A",
+            sugestao: "Verifique se o período está correto e tente um range de datas que inclua a última interação registrada.",
+          },
+        });
+      }
+
+      // Busca mensagens no período — paginado
+      const msgRows = await supabaseQueryAll<{
+        created_at: string;
+        sender: string | null;
+        chat_id: number;
+      }>(([from, to]) =>
+        supabase
+          .from("chat_messages")
+          .select("created_at, sender, chat_id")
+          .gte("created_at", startTs)
+          .lte("created_at", endTs)
+          .range(from, to)
+      );
+
+      // Agrega chats por dia (fuso Brasília) — derivado das MENSAGENS reais,
+      // não do campo last_interaction_at da tabela chats (que só guarda a última interação
+      // e causava subestimação de 20-64% nos chats ativos por dia).
+      const chatsByDay: Record<string, Set<number>> = {};
+      for (const msg of msgRows) {
+        const day = toBRTDateStr(msg.created_at);
+        if (!chatsByDay[day]) chatsByDay[day] = new Set();
+        chatsByDay[day].add(msg.chat_id);
+      }
+
+      // Agrega mensagens por dia e por tipo de remetente
+      const msgsByDay: Record<string, { total: number; pacientes: number; bot: number; secretaria: number }> = {};
+      for (const msg of msgRows) {
+        const day = toBRTDateStr(msg.created_at);
+        if (!msgsByDay[day]) msgsByDay[day] = { total: 0, pacientes: 0, bot: 0, secretaria: 0 };
+        msgsByDay[day].total++;
+        const s = String(msg.sender ?? "");
+        if (s === "contact" || s === "CUSTOMER") msgsByDay[day].pacientes++;
+        else if (s === "AI_AGENT") msgsByDay[day].bot++;
+        else if (s === "HUMAN_AGENT") msgsByDay[day].secretaria++;
+      }
+
+      // Gera série de datas do período (fuso UTC-neutro: meio-dia UTC para cada dia)
+      const allDays: string[] = [];
+      const cur = new Date(`${start_date}T12:00:00Z`);
+      const endD = new Date(`${end_date}T12:00:00Z`);
+      while (cur <= endD) {
+        allDays.push(cur.toISOString().slice(0, 10));
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
+
+      const volume_diario = allDays.map((day) => ({
+        dia: day,
+        chats_ativos: chatsByDay[day]?.size ?? 0,
+        total_mensagens: msgsByDay[day]?.total ?? 0,
+        msg_pacientes: msgsByDay[day]?.pacientes ?? 0,
+        msg_bot: msgsByDay[day]?.bot ?? 0,
+        msg_secretaria: msgsByDay[day]?.secretaria ?? 0,
+      }));
+
+      // Breakdown por stage e sentimento
+      const stageCount: Record<string, number> = {};
+      const sentimentCount: Record<string, number> = {};
+      for (const chat of chatRows) {
+        const stage = String(chat.stage ?? "unknown");
+        const sentiment = String(chat.ai_sentiment ?? "unknown");
+        stageCount[stage] = (stageCount[stage] ?? 0) + 1;
+        sentimentCount[sentiment] = (sentimentCount[sentiment] ?? 0) + 1;
+      }
+
+      const por_stage = Object.entries(stageCount)
+        .sort((a, b) => b[1] - a[1])
+        .map(([stage, total]) => ({ stage, total }));
+
+      const por_sentimento = Object.entries(sentimentCount)
+        .sort((a, b) => b[1] - a[1])
+        .map(([ai_sentiment, total]) => ({ ai_sentiment, total }));
+
+      // Conta novos chats criados DENTRO do período solicitado
+      const startDt = new Date(startTs);
+      const endDt = new Date(endTs);
+      const novos = chatRows.filter((c) => {
+        if (!c.created_at) return false;
+        const created = new Date(c.created_at);
+        return created >= startDt && created <= endDt;
+      }).length;
+
+      return JSON.stringify({
+        periodo: { start_date, end_date },
+        totais: {
+          chats_com_atividade_no_periodo: chatRows.length,
+          novos_chats_criados_no_periodo: novos,
+          chats_nao_arquivados: chatRows.filter((c) => !c.is_archived).length,
+          total_mensagens_no_periodo: msgRows.length,
+        },
+        volume_diario,
+        por_stage,
+        por_sentimento,
+      });
+    } catch (e: unknown) {
+      return `Erro ao buscar métricas de volume: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FERRAMENTA: criar_agendamento
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const criarAgendamentoTool = new DynamicStructuredTool({
+  name: "criar_agendamento",
+  description:
+    "Cria um agendamento de consulta ou retorno no sistema, vinculado ao chat do paciente. " +
+    "Use quando o usuário pedir para agendar, marcar ou registrar uma consulta. " +
+    "Antes de chamar, confirme com o usuário: nome do paciente, telefone, data e hora desejados e o tipo (consulta ou retorno). " +
+    "A tool busca o paciente pelo telefone e o cria automaticamente se não existir. " +
+    "O médico é resolvido por nome via tabela professionals.",
+  schema: z.object({
+    chat_id: z.number().describe("ID numérico do chat vinculado ao paciente (obrigatório)."),
+    patient_name: z.string().describe("Nome completo do paciente."),
+    patient_phone: z.string().describe("Telefone do paciente ou responsável, somente dígitos (ex: 5599999999999)."),
+    data_hora: z.string().describe("Data e hora do agendamento no formato 'YYYY-MM-DD HH:MM', horário de Brasília (ex: '2026-03-15 09:30')."),
+    tipo: z.enum(["consulta", "retorno"]).describe("Tipo do agendamento: 'consulta' para primeira vez ou consulta normal, 'retorno' para revisão."),
+    motivo: z.string().optional().describe("Motivo ou queixa principal da consulta (ex: 'dor de cabeça', 'check-up anual')."),
+    patient_sex: z.enum(["M", "F"]).optional().describe("Sexo do paciente: 'M' ou 'F'. Identifique pelo nome ou pela conversa."),
+    parent_name: z.string().optional().describe("Nome do acompanhante/responsável, se identificado na conversa."),
+    doctor_name: z.string().optional().describe("Nome do médico responsável. Se não informado, usa o médico padrão da clínica."),
+  }),
+  func: async ({
+    chat_id,
+    patient_name,
+    patient_phone,
+    data_hora,
+    tipo,
+    motivo,
+    patient_sex,
+    parent_name,
+    doctor_name,
+  }) => {
+    try {
+      // 1. Converte data_hora BRT → date e time separados
+      const [datePart, timePart] = data_hora.trim().split(" ");
+      if (!datePart || !timePart) {
+        return `Erro: formato de data_hora inválido. Use 'YYYY-MM-DD HH:MM' (ex: '2026-03-15 09:30').`;
+      }
+      const startTimeBRT = new Date(`${datePart}T${timePart}:00-03:00`);
+      if (isNaN(startTimeBRT.getTime())) {
+        return `Erro: data/hora inválida: '${data_hora}'.`;
+      }
+
+      // 2. Busca paciente pelo telefone — reutiliza se já existir
+      const phoneDigits = patient_phone.replace(/\D/g, "");
+      let patientId: string | null = null;
+
+      const { data: existingPatients } = await supabase
+        .from("patients")
+        .select("id")
+        .or(`phone.ilike.%${phoneDigits.slice(-11).replace(/[%_\\]/g, '\\$&')}%`)
+        .limit(1);
+      const existingPatient = existingPatients?.[0] ?? null;
+
+      if (existingPatient?.id) {
+        patientId = existingPatient.id;
+      } else {
+        // Cria paciente mínimo se não existir
+        const { data: newPatient, error: patientError } = await supabase
+          .from("patients")
+          .insert({
+            full_name: patient_name,
+            phone: phoneDigits,
+            ...(patient_sex ? { sex: patient_sex } : {}),
+            active: true,
+          })
+          .select("id")
+          .single();
+
+        if (patientError) {
+          console.error("[criar_agendamento] Erro ao criar paciente:", patientError);
+          // Continua sem patient_id — o agendamento ainda pode ser salvo
+        } else {
+          patientId = newPatient?.id ?? null;
+        }
+      }
+
+      // 3. Resolve doctor_id a partir do nome via tabela professionals
+      let resolvedDoctorName = doctor_name?.trim() || "";
+      let resolvedDoctorId: string | null = null;
+
+      if (!resolvedDoctorName) {
+        // Busca nome do médico padrão no agent_config
+        const { data: configData } = await supabase
+          .from("agent_config")
+          .select("content")
+          .eq("agent_id", "atendimento_agent")
+          .eq("config_key", "company")
+          .maybeSingle();
+        // Extrai o nome do médico do texto da company (ex: "Dr. Carlos")
+        const match = configData?.content?.match(/Dra?\.\s[\w\s]+/i);
+        resolvedDoctorName = match?.[0]?.trim() || "Médico(a)";
+      }
+
+      // Busca doctor_id na tabela professionals pelo nome
+      if (resolvedDoctorName && resolvedDoctorName !== "Médico(a)") {
+        const { data: profData } = await supabase
+          .from("professionals")
+          .select("id, full_name")
+          .ilike("full_name", `%${resolvedDoctorName.replace(/[%_\\]/g, '\\$&')}%`)
+          .limit(1);
+        if (profData && profData.length > 0) {
+          resolvedDoctorId = profData[0].id;
+          resolvedDoctorName = profData[0].full_name || resolvedDoctorName;
+        }
+      }
+
+      // 4. Insere o agendamento na tabela appointments
+      const { data: appointment, error: apptError } = await supabase
+        .from("appointments")
+        .insert({
+          chat_id,
+          patient_id: patientId,
+          date: datePart,
+          time: timePart + ":00",
+          status: "scheduled",
+          type: tipo,
+          doctor_id: resolvedDoctorId,
+          ...(motivo ? { description: motivo } : {}),
+          ...(parent_name ? { parent_name } : {}),
+          ...(patientId ? {} : { consultation_value: null }),
+        })
+        .select("id")
+        .single();
+
+      if (apptError) {
+        console.error("[criar_agendamento] Erro ao inserir appointment:", apptError);
+        return `Erro ao criar agendamento: ${apptError.message}`;
+      }
+
+      // 5. Atualiza o stage do chat para 'agendando'
+      await supabase
+        .from("chats")
+        .update({ stage: "agendando" })
+        .eq("id", chat_id);
+
+      // 6. Decision tracking: registrar agendamento
+      logDecisionToVault({
+        summary: `Agendamento criado: ${patient_name} — ${tipo} em ${data_hora}`,
+        decided_by: "atendimento_agent",
+        category: "clinico",
+        context: `Paciente: ${patient_name}, Tipo: ${tipo}, Medico: ${resolvedDoctorName}${motivo ? `, Motivo: ${motivo}` : ""}`,
+        related_chats: [chat_id],
+      });
+
+      // 7. Formata confirmação em BRT
+      const dataFormatada = new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(startTimeBRT);
+
+      return [
+        `✅ Agendamento criado com sucesso!`,
+        `  ID: #${appointment.id}`,
+        `  Paciente: ${patient_name}${parent_name ? ` (resp: ${parent_name})` : ""}`,
+        `  Telefone: ${phoneDigits}`,
+        `  Data/Hora: ${dataFormatada}`,
+        `  Tipo: ${tipo === "consulta" ? "Consulta" : "Retorno"}`,
+        `  Médico(a): ${resolvedDoctorName}`,
+        ...(motivo ? [`  Motivo: ${motivo}`] : []),
+        `  Status do chat atualizado para 'agendando'.`,
+      ].join("\n");
+    } catch (e: unknown) {
+      console.error("[criar_agendamento] Erro inesperado:", e);
+      return `Erro inesperado ao criar agendamento: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CAMADA 12: Classificação Segura de Chats — update_chat_classification
+// Tool dedicada para classificar stage/sentiment de UM chat por vez.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const updateChatClassificationTool = new DynamicStructuredTool({
+  name: "update_chat_classification",
+  description: `Atualiza stage e/ou ai_sentiment de UM chat específico.
+Use SOMENTE quando tiver evidência real (de analyze_raw_conversations ou leitura do chat).
+NUNCA classifique em massa sem análise individual.
+Faz log de auditoria de cada alteração.`,
+
+  schema: z.object({
+    chat_id: z.number().describe("ID do chat a classificar"),
+    stage: z
+      .enum(["new", "contacted", "interested", "scheduled", "won", "lost", "no_response"])
+      .optional()
+      .describe("Novo stage do chat"),
+    sentiment: z
+      .enum(["positive", "neutral", "negative", "mixed"])
+      .optional()
+      .describe("Novo sentimento detectado"),
+    reason: z.string().describe("Motivo da classificação (evidência da análise)"),
+  }),
+
+  func: async ({ chat_id, stage, sentiment, reason }) => {
+    const adminSb = createSchemaAdminClient('atendimento');
+
+    const { data: chatRaw } = await adminSb
+      .from("chats")
+      .select("id, contact_name, stage, ai_sentiment")
+      .eq("id", chat_id)
+      .single();
+    const chat = chatRaw as { id: number; contact_name: string; stage: string; ai_sentiment: string } | null;
+
+    if (!chat) return `Erro: Chat ${chat_id} não encontrado.`;
+
+    const updates: Record<string, string> = {};
+    if (stage) updates.stage = stage;
+    if (sentiment) updates.ai_sentiment = sentiment;
+
+    if (Object.keys(updates).length === 0) {
+      return "Nenhum campo para atualizar. Forneça stage ou sentiment.";
+    }
+
+    // @ts-expect-error — Supabase untyped admin client for chats update
+    const { error } = await adminSb.from("chats").update(updates).eq("id", chat_id);
+    if (error) return `Erro ao atualizar: ${error instanceof Error ? error.message : String(error)}`;
+
+    const logEntry = `Chat ${chat_id} (${chat.contact_name}): ${stage ? `stage ${chat.stage} → ${stage}` : ""}${stage && sentiment ? ", " : ""}${sentiment ? `sentiment ${chat.ai_sentiment} → ${sentiment}` : ""}. Motivo: ${reason}`;
+
+    // Audit log → vault (feedback_melhoria) em vez de agent_memories
+    try {
+      const { getMemoryIndex: getIdx } = await import("@/ai/vault/memory-index");
+      const idx = await getIdx();
+      const emb = await embedText768(`Reclassificação: ${logEntry}`);
+      await idx.saveEntry({ content: `Reclassificação de chat: ${logEntry}`, memory_type: "feedback_melhoria", quality_score: 30, source_role: "system" }, emb);
+    } catch { /* best-effort audit */ }
+
+    // Decision tracking: registrar reclassificacao
+    logDecisionToVault({
+      summary: `Chat ${chat_id} reclassificado: ${stage ? `stage → ${stage}` : ""}${sentiment ? `sentiment → ${sentiment}` : ""}`,
+      decided_by: "atendimento_agent",
+      category: "operacional",
+      context: reason,
+      related_chats: [chat_id],
+    });
+
+    return `✅ ${logEntry}`;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CAMADA 13: Tarefas Agendadas — schedule_task / list / cancel
+// O agente pode agendar tarefas para si mesmo executar no futuro (proatividade).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MAX_ACTIVE_TASKS = 20;
+const MAX_MONITOR_REPEATS = 8;
+
+export const scheduleTaskTool = new DynamicStructuredTool({
+  name: "schedule_task",
+  description: `Agendar uma tarefa para VOCÊ MESMO executar no futuro.
+Tipos: check_and_act (verificar condição e agir), study (estudar tema), report (gerar relatório), monitor (checar periodicamente), remind (lembrete).
+A instrução será enviada a você como mensagem no horário agendado. Máximo 20 tasks ativas. TTL máximo 7 dias.
+NÃO use para enviar mensagens diretamente a pacientes — apenas tarefas internas.`,
+
+  schema: z.object({
+    task_type: z.string()
+      .describe("Tipo da tarefa. Valores válidos: check_and_act, study, report, monitor, remind"),
+    title: z.string().describe("Título curto (ex: 'Checar resposta chat #42')"),
+    description: z.string().describe("O que precisa ser feito e por quê"),
+    instruction: z.string().describe("Comando exato que você receberá quando a tarefa for executada. Seja específico e detalhado."),
+    run_at: z.string().describe("Quando executar (ISO 8601 com timezone BRT, ex: '2026-03-22T14:00:00-03:00')"),
+    priority: z.string().optional().describe("Prioridade: low, medium ou high (default: medium)"),
+    repeat_interval_minutes: z.number().optional().describe("Repetir a cada N minutos (só para tipo 'monitor')"),
+    max_repeats: z.number().optional().describe("Máximo de repetições (default: 1, monitor max: 8)"),
+    context: z.string().optional().describe("JSON string com metadata extra (chat_id, patient_id, etc.)"),
+  }),
+
+  func: async ({ task_type, title, description, instruction, run_at, priority, repeat_interval_minutes, max_repeats, context }) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const adminSb = createSchemaAdminClient('atendimento') as any;
+
+      // Validar limite de tasks ativas
+      const { count } = await adminSb.from("agent_scheduled_tasks").select("*", { count: "exact", head: true }).in("status", ["pending", "running"]);
+
+      if ((count ?? 0) >= MAX_ACTIVE_TASKS) {
+        return `Erro: Limite de ${MAX_ACTIVE_TASKS} tarefas ativas atingido. Cancele tarefas antigas antes de criar novas.`;
+      }
+
+      // Validar monitor
+      const effectiveMaxRepeats = task_type === "monitor"
+        ? Math.min(max_repeats || 4, MAX_MONITOR_REPEATS)
+        : max_repeats || 1;
+
+      if (repeat_interval_minutes && task_type !== "monitor") {
+        return "Erro: repeat_interval_minutes só pode ser usado com task_type 'monitor'.";
+      }
+
+      // Validar run_at no futuro
+      const runAtDate = new Date(run_at);
+      if (isNaN(runAtDate.getTime())) {
+        return "Erro: run_at inválido. Use formato ISO 8601 (ex: '2026-03-22T14:00:00-03:00').";
+      }
+      if (runAtDate.getTime() < Date.now() - 60000) {
+        return "Erro: run_at deve ser no futuro.";
+      }
+
+      // INSERT
+      // Parsear context se for string JSON
+      let parsedContext = {};
+      if (context) {
+        try { parsedContext = JSON.parse(context); } catch { parsedContext = { raw: context }; }
+      }
+
+      const { data, error } = await adminSb.from("agent_scheduled_tasks").insert({ task_type, title, description, instruction, run_at: runAtDate.toISOString(), priority: priority || "medium", repeat_interval_minutes: repeat_interval_minutes || null, max_repeats: effectiveMaxRepeats, context: parsedContext }).select("id, run_at, expires_at").single();
+
+      if (error) return `Erro ao agendar: ${error.message}`;
+
+      const taskData = data as { id: number; run_at: string; expires_at: string };
+
+      // Vault sync (fire-and-forget)
+      import("@/ai/vault/sync").then(({ syncScheduledTaskToVault }) => {
+        syncScheduledTaskToVault(taskData.id, title, task_type, instruction, run_at, "pending").catch(() => {});
+      }).catch(() => {});
+
+      return `✅ Tarefa #${taskData.id} agendada: "${title}" (${task_type})
+⏰ Execução: ${new Date(taskData.run_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+⏳ Expira: ${new Date(taskData.expires_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}${repeat_interval_minutes ? `\n🔄 Repetição: a cada ${repeat_interval_minutes}min (max ${effectiveMaxRepeats}x)` : ""}`;
+    } catch (e) {
+      return `Erro inesperado: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  },
+});
+
+export const listScheduledTasksTool = new DynamicStructuredTool({
+  name: "list_scheduled_tasks",
+  description: "Listar suas tarefas agendadas. Use para verificar o que está pendente, em execução ou concluído.",
+
+  schema: z.object({
+    status: z.enum(["pending", "running", "completed", "failed", "cancelled", "expired", "all"])
+      .optional()
+      .describe("Filtrar por status (default: pending)"),
+    limit: z.number().optional().describe("Máximo de resultados (default: 10)"),
+  }),
+
+  func: async ({ status, limit }) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const adminSb = createSchemaAdminClient('atendimento') as any;
+      const effectiveLimit = Math.min(limit || 10, 50);
+
+      let query = adminSb.from("agent_scheduled_tasks").select("id, task_type, title, status, priority, run_at, execution_count, max_repeats, executed_at, error, created_at").order("run_at", { ascending: true }).limit(effectiveLimit);
+
+      if (status && status !== "all") {
+        query = query.eq("status", status);
+      }
+
+      const { data, error } = await query;
+      if (error) return `Erro: ${error.message}`;
+
+      const tasks = data as Array<{
+        id: number; task_type: string; title: string; status: string;
+        priority: string; run_at: string; execution_count: number;
+        max_repeats: number; executed_at: string | null; error: string | null; created_at: string;
+      }>;
+
+      if (!tasks || tasks.length === 0) {
+        return `Nenhuma tarefa ${status === "all" ? "" : `com status '${status || "pending"}'`} encontrada.`;
+      }
+
+      const lines = tasks.map((t) => {
+        const runAt = new Date(t.run_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        const statusIcon = { pending: "⏳", running: "🔄", completed: "✅", failed: "❌", cancelled: "🚫", expired: "⌛" }[t.status] || "❓";
+        const repeatInfo = t.max_repeats > 1 ? ` (${t.execution_count}/${t.max_repeats})` : "";
+        return `${statusIcon} #${t.id} [${t.task_type}/${t.priority}] "${t.title}" — ${runAt}${repeatInfo}${t.error ? ` — Erro: ${t.error.slice(0, 80)}` : ""}`;
+      });
+
+      return `📋 Tarefas (${tasks.length}):\n${lines.join("\n")}`;
+    } catch (e) {
+      return `Erro: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  },
+});
+
+export const cancelScheduledTaskTool = new DynamicStructuredTool({
+  name: "cancel_scheduled_task",
+  description: "Cancelar uma tarefa agendada que não é mais necessária. Só pode cancelar tarefas com status 'pending'.",
+
+  schema: z.object({
+    task_id: z.number().describe("ID da tarefa a cancelar"),
+    reason: z.string().describe("Por que está cancelando"),
+  }),
+
+  func: async ({ task_id, reason }) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const adminSb = createSchemaAdminClient('atendimento') as any;
+
+      const { data, error } = await adminSb.from("agent_scheduled_tasks").update({ status: "cancelled", result: `Cancelada: ${reason}`, executed_at: new Date().toISOString() }).eq("id", task_id).eq("status", "pending").select("id, title").single();
+
+      if (error) return `Erro ao cancelar: ${error.message}`;
+
+      const task = data as { id: number; title: string } | null;
+      if (!task) return `Tarefa #${task_id} não encontrada ou não está pendente.`;
+
+      return `🚫 Tarefa #${task.id} "${task.title}" cancelada. Motivo: ${reason}`;
+    } catch (e) {
+      return `Erro: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET DAILY KPIs — KPIs pré-computados (TIER 1 — mais rápido)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getDailyKpisTool = new DynamicStructuredTool({
+  name: "get_daily_kpis",
+  description: `Retorna KPIs pré-computados da clínica por período. Muito mais rápido que analisar conversas.
+Use ANTES de analyze_raw_conversations para qualquer pergunta sobre métricas, desempenho, objeções, conversão.
+Cobre: receita, funil, objeções, operacional, sentimento, urgências.
+Disponível para qualquer dia desde 21/03/2026.`,
+
+  schema: z.object({
+    start_date: z.string().describe("Data início YYYY-MM-DD"),
+    end_date: z.string().optional().describe("Data fim YYYY-MM-DD (opcional, default = start_date)"),
+    kpi_group: z.enum(["all", "receita", "funil", "objecoes", "operacional", "crescimento"]).optional()
+      .default("all")
+      .describe("Grupo de KPIs para retornar. Default: all"),
+  }),
+
+  func: async ({ start_date, end_date, kpi_group }) => {
+    try {
+      const endDate = end_date || start_date;
+      const adminSb = createSchemaAdminClient('atendimento');
+
+      const { data, error } = await adminSb
+        .from("daily_kpi_snapshots")
+        .select("*")
+        .gte("date", start_date)
+        .lte("date", endDate)
+        .order("date", { ascending: true });
+
+      if (error) return `Erro ao buscar KPIs: ${error.message}`;
+
+      // Gerar lista de todas as datas no range
+      const allDates: string[] = [];
+      const cur = new Date(start_date + "T12:00:00Z");
+      const end = new Date(endDate + "T12:00:00Z");
+      while (cur <= end) {
+        allDates.push(cur.toISOString().slice(0, 10));
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      const dataMap = new Map<string, Record<string, unknown>>();
+      if (data) {
+        for (const row of data as Record<string, unknown>[]) {
+          dataMap.set(row.date as string, row);
+        }
+      }
+
+      const group = kpi_group || "all";
+
+      const results = allDates.map((date) => {
+        const row = dataMap.get(date);
+        if (!row) {
+          return { date, status: "not_computed", hint: "Use analyze_raw_conversations para esse período" };
+        }
+
+        if (group === "all") return row;
+
+        // Filtrar por grupo
+        const base: Record<string, unknown> = { date: row.date, computed_at: row.computed_at };
+
+        if (group === "receita") {
+          return {
+            ...base,
+            receita_confirmada: row.receita_confirmada,
+            receita_potencial_perdida: row.receita_potencial_perdida,
+            ticket_medio: row.ticket_medio,
+            agendamentos_novos: row.agendamentos_novos,
+            agendamentos_retorno: row.agendamentos_retorno,
+          };
+        }
+        if (group === "funil") {
+          return {
+            ...base,
+            novos_contatos: row.novos_contatos,
+            chats_com_resposta: row.chats_com_resposta,
+            chats_sem_resposta: row.chats_sem_resposta,
+            taxa_resposta: row.taxa_resposta,
+            tempo_medio_resposta_min: row.tempo_medio_resposta_min,
+            taxa_conversao: row.taxa_conversao,
+          };
+        }
+        if (group === "objecoes") {
+          return {
+            ...base,
+            objecao_preco: row.objecao_preco,
+            objecao_vaga: row.objecao_vaga,
+            objecao_distancia: row.objecao_distancia,
+            objecao_especialidade: row.objecao_especialidade,
+            ghosting_pos_preco: row.ghosting_pos_preco,
+            details_top_objections: (row.details as Record<string, unknown>)?.top_objections,
+            details_perdas_por_preco: (row.details as Record<string, unknown>)?.perdas_por_preco,
+          };
+        }
+        if (group === "operacional") {
+          return {
+            ...base,
+            msgs_por_chat_media: row.msgs_por_chat_media,
+            chats_fora_horario: row.chats_fora_horario,
+            urgencias_identificadas: row.urgencias_identificadas,
+            urgencias_atendidas: row.urgencias_atendidas,
+            total_chats_analisados: row.total_chats_analisados,
+            total_mensagens: row.total_mensagens,
+            details_urgencias: (row.details as Record<string, unknown>)?.urgencias,
+          };
+        }
+        if (group === "crescimento") {
+          return {
+            ...base,
+            sentimento_positivo: row.sentimento_positivo,
+            sentimento_neutro: row.sentimento_neutro,
+            sentimento_negativo: row.sentimento_negativo,
+          };
+        }
+
+        return row;
+      });
+
+      return JSON.stringify(results, null, 2);
+    } catch (err) {
+      return `Erro: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPORTS: Ferramentas do Agente de Clínica Geral
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Ferramentas do simple_agent (agente principal de clínica geral).
+export const clinicaGeralTools = [
+  askUserQuestionTool,              // Perguntas interativas com sugestões
+  getDailyKpisTool,                 // TIER 1 — KPIs pré-computados (<2s)
+  getVolumeMetricsTool,             // Rápida e determinística — use primeiro para volume
+  executeSqlTool,                   // SQL direto para qualquer outra consulta
+  analyzeRawConversationsTool,      // Análise direta na fonte
+  updateChatClassificationTool,     // Classificação segura de chats
+  readBrainFilesTool,
+  updateBrainFileTool,
+  manageLongTermMemoryTool,
+  saveAuthoritativeKnowledgeTool,
+  manageChatNotesTool,
+  extractAndSaveKnowledgeTool,
+  searchKnowledgeBaseTool,
+  saveReportTool,
+  generateDeepReportTool,           // Super relatório via Gemini Pro + PDF
+  analisarChatEspecificoTool,       // Mantida para análise estruturada individual
+  criarAgendamentoTool,
+  scheduleTaskTool,                 // Proatividade: agendar tarefas futuras
+  listScheduledTasksTool,           // Listar tarefas agendadas
+  cancelScheduledTaskTool,          // Cancelar tarefa agendada
+];
+
+// Ferramentas expostas aos Researchers do subgrafo de pesquisa paralela.
+export const allResearchTools = [
+  getDailyKpisTool,
+  getVolumeMetricsTool,
+  executeSqlTool,
+  analyzeRawConversationsTool,
+  analisarChatEspecificoTool,
+  searchKnowledgeBaseTool,
+  manageLongTermMemoryTool,
+  saveReportTool,
+];
+
+// Re-exports para o graph.ts
+export { analyzeRawConversationsTool, askUserQuestionTool };

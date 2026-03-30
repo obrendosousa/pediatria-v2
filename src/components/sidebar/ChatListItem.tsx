@@ -2,11 +2,11 @@
 
 import { memo, useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  Pin, Trash2, Mail, ChevronDown, 
+import {
+  Pin, Trash2, Mail, ChevronDown,
   CheckCheck, Check, Tag, UserCog, Archive,
   Camera, Mic, Sticker, FileText, Video, Ban, CheckCircle2,
-  Bot, Sparkles, User // Ícones novos para a IA
+  Bot, Sparkles, User, Users // Ícones novos para a IA e Grupos
 } from 'lucide-react';
 import { Chat } from '@/types';
 import { TagData, formatTime } from '@/utils/sidebarUtils';
@@ -47,8 +47,9 @@ const ChatListItem = memo(({
     const [avatarErrorState, setAvatarErrorState] = useState<{ key: string; error: boolean }>({ key: avatarKey, error: false });
     const avatarError = avatarErrorState.key === avatarKey && avatarErrorState.error;
 
-    // Identificador para o chat da IA
+    // Identificador para o chat da IA e grupos
     const isAIChat = chat.phone === '00000000000';
+    const isGroupChat = chat.is_group === true;
 
     useLayoutEffect(() => {
         if (!isMenuOpen || !triggerRef.current || typeof document === 'undefined') return;
@@ -282,8 +283,20 @@ const ChatListItem = memo(({
             <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm border border-indigo-400/30">
               <Bot size={24} className="text-white" />
             </div>
+          ) : isGroupChat ? (
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-[#2a2a30]"
+              style={!chat.profile_pic || avatarError ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
+            >
+              {chat.profile_pic && !avatarError ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={chat.profile_pic} alt="Grupo" className="w-full h-full object-cover" onError={() => setAvatarErrorState({ key: avatarKey, error: true })} loading="lazy" />
+              ) : (
+                <Users size={22} style={{ color: getAvatarTextColor(chat.id) }} />
+              )}
+            </div>
           ) : (
-            <div 
+            <div
               className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-gray-100 dark:border-[#2a2a30]"
               style={!chat.profile_pic || avatarError ? { backgroundColor: getAvatarColorHex(chat.id) } : {}}
             >

@@ -48,7 +48,13 @@ export async function POST(req: Request) {
       } else {
         try {
           const cleanPhone = rawPhone.replace(/\D/g, '');
-          const remoteJid = `${cleanPhone}@s.whatsapp.net`;
+          // Verificar se é grupo para usar group_jid
+          const { data: chatRowForJid } = await supabase
+            .from('chats')
+            .select('is_group, group_jid')
+            .eq('phone', cleanPhone)
+            .maybeSingle();
+          const remoteJid = (chatRowForJid?.is_group && chatRowForJid?.group_jid) ? chatRowForJid.group_jid : `${cleanPhone}@s.whatsapp.net`;
           console.log(`[Delete API] Revogando mensagem ${wppId} no WhatsApp (remoteJid: ${remoteJid})...`);
           const response = await evolutionRequest('/chat/deleteMessageForEveryone/{instance}', {
             method: 'DELETE',
@@ -124,8 +130,8 @@ export async function POST(req: Request) {
       skippedNoWppId: orchestration.skippedNoWppId,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Delete API] Erro Geral:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Erro desconhecido' }, { status: 500 });
   }
 }

@@ -34,7 +34,10 @@ export async function POST(req: Request) {
           const res = await fetch(endpoint, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json', apikey: cfg.apiKey },
-            body: JSON.stringify({ id: wppId, remoteJid: `${cleanPhone}@s.whatsapp.net`, fromMe: true }),
+            body: JSON.stringify({ id: wppId, remoteJid: await (async () => {
+              const { data: chatRowForJid } = await supabase.from('chats').select('is_group, group_jid').eq('phone', cleanPhone).maybeSingle();
+              return (chatRowForJid?.is_group && chatRowForJid?.group_jid) ? chatRowForJid.group_jid : `${cleanPhone}@s.whatsapp.net`;
+            })(), fromMe: true }),
           });
           if (res.ok) whatsappDeleted = true;
         }
@@ -64,8 +67,8 @@ export async function POST(req: Request) {
       whatsappDeleted,
       skippedNoWppId: orchestration.skippedNoWppId,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[ATD/Delete] Erro:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Erro desconhecido' }, { status: 500 });
   }
 }

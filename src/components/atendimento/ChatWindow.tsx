@@ -714,7 +714,7 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
     if (!chat?.id || isLoadingAISuggestion) return;
     setIsLoadingAISuggestion(true);
     try {
-      const res = await fetch('/api/ai/copilot/trigger', {
+      const res = await fetch('/api/ai/clinica-geral/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: chat.id }),
@@ -1036,6 +1036,7 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
               if (draftPhase === 'minimized') setDraftPhase('expanded');
               if (schedulePhase === 'minimized') setSchedulePhase('expanded');
             }}
+            module="atendimento"
           />
         </div>
       </div>

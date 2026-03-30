@@ -37,6 +37,7 @@ interface MessageBubbleProps {
   onStartSelection?: (msg: Message) => void;
   animate?: boolean;
   isAIChat?: boolean;
+  isGroupChat?: boolean;
 }
 
 function emojiToUnified(emoji: string): string {
@@ -203,7 +204,8 @@ function MessageBubble({
   onToggleSelect,
   onStartSelection,
   animate = false,
-  isAIChat = false
+  isAIChat = false,
+  isGroupChat = false,
 }: MessageBubbleProps) {
   const toMacroPayload = useCallback(() => {
     const msgType = String(message.message_type || 'text').toLowerCase();
@@ -831,6 +833,15 @@ function MessageBubble({
       <div
         className={`relative max-w-[90%] sm:max-w-[85%] md:max-w-[65%] w-fit ${(!isSticker && !isRevoked && !isAnyMediaMsg) ? 'min-w-[80px]' : 'min-w-0'} shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] ${finalBgClass} ${roundedClass} ${isSticker || (isAnyMediaMsg && !isMediaWithCaption && message.message_type !== 'document') ? 'p-0 overflow-hidden' : isMediaWithCaption ? 'p-0 overflow-hidden' : isRevoked ? 'px-3 py-2 pb-[20px]' : 'px-[9px] pb-[22px]'} flex flex-col overflow-visible ${isSelectionMode && isSelected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
       >
+        {/* Nome do participante em mensagens de grupo */}
+        {isGroupChat && !isMe && (message.participant_name || message.participant_phone) && (
+          <p
+            className="text-[12px] font-semibold px-1 pt-1 pb-0 truncate"
+            style={{ color: getAvatarColorHex(message.participant_phone || '') }}
+          >
+            {message.participant_name || message.participant_phone}
+          </p>
+        )}
 
         {/* Conteúdo */}
         <div className="min-w-0 overflow-hidden break-words">

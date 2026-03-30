@@ -22,6 +22,10 @@ export interface Message {
   user_message?: string;
   auto_sent_pause_session?: string | null; // UUID da sessão de pausa que enviou esta mensagem
 
+  // Campos de grupo (quem enviou a mensagem dentro do grupo)
+  participant_phone?: string;
+  participant_name?: string;
+
   reactions?: Array<{
     emoji: string;
     sender_phone?: string | null;
@@ -109,6 +113,19 @@ export interface Chat {
   
   // Relacionamento com Paciente
   patient_id?: number | null; // ID do paciente vinculado
+
+  // --- CAMPOS DE GRUPO WHATSAPP ---
+  is_group?: boolean;
+  group_jid?: string;
+  group_metadata?: {
+    subject?: string;
+    desc?: string;
+    owner?: string;
+    size?: number;
+    creation?: number;
+    participants?: Array<{ id: string; admin?: string | null }>;
+    [key: string]: unknown;
+  };
 
   // --- NOVOS CAMPOS PARA BARRA LATERAL (WHATSAPP STYLE) ---
   unread_count?: number;

@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, @next/next/no-img-element */
 'use client';
 
-import { MoreVertical, Trash2, UserCog, Sparkles, Loader2, Bot } from 'lucide-react';
+import { MoreVertical, Trash2, UserCog, Sparkles, Loader2, Bot, Users } from 'lucide-react';
 import { getAvatarColorHex, getAvatarTextColor } from '@/utils/colorUtils';
 import { Chat } from '@/types';
 import { useState, useEffect, useRef } from 'react';
@@ -30,6 +30,7 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
   const schema = moduleCtx?.config?.schema || 'public';
 
   const isAIChat = chat?.phone === '00000000000';
+  const isGroupChat = chat?.is_group === true;
 
   useEffect(() => {
     setAvatarError(false);
@@ -93,8 +94,26 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm border border-indigo-400/30">
                     <Bot size={22} className="text-white" />
                   </div>
+                ) : isGroupChat ? (
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 border-white/50 dark:border-gray-600"
+                    style={!chat?.profile_pic || avatarError ? { backgroundColor: getAvatarColorHex(chat?.id || 0) } : {}}
+                  >
+                      {chat?.profile_pic && !avatarError ? (
+                        <img
+                          src={chat.profile_pic}
+                          alt="Grupo"
+                          className="w-full h-full object-cover"
+                          onError={() => setAvatarError(true)}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <Users size={20} style={{ color: getAvatarTextColor(chat?.id || 0) }} />
+                      )}
+                  </div>
                 ) : (
-                  <div 
+                  <div
                     className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 border-white/50 dark:border-gray-600"
                     style={!chat?.profile_pic || avatarError ? { backgroundColor: getAvatarColorHex(chat?.id || 0) } : {}}
                   >
@@ -114,17 +133,21 @@ export default function ChatHeader({ chat, loadingMsgs, onChatUpdate, onAISchedu
                       )}
                   </div>
                 )}
-                
+
                 <div>
                 <h2 className="font-medium text-gray-800 dark:text-[#fafafa] flex items-center gap-1.5">
                   {isAIChat && <Sparkles size={16} className="text-indigo-500" />}
-                  {/* NOME ATUALIZADO PARA CLARA AQUI */}
+                  {isGroupChat && <Users size={16} className="text-[var(--chat-accent)]" />}
                   {isAIChat ? '🤖 Clara' : (chat?.contact_name || chat?.phone)}
                 </h2>
                 <p className="text-[12px] text-gray-500 dark:text-[#a1a1aa]">
-                  {loadingMsgs ? 'Carregando...' : (isAIChat ? 'Inteligência Artificial Interna' : chat?.phone)}
+                  {loadingMsgs ? 'Carregando...' : (
+                    isAIChat ? 'Inteligência Artificial Interna'
+                    : isGroupChat ? `Grupo · ${chat?.group_metadata?.size || ''} participantes`
+                    : chat?.phone
+                  )}
                 </p>
-                {!isAIChat && isUnsavedContact && (
+                {!isAIChat && !isGroupChat && isUnsavedContact && (
                   <button
                     onClick={() => setIsEditModalOpen(true)}
                     className="mt-1 text-[11px] font-semibold text-[var(--chat-accent)] hover:opacity-80 dark:text-[var(--chat-accent)] cursor-pointer transition-opacity"

@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { EvolutionWebhookData } from "@/ai/ingestion/state";
 import { createClient } from "@supabase/supabase-js";
 import { logWebhook } from "@/lib/webhookLogger";
+import { isGroupJid, ensureGroupChatExists, normalizeJidToPhone } from "@/lib/whatsappGroup";
+import { saveMessageToDb } from "@/ai/ingestion/services";
 
 // Política anti-restauração: após reconnect, ignora backlog/histórico e segue apenas mensagens novas.
 const INGESTION_START_TS_MS = Date.now();
@@ -462,11 +464,6 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
       continue;
     }
 
-    // --- FILTRO: IGNORAR MENSAGENS DE GRUPO ---
-    if (remoteJid.endsWith("@g.us")) {
-      continue;
-    }
-
     // --- RESOLUÇÃO DE LID: usar senderPn ou remoteJidAlt (Evolution API v2) ---
     const senderPn = (keyRaw.senderPn ?? item.senderPn) as string | undefined;
     const remoteJidAlt = (keyRaw.remoteJidAlt ?? item.remoteJidAlt) as string | undefined;
@@ -544,7 +541,10 @@ async function upsertReactionMessage(message: EvolutionWebhookData) {
   const emoji = typeof reaction.text === "string" ? reaction.text.trim() : "";
   const remoteJid = String(reaction.key.remoteJid || message.key?.remoteJid || "").trim() || null;
   const fromMe = Boolean(message.key?.fromMe ?? reaction.key.fromMe);
-  const senderPhone = fromMe ? "__me__" : extractPhoneFromRemoteJid(remoteJid);
+  // Para grupos, usar o participant (quem reagiu) ao invés do remoteJid (que é o grupo)
+  const participantJid = message.key?.participant || null;
+  const isGroup = remoteJid ? remoteJid.endsWith("@g.us") : false;
+  const senderPhone = fromMe ? "__me__" : (isGroup && participantJid ? extractPhoneFromRemoteJid(participantJid) : extractPhoneFromRemoteJid(remoteJid));
   const senderName = typeof message.pushName === "string" ? message.pushName : null;
 
   const { data: targetMessage } = await supabase
@@ -614,6 +614,83 @@ function isMessageBeforeIngestionStart(timestamp: number | string | undefined): 
   const ts = toTimestampMs(timestamp);
   if (ts == null) return false;
   return ts < (INGESTION_START_TS_MS - INCOMING_CLOCK_SKEW_MS);
+}
+
+// ==================== INGESTÃO DE MENSAGENS DE GRUPO ====================
+
+function toIsoFromTimestamp(ts: number | string | undefined): string {
+  if (!ts) return new Date().toISOString();
+  let n = Number(ts);
+  if (!Number.isFinite(n) || n <= 0) return new Date().toISOString();
+  if (n < 1000000000000) n *= 1000;
+  return new Date(n).toISOString();
+}
+
+async function ingestGroupMessage(message: EvolutionWebhookData) {
+  const supabase = getSupabase();
+  const remoteJid = String(message.key?.remoteJid || "");
+  const isMe = Boolean(message.key?.fromMe);
+  const pushName = message.pushName || undefined;
+  const myPhone = (process.env.EVOLUTION_MY_PHONE || "").replace(/\D/g, "");
+
+  // Participante: quem enviou a mensagem dentro do grupo
+  const participantJid = message.key?.participant || "";
+  const participantPhone = normalizeJidToPhone(participantJid);
+  const participantName = pushName && pushName !== participantPhone ? pushName : undefined;
+
+  // Garantir que o chat do grupo existe
+  const chat = await ensureGroupChatExists(remoteJid, supabase, pushName, 'EVOLUTION_INSTANCE');
+  if (!chat?.id) {
+    console.error(`[ingestGroupMessage] Falha ao criar/buscar chat do grupo ${remoteJid}`);
+    return;
+  }
+
+  // Determinar sender
+  const sender = (isMe || participantPhone === myPhone) ? "HUMAN_AGENT" : "CUSTOMER";
+
+  // Extrair conteúdo da mensagem
+  const content = extractTextFromAnyMessage(message.message) || "";
+  const msgType = message.messageType || "text";
+
+  // Mapear tipo
+  const typeMap: Record<string, string> = {
+    conversation: "text", extendedTextMessage: "text",
+    imageMessage: "image", videoMessage: "video",
+    audioMessage: "audio", stickerMessage: "sticker",
+    documentMessage: "document", documentWithCaptionMessage: "document",
+    contactMessage: "contact", contactsArrayMessage: "contact",
+    locationMessage: "text", liveLocationMessage: "text",
+  };
+  const type = typeMap[msgType] || "text";
+
+  // Media URL (se houver base64, ignorar — será processado no upload)
+  const msgObj = (message.message || {}) as Record<string, any>;
+  const mediaFields = msgObj.imageMessage || msgObj.videoMessage || msgObj.audioMessage ||
+    msgObj.stickerMessage || msgObj.documentMessage || {};
+  const mediaUrl = mediaFields.url || undefined;
+
+  const wppId = String(message.key?.id || `grp_${Date.now()}`);
+
+  await saveMessageToDb({
+    chat_id: chat.id,
+    phone: chat.phone,
+    content,
+    sender: sender as "HUMAN_AGENT" | "CUSTOMER",
+    type,
+    media_url: mediaUrl,
+    wpp_id: wppId,
+    message_timestamp_iso: toIsoFromTimestamp(message.messageTimestamp),
+    forwarded: (message as any).isForwarded === true,
+    participant_phone: participantPhone || undefined,
+    participant_name: participantName || undefined,
+  });
+
+  logWebhook({
+    schema_source: "public", event: "messages.upsert", status: "processed",
+    remote_jid: remoteJid, phone: chat.phone,
+    message_type: msgType, push_name: pushName, wpp_id: wppId,
+    resolver_info: { group: true, participant: participantPhone },
+  });
 }
 
 /**
@@ -784,6 +861,13 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
         Boolean((message.message as Record<string, unknown> | undefined)?.reactionMessage);
       if (isReaction) {
         await upsertReactionMessage(message);
+        continue;
+      }
+
+      // 3. Mensagens de grupo: processar inline sem passar pelo grafo de IA
+      const msgRemoteJid = String(message.key?.remoteJid || "");
+      if (isGroupJid(msgRemoteJid)) {
+        await ingestGroupMessage(message);
         continue;
       }
 

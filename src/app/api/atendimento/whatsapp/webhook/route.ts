@@ -4,6 +4,7 @@ import { createSchemaAdminClient } from '@/lib/supabase/schemaServer';
 import { EvolutionWebhookData } from '@/ai/ingestion/state';
 import { handleMediaUpload, normalizeJidToPhone, isLidJid, resolveLidToPhone, fetchProfilePictureFromEvolution } from '@/ai/ingestion/services';
 import { logWebhook } from '@/lib/webhookLogger';
+import { isGroupJid, ensureGroupChatExists, normalizeJidToPhone as normalizeGroupJid } from '@/lib/whatsappGroup';
 
 const SCHEMA = 'atendimento';
 
@@ -289,7 +290,6 @@ function normalizeMessagesFromWebhook(body: unknown): EvolutionWebhookData[] {
 
     let remoteJid = toRemoteJid(keyRaw.remoteJid ?? item.remoteJid ?? item.jid ?? item.from ?? item.sender ?? item.number ?? item.phone);
     if (!remoteJid || remoteJid === 'status@broadcast') continue;
-    if (remoteJid.endsWith('@g.us')) continue;
 
     // --- RESOLUÇÃO DE LID: usar senderPn ou remoteJidAlt (Evolution API v2) ---
     const senderPn = (keyRaw.senderPn ?? item.senderPn) as string | undefined;
@@ -361,7 +361,10 @@ async function upsertReactionMessage(message: EvolutionWebhookData) {
   const emoji = typeof reaction.text === 'string' ? reaction.text.trim() : '';
   const remoteJid = String(reaction.key.remoteJid || message.key?.remoteJid || '').trim() || null;
   const fromMe = Boolean(message.key?.fromMe ?? reaction.key.fromMe);
-  const senderPhone = fromMe ? '__me__' : extractPhoneFromRemoteJid(remoteJid);
+  // Para grupos, usar o participant (quem reagiu) ao invés do remoteJid (que é o grupo)
+  const participantJid = message.key?.participant || null;
+  const isGroupReaction = remoteJid ? remoteJid.endsWith('@g.us') : false;
+  const senderPhone = fromMe ? '__me__' : (isGroupReaction && participantJid ? extractPhoneFromRemoteJid(participantJid) : extractPhoneFromRemoteJid(remoteJid));
   const senderName = typeof message.pushName === 'string' ? message.pushName : null;
 
   const { data: targetMessage } = await supabase
@@ -530,6 +533,13 @@ async function processWebhookBody(body: Record<string, unknown>, requestUrl = ''
       const isReaction = message.messageType === 'reactionMessage' || Boolean((message.message as Record<string, unknown> | undefined)?.reactionMessage);
       if (isReaction) { await upsertReactionMessage(message); continue; }
 
+      // Mensagens de grupo: processar com lógica de grupo
+      const msgJid = String(message.key?.remoteJid || '');
+      if (isGroupJid(msgJid)) {
+        await ingestGroupMessageToAtendimento(message);
+        continue;
+      }
+
       await ingestMessageToAtendimento(message);
     }
 
@@ -551,6 +561,87 @@ function toIsoFromTimestamp(input: number | string | undefined): string {
 
 function normalizePhone(value?: string | null) {
   return (value ?? '').replace(/\D/g, '');
+}
+
+// ── INGESTÃO DE MENSAGENS DE GRUPO (schema atendimento) ──────────────────
+
+async function ingestGroupMessageToAtendimento(message: EvolutionWebhookData) {
+  try {
+    const supabase = getSupabase();
+    const groupJid = String(message.key?.remoteJid ?? '').trim();
+    const isMe = Boolean(message.key?.fromMe);
+    const pushName = message.pushName || undefined;
+    const myPhone = (process.env.EVOLUTION_ATENDIMENTO_MY_PHONE || '').replace(/\D/g, '');
+
+    // Participante: quem enviou a mensagem dentro do grupo
+    const participantJid = message.key?.participant || '';
+    const participantPhone = normalizeGroupJid(participantJid);
+    const participantName = pushName && pushName !== participantPhone ? pushName : undefined;
+
+    // Garantir que o chat do grupo existe
+    const chat = await ensureGroupChatExists(groupJid, supabase, pushName, 'EVOLUTION_ATENDIMENTO_INSTANCE');
+    if (!chat?.id) {
+      console.error(`[ATD/GroupIngest] Falha ao criar/buscar chat do grupo ${groupJid}`);
+      return;
+    }
+
+    // Determinar sender
+    const sender = (isMe || participantPhone === myPhone) ? 'HUMAN_AGENT' : 'CUSTOMER';
+
+    // Extrair conteúdo
+    const content = extractTextFromAnyMessage(message.message) || '';
+    const msgType = message.messageType || 'text';
+    const msg = message.message as Record<string, unknown>;
+
+    // Mapear tipo e fazer upload de mídia se necessário
+    let type = 'text';
+    let mediaUrl: string | undefined;
+    const instanceKey = 'EVOLUTION_ATENDIMENTO_INSTANCE';
+
+    if (msgType === 'audioMessage') {
+      type = 'audio';
+      mediaUrl = (await handleMediaUpload(msg, message.key as { id: string; remoteJid?: string }, message.base64, instanceKey)) ?? undefined;
+    } else if (msgType === 'imageMessage') {
+      type = 'image';
+      mediaUrl = (await handleMediaUpload(msg, message.key as { id: string; remoteJid?: string }, message.base64, instanceKey)) ?? undefined;
+    } else if (msgType === 'videoMessage' || msgType === 'ptvMessage') {
+      type = 'video';
+      mediaUrl = (await handleMediaUpload(msg, message.key as { id: string; remoteJid?: string }, message.base64, instanceKey)) ?? undefined;
+    } else if (msgType === 'stickerMessage') {
+      type = 'sticker';
+      mediaUrl = (await handleMediaUpload(msg, message.key as { id: string; remoteJid?: string }, message.base64, instanceKey)) ?? undefined;
+    } else if (msgType === 'documentMessage') {
+      type = 'document';
+      mediaUrl = (await handleMediaUpload(msg, message.key as { id: string; remoteJid?: string }, message.base64, instanceKey)) ?? undefined;
+    } else if (msgType === 'contactMessage' || msgType === 'contactsArrayMessage') {
+      type = 'contact';
+    }
+
+    const wppId = String(message.key?.id || `grp_atd_${Date.now()}`);
+
+    await saveMessageInAtendimento({
+      chat_id: chat.id,
+      phone: chat.phone,
+      content: content || (type !== 'text' ? `${type}` : ''),
+      sender: sender as 'HUMAN_AGENT' | 'CUSTOMER',
+      type,
+      media_url: mediaUrl,
+      wpp_id: wppId,
+      message_timestamp_iso: toIsoFromTimestamp(message.messageTimestamp),
+      forwarded: message.isForwarded === true,
+      participant_phone: participantPhone || undefined,
+      participant_name: participantName || undefined,
+    });
+
+    logWebhook({
+      schema_source: 'atendimento', event: 'messages.upsert', status: 'processed',
+      remote_jid: groupJid, phone: chat.phone,
+      message_type: msgType, push_name: pushName, wpp_id: wppId,
+      resolver_info: { group: true, participant: participantPhone },
+    });
+  } catch (error) {
+    console.error('[ATD/GroupIngest] Erro:', error);
+  }
 }
 
 async function ensureChatExistsInAtendimento(phone: string, pushName: string, fromMe: boolean) {
@@ -592,6 +683,8 @@ async function saveMessageInAtendimento(payload: {
   message_timestamp_iso?: string; forwarded?: boolean;
   quoted_info?: { wpp_id: string; sender: string; sender_name?: string; message_type: string; message_text: string; remote_jid?: string } | null;
   extra_tool_data?: Record<string, unknown>;
+  participant_phone?: string;
+  participant_name?: string;
 }) {
   const supabase = getSupabase();
   if (payload.type === 'reaction') return;
@@ -612,6 +705,8 @@ async function saveMessageInAtendimento(payload: {
     wpp_id: payload.wpp_id, created_at: createdAt,
   };
   if (status) insertPayload.status = status;
+  if (payload.participant_phone) insertPayload.participant_phone = payload.participant_phone;
+  if (payload.participant_name) insertPayload.participant_name = payload.participant_name;
   if (Object.keys(toolData).length > 0) insertPayload.tool_data = toolData;
   if (payload.quoted_info?.wpp_id) insertPayload.quoted_wpp_id = payload.quoted_info.wpp_id;
 

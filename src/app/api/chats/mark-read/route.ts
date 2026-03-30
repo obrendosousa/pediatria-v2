@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       try {
         const { data: chat } = await supabase
           .from("chats")
-          .select("phone")
+          .select("phone, is_group, group_jid")
           .eq("id", chatId)
           .single();
         if (!chat?.phone) return;
@@ -50,7 +50,8 @@ export async function POST(req: Request) {
         if (!msgs?.length) return;
 
         const wppIds = msgs.map((m: { wpp_id: string }) => m.wpp_id);
-        await markMessagesAsRead(chat.phone, wppIds);
+        const groupJid = chat.is_group ? chat.group_jid : undefined;
+        await markMessagesAsRead(chat.phone, wppIds, undefined, groupJid);
       } catch (err: unknown) {
         console.error("[mark-read] erro WhatsApp:", err);
       }
