@@ -29,9 +29,11 @@ import ForwardMessageModal from '@/components/chat/modals/ForwardMessageModal';
 import FilePreviewModal from '@/components/chat/modals/FilePreviewModal';
 import AppointmentModal, { PreScheduleData } from '@/components/medical/AppointmentModal';
 import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
   const { toast } = useToast();
+  const { profile } = useAuth();
   const [pendingMessages, setPendingMessages] = useState<any[]>([]);
 
   const onRemovePending = useCallback((tempId: string) => {
@@ -246,6 +248,7 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
         mime_type: finalFile.type,
         file_name: finalFile.name,
         file_size: finalFile.size,
+        ...(profile?.full_name ? { sent_by_name: profile.full_name } : {}),
       }
     };
     setPendingMessages(prev => [...prev, optimisticMsg]);
@@ -283,6 +286,7 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
         mime_type: finalFile.type,
         file_name: finalFile.name,
         file_size: finalFile.size,
+        ...(profile?.full_name ? { sent_by_name: profile.full_name } : {}),
       };
 
       // PDF: gera preview da 1ª página
@@ -651,6 +655,7 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
         media_url: stickerUrl,
         sender: 'HUMAN_AGENT',
         status: 'sent',
+        tool_data: profile?.full_name ? { sent_by_name: profile.full_name } : undefined,
       }).select().single();
 
       const sendRes = await fetch('/api/atendimento/whatsapp/send', {

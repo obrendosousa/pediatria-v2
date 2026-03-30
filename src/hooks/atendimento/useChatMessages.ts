@@ -12,6 +12,7 @@ import {
 import { Chat, Message } from '@/types';
 import { useToast } from '@/contexts/ToastContext';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ReplyTarget {
   wpp_id?: string;
@@ -97,6 +98,7 @@ function getErrorMessage(error: unknown): string {
 
 export function useChatMessages(activeChat: Chat | null, options?: UseChatMessagesOptions) {
   const { toast } = useToast();
+  const { profile } = useAuth();
   const { onRemovePending, onRemovePendingForRevoked } = options || {};
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -367,7 +369,7 @@ export function useChatMessages(activeChat: Chat | null, options?: UseChatMessag
         sender: 'HUMAN_AGENT',
         message_type: 'text',
         status: 'sent',
-        tool_data: { source: 'manual_chat' },
+        tool_data: { source: 'manual_chat', ...(profile?.full_name ? { sent_by_name: profile.full_name } : {}) },
       } as Record<string, unknown>;
 
       const extendedInsertPayload = {

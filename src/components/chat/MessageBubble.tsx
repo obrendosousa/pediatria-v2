@@ -843,6 +843,13 @@ function MessageBubble({
           </p>
         )}
 
+        {/* Nome de quem enviou (atendente) em mensagens enviadas */}
+        {isMe && message.tool_data?.sent_by_name && (
+          <p className="text-[11px] font-semibold px-1 pt-1 pb-0 truncate text-[var(--chat-accent)] opacity-70">
+            {message.tool_data.sent_by_name}
+          </p>
+        )}
+
         {/* Conteúdo */}
         <div className="min-w-0 overflow-hidden break-words">
           {message.tool_data?.forwarded === true && !isMe && (
