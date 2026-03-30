@@ -329,10 +329,16 @@ export default function ReceptionCard({
         )}
 
         {status === 'finished' && (
-          <div className="text-center py-0.5">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center justify-center gap-1">
-              <CheckCircle className="w-3 h-3" /> Concluido
+          <div className="flex items-center gap-1.5">
+            <span className="flex-1 text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center justify-center gap-1">
+              <CheckCircle className="w-3 h-3" /> Concluído
             </span>
+            {onRevert && (
+              <button type="button" onClick={(e) => { e.stopPropagation(); onRevert(); }} disabled={isUpdating}
+                className="bg-amber-100 dark:bg-amber-900/20 hover:bg-amber-200 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-2 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1 disabled:opacity-50 border border-amber-200 dark:border-amber-800/50" title="Reverter para Em Atendimento">
+                {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Undo2 className="w-3 h-3" />} Reverter
+              </button>
+            )}
           </div>
         )}
       </div>

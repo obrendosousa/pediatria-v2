@@ -151,6 +151,10 @@ export default function ReceptionFlowColumns({
     else if (from === 'ped-waiting' && to === 'ped-called') onRevert?.(apt, 'scheduled');
     else if (from === 'ped-in_service' && to === 'ped-waiting') onRevert?.(apt, 'waiting');
     else if (from === 'ped-in_service' && to === 'ped-called') onRevert?.(apt, 'waiting');
+    // Backward from finished (dados financeiros e consulta preservados)
+    else if (from === 'ped-finished' && to === 'ped-in_service') onRevert?.(apt, 'in_service');
+    else if (from === 'ped-finished' && to === 'ped-waiting') onRevert?.(apt, 'waiting');
+    else if (from === 'ped-finished' && to === 'ped-scheduled') onRevert?.(apt, 'scheduled');
   };
 
   const handleAtendimentoDrop = (apt: Appointment, from: string, to: string) => {
@@ -172,6 +176,10 @@ export default function ReceptionFlowColumns({
     else if (from === 'atd-no-guiche' && to === 'atd-fila-guiche') onRevert?.(apt, 'waiting');
     else if (from === 'atd-fila-medico' && to === 'atd-no-guiche') onRevert?.(apt, 'waiting');
     else if (from === 'atd-em-atendimento' && to === 'atd-fila-medico') onRevert?.(apt, 'waiting');
+    // Backward from finished (dados financeiros e consulta preservados)
+    else if (from === 'atd-concluidos' && to === 'atd-em-atendimento') onRevert?.(apt, 'in_service');
+    else if (from === 'atd-concluidos' && to === 'atd-fila-medico') onRevert?.(apt, 'waiting');
+    else if (from === 'atd-concluidos' && to === 'atd-scheduled') onRevert?.(apt, 'scheduled');
   };
 
   // ---- Data filtering ----
@@ -338,6 +346,7 @@ export default function ReceptionFlowColumns({
                 text: 'text-slate-700 dark:text-slate-300',
                 headerBg: 'bg-slate-50/50 dark:bg-slate-800/25'
               }}
+              onRevert={(apt) => handleRevert(apt, 'in_service')}
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}
               callingAppointmentId={callingAppointmentId}
@@ -471,6 +480,7 @@ export default function ReceptionFlowColumns({
                 text: 'text-slate-700 dark:text-slate-300',
                 headerBg: 'bg-slate-50/50 dark:bg-slate-800/25'
               }}
+              onRevert={(apt) => handleRevert(apt, 'in_service')}
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}
               callingAppointmentId={callingAppointmentId}

@@ -559,7 +559,7 @@ export default function AtendimentoCRMPage() {
     }
   };
 
-  const handleFinish = async (apt: Appointment) => {
+  const executeFinish = async (apt: Appointment) => {
     setIsUpdating(apt.id);
     try {
       // Completar ticket ativo se houver
@@ -580,11 +580,24 @@ export default function AtendimentoCRMPage() {
     }
   };
 
+  const handleFinish = (apt: Appointment) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Finalizar Atendimento',
+      message: `Deseja marcar o atendimento de "${apt.patient_name || 'paciente'}" como concluído? Esta ação moverá o paciente para a coluna de Concluídos.`,
+      type: 'warning',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        await executeFinish(apt);
+      }
+    });
+  };
+
   const handleRevert = async (apt: Appointment, newStatus: string) => {
     setConfirmModal({
       isOpen: true,
       title: 'Reverter Status',
-      message: `Deseja reverter este paciente para "${newStatus === 'scheduled' ? 'Agendado' : newStatus === 'waiting' ? 'Na Fila' : 'Em Atendimento'}"?`,
+      message: `Deseja reverter este paciente para "${newStatus === 'scheduled' ? 'Agendado' : newStatus === 'waiting' ? 'Na Fila' : newStatus === 'in_service' ? 'Em Atendimento' : newStatus}"?\n\nOs dados financeiros e de consulta não serão alterados.`,
       type: 'warning',
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));

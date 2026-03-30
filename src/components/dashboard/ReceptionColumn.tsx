@@ -130,7 +130,7 @@ export default function ReceptionColumn({
               key={apt.id}
               id={`card-${apt.id}`}
               data={{ appointment: apt, status, columnId: droppableId }}
-              disabled={status === 'finished'}
+              disabled={false}
             >
               <div className={justDroppedId === apt.id ? 'card-drop-enter' : ''}>
                 <ReceptionCard
