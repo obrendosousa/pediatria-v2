@@ -404,7 +404,12 @@
       "Bash(node -e \"require\\(''pg''\\)\")",
       "Bash(ls -la c:/Users/Brendo/Documents/pediatria-v2/src/app/api/ai/clinica-geral/*/route.ts)",
       "Bash(ls c:/Users/Brendo/Documents/pediatria-v2/supabase/migrations/20260330*)",
-      "Bash(ls /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)"
+      "Bash(ls /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(grep -r \"start_time\\\\|date.*time\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2/supabase/migrations -name *.sql)",
+      "Bash(grep -r \"total_amount\\\\|amount_paid\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(grep -l \"CREATE TABLE.*appointments\\\\|ALTER TABLE.*appointments\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(grep -n \"total_amount\\\\|amount_paid\\\\|discount\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)"
     ]
   },
   "hooks": {

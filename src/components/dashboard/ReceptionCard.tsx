@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { formatAppointmentTime } from '@/utils/dateUtils';
 import { calculateTimeInService, isLongRunningAppointment } from '@/utils/appointmentSafety';
+import { effectiveAmount } from '@/utils/discountUtils';
 
 export interface TicketInfo {
   ticket_number: string;
@@ -68,8 +69,10 @@ export default function ReceptionCard({
   const isRetorno = appointment.appointment_type === 'retorno';
   const total = Number(appointment.total_amount || 0);
   const paid = Number(appointment.amount_paid || 0);
-  const remaining = total - paid;
-  const canEnter = status !== 'waiting' || isRetorno || total <= 0 || remaining <= 0;
+  const discountAmt = Number(appointment.discount_amount || 0);
+  const effectiveTotal = effectiveAmount(total, discountAmt);
+  const remaining = Math.max(0, effectiveTotal - paid);
+  const canEnter = status !== 'waiting' || isRetorno || effectiveTotal <= 0 || remaining <= 0;
 
   const getCardStyles = () => {
     const base3d = 'dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.7),0_1px_0_0_rgba(255,255,255,0.04)_inset] dark:border-t dark:border-t-white/[0.06]';

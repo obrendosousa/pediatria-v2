@@ -2,6 +2,7 @@
 
 import { Ban, Plus, DollarSign } from 'lucide-react';
 import { getCardColorClasses } from '@/app/agenda/utils/agendaUtils';
+import { effectiveAmount } from '@/utils/discountUtils';
 
 type AtendimentoAppointment = {
   id: number;
@@ -16,6 +17,7 @@ type AtendimentoAppointment = {
   consultation_value?: number | null;
   total_amount?: number;
   amount_paid?: number;
+  discount_amount?: number | null;
 };
 
 export type DayBlock = {
@@ -66,8 +68,10 @@ export default function AtendimentoWeekView({ weekDays, weekAppointments, dayBlo
                 {dayApps.map(app => {
                   const time = app.time ? app.time.substring(0, 5) : '00:00';
                   const total = app.consultation_value ?? app.total_amount ?? 0;
+                  const discountAmt = Number(app.discount_amount || 0);
+                  const effective = effectiveAmount(total, discountAmt);
                   const paid = app.amount_paid ?? 0;
-                  const remaining = total - paid;
+                  const remaining = effective - paid;
                   const isBlocked = app.status === 'blocked';
                   const colors = getCardColorClasses(app);
                   return (

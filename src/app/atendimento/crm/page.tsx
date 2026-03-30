@@ -47,6 +47,9 @@ type AtendimentoAppointment = {
   amount_paid?: number;
 
 
+  discount_type?: '%' | 'R$' | null;
+  discount_value?: number | null;
+  discount_amount?: number | null;
   appointment_subtype?: string | null;
   procedures?: string[] | null;
   is_squeeze?: boolean;
@@ -80,6 +83,9 @@ function toReceptionAppointment(apt: AtendimentoAppointment): Appointment {
     notes: apt.notes || null,
     total_amount: apt.total_amount,
     amount_paid: apt.amount_paid,
+    discount_type: apt.discount_type || undefined,
+    discount_value: apt.discount_value ?? undefined,
+    discount_amount: apt.discount_amount ?? undefined,
     appointment_subtype: apt.appointment_subtype || null,
     procedures: apt.procedures || null,
     is_squeeze: apt.is_squeeze,

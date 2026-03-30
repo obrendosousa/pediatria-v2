@@ -3,6 +3,7 @@
 
 import { Ban, Plus, DollarSign } from 'lucide-react';
 import { getCardColorClasses, getAppointmentsForDay, formatPhoneDisplay } from '../utils/agendaUtils';
+import { effectiveAmount } from '@/utils/discountUtils';
 
 type WeekViewProps = {
   weekDays: Date[];
@@ -44,8 +45,10 @@ export default function WeekView({
                     time = dLocal.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
                   }
                   const total = app.total_amount || 0;
+                  const discountAmt = Number(app.discount_amount || 0);
+                  const effective = effectiveAmount(total, discountAmt);
                   const paid = app.amount_paid || 0;
-                  const remaining = total - paid;
+                  const remaining = effective - paid;
                   const isBlocked = app.status === 'blocked';
                   const colors = getCardColorClasses(app);
                   return (

@@ -6,6 +6,7 @@ import { Appointment } from '@/types/medical';
 import { Product } from '@/types';
 import { normalizePaymentSplits, resolveSalePaymentMethodFromSplits } from '@/lib/finance';
 import { createFinancialTransaction } from '@/lib/financialTransactions';
+import { effectiveAmount } from '@/utils/discountUtils';
 import { useAuth } from '@/contexts/AuthContext';
 
 const supabase = createClient();
@@ -61,8 +62,10 @@ export function useCheckoutPanel(appointmentId: number | null) {
       setAppointment(apt);
 
       const totalAgendado = Number(apt.total_amount || 0);
+      const discountAgendado = Number(apt.discount_amount || 0);
+      const effectiveTotal = effectiveAmount(totalAgendado, discountAgendado);
       const pagoAgendado = Number(apt.amount_paid || 0);
-      const restanteAgendamento = Math.max(0, totalAgendado - pagoAgendado);
+      const restanteAgendamento = Math.max(0, effectiveTotal - pagoAgendado);
 
       if (restanteAgendamento > 0) {
         initialItems.push({

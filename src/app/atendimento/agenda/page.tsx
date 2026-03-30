@@ -35,6 +35,9 @@ type AtendimentoAppointment = {
   patient_sex?: 'M' | 'F' | null;
   total_amount?: number;
   amount_paid?: number;
+  discount_type?: '%' | 'R$' | null;
+  discount_value?: number | null;
+  discount_amount?: number | null;
 };
 
 function mapAppointment(row: Record<string, unknown>): AtendimentoAppointment {
@@ -57,6 +60,9 @@ function mapAppointment(row: Record<string, unknown>): AtendimentoAppointment {
     patient_sex: (patient?.sex as 'M' | 'F') || null,
     total_amount: row.total_amount as number | undefined,
     amount_paid: row.amount_paid as number | undefined,
+    discount_type: (row.discount_type as '%' | 'R$') || null,
+    discount_value: row.discount_value as number | null,
+    discount_amount: row.discount_amount as number | null,
   };
 }
 

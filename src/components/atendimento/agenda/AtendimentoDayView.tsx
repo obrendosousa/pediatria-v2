@@ -3,6 +3,7 @@
 import { RefObject } from 'react';
 import { User, Ban, Plus, FileText, DollarSign } from 'lucide-react';
 import { getCardColorClasses } from '@/app/agenda/utils/agendaUtils';
+import { effectiveAmount } from '@/utils/discountUtils';
 
 type AtendimentoAppointment = {
   id: number;
@@ -21,6 +22,7 @@ type AtendimentoAppointment = {
   patient_sex?: 'M' | 'F' | null;
   total_amount?: number;
   amount_paid?: number;
+  discount_amount?: number | null;
 };
 
 type Props = {
@@ -38,6 +40,8 @@ function AppointmentCard({ app, setSelectedAppointment }: { app: AtendimentoAppo
   const isBlocked = app.status === 'blocked';
   const colors = getCardColorClasses(app);
   const total = app.consultation_value ?? app.total_amount ?? 0;
+  const discountAmt = Number(app.discount_amount || 0);
+  const effective = effectiveAmount(total, discountAmt);
   const paid = app.amount_paid ?? 0;
   return (
     <div
@@ -59,15 +63,15 @@ function AppointmentCard({ app, setSelectedAppointment }: { app: AtendimentoAppo
           )}
         </div>
       </div>
-      {!isBlocked && total > 0 && (
+      {!isBlocked && effective > 0 && (
         <div className="mr-2">
-          {(total - paid) <= 0 ? (
+          {(effective - paid) <= 0 ? (
             <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
               <DollarSign size={10}/> Pago
             </span>
           ) : (
             <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-              <DollarSign size={10}/> Falta R$ {(total - paid).toFixed(0)}
+              <DollarSign size={10}/> Falta R$ {(effective - paid).toFixed(0)}
             </span>
           )}
         </div>

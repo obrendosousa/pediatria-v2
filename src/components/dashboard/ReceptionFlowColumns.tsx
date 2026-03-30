@@ -7,6 +7,7 @@ import ReceptionCard from './ReceptionCard';
 import CheckoutDetailPanel from '@/components/medical/CheckoutDetailPanel';
 import type { TicketInfo } from './ReceptionCard';
 import { useToast } from '@/contexts/ToastContext';
+import { effectiveAmount } from '@/utils/discountUtils';
 import {
   DndContext,
   DragOverlay,
@@ -123,19 +124,29 @@ export default function ReceptionFlowColumns({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant, onCallAppointment, onConfirmArrival, onEnter, onFinish, onRevert, onCallWithDestination, onFinishGuiche]);
 
-  /** Verifica se o paciente tem pagamento pendente (total > 0 e restante > 0). Retorno não cobra. */
+  /** Verifica se o paciente tem pagamento pendente (total efetivo > 0 e restante > 0). Retorno não cobra. */
   const hasPendingPayment = (apt: Appointment) => {
     if (apt.appointment_type === 'retorno') return false;
     const total = Number(apt.total_amount || 0);
+    const discountAmt = Number(apt.discount_amount || 0);
+    const effective = effectiveAmount(total, discountAmt);
     const paid = Number(apt.amount_paid || 0);
-    return total > 0 && (total - paid) > 0;
+    return effective > 0 && (effective - paid) > 0;
+  };
+
+  /** Calcula o valor restante considerando desconto */
+  const getRemainingAmount = (apt: Appointment) => {
+    const total = Number(apt.total_amount || 0);
+    const discountAmt = Number(apt.discount_amount || 0);
+    const effective = effectiveAmount(total, discountAmt);
+    const paid = Number(apt.amount_paid || 0);
+    return Math.max(0, effective - paid);
   };
 
   const handlePediatriaDrop = (apt: Appointment, from: string, to: string) => {
     // Bloquear entrada em atendimento se houver pagamento pendente
     if (to === 'ped-in_service' && hasPendingPayment(apt)) {
-      const remaining = Number(apt.total_amount || 0) - Number(apt.amount_paid || 0);
-      toast.error(`Pagamento pendente de R$ ${remaining.toFixed(2)}. Registre o pagamento antes de iniciar o atendimento.`);
+      toast.error(`Pagamento pendente de R$ ${getRemainingAmount(apt).toFixed(2)}. Registre o pagamento antes de iniciar o atendimento.`);
       return;
     }
 
@@ -160,8 +171,7 @@ export default function ReceptionFlowColumns({
   const handleAtendimentoDrop = (apt: Appointment, from: string, to: string) => {
     // Bloquear entrada em atendimento se houver pagamento pendente
     if (to === 'atd-em-atendimento' && hasPendingPayment(apt)) {
-      const remaining = Number(apt.total_amount || 0) - Number(apt.amount_paid || 0);
-      toast.error(`Pagamento pendente de R$ ${remaining.toFixed(2)}. Registre o pagamento antes de iniciar o atendimento.`);
+      toast.error(`Pagamento pendente de R$ ${getRemainingAmount(apt).toFixed(2)}. Registre o pagamento antes de iniciar o atendimento.`);
       return;
     }
 

@@ -4,6 +4,7 @@ import { RefObject } from 'react';
 import { User, Ban, Plus, FileText, DollarSign } from 'lucide-react';
 import { getCardColorClasses, formatPhoneDisplay } from '../utils/agendaUtils';
 import type { Appointment } from '@/types/medical';
+import { effectiveAmount } from '@/utils/discountUtils';
 
 type DayViewProps = {
   timeSlots: string[];
@@ -38,15 +39,15 @@ function AppointmentCard({ app, setSelectedAppointment }: { app: Appointment; se
           )}
         </div>
       </div>
-      {!isBlocked && (app.total_amount ?? 0) > 0 && (
+      {!isBlocked && effectiveAmount(app.total_amount ?? 0, Number(app.discount_amount || 0)) > 0 && (
         <div className="mr-2">
-          {((app.total_amount ?? 0) - (app.amount_paid || 0)) <= 0 ? (
+          {(effectiveAmount(app.total_amount ?? 0, Number(app.discount_amount || 0)) - (app.amount_paid || 0)) <= 0 ? (
             <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
               <DollarSign size={10}/> Pago
             </span>
           ) : (
             <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-              <DollarSign size={10}/> Falta R$ {((app.total_amount ?? 0) - (app.amount_paid || 0)).toFixed(0)}
+              <DollarSign size={10}/> Falta R$ {(effectiveAmount(app.total_amount ?? 0, Number(app.discount_amount || 0)) - (app.amount_paid || 0)).toFixed(0)}
             </span>
           )}
         </div>

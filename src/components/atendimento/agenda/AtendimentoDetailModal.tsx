@@ -10,6 +10,7 @@ import {
 import { formatDateToDisplay, formatDateToISO, formatCurrency, parseCurrency } from '@/app/agenda/utils/agendaUtils';
 import { getValidNextStatuses, isValidTransition } from '@/config/scheduling/statusTransitions';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { effectiveAmount } from '@/utils/discountUtils';
 
 const supabase = createSchemaClient('atendimento');
 
@@ -33,6 +34,9 @@ type AtendimentoAppointment = {
   patient_sex?: 'M' | 'F' | null;
   total_amount?: number;
   amount_paid?: number;
+  discount_type?: '%' | 'R$' | null;
+  discount_value?: number | null;
+  discount_amount?: number | null;
 };
 
 type Props = {
@@ -166,8 +170,10 @@ export default function AtendimentoDetailModal({ selectedAppointment, setSelecte
   };
 
   const totalDisplay = selectedAppointment?.consultation_value ?? selectedAppointment?.total_amount ?? 0;
+  const discountDisplay = selectedAppointment?.discount_amount ?? 0;
+  const effectiveTotalDisplay = effectiveAmount(totalDisplay, discountDisplay);
   const paidDisplay = selectedAppointment?.amount_paid ?? 0;
-  const remainingDisplay = Math.max(0, totalDisplay - paidDisplay);
+  const remainingDisplay = Math.max(0, effectiveTotalDisplay - paidDisplay);
   const editTotalNum = parseCurrency(editForm.totalAmount);
   const editPaidNum = parseCurrency(editForm.paidAmount);
   const editRemaining = Math.max(0, editTotalNum - editPaidNum);
