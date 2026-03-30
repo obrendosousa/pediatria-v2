@@ -411,7 +411,8 @@
       "Bash(grep -l \"CREATE TABLE.*appointments\\\\|ALTER TABLE.*appointments\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
       "Bash(grep -n \"total_amount\\\\|amount_paid\\\\|discount\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
       "Bash(find /c/Users/Brendo/Documents/pediatria-v2/src -type f -name *inanceiro* -o -name *inance*)",
-      "Bash(find /c/Users/Brendo/Documents/pediatria-v2/src/components -name *FinancialDashboard* -o -name *inancial*)"
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2/src/components -name *FinancialDashboard* -o -name *inancial*)",
+      "Bash(git push:*)"
     ]
   },
   "hooks": {
