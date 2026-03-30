@@ -211,6 +211,24 @@ export function useCheckoutPanel(appointmentId: number | null) {
     if (!appointment || !appointmentId) return;
     setLoading(true);
     try {
+      // --- Idempotency: verificar se já existe sale para este appointment ---
+      const { data: existingSale } = await supabase
+        .from('sales')
+        .select('id')
+        .eq('appointment_id', appointmentId)
+        .eq('status', 'completed')
+        .maybeSingle();
+
+      if (existingSale) {
+        // Sale já existe — não duplicar. Apenas garantir que appointment está finished.
+        await supabase
+          .from('appointments')
+          .update({ status: 'finished' })
+          .eq('id', appointmentId);
+        onSuccess?.();
+        return;
+      }
+
       let chatId: number | null = null;
       if (appointment.patient_phone) {
         const cleanPhone = appointment.patient_phone.replace(/\D/g, '');
@@ -251,6 +269,13 @@ export function useCheckoutPanel(appointmentId: number | null) {
         .reduce((acc, item) => acc + (item.price * item.qty), 0);
       const consultationAmount = debtAmount + consultationValueAmount;
       const dominantOrigin = storeItemsAmount > consultationAmount ? 'loja' : 'atendimento';
+
+      // --- Overpayment guard ---
+      const currentPaid = Number(appointment.amount_paid || 0);
+      const totalAmount = Number(appointment.total_amount || 0);
+      const discountAmt = Number(appointment.discount_amount || 0);
+      const effectiveTotal = effectiveAmount(totalAmount, discountAmt);
+      const safeDebtAmount = Math.min(debtAmount, Math.max(0, effectiveTotal - currentPaid));
 
       if (total > 0) {
         const { data: sale, error: saleError } = await supabase
@@ -349,7 +374,7 @@ export function useCheckoutPanel(appointmentId: number | null) {
         .from('appointments')
         .update({
           status: 'finished',
-          amount_paid: Number(appointment.amount_paid || 0) + debtAmount
+          amount_paid: Math.min(currentPaid + safeDebtAmount, effectiveTotal > 0 ? effectiveTotal : currentPaid + safeDebtAmount)
         })
         .eq('id', appointmentId);
 

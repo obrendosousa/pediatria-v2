@@ -113,6 +113,27 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
         const salePaymentMethod = resolveSalePaymentMethodFromSplits(paymentSplits);
 
         if (cart.length > 0 || consultationValue > 0) {
+            // Idempotency: verificar se já existe sale para este appointment
+            if (task.raw_data?.appointment_id) {
+              const { data: existingSale } = await supabase
+                .from('sales')
+                .select('id')
+                .eq('appointment_id', task.raw_data.appointment_id)
+                .eq('status', 'completed')
+                .maybeSingle();
+              if (existingSale) {
+                // Sale já existe — não duplicar
+                if (task.origin_table === 'medical_checkouts') {
+                  await supabase.from('medical_checkouts').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', task.id);
+                } else {
+                  await supabase.from('tasks').update({ status: 'done' }).eq('id', task.id);
+                }
+                await supabase.from('appointments').update({ status: 'finished' }).eq('id', task.raw_data.appointment_id);
+                onClose();
+                return;
+              }
+            }
+
             const { data: sale, error: saleError } = await supabase.from('sales').insert({
                 chat_id: task.chat_id,
                 patient_id: task.patient_id ?? task.raw_data?.patient_id ?? null,
@@ -186,11 +207,17 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
             if (incrementAmountPaid > 0) {
               const { data: currentAppointment } = await supabase
                 .from('appointments')
-                .select('amount_paid')
+                .select('amount_paid, total_amount, discount_amount')
                 .eq('id', appointmentId)
                 .maybeSingle();
 
-              nextAmountPaid = Number(currentAppointment?.amount_paid || 0) + incrementAmountPaid;
+              const currentPaid = Number(currentAppointment?.amount_paid || 0);
+              const totalAmt = Number(currentAppointment?.total_amount || 0);
+              const discountAmt = Number(currentAppointment?.discount_amount || 0);
+              const effectiveTotal = Math.max(0, totalAmt - discountAmt);
+              nextAmountPaid = effectiveTotal > 0
+                ? Math.min(currentPaid + incrementAmountPaid, effectiveTotal)
+                : currentPaid + incrementAmountPaid;
             }
             console.log('[DEBUG] Finalizando appointment no CheckoutModal:', { 
                 appointmentId,

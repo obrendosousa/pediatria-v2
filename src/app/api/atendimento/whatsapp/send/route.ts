@@ -38,7 +38,8 @@ export async function POST(req: Request) {
     }
 
     // =========================================================================
-    // DESVIO IA: AGENTE CLÍNICA GERAL (placeholder — será implementado depois)
+    // DESVIO IA: AGENTE CLÍNICA GERAL
+    // Mensagens para o magic phone do agente são processadas pelo grafo LangGraph
     // =========================================================================
     if (phone === AI_PHONE) {
       const fakeWppId = `ai_atd_${Date.now()}`;
@@ -69,17 +70,82 @@ export async function POST(req: Request) {
         last_interaction_at: new Date().toISOString()
       }).eq('id', chatId);
 
-      // Placeholder: resposta automática informando que o agente será configurado
-      await supabase.from('chat_messages').insert({
-        chat_id: chatId,
-        phone,
-        sender: 'contact',
-        message_text: '⚙️ O agente IA da Clínica Geral ainda não foi configurado. Em breve estará disponível.',
-        message_type: 'text',
-        status: 'read',
-        created_at: new Date(Date.now() + 1000).toISOString(),
-        wpp_id: `ai_atd_reply_${Date.now()}`
-      });
+      // Chama o Agente Clínica Geral via /api/ai/copilot/chat (module-aware)
+      // Fire-and-forget: a resposta é emitida via streaming no CopilotChat
+      // mas aqui precisamos de uma resposta síncrona para o chat interno.
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          ? new URL(req.url).origin
+          : 'http://localhost:3000';
+
+        const agentRes = await fetch(`${baseUrl}/api/ai/copilot/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId,
+            message: message || '',
+            history: [],
+            module: 'atendimento',
+          }),
+        });
+
+        if (agentRes.ok && agentRes.body) {
+          // Parse streaming NDJSON para extrair os chunks de texto
+          const reader = agentRes.body.getReader();
+          const decoder = new TextDecoder();
+          let fullText = '';
+          let done = false;
+
+          while (!done) {
+            const { value, done: streamDone } = await reader.read();
+            done = streamDone;
+            if (value) {
+              const lines = decoder.decode(value, { stream: true }).split('\n').filter(Boolean);
+              for (const line of lines) {
+                try {
+                  const parsed = JSON.parse(line);
+                  if (parsed.type === 'chunk' && parsed.content) {
+                    fullText += parsed.content;
+                  }
+                } catch { /* skip non-JSON lines */ }
+              }
+            }
+          }
+
+          if (fullText.trim()) {
+            await supabase.from('chat_messages').insert({
+              chat_id: chatId,
+              phone,
+              sender: 'contact',
+              message_text: fullText.trim(),
+              message_type: 'text',
+              status: 'read',
+              created_at: new Date(Date.now() + 1000).toISOString(),
+              wpp_id: `ai_atd_reply_${Date.now()}`
+            });
+
+            await supabase.from('chats').update({
+              last_message: fullText.trim().slice(0, 200),
+              last_message_sender: 'contact',
+              last_interaction_at: new Date(Date.now() + 1000).toISOString(),
+              unread_count: 1,
+            }).eq('id', chatId);
+          }
+        }
+      } catch (aiErr) {
+        console.error('[ATD/Send] Erro ao chamar agente IA:', aiErr);
+        // Fallback: insere mensagem de erro amigável
+        await supabase.from('chat_messages').insert({
+          chat_id: chatId,
+          phone,
+          sender: 'contact',
+          message_text: 'Desculpe, tive um problema ao processar sua mensagem. Tente novamente em alguns segundos.',
+          message_type: 'text',
+          status: 'read',
+          created_at: new Date(Date.now() + 1000).toISOString(),
+          wpp_id: `ai_atd_reply_${Date.now()}`
+        });
+      }
 
       return NextResponse.json({ success: true, messageId: fakeWppId });
     }

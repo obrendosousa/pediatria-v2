@@ -412,7 +412,15 @@
       "Bash(grep -n \"total_amount\\\\|amount_paid\\\\|discount\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
       "Bash(find /c/Users/Brendo/Documents/pediatria-v2/src -type f -name *inanceiro* -o -name *inance*)",
       "Bash(find /c/Users/Brendo/Documents/pediatria-v2/src/components -name *FinancialDashboard* -o -name *inancial*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(grep -l \"sales\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2/supabase -name *.sql)",
+      "Bash(grep -l \"appointments\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(grep -l \"CREATE TABLE.*appointments\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2 -type f -name *.sql)",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2 -name \"*.ts\" -path \"*/api/*\" -exec grep -l \"rpc\\\\|RPC\" {})",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2/src/components -type d -name *chat* -o -type d -name *internal-chat*)",
+      "Bash(grep -l \"Chat\\\\|Message\\\\|Conversation\" /c/Users/Brendo/Documents/pediatria-v2/src/types/*.ts)"
     ]
   },
   "hooks": {

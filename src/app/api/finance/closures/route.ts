@@ -119,6 +119,7 @@ function mapTransactionLog(
   const appointmentType = appointment?.appointment_type ?? null;
   const patientName =
     appointment?.patient_name ||
+    (appointment?.patient_id ? patientNameById.get(appointment.patient_id) : null) ||
     (sale?.patient_id ? patientNameById.get(sale.patient_id) : null) ||
     (sale?.chat_id ? chatNameById.get(sale.chat_id) : null) ||
     'Não identificado';
@@ -203,11 +204,10 @@ async function loadTransactionsByRange(startISO: string, endISO: string) {
 
   const rows = ((data || []) as unknown) as TransactionRow[];
   const patientIds = [
-    ...new Set(
-      rows
-        .map((row) => firstSale(row)?.patient_id)
-        .filter((id): id is number => Number.isInteger(id))
-    ),
+    ...new Set([
+      ...rows.map((row) => firstAppointment(row)?.patient_id).filter((id): id is number => Number.isInteger(id)),
+      ...rows.map((row) => firstSale(row)?.patient_id).filter((id): id is number => Number.isInteger(id)),
+    ]),
   ];
   const chatIds = [
     ...new Set(

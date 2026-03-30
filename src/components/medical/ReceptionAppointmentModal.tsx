@@ -199,7 +199,7 @@ export default function ReceptionAppointmentModal({
 
   /** Salva apenas o pagamento (valor pago) sem alterar outros dados */
   const handleSavePaymentOnly = async () => {
-    if (!appointment) return;
+    if (!appointment || saving) return;
     const totalNum = Number(appointment.total_amount ?? 0);
     const alreadyPaid = Number(appointment.amount_paid ?? 0);
     const paymentAmount = parseCurrency(pendingAmount);
