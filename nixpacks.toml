@@ -1,2 +1,8 @@
+[phases.setup]
+aptPkgs = []
+cmds = [
+  "echo 'Acquire::Retries \"3\";' | sudo tee /etc/apt/apt.conf.d/80-retries"
+]
+
 [phases.build]
 cmds = ["npm run build"]
