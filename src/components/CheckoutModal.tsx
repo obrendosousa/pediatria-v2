@@ -4,24 +4,21 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { Product } from '@/types';
-import { X, ShoppingBag, Calendar, Check, Trash, Plus, Search, CreditCard, Banknote, QrCode, Clock, ArrowRight, Loader2, FileText } from 'lucide-react';
+import { X, ShoppingBag, Calendar, Check, Trash, Search, CreditCard, Banknote, QrCode, Clock, Loader2, FileText } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
-import { normalizePaymentSplits, resolveSalePaymentMethodFromSplits } from '@/lib/finance';
-import { createFinancialTransaction } from '@/lib/financialTransactions';
-import { useAuth } from '@/contexts/AuthContext';
+import { submitCheckout } from '@/lib/checkoutClient';
 
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
-  task: any; // A tarefa de checkout que contém o payload da doutora
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  task: any;
   onSuccess: () => void;
 }
 
 export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: CheckoutModalProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'cart' | 'schedule'>('cart');
 
   // Dados do Banco
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -42,6 +39,7 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
         fetchProducts();
         parseDoctorRequest();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, task]);
 
   async function fetchProducts() {
@@ -61,6 +59,7 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
           // vamos assumir que o payload tem dados suficientes ou faremos o match visual)
           // *Nota:* Para simplificar aqui, vou montar o carrinho baseado no payload direto,
           // mas o ideal é bater com 'allProducts'.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const mappedCart = payload.suggested_products.map((p: any) => ({
               product: { id: p.id, name: p.name, price_sale: p.price }, // Mock parcial
               qty: p.qty
@@ -100,81 +99,50 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
   const consultationValue = task?.raw_data?.consultation_value || 0;
   const total = productsTotal + consultationValue;
 
-  // --- AÇÃO FINAL: CONCLUIR TUDO ---
+  // --- ACAO FINAL: CONCLUIR TUDO ---
   async function handleFinish() {
     setLoading(true);
     try {
         const patientName = task.chats?.contact_name || task.title.replace('CHECKOUT: ', '');
-
-        // 1. Processar Venda (Se tiver itens ou valor de consulta)
         const consultationValue = task.raw_data?.consultation_value || 0;
-        const totalWithConsultation = total;
-        const paymentSplits = normalizePaymentSplits(totalWithConsultation, paymentMethod);
-        const salePaymentMethod = resolveSalePaymentMethodFromSplits(paymentSplits);
 
         if (cart.length > 0 || consultationValue > 0) {
-            // Idempotency: verificar se já existe sale para este appointment
-            if (task.raw_data?.appointment_id) {
-              const { data: existingSale } = await supabase
-                .from('sales')
-                .select('id')
-                .eq('appointment_id', task.raw_data.appointment_id)
-                .eq('status', 'completed')
-                .maybeSingle();
-              if (existingSale) {
-                // Sale já existe — não duplicar
-                if (task.origin_table === 'medical_checkouts') {
-                  await supabase.from('medical_checkouts').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', task.id);
-                } else {
-                  await supabase.from('tasks').update({ status: 'done' }).eq('id', task.id);
-                }
-                await supabase.from('appointments').update({ status: 'finished' }).eq('id', task.raw_data.appointment_id);
-                onClose();
-                return;
-              }
-            }
+            // Montar itens para API server-side
+            const items = [
+              ...cart.map(item => ({
+                product_id: item.product.id,
+                qty: item.qty,
+                type: 'product' as const,
+                name: item.product.name,
+                price: item.product.price_sale
+              })),
+              ...(consultationValue > 0 ? [{
+                product_id: null,
+                qty: 1,
+                type: 'debt' as const,
+                name: 'Valor da Consulta',
+                price: consultationValue
+              }] : [])
+            ];
 
-            const { data: sale, error: saleError } = await supabase.from('sales').insert({
-                chat_id: task.chat_id,
-                patient_id: task.patient_id ?? task.raw_data?.patient_id ?? null,
-                total: totalWithConsultation,
-                status: 'completed',
-                payment_method: salePaymentMethod,
-                created_by: user?.id ?? null,
-                origin: 'atendimento',
-                appointment_id: task.raw_data?.appointment_id ?? null
-            }).select().single();
-
-            if (saleError) throw new Error('Erro ao criar venda');
-
-            // Inserir itens de produtos
-            if (cart.length > 0) {
-                const saleItems = cart.map(item => ({
-                    sale_id: sale.id,
-                    product_id: item.product.id,
-                    quantity: item.qty,
-                    unit_price: item.product.price_sale
-                }));
-                await supabase.from('sale_items').insert(saleItems);
-            }
-
-            await createFinancialTransaction(supabase, {
-              amount: totalWithConsultation,
-              origin: 'atendimento',
-              createdBy: user?.id ?? null,
-              appointmentId: task.raw_data?.appointment_id ?? null,
-              saleId: sale.id,
-              medicalCheckoutId: task.origin_table === 'medical_checkouts' ? task.id : null,
-              payments: paymentSplits
+            // Checkout atomico via API server-side
+            await submitCheckout({
+              appointment_id: task.raw_data?.appointment_id ?? null,
+              medical_checkout_id: task.origin_table === 'medical_checkouts' ? task.id : null,
+              patient_id: task.patient_id ?? task.raw_data?.patient_id ?? null,
+              chat_id: task.chat_id ?? null,
+              items,
+              payment_method: paymentMethod,
+              client_total: total
             });
         }
 
-        // 2. Processar Agendamento (Se tiver retorno)
+        // Processar Agendamento de retorno (operacao secundaria)
         if (needsReturn && returnDate) {
             await supabase.from('tasks').insert({
                 title: `Retorno: ${patientName}`,
                 description: `Agendado via Checkout.\nReferente ao atendimento do dia ${new Date().toLocaleDateString('pt-BR')}.`,
-                type: 'general', // Vai para a Agenda
+                type: 'general',
                 status: 'pending',
                 chat_id: task.chat_id,
                 due_date: returnDate,
@@ -183,71 +151,15 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
             });
         }
 
-        // 3. Finalizar medical_checkout
-        if (task.origin_table === 'medical_checkouts') {
-            await supabase
-                .from('medical_checkouts')
-                .update({ 
-                    status: 'completed',
-                    completed_at: new Date().toISOString()
-                })
-                .eq('id', task.id);
-        } else {
-            // Finalizar Tarefa de Checkout
+        // Finalizar task (se nao for medical_checkout, que ja foi finalizado pelo RPC)
+        if (task.origin_table !== 'medical_checkouts') {
             await supabase.from('tasks').update({ status: 'done' }).eq('id', task.id);
         }
 
-        // 4. Atualizar appointment status para 'finished' se houver appointment_id
-        if (task.raw_data?.appointment_id) {
-            const appointmentId = task.raw_data.appointment_id;
-            let incrementAmountPaid = consultationValue;
-            if (incrementAmountPaid < 0) incrementAmountPaid = 0;
-
-            let nextAmountPaid: number | null = null;
-            if (incrementAmountPaid > 0) {
-              const { data: currentAppointment } = await supabase
-                .from('appointments')
-                .select('amount_paid, total_amount, discount_amount')
-                .eq('id', appointmentId)
-                .maybeSingle();
-
-              const currentPaid = Number(currentAppointment?.amount_paid || 0);
-              const totalAmt = Number(currentAppointment?.total_amount || 0);
-              const discountAmt = Number(currentAppointment?.discount_amount || 0);
-              const effectiveTotal = Math.max(0, totalAmt - discountAmt);
-              nextAmountPaid = effectiveTotal > 0
-                ? Math.min(currentPaid + incrementAmountPaid, effectiveTotal)
-                : currentPaid + incrementAmountPaid;
-            }
-            console.log('[DEBUG] Finalizando appointment no CheckoutModal:', { 
-                appointmentId,
-                taskId: task.id
-            });
-            
-            const { data, error } = await supabase
-                .from('appointments')
-                .update({
-                  status: 'finished',
-                  ...(nextAmountPaid != null ? { amount_paid: nextAmountPaid } : {})
-                })
-                .eq('id', appointmentId)
-                .select();
-            
-            if (error) {
-                console.error('[DEBUG] Erro ao atualizar appointment no CheckoutModal:', error);
-                throw error;
-            }
-            
-            console.log('[DEBUG] Appointment finalizado no CheckoutModal:', { 
-                updatedCount: data?.length || 0,
-                appointmentId 
-            });
-        }
-        
-        // 5. Atualizar chat
+        // Atualizar chat (operacao secundaria)
         if (task.chat_id) {
-            await supabase.from('chats').update({ 
-                reception_status: 'finished', // Libera vaga na sala
+            await supabase.from('chats').update({
+                reception_status: 'finished',
                 last_interaction_at: new Date().toISOString()
             }).eq('id', task.chat_id);
         }
@@ -255,8 +167,9 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
         onSuccess();
         onClose();
 
-    } catch (error: any) {
-        toast.error(error.message);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Erro ao processar checkout.';
+        toast.error(message);
     } finally {
         setLoading(false);
     }
@@ -286,7 +199,7 @@ export default function CheckoutModal({ isOpen, onClose, task, onSuccess }: Chec
                     <div>
                         <p className="text-xs font-bold text-slate-500 mb-2">Exames / Notas</p>
                         <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 text-sm text-purple-900 italic leading-relaxed">
-                            "{payload.medical_notes}"
+                            &ldquo;{payload.medical_notes}&rdquo;
                         </div>
                     </div>
                 )}

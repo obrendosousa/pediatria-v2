@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { generateAndUploadVoice } from '@/ai/voice/client';
+import { generateAndUploadVoice, formatTextForTts } from '@/ai/voice/client';
 import { emitTvCall } from '@/lib/tv-events';
 
 const supabase = createClient(
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     const spokenText = text.trim();
     const spName = servicePointName?.trim() || '';
-    const spoken = spName ? `${spokenText}, por favor dirija-se ao ${spName}` : spokenText;
+    const spoken = formatTextForTts(spName ? `${spokenText}, por favor dirija-se ao ${spName}` : spokenText);
 
     const basePayload = {
       ticket_number: '',
@@ -48,20 +48,21 @@ export async function POST(req: NextRequest) {
       spoken_text: spoken,
     };
 
-    // Emite via SSE imediatamente — TV recebe e fala via Web Speech API
-    emitTvCall(basePayload);
-    console.log('[Manual Call] SSE emitido:', spokenText);
-
-    // TTS em background — se Kokoro estiver online, emite segundo evento com áudio
+    // Gerar áudio Kokoro ANTES de emitir SSE (evita fallback para voz genérica)
     const savedVoice = await getSavedVoice();
-    generateAndUploadVoice(spokenText, savedVoice).then((audioUrl) => {
-      if (audioUrl) {
-        console.log('[Manual Call] Áudio gerado, emitindo SSE com TTS:', audioUrl);
-        emitTvCall({ ...basePayload, tts_audio_url: audioUrl });
-      }
-    }).catch(() => { /* Kokoro offline — Web Speech API já falou */ });
+    let audioUrl: string | null = null;
+    try {
+      audioUrl = await generateAndUploadVoice(spoken, savedVoice);
+      console.log('[Manual Call] Áudio Kokoro gerado:', audioUrl);
+    } catch (e) {
+      console.error('[Manual Call] Erro ao gerar áudio Kokoro:', e);
+    }
 
-    return NextResponse.json({ success: true });
+    // Emite via SSE com áudio (ou sem, se Kokoro falhou — overlay visual ainda aparece)
+    emitTvCall({ ...basePayload, tts_audio_url: audioUrl || undefined });
+    console.log('[Manual Call] SSE emitido:', spokenText, audioUrl ? '(com áudio)' : '(sem áudio)');
+
+    return NextResponse.json({ success: true, audioUrl, ttsError: !audioUrl });
   } catch (error) {
     console.error('[Manual Call API] Erro:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });

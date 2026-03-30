@@ -21,7 +21,7 @@ export default function AtendimentoChatPage() {
   }, [searchParams]);
 
   return (
-    <div className="flex h-screen min-w-0 bg-[#F8FAFC] dark:bg-[#050507] overflow-hidden transition-colors duration-300 relative">
+    <div className="flex h-full min-w-0 bg-[#F8FAFC] dark:bg-[#050507] overflow-hidden transition-colors duration-300 relative">
 
       {/* Sidebar de Chats */}
       <AtendimentoSidebar

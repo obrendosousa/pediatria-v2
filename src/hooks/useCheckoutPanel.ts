@@ -4,10 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Appointment } from '@/types/medical';
 import { Product } from '@/types';
-import { normalizePaymentSplits, resolveSalePaymentMethodFromSplits } from '@/lib/finance';
-import { createFinancialTransaction } from '@/lib/financialTransactions';
 import { effectiveAmount } from '@/utils/discountUtils';
-import { useAuth } from '@/contexts/AuthContext';
+import { submitCheckout } from '@/lib/checkoutClient';
 
 const supabase = createClient();
 
@@ -35,7 +33,6 @@ export interface MedicalCheckoutData {
 }
 
 export function useCheckoutPanel(appointmentId: number | null) {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [medicalCheckout, setMedicalCheckout] = useState<MedicalCheckoutData | null>(null);
@@ -211,24 +208,7 @@ export function useCheckoutPanel(appointmentId: number | null) {
     if (!appointment || !appointmentId) return;
     setLoading(true);
     try {
-      // --- Idempotency: verificar se já existe sale para este appointment ---
-      const { data: existingSale } = await supabase
-        .from('sales')
-        .select('id')
-        .eq('appointment_id', appointmentId)
-        .eq('status', 'completed')
-        .maybeSingle();
-
-      if (existingSale) {
-        // Sale já existe — não duplicar. Apenas garantir que appointment está finished.
-        await supabase
-          .from('appointments')
-          .update({ status: 'finished' })
-          .eq('id', appointmentId);
-        onSuccess?.();
-        return;
-      }
-
+      // Resolver chat_id a partir do telefone do paciente
       let chatId: number | null = null;
       if (appointment.patient_phone) {
         const cleanPhone = appointment.patient_phone.replace(/\D/g, '');
@@ -256,129 +236,24 @@ export function useCheckoutPanel(appointmentId: number | null) {
         }
       }
 
-      const paymentSplits = normalizePaymentSplits(total, paymentMethod);
-      const salePaymentMethod = resolveSalePaymentMethodFromSplits(paymentSplits);
-      const debtAmount = selectedItems
-        .filter((item) => item.type === 'debt')
-        .reduce((acc, item) => acc + (item.price * item.qty), 0);
-      const consultationValueAmount = selectedItems
-        .filter((item) => item.id === 'medical-consultation')
-        .reduce((acc, item) => acc + (item.price * item.qty), 0);
-      const storeItemsAmount = selectedItems
-        .filter((item) => item.type === 'product' || item.type === 'service' || (item.type === 'medical_item' && item.id !== 'medical-consultation'))
-        .reduce((acc, item) => acc + (item.price * item.qty), 0);
-      const consultationAmount = debtAmount + consultationValueAmount;
-      const dominantOrigin = storeItemsAmount > consultationAmount ? 'loja' : 'atendimento';
+      // Montar payload para API server-side (atomico)
+      const items = selectedItems.map((item) => ({
+        product_id: typeof item.id === 'number' ? item.id : null,
+        qty: item.qty,
+        type: item.type,
+        name: item.name,
+        price: item.price
+      }));
 
-      // --- Overpayment guard ---
-      const currentPaid = Number(appointment.amount_paid || 0);
-      const totalAmount = Number(appointment.total_amount || 0);
-      const discountAmt = Number(appointment.discount_amount || 0);
-      const effectiveTotal = effectiveAmount(totalAmount, discountAmt);
-      const safeDebtAmount = Math.min(debtAmount, Math.max(0, effectiveTotal - currentPaid));
-
-      if (total > 0) {
-        const { data: sale, error: saleError } = await supabase
-          .from('sales')
-          .insert({
-            chat_id: chatId,
-            patient_id: appointment.patient_id ?? null,
-            total: total,
-            status: 'completed',
-            payment_method: salePaymentMethod,
-            created_by: user?.id ?? null,
-            origin: dominantOrigin,
-            appointment_id: appointmentId
-          })
-          .select()
-          .single();
-
-        if (saleError) throw saleError;
-
-        for (const item of selectedItems) {
-          try {
-            await supabase.from('sale_items').insert({
-              sale_id: sale.id,
-              product_id: item.product?.id || null,
-              quantity: item.qty,
-              unit_price: item.price
-            });
-          } catch (itemError) {
-            console.error(`Erro ao inserir item ${item.name} na venda:`, itemError);
-          }
-
-          if ((item.type === 'product' || item.type === 'medical_item') && item.product) {
-            const { data: batches } = await supabase
-              .from('product_batches')
-              .select('*')
-              .eq('product_id', item.product.id)
-              .gt('quantity', 0)
-              .order('expiration_date', { ascending: true });
-
-            if (batches) {
-              let qtyNeed = item.qty;
-              for (const batch of batches) {
-                if (qtyNeed <= 0) break;
-                const take = Math.min(batch.quantity, qtyNeed);
-                await supabase
-                  .from('product_batches')
-                  .update({ quantity: batch.quantity - take })
-                  .eq('id', batch.id);
-                qtyNeed -= take;
-              }
-            }
-
-            // Sincroniza products.stock com soma dos batches restantes
-            const { data: remaining } = await supabase
-              .from('product_batches')
-              .select('quantity')
-              .eq('product_id', item.product.id)
-              .gt('quantity', 0);
-            const syncedStock = (remaining || []).reduce((acc: number, b: { quantity: number }) => acc + Number(b.quantity || 0), 0);
-            await supabase.from('products').update({ stock: syncedStock }).eq('id', item.product.id);
-          }
-        }
-
-        if (consultationAmount > 0) {
-          await createFinancialTransaction(supabase, {
-            amount: consultationAmount,
-            origin: 'atendimento',
-            createdBy: user?.id ?? null,
-            appointmentId,
-            saleId: sale.id,
-            medicalCheckoutId,
-            payments: normalizePaymentSplits(consultationAmount, paymentMethod)
-          });
-        }
-        if (storeItemsAmount > 0) {
-          await createFinancialTransaction(supabase, {
-            amount: storeItemsAmount,
-            origin: 'loja',
-            createdBy: user?.id ?? null,
-            appointmentId,
-            saleId: sale.id,
-            medicalCheckoutId,
-            payments: normalizePaymentSplits(storeItemsAmount, paymentMethod)
-          });
-        }
-      }
-
-      if (medicalCheckoutId) {
-        await supabase
-          .from('medical_checkouts')
-          .update({ status: 'completed' })
-          .eq('id', medicalCheckoutId);
-      }
-
-      const { error: updateError } = await supabase
-        .from('appointments')
-        .update({
-          status: 'finished',
-          amount_paid: Math.min(currentPaid + safeDebtAmount, effectiveTotal > 0 ? effectiveTotal : currentPaid + safeDebtAmount)
-        })
-        .eq('id', appointmentId);
-
-      if (updateError) throw updateError;
+      await submitCheckout({
+        appointment_id: appointmentId,
+        medical_checkout_id: medicalCheckoutId,
+        patient_id: appointment.patient_id ?? null,
+        chat_id: chatId,
+        items,
+        payment_method: paymentMethod,
+        client_total: total
+      });
 
       onSuccess?.();
     } catch (error: unknown) {
@@ -387,7 +262,7 @@ export function useCheckoutPanel(appointmentId: number | null) {
     } finally {
       setLoading(false);
     }
-  }, [appointment, appointmentId, total, selectedItems, paymentMethod, medicalCheckoutId, user?.id]);
+  }, [appointment, appointmentId, total, selectedItems, paymentMethod, medicalCheckoutId]);
 
   return {
     loading,

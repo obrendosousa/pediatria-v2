@@ -203,7 +203,7 @@ export interface ClassifyChatsOptions {
  * Classifica uma lista de chats por ID.
  * 1. Carrega mensagens do Supabase
  * 2. Agrupa em batches de ~12 chats
- * 3. Chama gemini-3.1-flash-lite-preview para cada batch
+ * 3. Chama gemini-3.1-flash-preview para cada batch
  * 4. Retorna classificações estruturadas
  */
 export async function classifyChats(
@@ -300,7 +300,7 @@ export async function classifyChats(
 
   // 5. Classificar em paralelo (max 8 concorrentes)
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-3.1-flash-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0.1,
   });

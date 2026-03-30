@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { generateAndUploadVoice } from '@/ai/voice/client';
+import { generateAndUploadVoice, formatTextForTts } from '@/ai/voice/client';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,21 +49,24 @@ export async function POST(req: NextRequest) {
     const spokenDest = servicePointName
       .replace(/\bGuiche\b/i, 'Guichê')
       .replace(/\bConsultorio\b/i, 'Consultório');
-    const text = `${patientName}, por favor dirija-se ao ${spokenDest}.`;
+    const text = formatTextForTts(`${patientName}, por favor dirija-se ao ${spokenDest}.`);
 
     console.log('[Queue Call] Texto TTS:', text);
 
     // Buscar voz configurada no painel TV
     const savedVoice = await getSavedVoice();
 
-    // Gerar audio via TTS (Kokoro/ElevenLabs conforme TTS_BACKEND)
+    // Gerar audio via Kokoro TTS
     let audioUrl: string | null = null;
     try {
       audioUrl = await generateAndUploadVoice(text, savedVoice);
       console.log('[Queue Call] Audio URL gerado:', audioUrl);
     } catch (e) {
       console.error('[Queue TTS] Erro na geracao de voz:', e);
-      // Nao bloqueia a chamada se TTS falhar
+    }
+
+    if (!audioUrl) {
+      console.error('[Queue Call] Kokoro TTS falhou — broadcast será enviado sem áudio (sem fallback para voz genérica)');
     }
 
     // Atualizar ticket com URL do audio
@@ -102,7 +105,7 @@ export async function POST(req: NextRequest) {
     }).catch((e) => { console.error('[Queue Broadcast] Erro:', e); return null; });
     console.log('[Queue Broadcast] Status:', broadcastRes?.status, broadcastRes?.statusText);
 
-    return NextResponse.json({ success: true, audioUrl });
+    return NextResponse.json({ success: true, audioUrl, ttsError: !audioUrl });
   } catch (error) {
     console.error('[Queue Call API] Erro:', error);
     return NextResponse.json(

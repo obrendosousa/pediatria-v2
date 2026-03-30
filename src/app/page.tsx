@@ -23,7 +23,7 @@ export default function Home() {
 
   return (
     // Fundo ajustado: Claro (#fffafa) | Escuro (#0b141a - tom profundo)
-    <div className="flex h-screen min-w-0 bg-[#fffafa] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300 relative">
+    <div className="flex h-full min-w-0 bg-[#fffafa] dark:bg-[#0b141a] overflow-hidden transition-colors duration-300 relative">
       
       {/* Sidebar de Navegação */}
       <Sidebar 

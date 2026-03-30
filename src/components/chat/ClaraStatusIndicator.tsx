@@ -32,6 +32,8 @@ type StatusConfig = {
   iconBg: string;
   dotColor: string;
   iconAnimation: 'spin' | 'bounce' | 'pulse';
+  /** Estimativa de tempo para ferramentas pesadas */
+  eta?: string;
 };
 
 const STATUS_CONFIG: Record<string, StatusConfig> = {
@@ -65,6 +67,7 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
     iconBg: 'from-amber-500 to-orange-600',
     dotColor: 'bg-amber-400',
     iconAnimation: 'spin',
+    eta: '1 a 3 minutos por passo',
   },
   step_done: {
     Icon: CheckCircle2,
@@ -79,6 +82,7 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
     iconBg: 'from-blue-500 to-indigo-600',
     dotColor: 'bg-blue-400',
     iconAnimation: 'pulse',
+    eta: '1 a 2 minutos',
   },
 
   // ── Busca Web ─────────────────────────────────────────────────────────────
@@ -93,10 +97,11 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
   // ── Deep Research — ferramentas especializadas ────────────────────────────
   'tool:deep_research_chats': {
     Icon: Map,
-    label: 'Processando conversas em lote (Map-Reduce)...',
+    label: 'Processando conversas em lote...',
     iconBg: 'from-rose-500 to-pink-600',
     dotColor: 'bg-rose-400',
     iconAnimation: 'spin',
+    eta: '2 a 5 minutos',
   },
   'tool:get_filtered_chats_list': {
     Icon: FileSearch,
@@ -162,6 +167,7 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
     iconBg: 'from-violet-500 to-purple-600',
     dotColor: 'bg-violet-400',
     iconAnimation: 'spin',
+    eta: '1 a 3 minutos',
   },
   'tool:gerar_relatorio_qualidade_chats': {
     Icon: ClipboardList,
@@ -169,15 +175,17 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
     iconBg: 'from-amber-500 to-orange-600',
     dotColor: 'bg-amber-400',
     iconAnimation: 'pulse',
+    eta: '2 a 4 minutos',
   },
 
   // ── Clara 2.0 — Novas ferramentas ─────────────────────────────────────────
   'tool:analyze_raw_conversations': {
     Icon: FileSearch,
-    label: 'Analisando conversas na fonte (pode levar 30s)...',
+    label: 'Analisando conversas na fonte...',
     iconBg: 'from-rose-500 to-pink-600',
     dotColor: 'bg-rose-400',
     iconAnimation: 'spin',
+    eta: '1 a 3 minutos',
   },
   'tool:ask_user_question': {
     Icon: MessageSquareMore,
@@ -212,6 +220,28 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
     label: 'Salvando relatório...',
     iconBg: 'from-green-500 to-emerald-600',
     dotColor: 'bg-green-400',
+    iconAnimation: 'pulse',
+  },
+  'tool:generate_deep_report': {
+    Icon: FileText,
+    label: 'Gerando relatório executivo profissional...',
+    iconBg: 'from-indigo-500 to-purple-600',
+    dotColor: 'bg-indigo-400',
+    iconAnimation: 'spin',
+    eta: '2 a 5 minutos',
+  },
+  'tool:get_daily_kpis': {
+    Icon: BarChart3,
+    label: 'Buscando KPIs do período...',
+    iconBg: 'from-emerald-500 to-teal-600',
+    dotColor: 'bg-emerald-400',
+    iconAnimation: 'spin',
+  },
+  'tool:schedule_task': {
+    Icon: Calendar,
+    label: 'Agendando tarefa...',
+    iconBg: 'from-violet-500 to-purple-600',
+    dotColor: 'bg-violet-400',
     iconAnimation: 'pulse',
   },
   'tool:criar_agendamento': {
@@ -262,7 +292,7 @@ interface Props {
 export default function ClaraStatusIndicator({ status, dynamicLabel }: Props) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.thinking;
   const displayLabel = dynamicLabel || config.label;
-  const { Icon, iconBg, dotColor, iconAnimation } = config;
+  const { Icon, iconBg, dotColor, iconAnimation, eta } = config;
 
   return (
     <>
@@ -289,7 +319,7 @@ export default function ClaraStatusIndicator({ status, dynamicLabel }: Props) {
         className="flex items-end gap-2 px-4 mb-1"
         style={{ animation: 'claraFadeUp 0.35s cubic-bezier(0.34,1.56,0.64,1) both' }}
       >
-        {/* Avatar — mesma aparência do MessageBubble */}
+        {/* Avatar */}
         <div
           className="w-[30px] h-[30px] rounded-full flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md ring-2 ring-white dark:ring-[#0b141a]"
           style={{ animation: 'claraGlow 2.5s ease-in-out infinite' }}
@@ -305,41 +335,55 @@ export default function ClaraStatusIndicator({ status, dynamicLabel }: Props) {
             style={{ animation: 'claraShimmer 2.4s ease-in-out infinite' }}
           />
 
-          <div className="flex items-center gap-2.5 relative z-10">
-            {/* Ícone da ação atual */}
-            <div
-              className={`w-[22px] h-[22px] rounded-md flex items-center justify-center bg-gradient-to-br ${iconBg} shadow-sm flex-shrink-0 transition-all duration-500`}
-            >
-              <Icon
-                size={12}
-                className={`text-white transition-all duration-300 ${
-                  iconAnimation === 'spin'
-                    ? 'animate-spin'
-                    : iconAnimation === 'bounce'
-                    ? 'animate-bounce'
-                    : 'animate-pulse'
-                }`}
-              />
-            </div>
-
-            {/* Texto descritivo */}
-            <span className="text-[11.5px] font-medium text-gray-500 dark:text-[#a1a1aa] select-none whitespace-nowrap transition-all duration-300">
-              {displayLabel}
-            </span>
-
-            {/* Três pontos animados */}
-            <div className="flex items-center gap-[3px] ml-0.5">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className={`block w-[5px] h-[5px] rounded-full ${dotColor} transition-colors duration-500`}
-                  style={{
-                    animation: 'claraDot 1.2s ease-in-out infinite',
-                    animationDelay: `${i * 0.2}s`,
-                  }}
+          <div className="relative z-10">
+            <div className="flex items-center gap-2.5">
+              {/* Ícone da ação atual */}
+              <div
+                className={`w-[22px] h-[22px] rounded-md flex items-center justify-center bg-gradient-to-br ${iconBg} shadow-sm flex-shrink-0 transition-all duration-500`}
+              >
+                <Icon
+                  size={12}
+                  className={`text-white transition-all duration-300 ${
+                    iconAnimation === 'spin'
+                      ? 'animate-spin'
+                      : iconAnimation === 'bounce'
+                      ? 'animate-bounce'
+                      : 'animate-pulse'
+                  }`}
                 />
-              ))}
+              </div>
+
+              {/* Texto descritivo */}
+              <span className="text-[11.5px] font-medium text-gray-500 dark:text-[#a1a1aa] select-none whitespace-nowrap transition-all duration-300">
+                {displayLabel}
+              </span>
+
+              {/* Três pontos animados */}
+              <div className="flex items-center gap-[3px] ml-0.5">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className={`block w-[5px] h-[5px] rounded-full ${dotColor} transition-colors duration-500`}
+                    style={{
+                      animation: 'claraDot 1.2s ease-in-out infinite',
+                      animationDelay: `${i * 0.2}s`,
+                    }}
+                  />
+                ))}
+              </div>
             </div>
+
+            {/* Estimativa de tempo — aparece só para ferramentas pesadas */}
+            {eta && (
+              <div
+                className="flex items-center gap-1.5 mt-1.5 pl-[30px]"
+                style={{ animation: 'claraFadeUp 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.2s both' }}
+              >
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium select-none">
+                  Pode levar {eta} — aguarde, estou trabalhando nisso
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

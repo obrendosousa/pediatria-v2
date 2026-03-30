@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
     // =========================================================================
     // DESVIO IA: AGENTE CLÍNICA GERAL
-    // Mensagens para o magic phone do agente são processadas pelo grafo LangGraph
+    // Mesmo padrão da Clara: fire-and-forget + Supabase Realtime Broadcast
     // =========================================================================
     if (phone === AI_PHONE) {
       const fakeWppId = `ai_atd_${Date.now()}`;
@@ -70,83 +70,143 @@ export async function POST(req: Request) {
         last_interaction_at: new Date().toISOString()
       }).eq('id', chatId);
 
-      // Chama o Agente Clínica Geral via /api/ai/copilot/chat (module-aware)
-      // Fire-and-forget: a resposta é emitida via streaming no CopilotChat
-      // mas aqui precisamos de uma resposta síncrona para o chat interno.
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-          ? new URL(req.url).origin
-          : 'http://localhost:3000';
+      // Fire-and-forget: dispara o grafo LangGraph em background (não bloqueia a response)
+      (async () => {
+        // Helper: broadcast status via Supabase Realtime (mesmo padrão da Clara)
+        const broadcastStatus = (status: string) => {
+          fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/realtime/v1/api/broadcast`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
+              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+            },
+            body: JSON.stringify({
+              messages: [{
+                topic: `clara:${chatId}`,
+                event: 'status',
+                payload: { status },
+              }],
+            }),
+          }).catch(() => {});
+        };
 
-        const agentRes = await fetch(`${baseUrl}/api/ai/copilot/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chatId,
-            message: message || '',
-            history: [],
-            module: 'atendimento',
-          }),
-        });
+        try {
+          const { HumanMessage, AIMessage } = await import('@langchain/core/messages');
+          const { clinicaGeralGraph } = await import('@/ai/clinica-geral/graph');
 
-        if (agentRes.ok && agentRes.body) {
-          // Parse streaming NDJSON para extrair os chunks de texto
-          const reader = agentRes.body.getReader();
-          const decoder = new TextDecoder();
-          let fullText = '';
-          let done = false;
+          const userText = message || 'Mídia enviada.';
+          broadcastStatus('thinking');
 
-          while (!done) {
-            const { value, done: streamDone } = await reader.read();
-            done = streamDone;
-            if (value) {
-              const lines = decoder.decode(value, { stream: true }).split('\n').filter(Boolean);
-              for (const line of lines) {
-                try {
-                  const parsed = JSON.parse(line);
-                  if (parsed.type === 'chunk' && parsed.content) {
-                    fullText += parsed.content;
+          let finalMessages: import('@langchain/core/messages').BaseMessage[] = [];
+          let typingSignaled = false;
+
+          const stream = clinicaGeralGraph.streamEvents(
+            { messages: [new HumanMessage(userText)], chat_id: chatId },
+            {
+              version: 'v2',
+              configurable: { thread_id: `clinica_geral_chat_${chatId}` },
+              streamMode: 'values',
+            }
+          );
+
+          for await (const event of stream) {
+            switch (event.event) {
+              case 'on_chat_model_start':
+                typingSignaled = false;
+                broadcastStatus('thinking');
+                break;
+
+              case 'on_chat_model_stream':
+                if (!typingSignaled) {
+                  typingSignaled = true;
+                  broadcastStatus('typing');
+                }
+                break;
+
+              case 'on_tool_start':
+                typingSignaled = false;
+                broadcastStatus(`tool:${event.name}`);
+                break;
+
+              case 'on_chain_start':
+                if (event.name === 'classify_node') broadcastStatus('thinking');
+                else if (event.name === 'write_research_brief_node') broadcastStatus('planning');
+                else if (event.name === 'research_supervisor_node') broadcastStatus('executing_step');
+                else if (event.name === 'final_report_node') broadcastStatus('writing_report');
+                break;
+
+              case 'on_chain_end':
+                if (event.name === 'simple_agent' || event.name === 'final_report_node' || event.name === 'write_research_brief_node') {
+                  const nodeMessages = (event.data?.output as { messages?: import('@langchain/core/messages').BaseMessage[] })?.messages;
+                  if (nodeMessages && nodeMessages.length > 0) {
+                    finalMessages = nodeMessages;
                   }
-                } catch { /* skip non-JSON lines */ }
-              }
+                }
+                if (event.name === 'LangGraph') {
+                  const graphMessages = (event.data?.output as { messages?: import('@langchain/core/messages').BaseMessage[] })?.messages ?? [];
+                  if (finalMessages.length === 0 && graphMessages.length > 0) {
+                    finalMessages = graphMessages;
+                  }
+                }
+                break;
             }
           }
 
-          if (fullText.trim()) {
-            await supabase.from('chat_messages').insert({
-              chat_id: chatId,
-              phone,
-              sender: 'contact',
-              message_text: fullText.trim(),
-              message_type: 'text',
-              status: 'read',
-              created_at: new Date(Date.now() + 1000).toISOString(),
-              wpp_id: `ai_atd_reply_${Date.now()}`
-            });
+          // Extrai a resposta do último AIMessage
+          const lastAiMsg = [...finalMessages].reverse().find(
+            (m) => (m as any)._getType?.() === 'ai' || m instanceof AIMessage
+          ) ?? finalMessages[finalMessages.length - 1];
 
-            await supabase.from('chats').update({
-              last_message: fullText.trim().slice(0, 200),
-              last_message_sender: 'contact',
-              last_interaction_at: new Date(Date.now() + 1000).toISOString(),
-              unread_count: 1,
-            }).eq('id', chatId);
-          }
+          const rawContent = lastAiMsg?.content;
+          const aiResponseText = typeof rawContent === 'string'
+            ? rawContent
+            : Array.isArray(rawContent)
+              ? (rawContent as Array<any>).map((c) => (typeof c === 'string' ? c : c?.text ?? '')).filter(Boolean).join('')
+              : rawContent ? String(rawContent) : 'Não consegui gerar uma resposta. Tente novamente.';
+
+          // Limpa tags <voice>
+          const cleanText = (aiResponseText.trim() || 'Não consegui gerar uma resposta.')
+            .replace(/<\/?voice>/g, '');
+
+          const baseTs = Date.now();
+          await supabase.from('chat_messages').insert({
+            chat_id: chatId,
+            phone,
+            sender: 'contact',
+            message_text: cleanText,
+            message_type: 'text',
+            status: 'read',
+            created_at: new Date(baseTs + 1000).toISOString(),
+            wpp_id: `ai_atd_reply_${baseTs}`
+          });
+
+          await supabase.from('chats').update({
+            last_message: cleanText.slice(0, 200),
+            last_message_sender: 'contact',
+            last_interaction_at: new Date(baseTs + 1000).toISOString(),
+            unread_count: 1,
+          }).eq('id', chatId);
+
+          broadcastStatus('idle');
+        } catch (err) {
+          console.error('[Agente Clínica] Erro no grafo:', err);
+          broadcastStatus('idle');
+
+          await supabase.from('chat_messages').insert({
+            chat_id: chatId,
+            phone,
+            sender: 'contact',
+            message_text: 'Desculpe, tive um problema ao processar sua mensagem. Tente novamente.',
+            message_type: 'text',
+            status: 'read',
+            created_at: new Date(Date.now() + 1000).toISOString(),
+            wpp_id: `ai_atd_reply_${Date.now()}`
+          });
         }
-      } catch (aiErr) {
-        console.error('[ATD/Send] Erro ao chamar agente IA:', aiErr);
-        // Fallback: insere mensagem de erro amigável
-        await supabase.from('chat_messages').insert({
-          chat_id: chatId,
-          phone,
-          sender: 'contact',
-          message_text: 'Desculpe, tive um problema ao processar sua mensagem. Tente novamente em alguns segundos.',
-          message_type: 'text',
-          status: 'read',
-          created_at: new Date(Date.now() + 1000).toISOString(),
-          wpp_id: `ai_atd_reply_${Date.now()}`
-        });
-      }
+      })();
 
+      // Retorna imediatamente — o grafo roda em background
       return NextResponse.json({ success: true, messageId: fakeWppId });
     }
     // =========================================================================

@@ -425,7 +425,7 @@ export default function ChatInput({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col bg-[var(--chat-surface)] relative z-20 transition-colors duration-200"
+      className="flex flex-col shrink-0 bg-[var(--chat-surface)] relative z-20 transition-colors duration-200"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}

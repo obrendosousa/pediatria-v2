@@ -428,7 +428,7 @@ Use research APENAS quando o escopo for genuinamente multi-dimensional e o usuá
 
   try {
     const classifierModel = new ChatGoogleGenerativeAI({
-      model: "gemini-3.1-flash-lite-preview",
+      model: "gemini-3.1-pro-preview",
       apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       temperature: 0,
     }).withStructuredOutput(ClassifySchema);
@@ -621,7 +621,7 @@ REGRAS DO BRIEF:
 Escreva um brief conciso (máx 300 palavras) com tarefas numeradas e ferramentas explícitas.`;
 
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-3.1-pro-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0,
   });
@@ -737,7 +737,7 @@ REGRAS:
 6. PRIORIZE: funil de conversão (new→won), pacientes perdidos (lost), motivos de perda, oportunidades financeiras`;
 
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-3.1-pro-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0,
   }).withStructuredOutput(SupervisorDecisionSchema);

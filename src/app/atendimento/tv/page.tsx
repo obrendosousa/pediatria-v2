@@ -161,6 +161,10 @@ export default function TVPanelPage() {
   const [isLight, setIsLight] = useState(() => searchParams.get('theme') !== 'dark');
   // Som sempre ativo — ref para uso em callbacks sem stale closure
   const soundEnabledRef = useRef(true);
+  // Controle de desbloqueio de áudio do navegador
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const audioUnlockedRef = useRef(false);
+  const pendingAudioRef = useRef<string | null>(null);
 
   // Dados reais
   const [tvAppointments, setTvAppointments] = useState<TVAppointment[]>([]);
@@ -398,6 +402,45 @@ export default function TVPanelPage() {
     return () => clearInterval(t);
   }, []);
 
+  // Toca áudio TTS 2x sequencialmente (espera terminar antes de repetir)
+  const playTtsAudio = useCallback((url: string) => {
+    const playOnce = (): Promise<void> => {
+      return new Promise((resolve) => {
+        const audio = new Audio(url);
+        audio.onended = () => resolve();
+        audio.onerror = () => resolve();
+        audio.play().catch((err) => {
+          console.error('[TV] Erro ao tocar audio:', err);
+          resolve();
+        });
+      });
+    };
+    playOnce().then(() => {
+      setTimeout(() => playOnce(), 800);
+    });
+  }, []);
+
+  // Desbloquear áudio do navegador — chamado no primeiro clique
+  const unlockAudio = useCallback(() => {
+    if (audioUnlockedRef.current) return;
+    audioUnlockedRef.current = true;
+    setAudioUnlocked(true);
+    // Unlock WebAudio context
+    const ctx = new AudioContext();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    g.gain.value = 0;
+    o.start(); o.stop(ctx.currentTime + 0.01);
+    console.log('[TV] Áudio desbloqueado pelo clique do usuário');
+    // Tocar áudio pendente se houver
+    if (pendingAudioRef.current) {
+      const url = pendingAudioRef.current;
+      pendingAudioRef.current = null;
+      setTimeout(() => playTtsAudio(url), 200);
+    }
+  }, [playTtsAudio]);
+
   // Mostrar overlay de chamada + tocar audio TTS (usa ref para evitar stale closure)
   const showCallOverlay = useCallback((data: TVCallPayload) => {
     console.log('[TV] showCallOverlay recebido:', data, 'som:', soundEnabledRef.current);
@@ -405,43 +448,19 @@ export default function TVPanelPage() {
     setCallOverlay(data);
 
     if (data.tts_audio_url && soundEnabledRef.current) {
-      console.log('[TV] Tocando audio TTS (2x):', data.tts_audio_url);
-      const playAudio = () => {
-        const audio = new Audio(data.tts_audio_url!);
-        return audio.play().catch((err) => console.error('[TV] Erro ao tocar audio:', err));
-      };
-      playAudio().then(() => {
-        // Aguarda 800ms após o término estimado e toca novamente
-        setTimeout(playAudio, 800);
-      });
-    } else if (soundEnabledRef.current) {
-      // Fallback: Web Speech API (browser TTS nativo) — toca 2x
-      const spokenText = data.spoken_text
-        || (data.ticket_number
-          ? `${data.patient_name}, por favor dirija-se ao ${data.service_point_name}`
-          : data.patient_name);
-      const speak = () => {
-        const utterance = new SpeechSynthesisUtterance(spokenText);
-        utterance.lang = 'pt-BR';
-        utterance.rate = 0.9;
-        utterance.volume = 1;
-        return utterance;
-      };
-      try {
-        window.speechSynthesis.cancel();
-        const first = speak();
-        first.onend = () => {
-          setTimeout(() => window.speechSynthesis.speak(speak()), 600);
-        };
-        window.speechSynthesis.speak(first);
-        console.log('[TV] Web Speech API (2x):', spokenText);
-      } catch (err) {
-        console.error('[TV] Web Speech API erro:', err);
+      if (audioUnlockedRef.current) {
+        console.log('[TV] Tocando audio TTS (2x):', data.tts_audio_url);
+        playTtsAudio(data.tts_audio_url);
+      } else {
+        console.warn('[TV] Áudio pendente — aguardando clique para desbloquear');
+        pendingAudioRef.current = data.tts_audio_url;
       }
+    } else if (soundEnabledRef.current) {
+      console.warn('[TV] Sem URL de áudio TTS, pulando anúncio de voz (Kokoro pode estar offline)');
     }
 
     overlayTimerRef.current = setTimeout(() => setCallOverlay(null), 10000);
-  }, []);
+  }, [playTtsAudio]);
 
   // SSE stream para chamadas manuais (mais confiável que Supabase broadcast)
   useEffect(() => {
@@ -496,22 +515,10 @@ export default function TVPanelPage() {
 
   // Desbloquear audio do navegador no primeiro clique em qualquer lugar da pagina
   useEffect(() => {
-    const unlock = () => {
-      // Unlock WebAudio
-      const ctx = new AudioContext();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      g.gain.value = 0;
-      o.start(); o.stop(ctx.currentTime + 0.01);
-      // Unlock Web Speech API
-      const u = new SpeechSynthesisUtterance('');
-      window.speechSynthesis.speak(u);
-      document.removeEventListener('click', unlock);
-    };
-    document.addEventListener('click', unlock);
-    return () => document.removeEventListener('click', unlock);
-  }, []);
+    const handler = () => unlockAudio();
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [unlockAudio]);
 
   // Listas derivadas
   const waiting = tvAppointments.filter(a => a.status === 'waiting');
@@ -646,6 +653,18 @@ export default function TVPanelPage() {
           </>
         )}
       </div>
+
+      {/* Banner de desbloqueio de áudio — navegador exige interação do usuário */}
+      {!audioUnlocked && (
+        <button
+          onClick={unlockAudio}
+          className="relative z-50 w-full py-3 flex items-center justify-center gap-3 text-white font-semibold text-lg animate-pulse"
+          style={{ background: `linear-gradient(135deg, ${BRAND.red}, ${BRAND.redDark})` }}
+        >
+          <Volume2 className="w-6 h-6" />
+          Clique aqui para ativar o som das chamadas
+        </button>
+      )}
 
       {/* ══════ HEADER ══════ */}
       <div className="relative z-10 flex items-center justify-between px-10 py-5">

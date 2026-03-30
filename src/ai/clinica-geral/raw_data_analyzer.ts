@@ -108,7 +108,7 @@ function buildBatches(
   allMessages: RawChatMessage[],
   chatNames: Record<number, string>,
   formatMessage: (m: RawChatMessage) => string,
-  targetSize = 15 // 12->15: menos batches = menos roundtrips de API sem perder qualidade no flash-lite
+  targetSize = 25 // 25 chats/lote: flash handles well, reduces total batches significantly
 ): AnalysisBatch[] {
   const byChat: Record<number, RawChatMessage[]> = {};
   for (const msg of allMessages) {
@@ -250,12 +250,12 @@ async function fanOutAnalyze(
   chatNames: Record<number, string>
 ): Promise<{ classifications: ChatClassification[]; errors: number }> {
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-3.1-flash-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0.1,
   });
 
-  const MAX_CONCURRENCY = 8; // 5->8: gemini-flash-lite suporta maior paralelismo, reduz janelas sequenciais
+  const MAX_CONCURRENCY = 30; // 30: gemini-flash suporta alto paralelismo, analisa todos os chats sem cap
   const results: BatchResult[] = [];
 
   for (let i = 0; i < batches.length; i += MAX_CONCURRENCY) {
@@ -515,6 +515,7 @@ IMPORTANTE: per_chat_classification=true ativa fan-out paralelo por conversa (me
 
     // ═══════════════════════════════════════════════════════════════════════
     // ESTRATEGIA A: FAN-OUT (classificacao individual de cada conversa)
+    // Sem cap de chats — analisa TODOS. Concorrencia alta (30) compensa volume.
     // ═══════════════════════════════════════════════════════════════════════
     if (strategy === "fan_out_classify") {
       const batches = buildBatches(allMessages, chatNames, formatMessage);
@@ -532,7 +533,7 @@ IMPORTANTE: per_chat_classification=true ativa fan-out paralelo por conversa (me
     // ESTRATEGIA B: SINGLE PASS (analise agregada em uma chamada)
     // ═══════════════════════════════════════════════════════════════════════
     const model = new ChatGoogleGenerativeAI({
-      model: "gemini-3.1-flash-lite-preview",
+      model: "gemini-3.1-flash-preview",
       apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       temperature: 0.1,
     });

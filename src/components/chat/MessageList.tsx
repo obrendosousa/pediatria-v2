@@ -162,8 +162,8 @@ export default function MessageList({
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
   const [claraStatus, setClaraStatus] = useState<string | null>(null);
 
-  // Variável segura para identificar o chat da IA
-  const isAIChat = chat?.phone === '00000000000';
+  // Variável segura para identificar o chat da IA (Clara ou Agente Clínica)
+  const isAIChat = chat?.phone === '00000000000' || chat?.phone === '00000000001';
 
   // Subscrição ao canal de broadcast da Clara para receber status em tempo real
   useEffect(() => {

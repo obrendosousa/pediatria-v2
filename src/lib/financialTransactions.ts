@@ -92,10 +92,7 @@ export async function createFinancialTransaction(
 
   if (txError || !transaction) {
     if (isMissingFinancialTable(txError?.message)) {
-      // Compatibilidade temporária: permite operação principal continuar
-      // enquanto a migration do módulo financeiro não foi aplicada.
-      console.warn('[finance] Tabelas financeiras não encontradas. Lançamento ignorado até aplicar migration.');
-      return 0;
+      throw new Error('[finance] Tabelas financeiras não encontradas. Execute a migration create_financial_module_tables.sql antes de registrar transações.');
     }
     throw new Error(txError?.message || 'Erro ao registrar transação financeira.');
   }
@@ -116,8 +113,7 @@ export async function createFinancialTransaction(
 
   if (paymentError) {
     if (isMissingFinancialTable(paymentError.message)) {
-      console.warn('[finance] Tabela de formas de pagamento não encontrada. Lançamento ignorado até aplicar migration.');
-      return transaction.id as number;
+      throw new Error('[finance] Tabela de formas de pagamento não encontrada. Execute a migration create_financial_module_tables.sql.');
     }
     throw new Error(paymentError.message || 'Erro ao registrar formas de pagamento.');
   }
