@@ -22,9 +22,21 @@ import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueueTickets } from '@/hooks/useQueueTickets';
 import { useServicePoints } from '@/hooks/useServicePoints';
+import { useTVCall } from '@/hooks/useTVCall';
 
 const supabase = createSchemaClient('atendimento');
 const supabasePublic = createClient();
+
+/** Offset virtual para diferenciar IDs do schema public (pediatria) dos IDs do atendimento */
+const PED_ID_OFFSET = 10_000_000;
+
+/** Retorna o client Supabase correto para o appointment (pediatria vs atendimento) */
+const getClientForApt = (apt: Appointment) =>
+  apt.source_module === 'pediatria' ? supabasePublic : supabase;
+
+/** Retorna o ID real no banco para o appointment (desfaz offset virtual da pediatria) */
+const getRealId = (apt: Appointment) =>
+  apt.source_module === 'pediatria' ? apt.id - PED_ID_OFFSET : apt.id;
 
 // Tipo local para appointments do schema atendimento (date + time separados)
 type AtendimentoAppointment = {
@@ -56,6 +68,7 @@ type AtendimentoAppointment = {
   is_teleconsultation?: boolean;
   queue_stage?: 'reception' | 'doctor' | null;
   current_ticket_id?: number | null;
+  source_module?: 'pediatria' | 'atendimento';
 };
 
 type DoctorOption = { id: number; name: string; color?: string };
@@ -92,6 +105,7 @@ function toReceptionAppointment(apt: AtendimentoAppointment): Appointment {
     is_teleconsultation: apt.is_teleconsultation,
     queue_stage: apt.queue_stage || null,
     current_ticket_id: apt.current_ticket_id ?? null,
+    source_module: apt.source_module,
   } as Appointment;
 }
 
@@ -102,6 +116,14 @@ export default function AtendimentoCRMPage() {
   // Hooks de fila
   const { generateTicket, callTicket, completeTicket, fetchTodayTickets, tickets } = useQueueTickets();
   const { servicePoints, listServicePoints } = useServicePoints();
+
+  // TV — chamada de pacientes
+  const { callPatientOnTV } = useTVCall();
+  const handleCallOnTV = (apt: Appointment) => {
+    if (apt.patient_name) {
+      callPatientOnTV(apt.patient_name, { doctorName: apt.doctor_name || undefined });
+    }
+  };
 
   // Tabs
   const [receptionFlowTab, setReceptionFlowTab] = useState<'flow' | 'checkout'>('flow');
@@ -205,10 +227,11 @@ export default function AtendimentoCRMPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch appointments
+  // Fetch appointments (atendimento + pediatria cross-schema)
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      // 1) Buscar appointments do schema atendimento
       const selectQuery = '*, patients:patient_id(full_name, phone, sex)';
       let query = supabase
         .from('appointments')
@@ -227,40 +250,89 @@ export default function AtendimentoCRMPage() {
         console.error('[CRM] fetchData error:', error);
         return;
       }
-      if (data) {
-        const rows = data as Array<Record<string, unknown>>;
-        const mapped: AtendimentoAppointment[] = rows.map((row) => {
-          const patient = row.patients as { full_name?: string; phone?: string; sex?: string } | null;
-          const doctor = doctors.find(d => d.id === row.doctor_id);
-          return {
-            id: row.id as number,
-            date: row.date as string,
-            time: row.time as string | null,
-            patient_id: row.patient_id as number | null,
-            doctor_id: row.doctor_id as number | null,
-            doctor_name: doctor?.name || (row.doctor_name as string) || undefined,
-            type: row.type as string | null,
-            status: row.status as string,
-            notes: row.notes as string | null,
-            parent_name: row.parent_name as string | null,
-            parent_phone: row.parent_phone as string | null,
-            consultation_value: row.consultation_value as number | null,
-            patient_name: patient?.full_name || (row.patient_name as string) || null,
-            patient_phone: patient?.phone || (row.patient_phone as string) || null,
-            patient_sex: (patient?.sex as 'M' | 'F') || (row.patient_sex as 'M' | 'F') || null,
-            total_amount: row.total_amount as number | undefined,
-            amount_paid: row.amount_paid as number | undefined,
-            appointment_subtype: row.appointment_subtype as string | null,
-            procedures: row.procedures as string[] | null,
-            is_squeeze: row.is_squeeze as boolean | undefined,
-            is_teleconsultation: row.is_teleconsultation as boolean | undefined,
-            queue_stage: row.queue_stage as 'reception' | 'doctor' | null,
-            current_ticket_id: row.current_ticket_id as number | null,
-          };
-        });
-        setRawAppointments(mapped);
-        setAppointments(mapped.map(toReceptionAppointment));
+
+      const atedRows = (data || []) as Array<Record<string, unknown>>;
+      const atedMapped: AtendimentoAppointment[] = atedRows.map((row) => {
+        const patient = row.patients as { full_name?: string; phone?: string; sex?: string } | null;
+        const doctor = doctors.find(d => d.id === row.doctor_id);
+        return {
+          id: row.id as number,
+          date: row.date as string,
+          time: row.time as string | null,
+          patient_id: row.patient_id as number | null,
+          doctor_id: row.doctor_id as number | null,
+          doctor_name: doctor?.name || (row.doctor_name as string) || undefined,
+          type: row.type as string | null,
+          status: row.status as string,
+          notes: row.notes as string | null,
+          parent_name: row.parent_name as string | null,
+          parent_phone: row.parent_phone as string | null,
+          consultation_value: row.consultation_value as number | null,
+          patient_name: patient?.full_name || (row.patient_name as string) || null,
+          patient_phone: patient?.phone || (row.patient_phone as string) || null,
+          patient_sex: (patient?.sex as 'M' | 'F') || (row.patient_sex as 'M' | 'F') || null,
+          total_amount: row.total_amount as number | undefined,
+          amount_paid: row.amount_paid as number | undefined,
+          appointment_subtype: row.appointment_subtype as string | null,
+          procedures: row.procedures as string[] | null,
+          is_squeeze: row.is_squeeze as boolean | undefined,
+          is_teleconsultation: row.is_teleconsultation as boolean | undefined,
+          queue_stage: row.queue_stage as 'reception' | 'doctor' | null,
+          current_ticket_id: row.current_ticket_id as number | null,
+          source_module: 'atendimento',
+        };
+      });
+
+      // 2) Buscar appointments da pediatria (public.appointments)
+      let pedQuery = supabasePublic
+        .from('appointments')
+        .select('*')
+        .gte('start_time', `${selectedDate}T00:00:00`)
+        .lte('start_time', `${selectedDate}T23:59:59`)
+        .neq('status', 'cancelled')
+        .neq('status', 'blocked');
+
+      if (selectedDoctorId) {
+        pedQuery = pedQuery.eq('doctor_id', selectedDoctorId);
       }
+
+      const { data: pedData } = await pedQuery;
+      const pedMapped: AtendimentoAppointment[] = (pedData || []).map((row: Record<string, unknown>) => {
+        const startTime = row.start_time as string;
+        const datePart = startTime ? startTime.substring(0, 10) : selectedDate;
+        const timePart = startTime ? startTime.substring(11, 16) : null;
+        const doctor = doctors.find(d => d.id === row.doctor_id);
+        return {
+          id: (row.id as number) + PED_ID_OFFSET,
+          date: datePart,
+          time: timePart,
+          patient_id: row.patient_id as number | null,
+          doctor_id: row.doctor_id as number | null,
+          doctor_name: doctor?.name || (row.doctor_name as string) || undefined,
+          type: row.appointment_type as string | null,
+          status: row.status as string,
+          notes: row.notes as string | null,
+          parent_name: row.parent_name as string | null,
+          parent_phone: null,
+          consultation_value: null,
+          patient_name: row.patient_name as string | null,
+          patient_phone: row.patient_phone as string | null,
+          patient_sex: row.patient_sex as 'M' | 'F' | null,
+          total_amount: row.total_amount as number | undefined,
+          amount_paid: row.amount_paid as number | undefined,
+          source_module: 'pediatria' as const,
+        };
+      });
+
+      // 3) Mesclar e ordenar por horário
+      const allMapped = [...atedMapped, ...pedMapped].sort((a, b) => {
+        const ta = a.time || '00:00';
+        const tb = b.time || '00:00';
+        return ta.localeCompare(tb);
+      });
+
+      setRawAppointments(allMapped);
+      setAppointments(allMapped.map(toReceptionAppointment));
     } catch (err) {
       console.error('[CRM] fetchData catch:', err);
     } finally {
@@ -274,7 +346,7 @@ export default function AtendimentoCRMPage() {
     fetchTodayTickets();
   }, [fetchData, fetchTodayTickets]);
 
-  // Realtime subscription (appointments + queue_tickets)
+  // Realtime subscription (atendimento.appointments + atendimento.queue_tickets + public.appointments)
   useEffect(() => {
     const channel = supabase
       .channel('atendimento_crm_updates')
@@ -286,7 +358,18 @@ export default function AtendimentoCRMPage() {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Canal separado para mudanças na pediatria (schema public)
+    const pedChannel = supabasePublic
+      .channel('ped_appointments_in_crm')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabasePublic.removeChannel(pedChannel);
+    };
   }, [fetchData, fetchTodayTickets]);
 
   // Navegacao de data
@@ -294,12 +377,14 @@ export default function AtendimentoCRMPage() {
     setSelectedDate(addDaysToDate(selectedDate, days));
   };
 
-  // --- Acoes sobre appointments ---
-  const updateAppointmentStatus = async (aptId: number, updates: Record<string, string | null>) => {
-    const { error } = await supabase
+  // --- Acoes sobre appointments (cross-schema aware) ---
+  const updateAppointmentStatus = async (apt: Appointment, updates: Record<string, string | null>) => {
+    const client = getClientForApt(apt);
+    const realId = getRealId(apt);
+    const { error } = await client
       .from('appointments')
       .update(updates)
-      .eq('id', aptId);
+      .eq('id', realId);
     if (error) throw error;
   };
 
@@ -382,7 +467,7 @@ export default function AtendimentoCRMPage() {
         });
       }
 
-      await updateAppointmentStatus(appointment.id, { status: 'called' });
+      await updateAppointmentStatus(appointment, { status: 'called' });
       fetchData();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Tente novamente.';
@@ -429,7 +514,9 @@ export default function AtendimentoCRMPage() {
   const handleGenerateTicket = async (apt: Appointment, isPriority: boolean) => {
     setIsUpdating(apt.id);
     try {
-      await generateTicket(apt.id, isPriority, 'reception');
+      const realId = getRealId(apt);
+      const sourceSchema = apt.source_module === 'pediatria' ? 'public' as const : 'atendimento' as const;
+      await generateTicket(realId, isPriority, 'reception', sourceSchema);
       toast.success(`Senha gerada para ${apt.patient_name || 'paciente'}`);
       fetchData();
       fetchTodayTickets();
@@ -497,7 +584,9 @@ export default function AtendimentoCRMPage() {
       }
 
       // Gerar novo ticket para fila do medico
-      await generateTicket(apt.id, activeTicket?.is_priority ?? false, 'doctor');
+      const realId = getRealId(apt);
+      const sourceSchema = apt.source_module === 'pediatria' ? 'public' as const : 'atendimento' as const;
+      await generateTicket(realId, activeTicket?.is_priority ?? false, 'doctor', sourceSchema);
       toast.success(`${apt.patient_name || 'Paciente'} enviado para fila do médico`);
       fetchData();
       fetchTodayTickets();
@@ -512,7 +601,7 @@ export default function AtendimentoCRMPage() {
   const handleCheckIn = async (apt: Appointment) => {
     setIsUpdating(apt.id);
     try {
-      await updateAppointmentStatus(apt.id, { status: 'waiting' });
+      await updateAppointmentStatus(apt, { status: 'waiting' });
       fetchData();
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Tente novamente.';
@@ -526,7 +615,9 @@ export default function AtendimentoCRMPage() {
     setIsUpdating(apt.id);
     try {
       // Verificar se outro paciente esta em atendimento pelo mesmo medico
-      let query = supabase.from('appointments').select('*').eq('status', 'in_service').neq('id', apt.id);
+      const client = getClientForApt(apt);
+      const realId = getRealId(apt);
+      let query = client.from('appointments').select('*').eq('status', 'in_service').neq('id', realId);
       if (apt.doctor_id) {
         query = query.eq('doctor_id', apt.doctor_id);
       }
@@ -541,11 +632,11 @@ export default function AtendimentoCRMPage() {
           onConfirm: async () => {
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
             const ids = currentInService.map((a: Record<string, unknown>) => a.id as number);
-            await supabase.from('appointments')
+            await client.from('appointments')
               .update({ status: 'finished' })
               .in('id', ids);
 
-            await updateAppointmentStatus(apt.id, { status: 'in_service' });
+            await updateAppointmentStatus(apt, { status: 'in_service' });
             toast.success(`Entrada confirmada para ${apt.patient_name || 'paciente'}.`);
             fetchData();
           }
@@ -554,7 +645,7 @@ export default function AtendimentoCRMPage() {
         return;
       }
 
-      await updateAppointmentStatus(apt.id, { status: 'in_service' });
+      await updateAppointmentStatus(apt, { status: 'in_service' });
       toast.success(`Entrada confirmada para ${apt.patient_name || 'paciente'}.`);
       fetchData();
     } catch (error: unknown) {
@@ -575,7 +666,7 @@ export default function AtendimentoCRMPage() {
       if (activeTicket) {
         await completeTicket(activeTicket.id);
       }
-      await updateAppointmentStatus(apt.id, { status: 'finished' });
+      await updateAppointmentStatus(apt, { status: 'finished' });
       fetchData();
       fetchTodayTickets();
     } catch (error: unknown) {
@@ -613,7 +704,7 @@ export default function AtendimentoCRMPage() {
           if (newStatus === 'scheduled') {
             updates.queue_stage = null;
           }
-          await updateAppointmentStatus(apt.id, updates);
+          await updateAppointmentStatus(apt, updates);
           fetchData();
         } catch (error: unknown) {
           const msg = error instanceof Error ? error.message : 'Tente novamente.';
@@ -837,6 +928,7 @@ export default function AtendimentoCRMPage() {
               onGenerateTicket={handleGenerateTicket}
               onCallWithDestination={handleCallWithDestination}
               onFinishGuiche={handleFinishGuiche}
+              onCallOnTV={handleCallOnTV}
               ticketMap={ticketMap}
             />
           )}

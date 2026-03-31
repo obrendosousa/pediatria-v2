@@ -169,6 +169,7 @@ QUANDO NÃO SUGERIR (chame 'suggest_ignore'):
 - Confirmações simples sem necessidade de resposta
 - Mensagens que a Joana já respondeu adequadamente
 - Quando a conversa está fluindo bem sem obstáculos
+- REGRA CRÍTICA: Se a ÚLTIMA mensagem no histórico é da Clínica/Joana (não do paciente), chame 'suggest_ignore' OBRIGATORIAMENTE. Não faz sentido sugerir resposta para nossa própria mensagem.
 
 ════════════════════════════════════════════
 QUANDO AGENDAR FOLLOW-UP (chame 'suggest_scheduled_message'):
@@ -212,8 +213,11 @@ Analise o histórico acima e acione a ferramenta adequada agora.`;
 
 copilotWorkflow.addNode("tools", new ToolNode(copilotTools));
 
+// @ts-expect-error LangGraph tipagem dinâmica de nós
 copilotWorkflow.addEdge(START, "agent");
+// @ts-expect-error LangGraph tipagem dinâmica de nós
 copilotWorkflow.addConditionalEdges("agent", toolsCondition);
+// @ts-expect-error LangGraph tipagem dinâmica de nós
 copilotWorkflow.addEdge("tools", "agent");
 
 export const copilotGraph = copilotWorkflow.compile();

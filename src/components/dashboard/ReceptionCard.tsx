@@ -2,7 +2,7 @@
 
 import { Appointment } from '@/types/medical';
 import {
-  Clock, Megaphone, MapPin,
+  Clock, Megaphone, MapPin, Tv,
   DoorOpen, CheckCircle, Undo2, Loader2,
   DollarSign, Wallet, Ticket, ArrowRight,
   Star, UserCheck,
@@ -34,11 +34,13 @@ interface ReceptionCardProps {
   onGenerateTicket?: (isPriority: boolean) => void;
   onCallWithDestination?: () => void;
   onFinishGuiche?: () => void;
+  onCallOnTV?: () => void;
   buttonLabel?: string;
   selectable?: boolean;
   isSelected?: boolean;
   columnContext?: 'guiche' | 'doctor' | null;
   isDragOverlay?: boolean;
+  sourceModule?: 'pediatria' | 'atendimento';
 }
 
 export default function ReceptionCard({
@@ -58,11 +60,13 @@ export default function ReceptionCard({
   onGenerateTicket,
   onCallWithDestination,
   onFinishGuiche,
+  onCallOnTV,
   buttonLabel,
   selectable = false,
   isSelected = false,
   columnContext,
   isDragOverlay = false,
+  sourceModule,
 }: ReceptionCardProps) {
   const formatTime = formatAppointmentTime;
 
@@ -156,9 +160,16 @@ export default function ReceptionCard({
       {/* Header: nome + badges */}
       <div className="flex items-start justify-between mb-1.5">
         <div className="flex-1 min-w-0 mr-2">
-          <h3 className="font-semibold text-slate-800 dark:text-[#fafafa] text-sm truncate">
-            {appointment.patient_name || 'Sem nome'}
-          </h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-semibold text-slate-800 dark:text-[#fafafa] text-sm truncate">
+              {appointment.patient_name || 'Sem nome'}
+            </h3>
+            {sourceModule === 'pediatria' && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-800 shrink-0">
+                PEDI
+              </span>
+            )}
+          </div>
           {appointment.patient_phone && (
             <p className="text-[10px] text-slate-500 dark:text-[#a1a1aa] truncate mt-0.5">
               {appointment.patient_phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
@@ -166,6 +177,16 @@ export default function ReceptionCard({
           )}
         </div>
         <div className="flex flex-col items-end gap-1">
+          {onCallOnTV && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onCallOnTV(); }}
+              className="p-1 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-600 dark:text-amber-400 rounded-md transition-all border border-amber-200 dark:border-amber-800/50"
+              title="Chamar na TV"
+            >
+              <Tv className="w-3 h-3" />
+            </button>
+          )}
           {ticket && (
             <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded flex items-center gap-1 ${
               ticket.is_priority

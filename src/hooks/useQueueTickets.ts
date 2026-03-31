@@ -2,9 +2,15 @@
 
 import { useState, useCallback } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
+import { createClient } from '@/lib/supabase/client';
 import type { QueueTicket, QueueTicketWithDetails, QueueStage } from '@/types/queue';
 
 const supabase = createSchemaClient('atendimento');
+const supabasePublic = createClient();
+
+/** Retorna o client correto para atualizar o appointment no schema de origem */
+const getAptClient = (sourceSchema?: 'public' | 'atendimento') =>
+  sourceSchema === 'public' ? supabasePublic : supabase;
 
 export function useQueueTickets() {
   const [tickets, setTickets] = useState<QueueTicketWithDetails[]>([]);
@@ -42,11 +48,14 @@ export function useQueueTickets() {
     }
   }, []);
 
-  /** Gera uma nova senha para o agendamento */
+  /** Gera uma nova senha para o agendamento
+   * @param sourceSchema - 'public' para pediatria, 'atendimento' para clinica geral
+   */
   const generateTicket = useCallback(async (
     appointmentId: number,
     isPriority: boolean,
-    stage: QueueStage
+    stage: QueueStage,
+    sourceSchema?: 'public' | 'atendimento'
   ): Promise<QueueTicket> => {
     // Determinar prefixo: P para prioridade, G para guichê, C para consultório
     const prefix = isPriority ? 'P' : (stage === 'reception' ? 'G' : 'C');
@@ -57,7 +66,7 @@ export function useQueueTickets() {
       .rpc('next_ticket_number', { p_prefix: prefix });
     if (rpcError) throw new Error(rpcError.message || 'Erro ao gerar numero da senha');
 
-    // Inserir ticket
+    // Inserir ticket (sempre no schema atendimento.queue_tickets)
     const { data: ticket, error: insertError } = await supabase
       .from('queue_tickets')
       .insert({
@@ -67,13 +76,15 @@ export function useQueueTickets() {
         queue_stage: stage,
         is_priority: isPriority,
         status: 'waiting',
+        source_schema: sourceSchema || 'atendimento',
       })
       .select()
       .single();
     if (insertError) throw new Error(insertError.message || 'Erro ao inserir senha');
 
-    // Atualizar appointment com stage e ticket_id
-    await supabase
+    // Atualizar appointment com stage e ticket_id (no schema correto)
+    const aptClient = getAptClient(sourceSchema);
+    await aptClient
       .from('appointments')
       .update({
         queue_stage: stage,
@@ -110,8 +121,10 @@ export function useQueueTickets() {
 
     const tk = ticket as QueueTicket;
 
-    // Atualizar appointment status para 'called'
-    await supabase
+    // Atualizar appointment status para 'called' (detectar schema via source_schema do ticket)
+    const ticketSourceSchema = (tk as QueueTicket & { source_schema?: string }).source_schema;
+    const aptClient = getAptClient(ticketSourceSchema as 'public' | 'atendimento' | undefined);
+    await aptClient
       .from('appointments')
       .update({ status: 'called' })
       .eq('id', tk.appointment_id);

@@ -48,6 +48,7 @@ interface ReceptionFlowColumnsProps {
   onGenerateTicket?: (appointment: Appointment, isPriority: boolean) => void;
   onCallWithDestination?: (appointment: Appointment) => void;
   onFinishGuiche?: (appointment: Appointment) => void;
+  onCallOnTV?: (appointment: Appointment) => void;
   /** Mapa de tickets por appointment_id */
   ticketMap?: Map<number, TicketInfo>;
   /** Variante do fluxo: 'pediatria' = Agendado→Confirmado→Fila→Atendimento→Concluído; 'atendimento' = fluxo com guichê */
@@ -77,6 +78,7 @@ export default function ReceptionFlowColumns({
   onGenerateTicket,
   onCallWithDestination,
   onFinishGuiche,
+  onCallOnTV,
   ticketMap,
   variant = 'atendimento',
 }: ReceptionFlowColumnsProps) {
@@ -276,6 +278,7 @@ export default function ReceptionFlowColumns({
               }}
               onCall={onCallAppointment}
               onCheckIn={onCheckIn}
+              onCallOnTV={onCallOnTV}
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}
               callingAppointmentId={callingAppointmentId}
@@ -295,6 +298,7 @@ export default function ReceptionFlowColumns({
                 headerBg: 'bg-amber-50/50 dark:bg-amber-900/30'
               }}
               onConfirmArrival={onConfirmArrival}
+              onCallOnTV={onCallOnTV}
               onRevert={(apt) => handleRevert(apt, 'scheduled')}
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}
@@ -317,6 +321,7 @@ export default function ReceptionFlowColumns({
                 headerBg: 'bg-green-50/50 dark:bg-green-900/30'
               }}
               onEnter={onEnter}
+              onCallOnTV={onCallOnTV}
               onRevert={(apt) => handleRevert(apt, 'scheduled')}
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}
@@ -337,6 +342,7 @@ export default function ReceptionFlowColumns({
                 headerBg: 'bg-emerald-50/50 dark:bg-emerald-900/30'
               }}
               onFinish={onFinish}
+              onCallOnTV={onCallOnTV}
               onRevert={(apt) => handleRevert(apt, 'waiting')}
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}
@@ -382,6 +388,7 @@ export default function ReceptionFlowColumns({
               onCall={onCallAppointment}
               onCheckIn={onCheckIn}
               onGenerateTicket={onGenerateTicket}
+              onCallOnTV={onCallOnTV}
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}
               callingAppointmentId={callingAppointmentId}
@@ -402,6 +409,7 @@ export default function ReceptionFlowColumns({
                 headerBg: 'bg-cyan-50/50 dark:bg-cyan-900/30'
               }}
               onCallWithDestination={onCallWithDestination}
+              onCallOnTV={onCallOnTV}
               onRevert={(apt) => handleRevert(apt, 'scheduled')}
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}
@@ -424,6 +432,7 @@ export default function ReceptionFlowColumns({
                 headerBg: 'bg-teal-50/50 dark:bg-teal-900/30'
               }}
               onFinishGuiche={onFinishGuiche}
+              onCallOnTV={onCallOnTV}
               onRevert={(apt) => handleRevert(apt, 'waiting')}
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}
@@ -446,6 +455,7 @@ export default function ReceptionFlowColumns({
                 headerBg: 'bg-green-50/50 dark:bg-green-900/30'
               }}
               onCallWithDestination={onCallWithDestination}
+              onCallOnTV={onCallOnTV}
               onEnter={onEnter}
               onRevert={(apt) => handleRevert(apt, 'scheduled')}
               onEditAppointment={onEditAppointment}
@@ -469,6 +479,7 @@ export default function ReceptionFlowColumns({
                 headerBg: 'bg-emerald-50/50 dark:bg-emerald-900/30'
               }}
               onFinish={onFinish}
+              onCallOnTV={onCallOnTV}
               onRevert={(apt) => handleRevert(apt, 'waiting')}
               onEditAppointment={onEditAppointment}
               isUpdating={isUpdating}

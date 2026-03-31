@@ -5,10 +5,10 @@ import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 import { Chat, ChatPatient as Patient } from '@/types';
-import { 
+import {
   LayoutList, Users, DollarSign,
-  BarChart3, Calendar, 
-  ChevronLeft, ChevronRight, UserPlus, MessageSquare, X
+  BarChart3, Calendar,
+  ChevronLeft, ChevronRight, UserPlus, MessageSquare, X, Megaphone
 } from 'lucide-react';
 
 // Importamos a Janela de Chat
@@ -26,6 +26,8 @@ import { useToast } from '@/contexts/ToastContext';
 import { useCheckoutNotifications } from '@/contexts/CheckoutNotificationContext';
 import type { CRMMetricsPayload } from '@/lib/crm/metrics';
 import CRMMetricsDashboard from '@/components/crm/CRMMetricsDashboard';
+import TVManualCallPanel from '@/components/crm/TVManualCallPanel';
+import { useTVCall } from '@/hooks/useTVCall';
 
 const TABS = [
   { id: 'reception', label: 'Recepção (Fila)', icon: Users },
@@ -92,6 +94,16 @@ export default function CRMPage() {
   /** Data sugerida ao abrir "Agendar agora" a partir do painel de checkout */
   const [newSlotInitialDate, setNewSlotInitialDate] = useState<string | null>(null);
   const [newSlotInitialPatient, setNewSlotInitialPatient] = useState<{ patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string } | null>(null);
+
+  // TV — chamada de pacientes
+  const { callPatientOnTV } = useTVCall();
+  const [isManualCallOpen, setIsManualCallOpen] = useState(false);
+
+  const handleCallOnTV = (apt: Appointment) => {
+    if (apt.patient_name) {
+      callPatientOnTV(apt.patient_name, { doctorName: apt.doctor_name || undefined });
+    }
+  };
 
   // Modal de confirmação
   const [confirmModal, setConfirmModal] = useState<{
@@ -575,7 +587,10 @@ export default function CRMPage() {
                         <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-[#a1a1aa]"><ChevronRight className="w-5 h-5"/></button>
                     </div>
                     {receptionFlowTab !== 'checkout' && (
-                      <button onClick={() => setIsNewSlotModalOpen(true)} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-rose-200 dark:shadow-none transition-all hover:-translate-y-0.5"><UserPlus className="w-4 h-4" /> Novo Paciente</button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setIsManualCallOpen(true)} className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-amber-200 dark:shadow-none transition-all hover:-translate-y-0.5" title="Chamada manual na TV"><Megaphone className="w-4 h-4" /> Chamar na TV</button>
+                        <button onClick={() => setIsNewSlotModalOpen(true)} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-rose-200 dark:shadow-none transition-all hover:-translate-y-0.5"><UserPlus className="w-4 h-4" /> Novo Paciente</button>
+                      </div>
                     )}
                 </div>
 
@@ -592,6 +607,7 @@ export default function CRMPage() {
                   onCheckoutSuccess={receptionFlowTab === 'checkout' ? () => { fetchData(); setSelectedCheckoutAppointmentId(null); } : undefined}
                   onScheduleReturn={receptionFlowTab === 'checkout' ? (data) => { setNewSlotInitialDate(data.suggestedDate); setNewSlotInitialPatient({ patientId: data.patientId, patientName: data.patientName, parentName: data.parentName, phone: data.phone, patientSex: data.patientSex, doctorId: data.doctorId, appointmentType: data.appointmentType }); setIsNewSlotModalOpen(true); } : undefined}
                   onEditAppointment={(apt) => setSelectedAppointmentForEdit(apt)}
+                  onCallOnTV={handleCallOnTV}
                   onCallAppointment={(apt) => {
                     setCallingAppointment(apt);
                     setCalledAppointmentId(apt.id);
@@ -942,6 +958,12 @@ export default function CRMPage() {
         title={confirmModal.title}
         message={confirmModal.message}
         type={confirmModal.type}
+      />
+
+      {/* Modal Chamada Manual na TV */}
+      <TVManualCallPanel
+        isOpen={isManualCallOpen}
+        onClose={() => setIsManualCallOpen(false)}
       />
     </div>
   );

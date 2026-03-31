@@ -23,7 +23,8 @@ export const suggestImmediateReplyTool = new DynamicStructuredTool({
       .from("chats")
       .update({
         ai_draft_reply: draft_text,
-        ai_draft_reason: reason
+        ai_draft_reason: reason,
+        ai_draft_created_at: new Date().toISOString(),
       })
       .eq("id", chat_id);
 
@@ -58,7 +59,8 @@ export const suggestScheduledMessageTool = new DynamicStructuredTool({
       .update({
         ai_draft_schedule_text: draft_text,
         ai_draft_schedule_date: scheduled_date,
-        ai_draft_schedule_reason: reason
+        ai_draft_schedule_reason: reason,
+        ai_draft_created_at: new Date().toISOString(),
       })
       .eq("id", chat_id);
 

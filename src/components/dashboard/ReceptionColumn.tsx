@@ -58,6 +58,7 @@ interface ReceptionColumnProps {
   onGenerateTicket?: (appointment: Appointment, isPriority: boolean) => void;
   onCallWithDestination?: (appointment: Appointment) => void;
   onFinishGuiche?: (appointment: Appointment) => void;
+  onCallOnTV?: (appointment: Appointment) => void;
   buttonLabel?: string;
   isUpdating?: number | null;
   callingAppointmentId?: number | null;
@@ -87,6 +88,7 @@ export default function ReceptionColumn({
   onGenerateTicket,
   onCallWithDestination,
   onFinishGuiche,
+  onCallOnTV,
   buttonLabel,
   isUpdating,
   callingAppointmentId,
@@ -151,6 +153,8 @@ export default function ReceptionColumn({
                   onGenerateTicket={onGenerateTicket ? (isPriority) => onGenerateTicket(apt, isPriority) : undefined}
                   onCallWithDestination={onCallWithDestination ? () => onCallWithDestination(apt) : undefined}
                   onFinishGuiche={onFinishGuiche ? () => onFinishGuiche(apt) : undefined}
+                  onCallOnTV={onCallOnTV ? () => onCallOnTV(apt) : undefined}
+                  sourceModule={apt.source_module}
                   buttonLabel={buttonLabel}
                   selectable={isSelectMode}
                   isSelected={isSelectMode && selectedAppointmentId === apt.id}

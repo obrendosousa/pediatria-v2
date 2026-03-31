@@ -18,13 +18,13 @@ export const suggestImmediateReplyTool = new DynamicStructuredTool({
   func: async ({ chat_id, draft_text, reason }) => {
     const supabase = getSupabaseAdminClient();
     
-    // Uso de 'as any' validado arquiteturalmente para ignorar o bloqueio de tipagem
-    // estrita do cliente Supabase até a próxima regeneração global de tipos via CLI.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("chats")
-      .update({ 
+      .update({
         ai_draft_reply: draft_text,
-        ai_draft_reason: reason 
+        ai_draft_reason: reason,
+        ai_draft_created_at: new Date().toISOString(),
       })
       .eq("id", chat_id);
 
@@ -52,13 +52,15 @@ export const suggestScheduledMessageTool = new DynamicStructuredTool({
   schema: scheduledMessageSchema,
   func: async ({ chat_id, draft_text, scheduled_date, reason }) => {
     const supabase = getSupabaseAdminClient();
-    
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("chats")
-      .update({ 
+      .update({
         ai_draft_schedule_text: draft_text,
         ai_draft_schedule_date: scheduled_date,
-        ai_draft_schedule_reason: reason 
+        ai_draft_schedule_reason: reason,
+        ai_draft_created_at: new Date().toISOString(),
       })
       .eq("id", chat_id);
 

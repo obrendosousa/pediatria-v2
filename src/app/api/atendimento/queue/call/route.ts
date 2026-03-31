@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     // Gerar audio via Kokoro TTS
     let audioUrl: string | null = null;
     try {
-      audioUrl = await generateAndUploadVoice(text, savedVoice);
+      audioUrl = await generateAndUploadVoice(text, savedVoice, 0.9);
       console.log('[Queue Call] Audio URL gerado:', audioUrl);
     } catch (e) {
       console.error('[Queue TTS] Erro na geracao de voz:', e);

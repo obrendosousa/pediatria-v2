@@ -154,5 +154,8 @@ export interface Appointment {
   queue_stage?: 'reception' | 'doctor' | null;
   current_ticket_id?: number | null;
 
+  // Módulo de origem (para exibição cross-schema no CRM unificado)
+  source_module?: 'pediatria' | 'atendimento';
+
   created_at?: string;
 }

@@ -26,10 +26,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Limpa os campos de draft no chat independentemente da acao
+    // 1. Limpa TODOS os campos de draft no chat independentemente da acao
     const { error: clearError } = await supabase
       .from("chats")
-      .update({ ai_draft_reply: null, ai_draft_reason: null })
+      .update({
+        ai_draft_reply: null,
+        ai_draft_reason: null,
+        ai_draft_schedule_text: null,
+        ai_draft_schedule_date: null,
+        ai_draft_schedule_reason: null,
+        ai_draft_created_at: null,
+      })
       .eq("id", chat_id);
 
     if (clearError) {

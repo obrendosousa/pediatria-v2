@@ -36,6 +36,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Nenhuma mensagem para analisar." }, { status: 200 });
     }
 
+    // 2.1 Guard: última mensagem deve ser do paciente, não da clínica
+    const lastSender = (messagesData[0] as Record<string, unknown>).sender as string;
+    const isLastFromClinic = lastSender === "HUMAN_AGENT" || lastSender === "AI_AGENT" || lastSender === "me";
+
+    if (isLastFromClinic) {
+      console.log(`[Copiloto Geral] Chat ${chat_id}: ultima mensagem e da clinica (${lastSender}), ignorando.`);
+      return NextResponse.json({
+        success: true,
+        message: "Ultima mensagem nao e do paciente. Copiloto nao acionado.",
+      }, { status: 200 });
+    }
+
     // 3. Formatação da Transcrição
     const transcript = messagesData
       .reverse()

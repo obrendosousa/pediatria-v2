@@ -73,7 +73,9 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
     setAiDraftScheduleText(chat?.ai_draft_schedule_text ?? null);
     setAiDraftScheduleDate(chat?.ai_draft_schedule_date ?? null);
     setAiDraftScheduleReason(chat?.ai_draft_schedule_reason ?? null);
-  }, [chat?.id, chat?.ai_draft_reply, chat?.ai_draft_reason, chat?.ai_draft_schedule_text, chat?.ai_draft_schedule_date, chat?.ai_draft_schedule_reason]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setAiDraftCreatedAt((chat as any)?.ai_draft_created_at ?? null);
+  }, [chat?.id, chat?.ai_draft_reply, chat?.ai_draft_reason, chat?.ai_draft_schedule_text, chat?.ai_draft_schedule_date, chat?.ai_draft_schedule_reason]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Subscrição Realtime: captura drafts gerados pelo Copiloto
   useEffect(() => {
@@ -85,12 +87,14 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
         'postgres_changes',
         { event: 'UPDATE', schema: 'atendimento', table: 'chats', filter: `id=eq.${chat.id}` },
         (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const updated = payload.new as any;
           setAiDraftText(updated.ai_draft_reply ?? null);
           setAiDraftReason(updated.ai_draft_reason ?? null);
           setAiDraftScheduleText(updated.ai_draft_schedule_text ?? null);
           setAiDraftScheduleDate(updated.ai_draft_schedule_date ?? null);
           setAiDraftScheduleReason(updated.ai_draft_schedule_reason ?? null);
+          setAiDraftCreatedAt(updated.ai_draft_created_at ?? null);
         }
       )
       .subscribe();
@@ -179,26 +183,83 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
   const [aiDraftScheduleDate, setAiDraftScheduleDate] = useState<string | null>(chat?.ai_draft_schedule_date ?? null);
   const [aiDraftScheduleReason, setAiDraftScheduleReason] = useState<string | null>(chat?.ai_draft_schedule_reason ?? null);
 
+  // Timestamp de criação do draft para expiração temporal
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [aiDraftCreatedAt, setAiDraftCreatedAt] = useState<string | null>((chat as any)?.ai_draft_created_at ?? null);
+
   // Fases de notificação das sugestões da Clara
   const [draftPhase, setDraftPhase] = useState<SuggestionPhase>(null);
   const [schedulePhase, setSchedulePhase] = useState<SuggestionPhase>(null);
   const prevMessageCountRef = useRef(0);
 
+  // Expiração temporal: drafts expiram após 20 minutos
+  const DRAFT_EXPIRY_MS = 20 * 60 * 1000;
+
+  // Helpers para controle de exibição por sessão
+  const getDraftShownKey = (chatId: number | string) => `atd_copilot_draft_shown_${chatId}`;
+  const getScheduleShownKey = (chatId: number | string) => `atd_copilot_schedule_shown_${chatId}`;
+
+  // Fase toast: quando draft de resposta aparece (com controle de exibição)
   useEffect(() => {
     if (aiDraftText) {
-      setDraftPhase('toast');
+      const key = getDraftShownKey(chat?.id ?? 0);
+      const shownCount = parseInt(sessionStorage.getItem(key) || '0', 10);
+      if (shownCount >= 1) {
+        setDraftPhase('minimized');
+      } else {
+        setDraftPhase('toast');
+        sessionStorage.setItem(key, String(shownCount + 1));
+      }
     } else {
       setDraftPhase(null);
+      if (chat?.id) sessionStorage.removeItem(getDraftShownKey(chat.id));
     }
-  }, [aiDraftText]);
+  }, [aiDraftText]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fase toast: quando draft de follow-up aparece (com controle de exibição)
   useEffect(() => {
     if (aiDraftScheduleText) {
-      setSchedulePhase('toast');
+      const key = getScheduleShownKey(chat?.id ?? 0);
+      const shownCount = parseInt(sessionStorage.getItem(key) || '0', 10);
+      if (shownCount >= 1) {
+        setSchedulePhase('minimized');
+      } else {
+        setSchedulePhase('toast');
+        sessionStorage.setItem(key, String(shownCount + 1));
+      }
     } else {
       setSchedulePhase(null);
+      if (chat?.id) sessionStorage.removeItem(getScheduleShownKey(chat.id));
     }
-  }, [aiDraftScheduleText]);
+  }, [aiDraftScheduleText]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Expiração temporal: limpa drafts obsoletos ao carregar
+  useEffect(() => {
+    if (!aiDraftCreatedAt) return;
+    const elapsed = Date.now() - new Date(aiDraftCreatedAt).getTime();
+    if (elapsed > DRAFT_EXPIRY_MS) {
+      console.log(`[Copiloto Geral] Draft expirado (${Math.round(elapsed / 60000)}min). Limpando.`);
+      setAiDraftText(null);
+      setAiDraftReason(null);
+      setAiDraftScheduleText(null);
+      setAiDraftScheduleDate(null);
+      setAiDraftScheduleReason(null);
+      setAiDraftCreatedAt(null);
+      if (chat?.id) {
+        supabase.from('chats').update({
+          ai_draft_reply: null, ai_draft_reason: null,
+          ai_draft_schedule_text: null, ai_draft_schedule_date: null,
+          ai_draft_schedule_reason: null, ai_draft_created_at: null,
+        }).eq('id', chat.id).then(() => {});
+      }
+    }
+  }, [aiDraftCreatedAt, chat?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-dismiss: limpa TODOS os drafts quando contexto muda
+  const aiDraftTextRef = useRef(aiDraftText);
+  const aiDraftScheduleTextRef = useRef(aiDraftScheduleText);
+  useEffect(() => { aiDraftTextRef.current = aiDraftText; }, [aiDraftText]);
+  useEffect(() => { aiDraftScheduleTextRef.current = aiDraftScheduleText; }, [aiDraftScheduleText]);
 
   useEffect(() => {
     if (!messages || messages.length <= prevMessageCountRef.current) {
@@ -207,11 +268,19 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
     }
     const newMsgs = messages.slice(prevMessageCountRef.current);
     prevMessageCountRef.current = messages.length;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const hasAgentMsg = newMsgs.some((m: any) => m.sender === 'HUMAN_AGENT' || m.sender === 'me');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const hasCustomerMsg = newMsgs.some((m: any) => m.sender === 'CUSTOMER' || m.sender === 'contact');
-    if (hasAgentMsg && aiDraftText) handleClearDraft();
-    if (hasCustomerMsg && aiDraftText) handleClearDraft();
-  }, [messages?.length]);
+    if ((hasAgentMsg || hasCustomerMsg) && (aiDraftTextRef.current || aiDraftScheduleTextRef.current)) {
+      setAiDraftText(null);
+      setAiDraftReason(null);
+      setAiDraftScheduleText(null);
+      setAiDraftScheduleDate(null);
+      setAiDraftScheduleReason(null);
+      setAiDraftCreatedAt(null);
+    }
+  }, [messages?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSendFile = useCallback(async (file: File | Blob, caption: string, typeOverride?: string, metadata?: any) => {
     if (!chat) return;
@@ -922,6 +991,7 @@ export default function AtendimentoChatWindow({ chat }: { chat: Chat | null }) {
         onClose={handleCloseAppointmentModal}
         initialData={appointmentData || undefined}
         chatPhone={chat.phone}
+        chatId={chat.id}
         conversationSummary={conversationSummary}
         onSave={handleSaveAppointment}
       />

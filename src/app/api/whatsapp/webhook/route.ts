@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import { logWebhook } from "@/lib/webhookLogger";
 import { isGroupJid, ensureGroupChatExists, normalizeJidToPhone } from "@/lib/whatsappGroup";
 import { saveMessageToDb } from "@/ai/ingestion/services";
+import { createSchemaAdminClient } from "@/lib/supabase/schemaServer";
 
 // Política anti-restauração: após reconnect, ignora backlog/histórico e segue apenas mensagens novas.
 const INGESTION_START_TS_MS = Date.now();
@@ -905,17 +906,40 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
       // Dispara automaticamente quando detecta momento crítico na conversa.
       // Requisitos: (1) mensagem do paciente, (2) IA pausada (Joana atuando),
       // (3) mensagem contém sinal de objeção, preço, dúvida ou urgência.
+      // Suporta dual-schema: public (pediatria) e atendimento (clínica geral).
       if (!message.key?.fromMe) {
         const phone = extractPhoneFromRemoteJid(message.key?.remoteJid);
         if (phone) {
           // Fire-and-forget: não bloqueia o processamento do webhook
           (async () => {
             try {
-              const { data: chatRow } = await getSupabase()
+              // Tenta buscar o chat em public (pediatria) primeiro
+              let chatRow: any = null;
+              let chatSchema: "public" | "atendimento" = "public";
+
+              const { data: publicChat } = await getSupabase()
                 .from("chats")
                 .select("id, is_ai_paused, contact_name, pause_auto_message, pause_session_id")
                 .eq("phone", phone)
                 .maybeSingle();
+
+              if (publicChat?.id) {
+                chatRow = publicChat;
+                chatSchema = "public";
+              } else {
+                // Fallback: busca no schema atendimento (clínica geral)
+                const atdSupabase = createSchemaAdminClient("atendimento");
+                const { data: atdChat } = await atdSupabase
+                  .from("chats")
+                  .select("id, is_ai_paused, contact_name, pause_auto_message, pause_session_id")
+                  .eq("phone", phone)
+                  .maybeSingle();
+
+                if (atdChat?.id) {
+                  chatRow = atdChat;
+                  chatSchema = "atendimento";
+                }
+              }
 
               if (!chatRow?.id || !chatRow.is_ai_paused) return;
 
@@ -923,7 +947,10 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
               if (chatRow.pause_auto_message && chatRow.pause_session_id) {
                 const idempotencyKey = `pause:${chatRow.id}:${chatRow.pause_session_id}`;
                 const scheduledFor = new Date(Date.now() + 60_000).toISOString();
-                await getSupabase().from("scheduled_messages").upsert(
+                const schemaClient = chatSchema === "atendimento"
+                  ? createSchemaAdminClient("atendimento")
+                  : getSupabase();
+                await schemaClient.from("scheduled_messages").upsert(
                   {
                     chat_id: chatRow.id,
                     item_type: "adhoc" as const,
@@ -974,10 +1001,15 @@ export async function processWebhookBody(body: Record<string, unknown>, requestU
 
               if (!isCritical) return;
 
-              console.log(`🤖 [Copiloto Proativo] Momento crítico detectado no chat ${chatRow.id}: "${text.slice(0, 60)}..."`);
+              // Roteia para o copiloto correto baseado no schema do chat
+              const triggerEndpoint = chatSchema === "atendimento"
+                ? "/api/ai/clinica-geral/trigger"
+                : "/api/ai/copilot/trigger";
+
+              console.log(`🤖 [Copiloto Proativo] Momento crítico detectado no chat ${chatRow.id} (${chatSchema}): "${text.slice(0, 60)}..."`);
 
               // Dispara o copiloto via API interna (fire-and-forget)
-              fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai/copilot/trigger`, {
+              fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${triggerEndpoint}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatRow.id }),

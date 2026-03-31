@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/automation/adapters/supabaseAdmin";
 import { copilotGraph } from "@/ai/copilot/graph";
@@ -34,6 +35,18 @@ export async function POST(request: Request) {
 
     if (messagesError || !messagesData || messagesData.length === 0) {
       return NextResponse.json({ message: "Nenhuma mensagem para analisar." }, { status: 200 });
+    }
+
+    // 2.1 Guard: última mensagem deve ser do paciente, não da clínica
+    const lastSender = (messagesData[0] as any).sender;
+    const isLastFromClinic = lastSender === "HUMAN_AGENT" || lastSender === "AI_AGENT" || lastSender === "me";
+
+    if (isLastFromClinic) {
+      console.log(`[Copiloto] Chat ${chat_id}: ultima mensagem e da clinica (${lastSender}), ignorando.`);
+      return NextResponse.json({
+        success: true,
+        message: "Ultima mensagem nao e do paciente. Copiloto nao acionado.",
+      }, { status: 200 });
     }
 
     // 3. Formatação da Transcrição (Invertemos o array para voltar à ordem cronológica natural)

@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     const savedVoice = await getSavedVoice();
     let audioUrl: string | null = null;
     try {
-      audioUrl = await generateAndUploadVoice(spoken, savedVoice);
+      audioUrl = await generateAndUploadVoice(spoken, savedVoice, 0.9);
       console.log('[Manual Call] Áudio Kokoro gerado:', audioUrl);
     } catch (e) {
       console.error('[Manual Call] Erro ao gerar áudio Kokoro:', e);

@@ -21,6 +21,7 @@ class SpeechRequest(BaseModel):
     voice: str = "pf_dora"
     lang_code: str = "p"
     response_format: str = "mp3" # Can generate wav natively, we'll convert/save on the fly if needed
+    speed: float = 1.0 # Velocidade da fala (0.8-1.2). Anúncios usam 0.9 para clareza
 
 @app.post("/v1/audio/speech")
 async def generate_speech(req: SpeechRequest):
@@ -29,10 +30,12 @@ async def generate_speech(req: SpeechRequest):
         
     try:
         # Generate audio using Kokoro
+        # Clamp speed entre 0.5 e 2.0 para segurança
+        speed = max(0.5, min(2.0, req.speed))
         generator = pipeline(
             req.input,
             voice=req.voice,
-            speed=1.0,
+            speed=speed,
             split_pattern=r'\n+'
         )
         

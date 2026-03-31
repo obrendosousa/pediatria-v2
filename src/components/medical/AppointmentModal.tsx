@@ -38,6 +38,7 @@ interface AppointmentModalProps {
   initialData?: PreScheduleData;
   onSave?: () => void;
   chatPhone?: string;
+  chatId?: number;
   conversationSummary?: string;
 }
 
@@ -47,6 +48,7 @@ export default function AppointmentModal({
   initialData,
   onSave,
   chatPhone,
+  chatId,
   conversationSummary
 }: AppointmentModalProps) {
   const { toast } = useToast();
@@ -266,7 +268,8 @@ export default function AppointmentModal({
         discount_type: formData.discountType,
         discount_value: discountVal,
         discount_amount: discountAmt,
-        guardians: cleanGuardians.length > 0 ? cleanGuardians : null
+        guardians: cleanGuardians.length > 0 ? cleanGuardians : null,
+        ...(chatId ? { chat_id: chatId } : {})
       };
 
       if (flatCols.mother_name) insertData.mother_name = flatCols.mother_name;

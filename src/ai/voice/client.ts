@@ -74,12 +74,17 @@ export async function generateVoiceForMessages(
 }
 
 // ─── GERAÇÃO + UPLOAD ─────────────────────────────────────────────────────────
-export async function generateAndUploadVoice(text: string, voiceOverride?: string): Promise<string | null> {
+export async function generateAndUploadVoice(
+    text: string,
+    voiceOverride?: string,
+    /** Velocidade da fala. Anúncios de fila usam 0.9 para maior clareza */
+    speed?: number
+): Promise<string | null> {
     try {
         const voice = voiceOverride || KOKORO_VOICE;
-        console.log(`[Voice] Gerando via kokoro (${text.length} chars) voice=${voice}`);
+        console.log(`[Voice] Gerando via kokoro (${text.length} chars) voice=${voice} speed=${speed ?? 1.0}`);
 
-        const audioBuffer = await generateWithKokoro(text, voice);
+        const audioBuffer = await generateWithKokoro(text, voice, speed);
         if (!audioBuffer) return null;
 
         const fileName = `clara_voice_${Date.now()}_${crypto.randomUUID().split("-")[0]}.wav`;
@@ -104,26 +109,25 @@ export async function generateAndUploadVoice(text: string, voiceOverride?: strin
 }
 
 // ─── FORMATAÇÃO DE TEXTO PARA TTS ────────────────────────────────────────────
-/** Expande números para texto por extenso e melhora espaçamento para Kokoro */
+/** Adiciona pausas prosódicas e expande abreviações para Kokoro */
 export function formatTextForTts(text: string): string {
-    const numberWords: Record<number, string> = {
-        0: 'zero', 1: 'um', 2: 'dois', 3: 'três', 4: 'quatro', 5: 'cinco',
-        6: 'seis', 7: 'sete', 8: 'oito', 9: 'nove', 10: 'dez',
-        11: 'onze', 12: 'doze', 13: 'treze', 14: 'quatorze', 15: 'quinze',
-        16: 'dezesseis', 17: 'dezessete', 18: 'dezoito', 19: 'dezenove', 20: 'vinte',
-    };
-    // Expandir números isolados (ex: "Guichê 1" → "Guichê um")
-    let result = text.replace(/\b(\d{1,2})\b/g, (_, n) => {
-        const num = parseInt(n, 10);
-        return numberWords[num] ?? n;
-    });
-    // Adicionar pausa (vírgula) entre nome e instrução se não houver
+    let result = text;
+
+    // Expandir abreviações comuns para pronúncia clara
+    result = result.replace(/\bDr\.\s*/gi, 'Doutor ');
+    result = result.replace(/\bDra\.\s*/gi, 'Doutora ');
+    result = result.replace(/\bSr\.\s*/gi, 'Senhor ');
+    result = result.replace(/\bSra\.\s*/gi, 'Senhora ');
+    result = result.replace(/\bNº\s*/gi, 'número ');
+
+    // Adicionar pausa entre nome e instrução
     result = result.replace(/([A-Za-zÀ-ÿ])\s+(por favor)/gi, '$1... $2');
+
     return result;
 }
 
 // ─── BACKEND: Kokoro via servidor HTTP (Python server.py ou kokoro-fastapi) ───
-async function generateWithKokoro(text: string, voiceOverride?: string): Promise<Buffer | null> {
+async function generateWithKokoro(text: string, voiceOverride?: string, speed?: number): Promise<Buffer | null> {
     const res = await fetch(`${KOKORO_BASE_URL}/v1/audio/speech`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -133,6 +137,7 @@ async function generateWithKokoro(text: string, voiceOverride?: string): Promise
             voice: voiceOverride || KOKORO_VOICE,
             lang_code: "p",
             response_format: "wav",
+            speed: speed ?? 1.0,
         }),
         signal: AbortSignal.timeout(60_000),
     });

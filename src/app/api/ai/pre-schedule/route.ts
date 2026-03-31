@@ -1,24 +1,23 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export async function POST(req: Request) {
   try {
-    // Verificar se a chave da API está configurada
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
       return NextResponse.json(
-        {
-          error: 'OPENAI_API_KEY não configurada',
-          message: 'A chave da API OpenAI não está configurada. Por favor, adicione OPENAI_API_KEY no arquivo .env.local'
-        },
+        { error: 'GOOGLE_API_KEY não configurada' },
         { status: 500 }
       );
     }
 
-    // Inicializar OpenAI apenas se a chave existir
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 50000, // 50 segundos de timeout
-      maxRetries: 1 // Apenas 1 tentativa para evitar demoras
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        temperature: 0.3,
+        responseMimeType: 'application/json',
+      },
     });
 
     const { messages } = await req.json();
@@ -30,9 +29,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Formata conversa simples para economizar tokens
     const conversationText = messages
-      .slice(-30) // Pega apenas as últimas 30 mensagens para contexto recente
+      .slice(-30)
       .map((m: { sender?: string; message_text?: string; message?: string }) => {
         const sender = m.sender === 'HUMAN_AGENT' || m.sender === 'me' ? 'Clínica' : 'Paciente';
         const text = m.message_text || m.message || '[Mídia]';
@@ -49,28 +47,23 @@ export async function POST(req: Request) {
       minute: '2-digit'
     });
 
-    // Criar um timeout wrapper para a chamada da OpenAI
-    const completionPromise = openai.chat.completions.create({
-      model: "gpt-4o-mini", // Modelo rápido e barato
-      messages: [
-        {
-          role: "system",
-          content: `Você é uma assistente de agendamento pediátrico experiente. Analise a conversa abaixo e extraia TODAS as informações necessárias para criar um agendamento.
+    const systemPrompt = `Você é uma assistente de agendamento de clínica médica. Analise a conversa abaixo e extraia TODAS as informações necessárias para criar um agendamento.
 
 Data e hora atual: ${currentDate}
 
 INSTRUÇÕES DE EXTRAÇÃO — leia com atenção:
 
-1. NOME DO PACIENTE (CRIANÇA):
-   - Extraia o nome COMPLETO da criança mencionada na conversa.
-   - Atenção: o paciente é a CRIANÇA, não o responsável que está conversando.
+1. NOME DO PACIENTE:
+   - Extraia o nome COMPLETO do paciente mencionado na conversa.
+   - Em contexto pediátrico, o paciente é a CRIANÇA, não o responsável.
+   - Em contexto de clínica geral, o paciente é quem será atendido.
 
-2. IDENTIFICAÇÃO DO SEXO DA CRIANÇA:
-   - Analise o NOME da criança (ex: "Gabriel" = M, "Maria" = F, "Ana" = F, "Pedro" = M, "Sophia" = F).
-   - Procure pronomes (ele/ela, menino/menina, filho/filha) e referências como "minha filha", "meu filho", "meu menino", "minha menina".
+2. IDENTIFICAÇÃO DO SEXO:
+   - Analise o NOME (ex: "Gabriel" = M, "Maria" = F).
+   - Procure pronomes (ele/ela) e referências como "minha filha", "meu filho".
    - Se não conseguir identificar com certeza, use null.
 
-3. DATA DE NASCIMENTO DA CRIANÇA:
+3. DATA DE NASCIMENTO:
    - Procure ATIVAMENTE por data de nascimento na conversa. Pode aparecer como:
      * "Data de nascimento: DD/MM/AAAA" ou "nascimento: DD/MM/AAAA"
      * "nasceu em DD/MM/AAAA" ou "nasceu dia DD/MM/AAAA"
@@ -84,20 +77,18 @@ INSTRUÇÕES DE EXTRAÇÃO — leia com atenção:
    - Extraia TODOS os responsáveis/familiares mencionados na conversa.
    - Para CADA responsável identificado, determine:
      * "name": nome completo da pessoa
-     * "relationship": o grau de parentesco com a criança
+     * "relationship": o grau de parentesco com o paciente
    - Vínculos possíveis: "Mãe", "Pai", "Avó", "Avô", "Tia", "Tio", "Irmã", "Irmão", "Cônjuge", "Responsável Legal", "Outro"
-   - Procure por: "mãe", "pai", "mamãe", "papai", "avó", "vovó", "avô", "vovô", "tia", "tio", "responsável", "Nome completo dos pais ou responsáveis".
-   - Se a pessoa que conversa se identifica pelo nome E como mãe/pai/avó/etc., inclua com o vínculo correto.
-   - Se houver apenas um nome de responsável sem distinção de parentesco, use "Mãe" (mais comum em pediatria).
+   - Se houver apenas um nome de responsável sem distinção, use "Responsável Legal".
    - Retorne como array de objetos: [{"name": "...", "relationship": "..."}]
 
 5. TELEFONE:
-   - Extraia o número de telefone mencionado na conversa (campo "Telefone para contato" ou similar).
-   - Mantenha apenas dígitos. Se tiver código do país (55), mantenha. Se não tiver, mantenha como está.
+   - Extraia o número de telefone mencionado na conversa.
+   - Mantenha apenas dígitos. Se tiver código do país (55), mantenha.
 
 6. ENDEREÇO:
    - Extraia o endereço completo se mencionado na conversa.
-   - Retorne como string única (ex: "Av. Masura Jorge, 190 C").
+   - Retorne como string única.
 
 7. ANÁLISE CLÍNICA (reason):
    - Faça uma ANÁLISE COMPLETA: sintomas mencionados, histórico, urgência, contexto.
@@ -105,9 +96,8 @@ INSTRUÇÕES DE EXTRAÇÃO — leia com atenção:
    - Mínimo 2-3 frases.
 
 8. TIPO DE ATENDIMENTO:
-   - Determine se é "consulta" (primeira vez ou consulta regular) ou "retorno" (follow-up).
+   - "consulta" (primeira vez ou consulta regular) ou "retorno" (follow-up).
    - Se o paciente menciona que já foi atendido antes, é "retorno".
-   - Se menciona que é primeira vez ou não há indicação, é "consulta".
    - Se não conseguir determinar, use "consulta" como padrão.
 
 9. DATA E HORA DA CONSULTA:
@@ -116,9 +106,9 @@ INSTRUÇÕES DE EXTRAÇÃO — leia com atenção:
    - Use a data atual se não houver menção específica.
    - Formato: YYYY-MM-DD para data, HH:MM para hora (padrão 09:00).
 
-Retorne APENAS um JSON válido, sem markdown ou texto adicional:
+Retorne APENAS um JSON válido com esta estrutura:
 {
-  "patientName": "Nome completo da criança ou null",
+  "patientName": "Nome completo do paciente ou null",
   "guardians": [{"name": "Nome do responsável", "relationship": "Mãe"}],
   "phone": "Telefone (apenas dígitos) ou null",
   "birthDate": "YYYY-MM-DD ou null",
@@ -128,34 +118,32 @@ Retorne APENAS um JSON válido, sem markdown ou texto adicional:
   "reason": "Análise clínica completa (mínimo 2-3 frases)",
   "patientSex": "M ou F ou null",
   "appointmentType": "consulta ou retorno"
-}`
-        },
-        { role: "user", content: conversationText }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.3, // Baixa temperatura para ser mais preciso nos dados
-    });
+}`;
 
-    // Adicionar timeout de 50 segundos
+    const completionPromise = model.generateContent([
+      systemPrompt,
+      `Conversa:\n${conversationText}`,
+    ]);
+
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Request timed out. A requisição para a OpenAI demorou mais de 50 segundos.')), 50000);
+      setTimeout(() => reject(new Error('Request timed out. A requisição demorou mais de 50 segundos.')), 50000);
     });
 
-    const completion = await Promise.race([completionPromise, timeoutPromise]);
+    const result = await Promise.race([completionPromise, timeoutPromise]);
+    const content = result.response.text();
 
-    const content = completion.choices[0]?.message?.content;
     if (!content) {
       throw new Error('Resposta vazia da IA');
     }
 
     const data = JSON.parse(content);
 
-    // Processar guardians do novo formato
+    // Processar guardians
     const guardians: Array<{ name: string; relationship: string }> = [];
     if (Array.isArray(data.guardians)) {
       for (const g of data.guardians) {
         if (g?.name?.trim()) {
-          guardians.push({ name: g.name.trim(), relationship: g.relationship || 'Mãe' });
+          guardians.push({ name: g.name.trim(), relationship: g.relationship || 'Responsável Legal' });
         }
       }
     }
@@ -174,8 +162,7 @@ Retorne APENAS um JSON válido, sem markdown ou texto adicional:
       }
     }
 
-    // Validação básica dos campos
-    const result = {
+    const response = {
       patientName: data.patientName || null,
       motherName: mother?.name || data.motherName || null,
       fatherName: father?.name || data.fatherName || null,
@@ -190,16 +177,15 @@ Retorne APENAS um JSON válido, sem markdown ou texto adicional:
       appointmentType: (data.appointmentType === 'consulta' || data.appointmentType === 'retorno') ? data.appointmentType : 'consulta'
     };
 
-    return NextResponse.json(result);
+    return NextResponse.json(response);
 
   } catch (error: unknown) {
     console.error('Erro na IA:', error);
 
-    // Mensagem de erro mais específica para timeout
     const errMsg = error instanceof Error ? error.message : '';
     let errorMessage = errMsg || 'Falha ao processar com IA';
     if (errMsg.includes('timed out') || errMsg.includes('Request timed out')) {
-      errorMessage = 'Request timed out. A requisição para a OpenAI demorou muito. Tente novamente.';
+      errorMessage = 'Request timed out. A requisição demorou muito. Tente novamente.';
     } else if (errMsg.includes('rate limit') || errMsg.includes('429')) {
       errorMessage = 'Muitas requisições. Aguarde alguns instantes e tente novamente.';
     }
