@@ -14,13 +14,16 @@ export interface ServicePoint {
   updated_at: string;
 }
 
-export type TicketType = 'guiche' | 'consultorio' | 'priority';
+export type TicketType = 'guiche' | 'consultorio' | 'priority' | 'laboratorio';
 export type QueueStage = 'reception' | 'doctor';
 export type TicketStatus = 'waiting' | 'called' | 'in_service' | 'completed' | 'cancelled';
 
+/** Categorias do totem de senhas (kiosk) */
+export type KioskCategory = 'normal' | 'prioridade' | 'laboratorio' | 'laboratorio_prioridade';
+
 export interface QueueTicket {
   id: number;
-  appointment_id: number;
+  appointment_id: number | null;
   ticket_number: string;
   ticket_type: TicketType;
   queue_stage: QueueStage;
@@ -33,6 +36,7 @@ export interface QueueTicket {
   tts_audio_url: string | null;
   created_at: string;
   ticket_date: string;
+  kiosk_category?: KioskCategory;
 }
 
 /** Ticket enriquecido com dados de join para exibição */

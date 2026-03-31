@@ -121,13 +121,15 @@ export function useQueueTickets() {
 
     const tk = ticket as QueueTicket;
 
-    // Atualizar appointment status para 'called' (detectar schema via source_schema do ticket)
-    const ticketSourceSchema = (tk as QueueTicket & { source_schema?: string }).source_schema;
-    const aptClient = getAptClient(ticketSourceSchema as 'public' | 'atendimento' | undefined);
-    await aptClient
-      .from('appointments')
-      .update({ status: 'called' })
-      .eq('id', tk.appointment_id);
+    // Atualizar appointment status para 'called' (pular se ticket do kiosk sem appointment)
+    if (tk.appointment_id) {
+      const ticketSourceSchema = (tk as QueueTicket & { source_schema?: string }).source_schema;
+      const aptClient = getAptClient(ticketSourceSchema as 'public' | 'atendimento' | undefined);
+      await aptClient
+        .from('appointments')
+        .update({ status: 'called' })
+        .eq('id', tk.appointment_id);
+    }
 
     // Disparar API TTS + broadcast para TV (fire-and-forget)
     fetch('/api/atendimento/queue/call', {

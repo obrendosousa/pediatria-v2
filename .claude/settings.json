@@ -157,7 +157,9 @@
       "Bash(grep -rn \"appointments\" /Users/brendosousa/Downloads/painel-clinica-main/database/create_*.sql)",
       "Bash(grep -r \"KOKORO\\\\|TTS\\\\|voice\\\\|audio\" /Users/brendosousa/Downloads/painel-clinica-main/.env*)",
       "WebFetch(domain:kokoroweb.app)",
-      "WebFetch(domain:docs.fluidinference.com)"
+      "WebFetch(domain:docs.fluidinference.com)",
+      "Bash(find /Users/brendosousa/Downloads/painel-clinica-main/database -type f -name \"*.sql\" -exec grep -l \"queue_tickets\" {} ;)",
+      "Bash(find /Users/brendosousa/Downloads/painel-clinica-main/database -type f -name \"*.sql\" -exec grep -l \"atendimento\" {} ;)"
     ],
     "additionalDirectories": [
       "/Users/brendosousa/Downloads/painel-clinica-main",
