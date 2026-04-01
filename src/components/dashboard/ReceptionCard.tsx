@@ -136,16 +136,19 @@ export default function ReceptionCard({
     }
   };
 
-  const getTimeInServiceBadge = () => {
-    if (status !== 'in_service') return null;
-    const tis = calculateTimeInService(appointment.start_time);
-    const lr = isLongRunningAppointment(appointment.start_time, 2);
+  const getQueueTimeBadge = () => {
+    if (status !== 'waiting') return null;
+    const refTime = appointment.queue_entered_at || null;
+    if (!refTime) return null;
+    const tis = calculateTimeInService(refTime);
+    const lr = isLongRunningAppointment(refTime, 1);
     const hm = tis.match(/(\d+)h/);
     const h = hm ? parseInt(hm[1]) : 0;
     const vl = tis.includes('dia') || h > 2;
-    if (vl) return <span className="px-2 py-0.5 text-[10px] font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">{tis}</span>;
-    if (lr) return <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">{tis}</span>;
-    return null;
+    const label = `${tis} na fila`;
+    if (vl) return <span className="px-2 py-0.5 text-[10px] font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded flex items-center gap-1"><Clock className="w-3 h-3" />{label}</span>;
+    if (lr) return <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded flex items-center gap-1"><Clock className="w-3 h-3" />{label}</span>;
+    return <span className="px-2 py-0.5 text-[10px] font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded flex items-center gap-1"><Clock className="w-3 h-3" />{label}</span>;
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -184,16 +187,6 @@ export default function ReceptionCard({
           )}
         </div>
         <div className="flex flex-col items-end gap-1">
-          {onCallOnTV && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onCallOnTV(); }}
-              className="p-1 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-600 dark:text-amber-400 rounded-md transition-all border border-amber-200 dark:border-amber-800/50"
-              title="Chamar na TV"
-            >
-              <Tv className="w-3 h-3" />
-            </button>
-          )}
           {ticket && (
             <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded flex items-center gap-1 ${
               ticket.is_priority
@@ -214,13 +207,10 @@ export default function ReceptionCard({
           )}
           {getFinancialBadge()}
         </div>
-        {status === 'called' && (
-          <span className="ml-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
-            Aguardando
-          </span>
-        )}
-        {getTimeInServiceBadge()}
       </div>
+
+      {/* Badge de tempo na fila */}
+      {getQueueTimeBadge()}
 
       {/* Destino quando chamado */}
       {ticket?.service_point_name && (status === 'called' || status === 'in_service') && (
@@ -337,6 +327,12 @@ export default function ReceptionCard({
               <button type="button" onClick={(e) => { e.stopPropagation(); onFinish?.(); }} disabled={isUpdating}
                 className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50">
                 {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />} Finalizar
+              </button>
+            )}
+            {onCallOnTV && (
+              <button type="button" onClick={(e) => { e.stopPropagation(); onCallOnTV(); }}
+                className="bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-600 dark:text-amber-400 px-2 py-1.5 rounded-md text-[10px] font-semibold transition-all flex items-center justify-center border border-amber-200 dark:border-amber-800/50" title="Chamar na TV">
+                <Tv className="w-3 h-3" />
               </button>
             )}
             <button type="button" onClick={(e) => { e.stopPropagation(); onRevert?.(); }} disabled={isUpdating}

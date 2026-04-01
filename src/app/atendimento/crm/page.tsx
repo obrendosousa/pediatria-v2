@@ -72,6 +72,9 @@ type AtendimentoAppointment = {
   queue_stage?: 'reception' | 'doctor' | null;
   current_ticket_id?: number | null;
   source_module?: 'pediatria' | 'atendimento';
+  queue_entered_at?: string | null;
+  in_service_at?: string | null;
+  finished_at?: string | null;
 };
 
 type DoctorOption = { id: number; name: string; color?: string };
@@ -109,6 +112,9 @@ function toReceptionAppointment(apt: AtendimentoAppointment): Appointment {
     queue_stage: apt.queue_stage || null,
     current_ticket_id: apt.current_ticket_id ?? null,
     source_module: apt.source_module,
+    queue_entered_at: apt.queue_entered_at || null,
+    in_service_at: apt.in_service_at || null,
+    finished_at: apt.finished_at || null,
   } as Appointment;
 }
 
@@ -391,6 +397,23 @@ export default function AtendimentoCRMPage() {
   const updateAppointmentStatus = async (apt: Appointment, updates: Record<string, string | null>) => {
     const client = getClientForApt(apt);
     const realId = getRealId(apt);
+    const now = new Date().toISOString();
+
+    // Gravar timestamps de métricas automaticamente conforme o status
+    if (updates.status === 'waiting') {
+      updates.queue_entered_at = now;
+    } else if (updates.status === 'in_service') {
+      updates.in_service_at = now;
+    } else if (updates.status === 'finished') {
+      updates.finished_at = now;
+    }
+    // Ao reverter para agendado, limpar todos os timestamps
+    if (updates.status === 'scheduled') {
+      updates.queue_entered_at = null;
+      updates.in_service_at = null;
+      updates.finished_at = null;
+    }
+
     const { error } = await client
       .from('appointments')
       .update(updates)

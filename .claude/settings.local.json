@@ -466,7 +466,13 @@
       "Bash(curl -s \"https://juctfolupehtaoehjkwl.supabase.co/rest/v1/financial_transactions?select=id,appointments\\(patient_name\\)&occurred_at=gte.2026-04-01T00:00:00-03:00&occurred_at=lte.2026-04-01T23:59:59-03:00\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\")",
       "Bash(python scripts/search.py \"healthcare dashboard financial SaaS professional\" --design-system -p \"Clinica Alianca\")",
       "Bash(python scripts/search.py \"dashboard cards summary metrics\" --domain ux -n 5)",
-      "Bash(python scripts/search.py \"financial dashboard data\" --stack nextjs)"
+      "Bash(python scripts/search.py \"financial dashboard data\" --stack nextjs)",
+      "Bash(grep -r \"appointment_status_log\\\\|status_log\\\\|status_change\" /c/Users/Brendo/Documents/pediatria-v2/src --include=*.ts --include=*.tsx --include=*.sql)",
+      "Bash(grep -B5 -A10 \"appointment_status_log\" /c/Users/Brendo/Documents/pediatria-v2/src/app/atendimento/agenda/[id]/page.tsx)",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2 -name tailwind.config.* -o -name postcss.config.*)",
+      "Bash(ls -la /c/Users/Brendo/Documents/pediatria-v2/src/app/\\\\\\(auth\\\\\\)/)",
+      "Bash(npx --yes supabase-sql --help)",
+      "Bash(node -e \"const p = require\\(''pdfjs-dist/package.json''\\); console.log\\(p.version\\);\")"
     ]
   },
   "hooks": {

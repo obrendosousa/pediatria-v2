@@ -1,15 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { LogOut, Moon, Sun, User, ChevronDown } from 'lucide-react';
+import { LogOut, Moon, Sun, User, ChevronDown, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useInternalChat } from '@/contexts/InternalChatContext';
 import ProfilePopover from './ProfilePopover';
 import NotificationBell from './NotificationBell';
+import InternalChatPanel from './internal-chat/InternalChatPanel';
 
 export default function TopBar() {
   const { signOut, profile } = useAuth();
+  const { totalUnread, isOpen, toggleOpen, onlineUserIds } = useInternalChat();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileBtnRef = useRef<HTMLButtonElement>(null);
+  const chatBtnRef = useRef<HTMLButtonElement>(null);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'light';
@@ -37,6 +41,9 @@ export default function TopBar() {
     ? profile.full_name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : '?';
 
+  // Online count (excluding self)
+  const onlineCount = onlineUserIds.size > 0 ? onlineUserIds.size - 1 : 0;
+
   return (
     <div className="h-12 shrink-0 w-full bg-white dark:bg-[#0c0c10] border-b border-slate-200 dark:border-[#1a1a1f] flex items-center justify-between px-4 z-30 print:hidden">
       {/* Lado esquerdo */}
@@ -59,6 +66,43 @@ export default function TopBar() {
 
         {/* Notificacoes */}
         <NotificationBell />
+
+        {/* Chat Interno */}
+        <div className="relative">
+          <button
+            ref={chatBtnRef}
+            onClick={toggleOpen}
+            className={`
+              relative p-2 rounded-lg transition-colors cursor-pointer
+              ${isOpen
+                ? 'bg-gradient-to-br from-pink-500/10 to-rose-500/10 dark:from-sky-500/10 dark:to-blue-600/10'
+                : 'hover:bg-slate-100 dark:hover:bg-white/5'
+              }
+            `}
+            title={`Chat Interno${onlineCount > 0 ? ` (${onlineCount} online)` : ''}`}
+          >
+            <MessageCircle className={`w-[18px] h-[18px] transition-colors ${
+              isOpen
+                ? 'text-pink-500 dark:text-sky-400'
+                : 'text-slate-500 dark:text-[#a1a1aa]'
+            }`} />
+
+            {/* Unread badge */}
+            {totalUnread > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-bounce-once">
+                {totalUnread > 99 ? '99+' : totalUnread}
+              </span>
+            )}
+
+            {/* Online dot indicator */}
+            {totalUnread === 0 && onlineCount > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-white dark:ring-[#0c0c10]" />
+            )}
+          </button>
+
+          {/* Chat Panel Dropdown */}
+          {isOpen && <InternalChatPanel anchorRef={chatBtnRef} />}
+        </div>
 
         {/* Separador */}
         <div className="w-px h-6 bg-slate-200 dark:bg-[#2a2a30] mx-1" />

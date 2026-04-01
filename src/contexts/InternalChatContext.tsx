@@ -13,8 +13,10 @@ interface InternalChatContextType {
   // State
   conversations: InternalConversation[];
   activeConversationId: string | null;
+  activePartnerId: string | null;
   activeMessages: InternalMessage[];
   users: InternalChatUser[];
+  onlineUserIds: Set<string>;
   totalUnread: number;
   isOpen: boolean;
   loading: boolean;
@@ -23,13 +25,16 @@ interface InternalChatContextType {
 
   // Actions
   setIsOpen: (open: boolean) => void;
+  toggleOpen: () => void;
   openConversation: (conversationId: string) => void;
   startConversationWith: (userId: string) => Promise<string | null>;
   sendMessage: (content: string, type?: string, file?: File) => Promise<void>;
   markAsRead: (conversationId: string) => Promise<void>;
+  deleteConversation: (conversationId: string) => Promise<void>;
   goBackToList: () => void;
   refreshConversations: () => Promise<void>;
   refreshUsers: () => Promise<void>;
+  isUserOnline: (userId: string) => boolean;
 }
 
 const InternalChatContext = createContext<InternalChatContextType | undefined>(undefined);
@@ -74,8 +79,10 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
 
   const [conversations, setConversations] = useState<InternalConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [activePartnerId, setActivePartnerId] = useState<string | null>(null);
   const [activeMessages, setActiveMessages] = useState<InternalMessage[]>([]);
   const [users, setUsers] = useState<InternalChatUser[]>([]);
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [totalUnread, setTotalUnread] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -84,28 +91,67 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
 
   const activeConvIdRef = useRef<string | null>(null);
   const isOpenRef = useRef(false);
+  const hasLoadedUsersRef = useRef(false);
 
   useEffect(() => { activeConvIdRef.current = activeConversationId; }, [activeConversationId]);
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
 
-  // Fetch all team users (for starting new conversations)
+  const toggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const isUserOnline = useCallback((userId: string) => {
+    return onlineUserIds.has(userId);
+  }, [onlineUserIds]);
+
+  // ── Presence tracking ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!user || profile?.status !== 'approved') return;
+
+    const channel = supabase.channel('internal-presence', {
+      config: { presence: { key: user.id } },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const ids = new Set<string>(Object.keys(state));
+        setOnlineUserIds(ids);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            user_id: user.id,
+            full_name: profile?.full_name || '',
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, profile?.status, profile?.full_name, supabase]);
+
+  // ── Fetch all team users ───────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
     if (!user) return;
-    setLoadingUsers(true);
+    // Only show loading spinner on first load
+    if (!hasLoadedUsersRef.current) setLoadingUsers(true);
     const { data } = await supabase
       .from('profiles')
-      .select('id, full_name, email, role')
+      .select('id, full_name, email, role, photo_url')
       .eq('status', 'approved')
       .neq('id', user.id);
     if (data) setUsers(data as InternalChatUser[]);
+    hasLoadedUsersRef.current = true;
     setLoadingUsers(false);
   }, [user, supabase]);
 
-  // Fetch conversations with last message and unread count
+  // ── Fetch conversations ────────────────────────────────────────────
   const fetchConversations = useCallback(async () => {
     if (!user) return;
 
-    // Get conversations where current user is participant
     const { data: participantData } = await supabase
       .from('internal_conversation_participants')
       .select('conversation_id, last_read_at')
@@ -120,7 +166,6 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
     const convIds = participantData.map((p) => p.conversation_id);
     const readMap = new Map(participantData.map((p) => [p.conversation_id, p.last_read_at]));
 
-    // Get conversations
     const { data: convData } = await supabase
       .from('internal_conversations')
       .select('*')
@@ -129,13 +174,26 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
 
     if (!convData) return;
 
-    // Get all participants for these conversations with their profiles
-    const { data: allParticipants } = await supabase
+    // Fetch participants (without profile join — no direct FK to profiles)
+    const { data: rawParticipants } = await supabase
       .from('internal_conversation_participants')
-      .select('*, profile:profiles(id, full_name, email, role)')
+      .select('*')
       .in('conversation_id', convIds);
 
-    // Get last message for each conversation
+    // Fetch profiles for all participant user_ids
+    const participantUserIds = [...new Set((rawParticipants || []).map((p) => p.user_id))];
+    const { data: profilesData } = participantUserIds.length > 0
+      ? await supabase.from('profiles').select('id, full_name, email, role, photo_url').in('id', participantUserIds)
+      : { data: [] };
+
+    const profileMap = new Map((profilesData || []).map((p) => [p.id, p]));
+
+    // Merge profiles into participants
+    const allParticipants = (rawParticipants || []).map((p) => ({
+      ...p,
+      profile: profileMap.get(p.user_id) || null,
+    }));
+
     const conversationsWithDetails: InternalConversation[] = await Promise.all(
       convData.map(async (conv) => {
         const { data: lastMsg } = await supabase
@@ -146,7 +204,6 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
           .limit(1)
           .maybeSingle();
 
-        // Count unread messages
         const lastRead = readMap.get(conv.id) || conv.created_at;
         const { count } = await supabase
           .from('internal_messages')
@@ -168,18 +225,40 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
     setTotalUnread(conversationsWithDetails.reduce((sum, c) => sum + (c.unread_count || 0), 0));
   }, [user, supabase]);
 
-  // Fetch messages for active conversation
+  // ── Fetch messages for active conversation ─────────────────────────
   const fetchMessages = useCallback(async (conversationId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('internal_messages')
-      .select('*, sender_profile:profiles!internal_messages_sender_id_fkey(full_name, role)')
+      .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    if (data) setActiveMessages(data as InternalMessage[]);
+    if (error) {
+      console.error('[Chat Interno] Erro ao buscar mensagens:', error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      setActiveMessages([]);
+      return;
+    }
+
+    // Fetch sender profiles separately (no FK from sender_id to profiles)
+    const senderIds = [...new Set(data.map((m) => m.sender_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .in('id', senderIds);
+
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+
+    const messagesWithProfiles = data.map((m) => ({
+      ...m,
+      sender_profile: profileMap.get(m.sender_id) || null,
+    }));
+
+    setActiveMessages(messagesWithProfiles as InternalMessage[]);
   }, [supabase]);
 
-  // Open a conversation
   const openConversation = useCallback(async (conversationId: string) => {
     setActiveConversationId(conversationId);
     setLoading(true);
@@ -187,21 +266,25 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
     setLoading(false);
   }, [fetchMessages]);
 
-  // Go back to conversation list
   const goBackToList = useCallback(() => {
     setActiveConversationId(null);
+    setActivePartnerId(null);
     setActiveMessages([]);
   }, []);
 
-  // Start or get existing conversation with a user
+  // ── Start or get existing conversation ─────────────────────────────
   const startConversationWith = useCallback(async (targetUserId: string): Promise<string | null> => {
     if (!user) return null;
 
-    // Check if a 1:1 conversation already exists between these two users
-    const { data: myConvs } = await supabase
+    // Check for existing conversation between the two users
+    const { data: myConvs, error: myConvsErr } = await supabase
       .from('internal_conversation_participants')
       .select('conversation_id')
       .eq('user_id', user.id);
+
+    if (myConvsErr) {
+      console.error('[Chat Interno] Erro ao buscar conversas:', myConvsErr.message);
+    }
 
     if (myConvs && myConvs.length > 0) {
       const myConvIds = myConvs.map((c) => c.conversation_id);
@@ -212,34 +295,43 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
         .in('conversation_id', myConvIds);
 
       if (theirConvs && theirConvs.length > 0) {
-        // Conversation exists, open it
         const existingConvId = theirConvs[0].conversation_id;
-        openConversation(existingConvId);
+        setActivePartnerId(targetUserId);
+        await openConversation(existingConvId);
         return existingConvId;
       }
     }
 
-    // Create new conversation
-    const { data: newConv, error: convError } = await supabase
+    // Create new conversation (generate UUID client-side to avoid SELECT after INSERT,
+    // which would fail RLS since no participants exist yet)
+    const newConvId = crypto.randomUUID();
+    const { error: convError } = await supabase
       .from('internal_conversations')
-      .insert({})
-      .select()
-      .single();
+      .insert({ id: newConvId });
 
-    if (convError || !newConv) return null;
+    if (convError) {
+      console.error('[Chat Interno] Erro ao criar conversa:', convError.message);
+      return null;
+    }
 
     // Add both participants
-    await supabase.from('internal_conversation_participants').insert([
-      { conversation_id: newConv.id, user_id: user.id },
-      { conversation_id: newConv.id, user_id: targetUserId },
+    const { error: partError } = await supabase.from('internal_conversation_participants').insert([
+      { conversation_id: newConvId, user_id: user.id },
+      { conversation_id: newConvId, user_id: targetUserId },
     ]);
 
+    if (partError) {
+      console.error('[Chat Interno] Erro ao adicionar participantes:', partError.message);
+      return null;
+    }
+
+    setActivePartnerId(targetUserId);
     await fetchConversations();
-    openConversation(newConv.id);
-    return newConv.id;
+    await openConversation(newConvId);
+    return newConvId;
   }, [user, supabase, openConversation, fetchConversations]);
 
-  // Send a message
+  // ── Send a message ─────────────────────────────────────────────────
   const sendMessage = useCallback(async (content: string, type: string = 'text', file?: File) => {
     if (!user || !activeConversationId) return;
 
@@ -272,9 +364,12 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
       setSendingFile(false);
     }
 
-    const { data: newMsg } = await supabase
+    const msgId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const { error: msgError } = await supabase
       .from('internal_messages')
       .insert({
+        id: msgId,
         conversation_id: activeConversationId,
         sender_id: user.id,
         content: content || fileName || '',
@@ -282,15 +377,28 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
         file_url: fileUrl,
         file_name: fileName,
         file_size: fileSize,
-      })
-      .select('*, sender_profile:profiles!internal_messages_sender_id_fkey(full_name, role)')
-      .single();
+      });
 
-    if (newMsg) {
-      setActiveMessages((prev) => [...prev, newMsg as InternalMessage]);
+    if (msgError) {
+      console.error('[Chat Interno] Erro ao enviar mensagem:', msgError.message);
+      return;
     }
 
-    // Update last_read_at for sender
+    // Add message to local state immediately (no need for SELECT + RLS)
+    const optimisticMsg: InternalMessage = {
+      id: msgId,
+      conversation_id: activeConversationId,
+      sender_id: user.id,
+      content: content || fileName || '',
+      message_type: type as InternalMessage['message_type'],
+      file_url: fileUrl,
+      file_name: fileName,
+      file_size: fileSize ? Number(fileSize) : null,
+      created_at: now,
+      sender_profile: { full_name: profile?.full_name || null, role: profile?.role || 'secretary' },
+    };
+    setActiveMessages((prev) => [...prev, optimisticMsg]);
+
     await supabase
       .from('internal_conversation_participants')
       .update({ last_read_at: new Date().toISOString() })
@@ -298,9 +406,9 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
       .eq('user_id', user.id);
 
     await fetchConversations();
-  }, [user, activeConversationId, supabase, fetchConversations]);
+  }, [user, profile?.full_name, profile?.role, activeConversationId, supabase, fetchConversations]);
 
-  // Mark conversation as read
+  // ── Mark conversation as read ──────────────────────────────────────
   const markAsRead = useCallback(async (conversationId: string) => {
     if (!user) return;
     await supabase
@@ -311,7 +419,26 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
     await fetchConversations();
   }, [user, supabase, fetchConversations]);
 
-  // Initial data fetch — use void to avoid set-state-in-effect lint rule
+  // ── Delete conversation ─────────────────────────────────────────────
+  const deleteConversation = useCallback(async (conversationId: string) => {
+    if (!user) return;
+    // Delete the conversation (CASCADE will remove participants and messages)
+    await supabase
+      .from('internal_conversations')
+      .delete()
+      .eq('id', conversationId);
+
+    // If we're viewing this conversation, go back to list
+    if (activeConvIdRef.current === conversationId) {
+      setActiveConversationId(null);
+      setActivePartnerId(null);
+      setActiveMessages([]);
+    }
+
+    await fetchConversations();
+  }, [user, supabase, fetchConversations]);
+
+  // ── Initial data fetch ─────────────────────────────────────────────
   useEffect(() => {
     if (!user || profile?.status !== 'approved') return;
     let cancelled = false;
@@ -325,7 +452,7 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
     return () => { cancelled = true; };
   }, [user, profile?.status, fetchUsers, fetchConversations]);
 
-  // Realtime subscription for new messages
+  // ── Realtime subscription for new messages ─────────────────────────
   useEffect(() => {
     if (!user) return;
 
@@ -341,29 +468,32 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
         async (payload) => {
           const newMsg = payload.new as InternalMessage;
 
-          // Skip own messages
           if (newMsg.sender_id === user.id) return;
 
-          // Play notification sound
           playNotificationSound();
 
-          // If this message is in the active conversation, add it
           if (activeConvIdRef.current === newMsg.conversation_id) {
-            // Fetch with joined profile
-            const { data } = await supabase
+            // Fetch the message + sender profile separately
+            const { data: msgData } = await supabase
               .from('internal_messages')
-              .select('*, sender_profile:profiles!internal_messages_sender_id_fkey(full_name, role)')
+              .select('*')
               .eq('id', newMsg.id)
               .single();
 
-            if (data) {
+            if (msgData) {
+              const { data: senderProfile } = await supabase
+                .from('profiles')
+                .select('full_name, role')
+                .eq('id', msgData.sender_id)
+                .single();
+
+              const enriched = { ...msgData, sender_profile: senderProfile || null };
               setActiveMessages((prev) => {
-                if (prev.some((m) => m.id === data.id)) return prev;
-                return [...prev, data as InternalMessage];
+                if (prev.some((m) => m.id === enriched.id)) return prev;
+                return [...prev, enriched as InternalMessage];
               });
             }
 
-            // Auto mark as read if chat is open
             if (isOpenRef.current) {
               await supabase
                 .from('internal_conversation_participants')
@@ -373,7 +503,6 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
             }
           }
 
-          // Refresh conversation list
           await fetchConversations();
         }
       )
@@ -395,25 +524,31 @@ export function InternalChatProvider({ children }: { children: React.ReactNode }
   const value = useMemo(() => ({
     conversations,
     activeConversationId,
+    activePartnerId,
     activeMessages,
     users,
+    onlineUserIds,
     totalUnread,
     isOpen,
     loading,
     loadingUsers,
     sendingFile,
     setIsOpen,
+    toggleOpen,
     openConversation,
     startConversationWith,
     sendMessage,
     markAsRead,
+    deleteConversation,
     goBackToList,
     refreshConversations,
     refreshUsers,
+    isUserOnline,
   }), [
-    conversations, activeConversationId, activeMessages, users, totalUnread,
-    isOpen, loading, loadingUsers, sendingFile, openConversation, startConversationWith,
-    sendMessage, markAsRead, goBackToList, refreshConversations, refreshUsers,
+    conversations, activeConversationId, activePartnerId, activeMessages, users, onlineUserIds,
+    totalUnread, isOpen, loading, loadingUsers, sendingFile, openConversation,
+    startConversationWith, sendMessage, markAsRead, deleteConversation, goBackToList,
+    refreshConversations, refreshUsers, toggleOpen, isUserOnline,
   ]);
 
   return (
