@@ -6,6 +6,9 @@ export interface AtendimentoPatient {
   created_at?: string;
   updated_at?: string;
 
+  // Código sequencial (PAC-00001)
+  patient_code?: string | null;
+
   // Identificação
   full_name: string;
   social_name?: string | null;
@@ -34,6 +37,10 @@ export interface AtendimentoPatient {
     city?: string;
     state?: string;
   } | null;
+
+  // Zona e tipo de logradouro
+  zone?: string | null;
+  address_type?: string | null;
 
   // Dados complementares
   nationality?: string | null;

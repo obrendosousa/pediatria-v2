@@ -24,6 +24,8 @@ export type KioskCategory = 'normal' | 'prioridade' | 'laboratorio' | 'laborator
 export interface QueueTicket {
   id: number;
   appointment_id: number | null;
+  patient_id?: number | null;
+  patient_name?: string | null;
   ticket_number: string;
   ticket_type: TicketType;
   queue_stage: QueueStage;

@@ -441,7 +441,24 @@
       "Bash(grep -i \"KOKORO\\\\|TTS\" /c/Users/Brendo/Documents/pediatria-v2/.env*)",
       "Bash(grep -v \"//\")",
       "Bash(ls -la /c/Users/Brendo/Documents/pediatria-v2/src/app/api/atendimento/queue/*/)",
-      "Bash(grep -r \"KOKORO_VOICE\\\\|TTS_BACKEND\" /c/Users/Brendo/Documents/pediatria-v2/src --include=*.ts --include=*.tsx)"
+      "Bash(grep -r \"KOKORO_VOICE\\\\|TTS_BACKEND\" /c/Users/Brendo/Documents/pediatria-v2/src --include=*.ts --include=*.tsx)",
+      "Bash(grep -l \"CREATE TABLE\\\\|appointments\\\\|agendamentos\\\\|senhas\\\\|filas\\\\|queue\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(ls -1 /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(grep -r \"CREATE TABLE\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(grep -l \"CREATE TABLE\" /c/Users/Brendo/Documents/pediatria-v2/supabase/migrations/*.sql)",
+      "Bash(grep -r \"queue_tickets\\\\|appointments\\\\|patients\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2 -name \"*.sql\" -exec grep -l \"ALTER COLUMN\\\\|DROP NOT NULL\" {})",
+      "Bash(ls -1 /c/Users/Brendo/Documents/pediatria-v2/src/types/*.ts)",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2 -type f \\\\\\(-name *central* -o -name *controle* \\\\\\))",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2 -type d -name *app*)",
+      "Bash(grep -r \"atendimento.queue_tickets\\\\|atendimento.patients\\\\|atendimento.appointments\" /c/Users/Brendo/Documents/pediatria-v2/supabase/migrations/*.sql)",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2/src -type f -name *checkout* -o -name *finali*)",
+      "Bash(grep -n \"activeTab === ''checkout''\" /c/Users/Brendo/Documents/pediatria-v2/src/components/dashboard/ReceptionFlowColumns.tsx)",
+      "Bash(grep -n \"medical_checkouts\\\\|checkout_items\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(grep -r \"CREATE TABLE\\\\|CREATE INDEX\" /c/Users/Brendo/Documents/pediatria-v2/database/create_patient*.sql)",
+      "Bash(find /c/Users/Brendo/Documents/pediatria-v2/src/components -type f -name *Secretary* -o -name *Reception*)",
+      "Bash(grep -l \"prescriptions\\\\|exam_requests\\\\|medical_documents\" /c/Users/Brendo/Documents/pediatria-v2/database/*.sql)",
+      "Bash(curl -s -X POST \"https://juctfolupehtaoehjkwl.supabase.co/rest/v1/rpc/pg_stat_activity\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0\")"
     ]
   },
   "hooks": {

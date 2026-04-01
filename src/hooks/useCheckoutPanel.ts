@@ -32,6 +32,48 @@ export interface MedicalCheckoutData {
   }>;
 }
 
+export interface PrescriptionDoc {
+  id: number;
+  model_name?: string | null;
+  items?: Array<{ name: string; posology: string; quantity: number; unit: string; receipt_type: 'simples' | 'especial' }>;
+  exam_items?: Array<{ code?: string; name: string; quantity: number }>;
+  vaccine_items?: Array<{ name: string; dose?: string }>;
+  created_at?: string;
+}
+
+export interface ExamRequestDoc {
+  id: number;
+  model_name?: string | null;
+  request_type?: string;
+  clinical_indication?: string;
+  exams?: Array<{ code: string; name: string; quantity: number }>;
+  created_at?: string;
+}
+
+export interface MedicalDocumentDoc {
+  id: number;
+  type: string;
+  content: string;
+  document_date?: string;
+  requires_signature?: boolean;
+  created_at?: string;
+}
+
+export interface PatientData {
+  id: number;
+  name: string;
+  birth_date?: string;
+  cpf?: string;
+  [key: string]: unknown;
+}
+
+export interface ConsultationDocs {
+  prescriptions: PrescriptionDoc[];
+  examRequests: ExamRequestDoc[];
+  documents: MedicalDocumentDoc[];
+  patientData: PatientData | null;
+}
+
 export function useCheckoutPanel(appointmentId: number | null) {
   const [loading, setLoading] = useState(false);
   const [appointment, setAppointment] = useState<Appointment | null>(null);
@@ -41,6 +83,9 @@ export function useCheckoutPanel(appointmentId: number | null) {
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [medicalCheckoutId, setMedicalCheckoutId] = useState<number | null>(null);
+  const [consultationDocs, setConsultationDocs] = useState<ConsultationDocs>({
+    prescriptions: [], examRequests: [], documents: [], patientData: null
+  });
 
   const loadCheckoutData = useCallback(async () => {
     if (!appointmentId) return;
@@ -125,11 +170,45 @@ export function useCheckoutPanel(appointmentId: number | null) {
       }
 
       setSelectedItems(initialItems);
+
+      // Carregar documentos da consulta (receitas, exames, atestados)
+      if (apt.patient_id) {
+        const { data: patient } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('id', apt.patient_id)
+          .single();
+
+        const { data: record } = await supabase
+          .from('medical_records')
+          .select('id')
+          .eq('patient_id', apt.patient_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (record?.id) {
+          const [prescRes, examsRes, docsRes] = await Promise.all([
+            supabase.from('prescriptions').select('*').eq('medical_record_id', record.id).order('created_at', { ascending: false }),
+            supabase.from('exam_requests').select('*').eq('medical_record_id', record.id).order('created_at', { ascending: false }),
+            supabase.from('medical_documents').select('*').eq('medical_record_id', record.id).order('created_at', { ascending: false }),
+          ]);
+          setConsultationDocs({
+            prescriptions: (prescRes.data || []) as PrescriptionDoc[],
+            examRequests: (examsRes.data || []) as ExamRequestDoc[],
+            documents: (docsRes.data || []) as MedicalDocumentDoc[],
+            patientData: patient as PatientData | null,
+          });
+        } else {
+          setConsultationDocs({ prescriptions: [], examRequests: [], documents: [], patientData: patient as PatientData | null });
+        }
+      }
     } catch (err) {
       console.error('Erro ao carregar dados do checkout:', err);
       setAppointment(null);
       setMedicalCheckout(null);
       setSelectedItems([]);
+      setConsultationDocs({ prescriptions: [], examRequests: [], documents: [], patientData: null });
     } finally {
       setLoading(false);
     }
@@ -204,6 +283,8 @@ export function useCheckoutPanel(appointmentId: number | null) {
     window.open(`/print/medical-record/latest/${appointment.patient_id}`, '_blank');
   }, [appointment?.patient_id]);
 
+  const hasNewSaleItems = selectedItems.some(i => i.type === 'product' || i.type === 'service');
+
   const handleSubmit = useCallback(async (onSuccess?: () => void) => {
     if (!appointment || !appointmentId) return;
     setLoading(true);
@@ -236,24 +317,48 @@ export function useCheckoutPanel(appointmentId: number | null) {
         }
       }
 
-      // Montar payload para API server-side (atomico)
-      const items = selectedItems.map((item) => ({
-        product_id: typeof item.id === 'number' ? item.id : null,
-        qty: item.qty,
-        type: item.type,
-        name: item.name,
-        price: item.price
-      }));
+      if (selectedItems.length === 0) {
+        // Finalizar sem venda — apenas atualizar status
+        await supabase
+          .from('appointments')
+          .update({ status: 'finished', finished_at: new Date().toISOString() })
+          .eq('id', appointmentId)
+          .neq('status', 'finished');
 
-      await submitCheckout({
-        appointment_id: appointmentId,
-        medical_checkout_id: medicalCheckoutId,
-        patient_id: appointment.patient_id ?? null,
-        chat_id: chatId,
-        items,
-        payment_method: paymentMethod,
-        client_total: total
-      });
+        if (medicalCheckoutId) {
+          await supabase
+            .from('medical_checkouts')
+            .update({ status: 'completed' })
+            .eq('id', medicalCheckoutId)
+            .eq('status', 'pending');
+        }
+
+        if (chatId) {
+          await supabase
+            .from('chats')
+            .update({ reception_status: 'finished' })
+            .eq('id', chatId);
+        }
+      } else {
+        // Montar payload para API server-side (atomico)
+        const items = selectedItems.map((item) => ({
+          product_id: typeof item.id === 'number' ? item.id : null,
+          qty: item.qty,
+          type: item.type,
+          name: item.name,
+          price: item.price
+        }));
+
+        await submitCheckout({
+          appointment_id: appointmentId,
+          medical_checkout_id: medicalCheckoutId,
+          patient_id: appointment.patient_id ?? null,
+          chat_id: chatId,
+          items,
+          payment_method: paymentMethod,
+          client_total: total
+        });
+      }
 
       onSuccess?.();
     } catch (error: unknown) {
@@ -268,6 +373,7 @@ export function useCheckoutPanel(appointmentId: number | null) {
     loading,
     appointment,
     medicalCheckout,
+    consultationDocs,
     catalog,
     search,
     setSearch,
@@ -278,6 +384,7 @@ export function useCheckoutPanel(appointmentId: number | null) {
     paymentMethod,
     setPaymentMethod,
     medicalCheckoutId,
+    hasNewSaleItems,
     filteredCatalog,
     handlePrintDocuments,
     handleSubmit,

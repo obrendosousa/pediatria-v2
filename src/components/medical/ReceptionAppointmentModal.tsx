@@ -436,8 +436,8 @@ export default function ReceptionAppointmentModal({
         </div>
 
         <div className="p-5 space-y-4 max-h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar">
-          {/* Bloco de pagamento pendente no topo */}
-          {remainingDisplay > 0 && totalDisplay > 0 && !isEditing && (
+          {/* Bloco de pagamento pendente no topo (oculto para retornos) */}
+          {appointment.appointment_type !== 'retorno' && remainingDisplay > 0 && totalDisplay > 0 && !isEditing && (
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-3">
               <p className="text-xs font-bold text-amber-800 dark:text-amber-200 uppercase flex items-center gap-1.5">
                 <Wallet size={14} />
@@ -808,7 +808,8 @@ export default function ReceptionAppointmentModal({
             </div>
           </div>
 
-          {/* Bloco financeiro */}
+          {/* Bloco financeiro (oculto para retornos) */}
+          {appointment.appointment_type !== 'retorno' && (
           <div className="bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-amber-200 dark:border-amber-800/50">
             <h5 className="text-xs font-bold text-amber-800 dark:text-amber-200 uppercase mb-2 flex items-center gap-1">
               <Wallet size={12} /> Pagamento
@@ -928,6 +929,7 @@ export default function ReceptionAppointmentModal({
               </p>
             )}
           </div>
+          )}
         </div>
 
         {/* Rodapé */}

@@ -1,118 +1,32 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { X, Printer, Download, FileText, Pill, Microscope, Loader2, FileCheck, Syringe } from 'lucide-react';
 import { printPrescription, generatePrescriptionHTML, PrescriptionDocType } from '@/components/medical-record/attendance/screens/Prescriptions';
 import { printRequest, generateRequestHTML } from '@/components/medical-record/attendance/screens/ExamsAndProcedures';
 import { printDocument, generateDocumentHTML } from '@/components/medical-record/attendance/screens/DocumentsAndCertificates';
+import { downloadHtmlAsPdf } from '@/lib/pdfUtils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { getLetterheadDataUrl } from '@/lib/letterhead';
+import type { PrescriptionDoc, ExamRequestDoc, MedicalDocumentDoc, PatientData } from '@/hooks/useCheckoutPanel';
 
 const supabase = createClient();
-
-async function downloadHtmlAsPdf(html: string, filename: string, useLetterhead: boolean = true) {
-  // Pré-carregar timbrado em paralelo com a renderização do HTML
-  const letterheadPromise = useLetterhead ? getLetterheadDataUrl() : null;
-
-  const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:white;';
-  container.innerHTML = '';
-
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'width:794px;min-height:1123px;border:none;';
-  container.appendChild(iframe);
-  document.body.appendChild(container);
-
-  await new Promise<void>((resolve) => {
-    iframe.onload = () => resolve();
-    const doc = iframe.contentWindow?.document;
-    if (doc) {
-      doc.open();
-      doc.write(html);
-      doc.close();
-    }
-    setTimeout(resolve, 1000);
-  });
-
-  await new Promise((r) => setTimeout(r, 500));
-
-  try {
-    const body = iframe.contentWindow?.document.body;
-    if (!body) throw new Error('Erro ao renderizar documento');
-
-    iframe.style.height = body.scrollHeight + 'px';
-
-    const canvas = await html2canvas(body, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      width: 794,
-      height: body.scrollHeight,
-      windowWidth: 794,
-      backgroundColor: useLetterhead ? null : '#ffffff',
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    const imgWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    const letterheadDataUrl = letterheadPromise ? await letterheadPromise : null;
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-
-    if (!letterheadDataUrl) {
-      // Sem timbrado: lógica simples de paginação
-      let heightLeft = imgHeight;
-      let position = 0;
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      while (heightLeft > 0) {
-        position = -(imgHeight - heightLeft);
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-    } else {
-      // Com timbrado: respeitar margens do header/footer em cada página
-      const marginTop = 32;  // mm - área do logo/QR
-      const marginBottom = 30; // mm - área dos contatos
-      const usableHeight = pageHeight - marginTop - marginBottom; // ~235mm por página
-
-      // Página 1: conteúdo já tem padding embutido, mostra normalmente
-      pdf.addImage(letterheadDataUrl, 'PNG', 0, 0, imgWidth, pageHeight);
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-
-      // Se conteúdo excede 1 página, paginar respeitando margens do timbrado
-      if (imgHeight > pageHeight) {
-        let contentOffset = pageHeight; // onde a página 1 cortou
-
-        while (contentOffset < imgHeight) {
-          pdf.addPage();
-          pdf.addImage(letterheadDataUrl, 'PNG', 0, 0, imgWidth, pageHeight);
-          // Posiciona o conteúdo para que a parte visível comece após o header do timbrado
-          const yPos = marginTop - contentOffset;
-          pdf.addImage(imgData, 'PNG', 0, yPos, imgWidth, imgHeight);
-          contentOffset += usableHeight;
-        }
-      }
-    }
-
-    pdf.save(filename);
-  } finally {
-    document.body.removeChild(container);
-  }
-}
 
 interface PrintDocumentsModalProps {
   isOpen: boolean;
   onClose: () => void;
   patientId: number;
   patientName: string;
+}
+
+interface PrescriptionItemEntry {
+  name?: string;
+}
+
+interface ExamEntry {
+  name?: string;
+  code?: string;
 }
 
 export default function PrintDocumentsModal({
@@ -123,19 +37,13 @@ export default function PrintDocumentsModal({
 }: PrintDocumentsModalProps) {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [prescriptions, setPrescriptions] = useState<any[]>([]);
-  const [examRequests, setExamRequests] = useState<any[]>([]);
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [patientData, setPatientData] = useState<any>(null);
+  const [prescriptions, setPrescriptions] = useState<PrescriptionDoc[]>([]);
+  const [examRequests, setExamRequests] = useState<ExamRequestDoc[]>([]);
+  const [documents, setDocuments] = useState<MedicalDocumentDoc[]>([]);
+  const [patientData, setPatientData] = useState<PatientData | null>(null);
   const printIframeRef = useRef<HTMLIFrameElement>(null);
 
-  useEffect(() => {
-    if (isOpen && patientId) {
-      loadDocuments();
-    }
-  }, [isOpen, patientId]);
-
-  async function loadDocuments() {
+  const loadDocuments = useCallback(async () => {
     setLoading(true);
     try {
       const { data: patient } = await supabase
@@ -144,7 +52,7 @@ export default function PrintDocumentsModal({
         .eq('id', patientId)
         .single();
 
-      setPatientData(patient);
+      setPatientData(patient as PatientData | null);
 
       const { data: record } = await supabase
         .from('medical_records')
@@ -180,18 +88,24 @@ export default function PrintDocumentsModal({
           .order('created_at', { ascending: false }),
       ]);
 
-      setPrescriptions(prescRes.data || []);
-      setExamRequests(examsRes.data || []);
-      setDocuments(docsRes.data || []);
+      setPrescriptions((prescRes.data || []) as PrescriptionDoc[]);
+      setExamRequests((examsRes.data || []) as ExamRequestDoc[]);
+      setDocuments((docsRes.data || []) as MedicalDocumentDoc[]);
     } catch (err) {
       console.error('Erro ao carregar documentos:', err);
     } finally {
       setLoading(false);
     }
-  }
+  }, [patientId]);
+
+  useEffect(() => {
+    if (isOpen && patientId) {
+      loadDocuments();
+    }
+  }, [isOpen, patientId, loadDocuments]);
 
   // ── Print handlers ──
-  const handlePrintPrescription = (presc: any, docType: PrescriptionDocType) => {
+  const handlePrintPrescription = (presc: PrescriptionDoc, docType: PrescriptionDocType) => {
     const draft = {
       medications: presc.items || [],
       exams: presc.exam_items || [],
@@ -200,14 +114,14 @@ export default function PrintDocumentsModal({
     printPrescription(draft, patientData, docType);
   };
 
-  const handlePrintExamRequest = (req: any) => {
+  const handlePrintExamRequest = (req: ExamRequestDoc) => {
     printRequest(req, patientData);
   };
 
-  const handlePrintDocument = (doc: any) => {
+  const handlePrintDocument = (doc: MedicalDocumentDoc) => {
     printDocument(
       doc.type,
-      doc.document_date || doc.created_at,
+      doc.document_date || doc.created_at || '',
       doc.content,
       printIframeRef,
       { ...patientData, doctor_name: 'Dra. Fernanda Santana', doctor_phone: '(99) 98429-2254' }
@@ -215,7 +129,7 @@ export default function PrintDocumentsModal({
   };
 
   // ── Download PDF handlers ──
-  const handleDownloadPrescription = async (presc: any, idx: number, docType: PrescriptionDocType) => {
+  const handleDownloadPrescription = async (presc: PrescriptionDoc, idx: number, docType: PrescriptionDocType) => {
     const suffixMap: Record<PrescriptionDocType, string> = {
       medications: 'Medicamentos',
       exams: 'Exames',
@@ -239,7 +153,7 @@ export default function PrintDocumentsModal({
     }
   };
 
-  const handleDownloadExamRequest = async (req: any, idx: number) => {
+  const handleDownloadExamRequest = async (req: ExamRequestDoc, idx: number) => {
     const key = `exam-${req.id || idx}`;
     setDownloading(key);
     try {
@@ -254,13 +168,13 @@ export default function PrintDocumentsModal({
     }
   };
 
-  const handleDownloadDocument = async (doc: any, idx: number) => {
+  const handleDownloadDocument = async (doc: MedicalDocumentDoc, idx: number) => {
     const key = `doc-${doc.id || idx}`;
     setDownloading(key);
     try {
       const html = generateDocumentHTML(
         doc.type,
-        doc.document_date || doc.created_at,
+        doc.document_date || doc.created_at || '',
         doc.content,
         { ...patientData, doctor_name: 'Dra. Fernanda Santana', doctor_phone: '(99) 98429-2254' }
       );
@@ -310,10 +224,10 @@ export default function PrintDocumentsModal({
           ) : (
             <>
               {/* Prescriptions — separadas por tipo */}
-              {prescriptions.length > 0 && prescriptions.map((presc: any, idx: number) => {
-                const medsCount = (presc.items || []).filter((i: any) => i.name?.trim()).length;
-                const examsCount = (presc.exam_items || []).filter((i: any) => i.name?.trim()).length;
-                const vaccCount = (presc.vaccine_items || []).filter((i: any) => i.name?.trim()).length;
+              {prescriptions.length > 0 && prescriptions.map((presc, idx) => {
+                const medsCount = (presc.items || []).filter((i: PrescriptionItemEntry) => i.name?.trim()).length;
+                const examsCount = (presc.exam_items || []).filter((i: PrescriptionItemEntry) => i.name?.trim()).length;
+                const vaccCount = (presc.vaccine_items || []).filter((i: PrescriptionItemEntry) => i.name?.trim()).length;
                 const prescLabel = presc.model_name || `Receita ${idx + 1}`;
 
                 const types: { type: PrescriptionDocType; label: string; count: number; icon: React.ReactNode; iconColor: string; btnClass: string; btnDisabledClass: string }[] = [
@@ -379,7 +293,7 @@ export default function PrintDocumentsModal({
                   </h3>
                   <div className="space-y-2">
                     {examRequests.map((req, idx) => {
-                      const examsCount = (req.exams || []).filter((e: any) => e.name || e.code).length;
+                      const exCount = (req.exams || []).filter((e: ExamEntry) => e.name || e.code).length;
                       const dlKey = `exam-${req.id || idx}`;
                       return (
                         <div key={req.id || idx} className="flex items-center justify-between bg-slate-50 dark:bg-[#1c1c21] rounded-lg border border-slate-200 dark:border-[#3d3d48] p-3">
@@ -391,7 +305,7 @@ export default function PrintDocumentsModal({
                               </span>
                             </p>
                             <p className="text-xs text-slate-500 dark:text-[#a1a1aa]">
-                              {examsCount} exame{examsCount !== 1 ? 's' : ''}
+                              {exCount} exame{exCount !== 1 ? 's' : ''}
                               {req.clinical_indication ? ` • ${req.clinical_indication.substring(0, 40)}...` : ''}
                             </p>
                           </div>

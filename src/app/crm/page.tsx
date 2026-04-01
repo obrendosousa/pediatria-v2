@@ -795,15 +795,9 @@ export default function CRMPage() {
                       message: `Deseja reverter este paciente para "${newStatus === 'scheduled' ? 'Agendado' : 'Na Fila'}"?`,
                       type: 'warning',
                       onConfirm: async () => {
+                        setConfirmModal(prev => ({ ...prev, isOpen: false }));
                         setIsUpdating(apt.id);
                         try {
-                          console.log('[DEBUG] Revertendo appointment:', { 
-                            appointmentId: apt.id, 
-                            patientId: apt.patient_id,
-                            currentStatus: apt.status,
-                            newStatus 
-                          });
-                          
                           const updatePayload: Record<string, string | null> = { status: newStatus };
                           if (newStatus === 'scheduled') {
                             updatePayload.queue_entered_at = null;
@@ -816,24 +810,19 @@ export default function CRMPage() {
                             updatePayload.finished_at = null;
                           }
 
-                          const { data, error } = await supabase
+                          const { error } = await supabase
                             .from('appointments')
                             .update(updatePayload)
                             .eq('id', apt.id)
                             .select();
-                          
+
                           if (error) throw error;
-                          
-                          console.log('[DEBUG] Appointment revertido:', { 
-                            updatedCount: data?.length || 0,
-                            appointmentId: apt.id 
-                          });
-                          
+
                           if (newStatus === 'scheduled' && apt.id === calledAppointmentId) {
                             setCalledAppointmentId(null);
                             setCallingAppointment(null);
                           }
-                          
+
                           fetchData();
                         } catch (error: any) {
                           console.error('Erro ao reverter:', error);

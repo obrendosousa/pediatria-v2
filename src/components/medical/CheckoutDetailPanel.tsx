@@ -1,31 +1,32 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  FileText,
-  Printer,
-  Search,
-  Plus,
-  Minus,
-  X,
-  Loader2,
-  CheckCircle2,
-  Wallet,
-  Stethoscope,
-  Calendar,
-  ShoppingBag,
-  User
-} from 'lucide-react';
+import { Loader2, User, CheckCircle2, Clock } from 'lucide-react';
 import { useCheckoutPanel } from '@/hooks/useCheckoutPanel';
 import { useToast } from '@/contexts/ToastContext';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import PrintDocumentsModal from './PrintDocumentsModal';
+import CheckoutDocumentsSection from './checkout/CheckoutDocumentsSection';
+import CheckoutReturnSection from './checkout/CheckoutReturnSection';
+import CheckoutChargeSummary from './checkout/CheckoutChargeSummary';
+import CheckoutLojinhaSection from './checkout/CheckoutLojinhaSection';
+import CheckoutFinalizeFooter from './checkout/CheckoutFinalizeFooter';
 
 interface CheckoutDetailPanelProps {
   appointmentId: number | null;
   onSuccess?: () => void;
   onScheduleReturn?: (data: { suggestedDate: string; patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string }) => void;
+}
+
+function calculateAge(birthDate: string): string {
+  const birth = new Date(birthDate);
+  const now = new Date();
+  const years = now.getFullYear() - birth.getFullYear();
+  const months = now.getMonth() - birth.getMonth();
+  if (years < 1) return `${Math.max(0, months + (years * 12))} meses`;
+  if (years < 3) {
+    const totalMonths = years * 12 + months;
+    return `${Math.floor(totalMonths / 12)}a ${totalMonths % 12}m`;
+  }
+  return `${years} anos`;
 }
 
 export default function CheckoutDetailPanel({
@@ -35,11 +36,11 @@ export default function CheckoutDetailPanel({
 }: CheckoutDetailPanelProps) {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [showPrintModal, setShowPrintModal] = useState(false);
   const {
     loading,
     appointment,
     medicalCheckout,
+    consultationDocs,
     search,
     setSearch,
     selectedItems,
@@ -48,8 +49,8 @@ export default function CheckoutDetailPanel({
     total,
     paymentMethod,
     setPaymentMethod,
+    hasNewSaleItems,
     filteredCatalog,
-    handlePrintDocuments,
     handleSubmit
   } = useCheckoutPanel(appointmentId);
 
@@ -65,6 +66,7 @@ export default function CheckoutDetailPanel({
     }
   };
 
+  // Empty state - no appointment selected
   if (!appointmentId) {
     return (
       <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 dark:bg-[#111b21]/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-[#3d3d48] p-8">
@@ -76,6 +78,7 @@ export default function CheckoutDetailPanel({
     );
   }
 
+  // Loading state
   if (loading && !appointment) {
     return (
       <div className="h-full flex items-center justify-center bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48]">
@@ -84,265 +87,124 @@ export default function CheckoutDetailPanel({
     );
   }
 
+  // Not found
   if (!appointment) {
     return (
       <div className="h-full flex flex-col items-center justify-center bg-slate-50/50 dark:bg-[#111b21]/50 rounded-xl border border-slate-200 dark:border-[#3d3d48] p-8">
-        <p className="text-slate-500 dark:text-[#a1a1aa] text-center">Paciente não encontrado.</p>
+        <p className="text-slate-500 dark:text-[#a1a1aa] text-center">Paciente nao encontrado.</p>
       </div>
     );
   }
 
-  const doctorName = appointment.doctor_name || 'Médica';
+  const doctorName = appointment.doctor_name || 'Medica';
   const returnDate = medicalCheckout?.return_date;
   const returnObs = medicalCheckout?.return_obs;
   const isFullyPaid = total <= 0 && (Number(appointment.amount_paid || 0) >= Number(appointment.total_amount || 0));
+  const totalDocs = consultationDocs.prescriptions.length + consultationDocs.examRequests.length + consultationDocs.documents.length;
+  const hasContent = totalDocs > 0 || returnDate || selectedItems.length > 0;
+  const appointmentTypeLabel = appointment.appointment_type === 'retorno' ? 'Retorno' : 'Consulta';
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-        {/* Bloco A – Entregáveis Médicos */}
-        <section className="bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-200 dark:border-blue-800 p-4">
-          <h4 className="text-sm font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2 mb-3">
-            <FileText className="w-4 h-4" />
-            Documentos para entregar
-          </h4>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setShowPrintModal(true)}
-              disabled={!appointment.patient_id}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-[#1c1c21] text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors font-bold text-xs shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Printer size={16} />
-              Imprimir receitas e atestados
-            </button>
-            <span className="text-xs text-blue-600 dark:text-blue-400">
-              Exames solicitados conforme anotações da consulta.
+      {/* Patient Header */}
+      <div className="px-5 py-3.5 border-b border-slate-100 dark:border-[#2d2d36] bg-slate-50/50 dark:bg-[#0f0f14]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+              <span className="text-sm font-black text-purple-600 dark:text-purple-400">
+                {(appointment.patient_name || 'P').charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-slate-800 dark:text-[#fafafa] truncate">
+                {appointment.patient_name || 'Paciente'}
+              </p>
+              <p className="text-xs text-slate-400 dark:text-[#71717a]">
+                {appointment.patient_birth_date ? calculateAge(appointment.patient_birth_date) : ''}
+                {appointment.patient_birth_date && doctorName ? ' • ' : ''}
+                {doctorName}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+              appointment.appointment_type === 'retorno'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+            }`}>
+              {appointmentTypeLabel}
             </span>
-          </div>
-          <p className="text-xs text-blue-600/80 dark:text-blue-400/80 mt-2">
-            Baixar pacote completo (PDF) e envio por WhatsApp em breve.
-          </p>
-        </section>
-
-        {/* Bloco B – Oportunidades e Lojinha */}
-        <section className="rounded-xl border border-slate-200 dark:border-[#3d3d48] p-4 bg-slate-50/50 dark:bg-[#111b21]/50">
-          <h4 className="text-sm font-bold text-slate-800 dark:text-[#fafafa] flex items-center gap-2 mb-3">
-            <ShoppingBag className="w-4 h-4 text-purple-500" />
-            Indicações da {doctorName}
-          </h4>
-          {(medicalCheckout?.checkout_items?.length ?? 0) > 0 ? (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {medicalCheckout!.checkout_items!.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#1c1c21] rounded-lg border border-slate-200 dark:border-[#3d3d48]"
-                >
-                  <span className="text-sm font-medium text-slate-800 dark:text-gray-200">
-                    {item.products?.[0]?.name ?? 'Item'}
-                  </span>
-                  <span className="text-xs text-slate-500 dark:text-[#a1a1aa]">
-                    R$ {item.products?.[0]?.price_sale != null ? Number(item.products[0].price_sale).toFixed(2) : '0,00'}
-                    {item.quantity > 1 ? ` x ${item.quantity}` : ''}
-                  </span>
-                  <span className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">
-                    Na conta
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-slate-500 dark:text-[#a1a1aa] mb-3">Nenhum produto indicado pela médica.</p>
-          )}
-          <label className="block text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase mb-2">
-            Adicionar itens extras (lojinha)
-          </label>
-          <div className="relative mb-2">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar produto..."
-              className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
-            />
-          </div>
-          {search && (
-            <div className="max-h-40 overflow-y-auto space-y-1 custom-scrollbar">
-              {filteredCatalog.map(product => (
-                <div
-                  key={product.id}
-                  className="flex items-center justify-between p-2 rounded-lg border border-slate-200 dark:border-[#3d3d48] hover:border-purple-300 dark:hover:border-purple-700 cursor-pointer bg-white dark:bg-[#1c1c21]"
-                  onClick={() => addItem(product, product.category === 'servico' ? 'service' : 'product')}
-                >
-                  <span className="text-sm font-medium text-slate-800 dark:text-gray-200">{product.name}</span>
-                  <span className="text-xs text-slate-500 dark:text-[#a1a1aa] mr-2">
-                    R$ {product.price_sale.toFixed(2)}
-                  </span>
-                  <span className="p-1.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
-                    <Plus size={14} />
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Bloco C – Próximos Passos (retorno) */}
-        {returnDate && (
-          <section className="rounded-xl border border-amber-200 dark:border-amber-800 p-4 bg-amber-50/50 dark:bg-amber-900/10">
-            <h4 className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4" />
-              Próximos passos
-            </h4>
-            <p className="text-sm text-amber-700 dark:text-amber-200 mb-2">
-              {doctorName} sugeriu retorno para{' '}
-              <strong>{format(new Date(returnDate), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</strong>
-              {returnObs ? ` — ${returnObs}` : ''}
-            </p>
-            {onScheduleReturn && (
-              <button
-                type="button"
-                onClick={() => onScheduleReturn({
-                  suggestedDate: returnDate,
-                  patientId: appointment.patient_id || undefined,
-                  patientName: appointment.patient_name || undefined,
-                  parentName: appointment.parent_name || undefined,
-                  phone: appointment.patient_phone || undefined,
-                  patientSex: appointment.patient_sex || undefined,
-                  doctorId: appointment.doctor_id || undefined,
-                  appointmentType: 'retorno',
-                })}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-bold transition-colors"
-              >
-                <Calendar size={16} />
-                Agendar agora
-              </button>
+            {appointment.start_time && (
+              <span className="text-[10px] text-slate-400 dark:text-[#71717a] flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {appointment.start_time.substring(11, 16)}
+              </span>
             )}
-          </section>
-        )}
-
-        {/* Lista de itens na conta (resumo da cobrança) */}
-        {selectedItems.length > 0 && (
-          <section>
-            <h4 className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase mb-2">
-              Resumo da cobrança
-            </h4>
-            <div className="space-y-2">
-              {selectedItems.map(item => (
-                <div
-                  key={String(item.id) + item.type}
-                  className={`flex items-center justify-between p-3 rounded-lg border ${
-                    item.type === 'debt'
-                      ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'
-                      : item.type === 'medical_item'
-                      ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'
-                      : 'bg-white dark:bg-[#1c1c21] border-slate-200 dark:border-[#3d3d48]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    {item.type === 'medical_item' && <Stethoscope className="w-4 h-4 text-blue-500 shrink-0" />}
-                    {item.type === 'debt' && <Wallet className="w-4 h-4 text-amber-500 shrink-0" />}
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 dark:text-gray-200 truncate">{item.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-[#a1a1aa]">
-                        R$ {item.price.toFixed(2)} {item.qty > 1 ? `x ${item.qty}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm font-bold text-slate-800 dark:text-gray-200">
-                      R$ {(item.price * item.qty).toFixed(2)}
-                    </span>
-                    {item.type !== 'debt' && (
-                      <div className="flex items-center gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item)}
-                          className="p-1.5 rounded bg-slate-100 dark:bg-[#2d2d36] hover:bg-slate-200 dark:hover:bg-gray-600"
-                        >
-                          <Minus size={12} />
-                        </button>
-                        <span className="text-xs w-5 text-center">{item.qty}</span>
-                        <button
-                          type="button"
-                          onClick={() => item.product && addItem(item.product, item.type as 'product' | 'service')}
-                          className="p-1.5 rounded bg-slate-100 dark:bg-[#2d2d36] hover:bg-slate-200 dark:hover:bg-gray-600"
-                        >
-                          <Plus size={12} />
-                        </button>
-                      </div>
-                    )}
-                    {item.type === 'debt' && (
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item)}
-                        className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500"
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Bloco D – Resumo financeiro (barra fixa no final do scroll) */}
-        <section className="mt-auto pt-4 border-t border-slate-200 dark:border-[#3d3d48]">
-          <div className="flex flex-wrap items-center gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase mb-1">
-                Forma de pagamento
-              </label>
-              <select
-                value={paymentMethod}
-                onChange={e => setPaymentMethod(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-[#3d3d48] rounded-lg bg-white dark:bg-[#1c1c21] text-slate-800 dark:text-gray-200 text-sm"
-              >
-                <option value="cash">Dinheiro</option>
-                <option value="pix">PIX</option>
-                <option value="credit_card">Cartão de Crédito</option>
-                <option value="debit_card">Cartão de Débito</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-4">
-              {isFullyPaid ? (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span className="font-bold">Atendimento pago</span>
-                </div>
-              ) : total > 0 ? (
-                <div className="text-right">
-                  <p className="text-xs text-slate-500 dark:text-[#a1a1aa] uppercase">Total a pagar</p>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-[#fafafa]">R$ {total.toFixed(2)}</p>
-                </div>
-              ) : null}
-            </div>
           </div>
-          <button
-            type="button"
-            onClick={handleFinalize}
-            disabled={submitting}
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors disabled:cursor-not-allowed"
-          >
-            {submitting ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <CheckCircle2 size={20} />
-            )}
-            {submitting ? 'Finalizando...' : 'Finalizar atendimento'}
-          </button>
-        </section>
+        </div>
       </div>
 
-      {/* Modal de impressão de documentos */}
-      <PrintDocumentsModal
-        isOpen={showPrintModal}
-        onClose={() => setShowPrintModal(false)}
-        patientId={appointment.patient_id || 0}
-        patientName={appointment.patient_name || 'Paciente'}
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
+        {/* Empty state */}
+        {!hasContent && !loading && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <CheckCircle2 className="w-12 h-12 text-emerald-300 dark:text-emerald-800 mb-3" />
+            <p className="text-sm font-semibold text-slate-600 dark:text-[#d4d4d8]">Consulta sem pendencias</p>
+            <p className="text-xs text-slate-400 dark:text-[#71717a] mt-1">Nenhum documento, produto ou retorno para processar.</p>
+          </div>
+        )}
+
+        {/* Section A: Smart Documents */}
+        <CheckoutDocumentsSection docs={consultationDocs} />
+
+        {/* Section B: Return / Next Steps */}
+        {returnDate && (
+          <CheckoutReturnSection
+            returnDate={returnDate}
+            returnObs={returnObs}
+            doctorName={doctorName}
+            onScheduleReturn={onScheduleReturn ? () => onScheduleReturn({
+              suggestedDate: returnDate,
+              patientId: appointment.patient_id || undefined,
+              patientName: appointment.patient_name || undefined,
+              parentName: appointment.parent_name || undefined,
+              phone: appointment.patient_phone || undefined,
+              patientSex: appointment.patient_sex || undefined,
+              doctorId: appointment.doctor_id || undefined,
+              appointmentType: 'retorno',
+            }) : undefined}
+          />
+        )}
+
+        {/* Section C: Charge Summary */}
+        <CheckoutChargeSummary
+          selectedItems={selectedItems}
+          total={total}
+          onAddItem={addItem}
+          onRemoveItem={removeItem}
+        />
+
+        {/* Section D: Lojinha / Product Sales */}
+        <CheckoutLojinhaSection
+          search={search}
+          onSearchChange={setSearch}
+          filteredCatalog={filteredCatalog}
+          onAddItem={addItem}
+          hasNewSaleItems={hasNewSaleItems}
+          paymentMethod={paymentMethod}
+          onPaymentMethodChange={setPaymentMethod}
+          doctorItems={medicalCheckout?.checkout_items || []}
+        />
+      </div>
+
+      {/* Sticky Footer */}
+      <CheckoutFinalizeFooter
+        total={total}
+        isFullyPaid={isFullyPaid}
+        hasItems={selectedItems.length > 0}
+        submitting={submitting}
+        onFinalize={handleFinalize}
       />
     </div>
   );

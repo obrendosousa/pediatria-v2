@@ -26,7 +26,7 @@ const VALID_CATEGORIES: KioskCategory[] = ['normal', 'prioridade', 'laboratorio'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { category } = body as { category: KioskCategory };
+    const { category, patient_name } = body as { category: KioskCategory; patient_name?: string };
 
     if (!category || !VALID_CATEGORIES.includes(category)) {
       return NextResponse.json(
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
         status: 'waiting',
         source_schema: 'atendimento',
         kiosk_category: category,
+        patient_name: patient_name || null,
       })
       .select('id, ticket_number, created_at')
       .single();

@@ -107,6 +107,13 @@ export default function ReceptionCard({
   };
 
   const getFinancialBadge = () => {
+    if (isRetorno) {
+      return (
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
+          Retorno
+        </div>
+      );
+    }
     if (!appointment.total_amount || appointment.total_amount <= 0) return null;
     if (remaining <= 0) {
       return (

@@ -9,12 +9,12 @@ import type { TicketInfo } from '@/components/dashboard/ReceptionCard';
 import {
   LayoutList, Users, DollarSign,
   ChevronLeft, ChevronRight, UserPlus, Calendar,
-  Stethoscope, ChevronDown, X, MapPin, Megaphone, Loader2
+  Stethoscope, ChevronDown, X, MapPin, Megaphone, Loader2, Ticket
 } from 'lucide-react';
 
 import ReceptionFlowColumns from '@/components/dashboard/ReceptionFlowColumns';
 import AtendimentoDetailModal from '@/components/atendimento/agenda/AtendimentoDetailModal';
-import AtendimentoNewSlotModal from '@/components/atendimento/agenda/AtendimentoNewSlotModal';
+import SchedulingModal from '@/components/atendimento/agenda/SchedulingModal';
 import CallMessageModal from '@/components/crm/CallMessageModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { getTodayDateString, addDaysToDate } from '@/utils/dateUtils';
@@ -29,6 +29,9 @@ const supabasePublic = createClient();
 
 /** Offset virtual para diferenciar IDs do schema public (pediatria) dos IDs do atendimento */
 const PED_ID_OFFSET = 10_000_000;
+
+/** Offset virtual para tickets avulsos (sem appointment) exibidos como cards no kanban */
+const STANDALONE_TICKET_OFFSET = 20_000_000;
 
 /** Retorna o client Supabase correto para o appointment (pediatria vs atendimento) */
 const getClientForApt = (apt: Appointment) =>
@@ -159,6 +162,12 @@ export default function AtendimentoCRMPage() {
   const [isManualCallSending, setIsManualCallSending] = useState(false);
   const [manualCallServicePoint, setManualCallServicePoint] = useState<import('@/types/queue').ServicePoint | null>(null);
 
+  // Senha avulsa
+  const [isSenhaAvulsaOpen, setIsSenhaAvulsaOpen] = useState(false);
+  const [senhaAvulsaName, setSenhaAvulsaName] = useState('');
+  const [senhaAvulsaCategory, setSenhaAvulsaCategory] = useState<'normal' | 'prioridade'>('normal');
+  const [senhaAvulsaSaving, setSenhaAvulsaSaving] = useState(false);
+
   // Modal seletor de ponto de atendimento
   const [servicePointSelector, setServicePointSelector] = useState<{
     isOpen: boolean;
@@ -184,6 +193,7 @@ export default function AtendimentoCRMPage() {
   const ticketMap = new Map<number, TicketInfo>();
   for (const tk of tickets) {
     if (tk.status === 'cancelled' || tk.status === 'completed') continue;
+    if (tk.appointment_id == null) continue;
     const spName = tk.service_point?.name;
     ticketMap.set(tk.appointment_id, {
       ticket_number: tk.ticket_number,
@@ -721,12 +731,60 @@ export default function AtendimentoCRMPage() {
     if (raw) setSelectedAppointmentForEdit(raw);
   };
 
+  /** Gerar senha avulsa (walk-in sem agendamento) */
+  const handleSenhaAvulsa = async () => {
+    if (senhaAvulsaSaving) return;
+    setSenhaAvulsaSaving(true);
+    try {
+      const res = await fetch('/api/atendimento/queue/kiosk-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: senhaAvulsaCategory, patient_name: senhaAvulsaName.trim() || null }),
+      });
+      if (!res.ok) throw new Error('Erro ao gerar senha');
+      const data = await res.json();
+      toast.success(`Senha ${data.ticket_number} gerada!`);
+      setIsSenhaAvulsaOpen(false);
+      setSenhaAvulsaName('');
+      setSenhaAvulsaCategory('normal');
+      fetchTodayTickets();
+      fetchData();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao gerar senha');
+    } finally {
+      setSenhaAvulsaSaving(false);
+    }
+  };
+
   // Medico selecionado
   const selectedDoctor = doctors.find(d => d.id === selectedDoctorId);
   const selectedDoctorLabel = selectedDoctor ? selectedDoctor.name : 'Todos os Médicos';
 
+  // Integrar tickets avulsos (sem appointment) como appointments virtuais no kanban
+  const standaloneTicketAppointments: Appointment[] = tickets
+    .filter(t => !t.appointment_id && t.status !== 'completed' && t.status !== 'cancelled')
+    .map(t => ({
+      id: t.id + STANDALONE_TICKET_OFFSET,
+      start_time: t.created_at,
+      patient_name: t.patient_name || 'Paciente Avulso',
+      patient_phone: null,
+      patient_id: t.patient_id ?? null,
+      parent_name: null,
+      patient_sex: null,
+      doctor_name: null,
+      doctor_id: null,
+      type: 'walk-in',
+      status: t.status === 'waiting' ? 'waiting' : t.status === 'called' ? 'waiting' : 'in_service',
+      notes: `Senha: ${t.ticket_number}`,
+      queue_stage: 'reception' as const,
+      current_ticket_id: t.id,
+      source_module: 'atendimento' as const,
+    } as unknown as Appointment));
+
+  const allAppointments = [...appointments, ...standaloneTicketAppointments];
+
   // Contadores por status
-  const statusCounts = appointments.reduce((acc, a) => {
+  const statusCounts = allAppointments.reduce((acc, a) => {
     acc[a.status] = (acc[a.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -886,6 +944,12 @@ export default function AtendimentoCRMPage() {
             {receptionFlowTab !== 'checkout' && (
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => setIsSenhaAvulsaOpen(true)}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-green-200 dark:shadow-none transition-all hover:-translate-y-0.5"
+                >
+                  <Ticket className="w-4 h-4" /> Senha Avulsa
+                </button>
+                <button
                   onClick={() => setIsManualCallOpen(true)}
                   className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-amber-200 dark:shadow-none transition-all hover:-translate-y-0.5"
                 >
@@ -895,7 +959,7 @@ export default function AtendimentoCRMPage() {
                   onClick={() => setIsNewSlotModalOpen(true)}
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all hover:-translate-y-0.5"
                 >
-                  <UserPlus className="w-4 h-4" /> Novo Paciente
+                  <UserPlus className="w-4 h-4" /> Novo Agendamento
                 </button>
               </div>
             )}
@@ -912,7 +976,7 @@ export default function AtendimentoCRMPage() {
           ) : (
             <ReceptionFlowColumns
               selectedDate={selectedDate}
-              appointments={appointments}
+              appointments={allAppointments}
               callingAppointmentId={sendingCallAppointmentId}
               activeTab={receptionFlowTab}
               selectedCheckoutAppointmentId={receptionFlowTab === 'checkout' ? selectedCheckoutAppointmentId : null}
@@ -946,10 +1010,10 @@ export default function AtendimentoCRMPage() {
         defaultMessage={callMessage}
       />
 
-      <AtendimentoNewSlotModal
+      <SchedulingModal
         isOpen={isNewSlotModalOpen}
         onClose={() => setIsNewSlotModalOpen(false)}
-        onSuccess={() => { setIsNewSlotModalOpen(false); fetchData(); }}
+        onSuccess={() => { setIsNewSlotModalOpen(false); fetchData(); fetchTodayTickets(); }}
         initialDate={selectedDate}
         initialTime={new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })}
       />
@@ -971,6 +1035,81 @@ export default function AtendimentoCRMPage() {
         message={confirmModal.message}
         type={confirmModal.type}
       />
+
+      {/* Modal Senha Avulsa */}
+      {isSenhaAvulsaOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1a1a22] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#2d2d36] w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-[#252530]">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <Ticket className="w-4 h-4 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-gray-100">Gerar Senha Avulsa</h3>
+                  <p className="text-xs text-slate-500 dark:text-gray-400">Paciente sem agendamento previo</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => { setIsSenhaAvulsaOpen(false); setSenhaAvulsaName(''); }} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors">
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-1">Nome do Paciente (opcional)</label>
+                <input
+                  type="text"
+                  value={senhaAvulsaName}
+                  onChange={(e) => setSenhaAvulsaName(e.target.value)}
+                  placeholder="Nome para exibição no painel..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-[#252530] bg-slate-50 dark:bg-[#0e0e14] text-sm text-slate-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-[#a1a1aa] uppercase mb-2">Categoria</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSenhaAvulsaCategory('normal')}
+                    className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
+                      senhaAvulsaCategory === 'normal'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                        : 'border-gray-200 dark:border-[#252530] text-slate-500 dark:text-[#a1a1aa]'
+                    }`}
+                  >
+                    Normal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSenhaAvulsaCategory('prioridade')}
+                    className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
+                      senhaAvulsaCategory === 'prioridade'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
+                        : 'border-gray-200 dark:border-[#252530] text-slate-500 dark:text-[#a1a1aa]'
+                    }`}
+                  >
+                    Prioridade
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button type="button" onClick={() => { setIsSenhaAvulsaOpen(false); setSenhaAvulsaName(''); }} className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSenhaAvulsa}
+                  disabled={senhaAvulsaSaving}
+                  className="flex items-center gap-2 px-5 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl shadow-lg shadow-green-200 dark:shadow-none transition-all"
+                >
+                  {senhaAvulsaSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ticket className="w-4 h-4" />}
+                  {senhaAvulsaSaving ? 'Gerando...' : 'Gerar Senha'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Chamada Manual na TV */}
       {isManualCallOpen && (
