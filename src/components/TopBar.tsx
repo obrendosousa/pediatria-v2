@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { LogOut, Moon, Sun, User, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import ProfilePopover from './ProfilePopover';
+import NotificationBell from './NotificationBell';
 
 export default function TopBar() {
   const { signOut, profile } = useAuth();
@@ -55,6 +56,9 @@ export default function TopBar() {
             <Moon className="w-[18px] h-[18px] text-blue-400" />
           )}
         </button>
+
+        {/* Notificacoes */}
+        <NotificationBell />
 
         {/* Separador */}
         <div className="w-px h-6 bg-slate-200 dark:bg-[#2a2a30] mx-1" />

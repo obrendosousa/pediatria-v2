@@ -14,7 +14,7 @@ type SaleItemRow = {
   quantity: number;
   unit_price: number;
   product_id: number | null;
-  products?: Array<{ id: number; name: string }> | null;
+  products?: { id: number; name: string } | null;
 };
 
 type TransactionRow = {
@@ -27,21 +27,21 @@ type TransactionRow = {
   sale_id: number | null;
   medical_checkout_id: number | null;
   notes: string | null;
-  appointments?: Array<{
+  appointments?: {
     id: number;
     patient_id: number | null;
     patient_name: string | null;
     parent_name: string | null;
     appointment_type: 'consulta' | 'retorno' | null;
     discount_amount: number | null;
-  }> | null;
-  sales?: Array<{
+  } | null;
+  sales?: {
     id: number;
     patient_id: number | null;
     chat_id: number | null;
     total: number | null;
     payment_method: string | null;
-  }> | null;
+  } | null;
   financial_transaction_payments: Array<{
     payment_method: PaymentMethod;
     amount: number;
@@ -49,11 +49,11 @@ type TransactionRow = {
 };
 
 function firstAppointment(transaction: TransactionRow) {
-  return transaction.appointments?.[0] ?? null;
+  return transaction.appointments ?? null;
 }
 
 function firstSale(transaction: TransactionRow) {
-  return transaction.sales?.[0] ?? null;
+  return transaction.sales ?? null;
 }
 
 function buildDailyTotals(transactions: TransactionRow[]) {
@@ -132,7 +132,7 @@ function mapTransactionLog(
 
   const items = transaction.sale_id
     ? (saleItemsBySaleId.get(transaction.sale_id) || []).map((si) => ({
-        name: si.products?.[0]?.name || `Produto #${si.product_id}`,
+        name: si.products?.name || `Produto #${si.product_id}`,
         qty: si.quantity,
         unit_price: Number(si.unit_price || 0)
       }))

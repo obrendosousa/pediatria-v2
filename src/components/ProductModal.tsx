@@ -52,6 +52,7 @@ export default function ProductModal({ isOpen, onClose, onSuccess, product }: Pr
     quantity: ''
   });
 
+  const productId = product?.id ?? null;
   useEffect(() => {
     if (isOpen) {
       setActiveTab('details');
@@ -71,8 +72,8 @@ export default function ProductModal({ isOpen, onClose, onSuccess, product }: Pr
         setBatches([]);
       }
     }
-     
-  }, [isOpen, product]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, productId]);
 
   async function fetchBatches(productId: number) {
     const { data } = await supabase
@@ -99,12 +100,12 @@ export default function ProductModal({ isOpen, onClose, onSuccess, product }: Pr
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const uploadData = new FormData();
+      uploadData.append('file', file);
 
       const res = await fetch('/api/upload/product-image', {
         method: 'POST',
-        body: formData,
+        body: uploadData,
       });
 
       if (!res.ok) {

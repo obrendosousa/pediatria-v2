@@ -225,69 +225,79 @@ export default function FinancialDashboardPage() {
         ? new Date(closure.startDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
         : `${closure.startDate} a ${closure.endDate}`;
 
+      const pctOf = (v: number) => totalGeral > 0 ? ((v / totalGeral) * 100).toFixed(0) : '0';
+
       const html = `<!DOCTYPE html><html><head><style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; color: #1e293b; background: transparent; }
-        .page { width: 210mm; min-height: 297mm; padding: 34mm 18mm 28mm; }
-        h1 { font-size: 16px; text-align: center; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; color: #0f172a; }
-        .subtitle { text-align: center; font-size: 11px; color: #64748b; margin-bottom: 18px; }
-        .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #475569; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; margin: 16px 0 8px; }
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 6px; }
-        .summary-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; }
-        .summary-card .label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; }
-        .summary-card .value { font-size: 16px; font-weight: 900; color: #0f172a; margin-top: 2px; }
-        .total-bar { background: #f0fdf4; border: 2px solid #86efac; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin: 10px 0 16px; }
-        .total-bar .label { font-size: 12px; font-weight: bold; color: #166534; }
-        .total-bar .value { font-size: 20px; font-weight: 900; color: #166534; }
-        .discount-bar { background: #fff7ed; border: 2px solid #fed7aa; border-radius: 8px; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; margin: 0 0 10px; }
-        .discount-bar .label { font-size: 11px; font-weight: bold; color: #9a3412; }
-        .discount-bar .value { font-size: 16px; font-weight: 900; color: #ea580c; }
-        .origin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        .origin-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }
-        .origin-card .label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; }
-        .origin-card .value { font-size: 14px; font-weight: 900; color: #0f172a; }
-        table { width: 100%; border-collapse: collapse; font-size: 9px; }
-        thead th { background: #f1f5f9; text-align: left; padding: 6px 8px; font-size: 8px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
-        tbody td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; }
-        tbody tr:nth-child(even) { background: #f8fafc; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #000; background: transparent; }
+        .page { width: 210mm; padding: 38mm 22mm 20mm; }
+
+        .content-wrap { padding: 24px 22px 18px; }
+
+        h1 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 3px; color: #000; text-align: center; margin-bottom: 2px; }
+        .date { text-align: center; font-size: 10px; color: #555; margin-bottom: 18px; }
+
+        .total-row { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 12px; border-bottom: 2px solid #000; margin-bottom: 16px; }
+        .total-value { font-size: 30px; font-weight: 900; color: #000; }
+        .total-meta { text-align: right; }
+        .total-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #666; }
+        .total-discount { font-size: 8px; color: #c2410c; font-weight: 600; margin-top: 2px; }
+
+        .cards-row { display: flex; gap: 8px; margin-bottom: 18px; }
+        .card { flex: 1; border-left: 4px solid var(--c); border-radius: 4px; padding: 10px 12px; background: rgba(255,255,255,0.7); }
+        .card .lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #333; margin-bottom: 3px; text-align: center; }
+        .card .val { font-size: 16px; font-weight: 900; color: #000; text-align: center; }
+        .card .pct { float: right; font-size: 8px; font-weight: 800; color: var(--c); }
+
+        .section-title { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 6px; }
+
+        .detail-row { display: flex; gap: 8px; margin-bottom: 18px; }
+        .detail-card { flex: 1; background: rgba(255,255,255,0.7); border-radius: 4px; padding: 8px 12px; text-align: center; }
+        .detail-card .lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #444; letter-spacing: 0.5px; }
+        .detail-card .val { font-size: 14px; font-weight: 800; color: #000; margin-top: 1px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 0; }
+        thead th { text-align: left; padding: 10px 8px; font-size: 7.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #333; border-bottom: 2px solid #000; vertical-align: middle; }
+        tbody td { padding: 10px 8px; border-bottom: 1px solid #ddd; color: #111; font-weight: 500; background: rgba(255,255,255,0.5); vertical-align: middle; }
+        tbody tr:nth-child(even) td { background: rgba(245,245,245,0.6); }
         .text-right { text-align: right; }
-        .font-bold { font-weight: bold; }
-        .discount-tag { display: inline-block; font-size: 7px; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; border-radius: 4px; padding: 1px 4px; margin-left: 4px; }
-        .footer-note { margin-top: 20px; text-align: center; font-size: 9px; color: #94a3b8; }
-      </style></head><body><div class="page">
-        <h1>Relatório de Fechamento de Caixa</h1>
-        <p class="subtitle">${dateLabel}</p>
+        .patient-name { font-weight: 700; color: #000; }
+        .sub-item { font-size: 7px; color: #777; display: block; margin-top: 1px; }
+        .discount-tag { display: inline-block; font-size: 6.5px; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; border-radius: 3px; padding: 1px 3px; margin-left: 2px; font-weight: 700; }
+        .val-cell { font-weight: 800; color: #000; font-size: 9.5px; }
+        .table-total { display: flex; justify-content: flex-end; padding: 8px; border-top: 2px solid #000; }
+        .table-total span { font-size: 10px; font-weight: 900; color: #000; letter-spacing: 0.5px; }
 
-        <p class="section-title">Resumo por Forma de Pagamento</p>
-        <div class="summary-grid">
-          ${(['pix', 'cash', 'credit_card', 'debit_card'] as const).map(m =>
-            `<div class="summary-card"><div class="label">${methodLabel[m]}</div><div class="value">R$ ${closure.totals.totalsByMethod[m].toFixed(2)}</div></div>`
-          ).join('')}
+        .footer { margin-top: 16px; text-align: center; font-size: 7.5px; color: #aaa; letter-spacing: 0.3px; }
+      </style></head><body><div class="page"><div class="content-wrap">
+
+        <h1>Fechamento de Caixa</h1>
+        <p class="date">${dateLabel}</p>
+
+        <div class="total-row">
+          <span class="total-value">R$ ${totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+          <div class="total-meta">
+            <div class="total-label">Total Recebido</div>
+            ${totalDescontos > 0 ? `<div class="total-discount">Descontos: -R$ ${totalDescontos.toFixed(2)}</div>` : ''}
+          </div>
         </div>
 
-        <div class="total-bar">
-          <span class="label">TOTAL GERAL</span>
-          <span class="value">R$ ${totalGeral.toFixed(2)}</span>
+        <div class="cards-row">
+          ${(['pix', 'cash', 'credit_card', 'debit_card'] as const).map((m, i) => {
+            const colors = ['#10b981', '#0ea5e9', '#8b5cf6', '#f59e0b'];
+            const v = closure.totals.totalsByMethod[m];
+            return `<div class="card" style="--c:${colors[i]}">
+              <div class="lbl">${methodLabel[m]}${v > 0 ? `<span class="pct">${pctOf(v)}%</span>` : ''}</div>
+              <div class="val">R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+            </div>`;
+          }).join('')}
         </div>
 
-        ${totalDescontos > 0 ? `<div class="discount-bar">
-          <span class="label">TOTAL DESCONTOS CONCEDIDOS</span>
-          <span class="value">-R$ ${totalDescontos.toFixed(2)}</span>
-        </div>` : ''}
-
-        <p class="section-title">Resumo por Origem</p>
-        <div class="origin-grid">
-          <div class="origin-card"><div class="label">Atendimento</div><div class="value">R$ ${closure.totals.totalsByOrigin.atendimento.toFixed(2)}</div></div>
-          <div class="origin-card"><div class="label">Loja</div><div class="value">R$ ${closure.totals.totalsByOrigin.loja.toFixed(2)}</div></div>
+        <p class="section-title">Detalhamento</p>
+        <div class="detail-row">
+          <div class="detail-card"><div class="lbl">Consultas</div><div class="val">R$ ${closure.totals.totalsByOrigin.atendimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div></div>
+          <div class="detail-card"><div class="lbl">Loja</div><div class="val">R$ ${closure.totals.totalsByOrigin.loja.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div></div>
         </div>
-
-        ${closure.totals.totalsByType ? `
-        <p class="section-title">Detalhamento por Tipo</p>
-        <div class="summary-grid" style="grid-template-columns:1fr 1fr 1fr">
-          <div class="summary-card"><div class="label">Consulta</div><div class="value">R$ ${closure.totals.totalsByType.consulta.toFixed(2)}</div></div>
-          <div class="summary-card"><div class="label">Retorno</div><div class="value">R$ ${closure.totals.totalsByType.retorno.toFixed(2)}</div></div>
-          <div class="summary-card"><div class="label">Loja</div><div class="value">R$ ${closure.totals.totalsByType.loja.toFixed(2)}</div></div>
-        </div>` : ''}
 
         <p class="section-title">Lançamentos (${closure.logs.length})</p>
         <table>
@@ -295,22 +305,26 @@ export default function FinancialDashboardPage() {
             <th>Hora</th><th>Paciente</th><th>Tipo</th><th>Origem</th><th>Forma(s)</th><th class="text-right">Valor</th>
           </tr></thead>
           <tbody>
-            ${closure.logs.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:16px;color:#94a3b8;">Nenhum lançamento no período.</td></tr>' : ''}
+            ${closure.logs.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:20px;color:#999;">Nenhum lançamento no período.</td></tr>' : ''}
             ${closure.logs.map(log => `<tr>
               <td>${new Date(log.occurred_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
-              <td>${log.patient_name}${(log.items && log.items.length > 0) ? '<br/>' + log.items.map(it => `<span style="font-size:7px;color:#64748b;">${it.qty}x ${it.name} (R$${it.unit_price.toFixed(2)})</span>`).join('<br/>') : ''}</td>
+              <td><span class="patient-name">${log.patient_name}</span>${(log.items && log.items.length > 0) ? log.items.map(it => `<span class="sub-item">${it.qty}x ${it.name} (R$${it.unit_price.toFixed(2)})</span>`).join('') : ''}</td>
               <td>${financialTypeLabel(log.attendance_type)}</td>
               <td>${financialOriginLabel(log.origin)}</td>
               <td>${(log.payment_methods || []).map(p => `${methodLabel[p.payment_method] || p.payment_method} R$${Number(p.amount).toFixed(2)}`).join(' + ')}</td>
-              <td class="text-right font-bold">R$ ${log.amount.toFixed(2)}${(log.discount_amount && log.discount_amount > 0) ? `<span class="discount-tag">desc. -R$${log.discount_amount.toFixed(2)}</span>` : ''}</td>
+              <td class="text-right val-cell">R$ ${log.amount.toFixed(2)}${(log.discount_amount && log.discount_amount > 0) ? `<span class="discount-tag">-R$${log.discount_amount.toFixed(2)}</span>` : ''}</td>
             </tr>`).join('')}
           </tbody>
         </table>
-
-        <div class="footer-note">
-          Gerado em ${new Date().toLocaleString('pt-BR')} — Centro Médico Aliança — Pediatria Integrada
+        <div class="table-total">
+          <span>Total: R$ ${totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
         </div>
-      </div></body></html>`;
+
+        <div class="footer">
+          Gerado em ${new Date().toLocaleString('pt-BR')} &mdash; Centro Médico Aliança &mdash; Pediatria Integrada
+        </div>
+
+      </div></div></body></html>`;
 
       const container = document.createElement('div');
       container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:white;';
@@ -343,20 +357,19 @@ export default function FinancialDashboardPage() {
         const pageHeight = 297;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         const marginTop = 32;
-        const marginBottom = 30;
-        const usableHeight = pageHeight - marginTop - marginBottom;
+        const usableHeight = pageHeight - marginTop;
 
         const pdf = new jsPDF('p', 'mm', 'a4');
         pdf.addImage(letterheadDataUrl, 'PNG', 0, 0, imgWidth, pageHeight);
         pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
 
         if (imgHeight > pageHeight) {
-          let contentOffset = pageHeight;
-          while (contentOffset < imgHeight) {
+          let yOffset = usableHeight;
+          while (yOffset < imgHeight) {
             pdf.addPage();
             pdf.addImage(letterheadDataUrl, 'PNG', 0, 0, imgWidth, pageHeight);
-            pdf.addImage(imgData, 'PNG', 0, marginTop - contentOffset, imgWidth, imgHeight);
-            contentOffset += usableHeight;
+            pdf.addImage(imgData, 'PNG', 0, marginTop - yOffset, imgWidth, imgHeight);
+            yOffset += usableHeight;
           }
         }
 
@@ -623,89 +636,122 @@ export default function FinancialDashboardPage() {
         )}
 
         {activeTab === 'closure' && closure && (
-          <div className="space-y-4">
-            <div className="bg-white dark:bg-[#141419] rounded-2xl border border-slate-100 dark:border-[#2d2d36] p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200">Fechamento de caixa</h3>
-                  <p className="text-xs text-slate-500 dark:text-[#a1a1aa]">
-                    Período: {closure.startDate} até {closure.endDate}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleDownloadReport}
-                  disabled={closingCashier || closure.logs.length === 0}
-                  className="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <Download className="w-4 h-4" />
-                  {closingCashier ? 'Gerando PDF...' : 'Baixar Relatório PDF'}
-                </button>
+          <div className="space-y-5">
+            {/* Header + PDF button */}
+            <div className="flex items-end justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-800 dark:text-gray-100">Fechamento de caixa</h3>
+                <p className="text-xs text-slate-500 dark:text-[#71717a] mt-0.5">
+                  Período: {closure.startDate} até {closure.endDate}
+                </p>
               </div>
-              <div className={`grid ${totalDescontos > 0 ? 'grid-cols-5' : 'grid-cols-4'} gap-3`}>
-                <SummaryValue label="Pix" value={closure.totals.totalsByMethod.pix} />
-                <SummaryValue label="Dinheiro" value={closure.totals.totalsByMethod.cash} />
-                <SummaryValue label="Crédito" value={closure.totals.totalsByMethod.credit_card} />
-                <SummaryValue label="Débito" value={closure.totals.totalsByMethod.debit_card} />
+              <button
+                type="button"
+                onClick={handleDownloadReport}
+                disabled={closingCashier || closure.logs.length === 0}
+                className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-xs font-semibold disabled:opacity-50 flex items-center gap-2 transition-colors duration-200 cursor-pointer shadow-sm"
+              >
+                <Download className="w-4 h-4" />
+                {closingCashier ? 'Gerando PDF...' : 'Baixar Relatório PDF'}
+              </button>
+            </div>
+
+            {/* Resumo financeiro — layout unificado */}
+            <div className="bg-white dark:bg-[#18181b] rounded-2xl border border-slate-100 dark:border-[#27272a] p-5">
+              <div className="flex items-baseline justify-between mb-5">
+                <div className="flex items-baseline gap-3">
+                  <p className="text-2xl font-bold text-slate-900 dark:text-[#fafafa] tabular-nums">
+                    R$ {closure.totals.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <span className="text-xs font-medium text-slate-400 dark:text-[#71717a]">total recebido</span>
+                </div>
                 {totalDescontos > 0 && (
-                  <div className="rounded-xl border border-orange-200 dark:border-orange-800/40 bg-orange-50 dark:bg-orange-900/10 p-3">
-                    <p className="text-[11px] uppercase font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                      <Tag className="w-3 h-3" /> Descontos
-                    </p>
-                    <p className="text-lg font-black text-orange-600 dark:text-orange-400">-R$ {totalDescontos.toFixed(2)}</p>
-                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-orange-500 dark:text-orange-400">
+                    <Tag className="w-3 h-3" /> -R$ {totalDescontos.toFixed(2)} desc.
+                  </span>
                 )}
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                {([
+                  { key: 'pix' as const, label: 'Pix', accentCls: 'border-l-emerald-500', dotCls: 'bg-emerald-500', textCls: 'text-emerald-600 dark:text-emerald-400' },
+                  { key: 'cash' as const, label: 'Dinheiro', accentCls: 'border-l-sky-500', dotCls: 'bg-sky-500', textCls: 'text-sky-600 dark:text-sky-400' },
+                  { key: 'credit_card' as const, label: 'Crédito', accentCls: 'border-l-violet-500', dotCls: 'bg-violet-500', textCls: 'text-violet-600 dark:text-violet-400' },
+                  { key: 'debit_card' as const, label: 'Débito', accentCls: 'border-l-amber-500', dotCls: 'bg-amber-500', textCls: 'text-amber-600 dark:text-amber-400' },
+                ] as const).map(({ key, label, accentCls, dotCls, textCls }) => {
+                  const val = closure.totals.totalsByMethod[key];
+                  const pct = closure.totals.totalAmount > 0 ? (val / closure.totals.totalAmount) * 100 : 0;
+                  return (
+                    <div key={key} className={`rounded-xl border border-slate-100 dark:border-[#27272a] border-l-[3px] ${accentCls} bg-slate-50/50 dark:bg-[#141416] p-3.5`}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`h-2 w-2 rounded-full ${dotCls}`} />
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-[#a1a1aa]">{label}</p>
+                        </div>
+                        {pct > 0 && <p className={`text-[11px] font-bold ${textCls}`}>{pct.toFixed(0)}%</p>}
+                      </div>
+                      <p className="text-lg font-bold text-slate-800 dark:text-[#fafafa] tabular-nums">
+                        R$ {val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="bg-white dark:bg-[#141419] rounded-2xl border border-slate-100 dark:border-[#2d2d36] overflow-hidden">
+            {/* Tabela de lançamentos */}
+            <div className="bg-white dark:bg-[#18181b] rounded-2xl border border-slate-100 dark:border-[#27272a] overflow-hidden shadow-sm">
+              <div className="px-5 py-3.5 border-b border-slate-100 dark:border-[#27272a]">
+                <p className="text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
+                  Lançamentos ({closure.logs.length})
+                </p>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 dark:bg-[#1c1c21]">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Data/Hora</th>
-                      <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Paciente</th>
-                      <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Tipo</th>
-                      <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Origem</th>
-                      <th className="text-left px-4 py-3 text-xs uppercase text-slate-500">Forma(s)</th>
-                      <th className="text-right px-4 py-3 text-xs uppercase text-slate-500">Valor</th>
+                  <thead>
+                    <tr className="bg-slate-50/80 dark:bg-[#0f0f12]">
+                      <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Data/Hora</th>
+                      <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Paciente</th>
+                      <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Tipo</th>
+                      <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Origem</th>
+                      <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Forma(s)</th>
+                      <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Valor</th>
                       {profile?.role === 'admin' && (
-                        <th className="text-center px-4 py-3 text-xs uppercase text-slate-500">Ação</th>
+                        <th className="text-center px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Ação</th>
                       )}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-50 dark:divide-[#1f1f23]">
                     {closure.logs.length === 0 && (
                       <tr>
-                        <td className="px-4 py-8 text-center text-slate-500" colSpan={profile?.role === 'admin' ? 7 : 6}>
+                        <td className="px-5 py-10 text-center text-sm text-slate-400 dark:text-[#71717a]" colSpan={profile?.role === 'admin' ? 7 : 6}>
                           Nenhuma entrada no período selecionado.
                         </td>
                       </tr>
                     )}
                     {closure.logs.map((log) => (
-                      <tr key={log.id} className="border-t border-slate-100 dark:border-[#2d2d36]">
-                        <td className="px-4 py-3">{new Date(log.occurred_at).toLocaleString('pt-BR')}</td>
-                        <td className="px-4 py-3">
-                          <div>{log.patient_name}</div>
+                      <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors duration-150">
+                        <td className="px-5 py-3.5 text-slate-600 dark:text-[#d4d4d8] tabular-nums">{new Date(log.occurred_at).toLocaleString('pt-BR')}</td>
+                        <td className="px-5 py-3.5">
+                          <div className="font-medium text-slate-800 dark:text-[#fafafa]">{log.patient_name}</div>
                           {log.items && log.items.length > 0 && (
                             <div className="mt-1 space-y-0.5">
                               {log.items.map((item, i) => (
-                                <span key={i} className="block text-[10px] text-slate-500 dark:text-[#a1a1aa]">
+                                <span key={i} className="block text-[10px] text-slate-400 dark:text-[#71717a]">
                                   {item.qty}x {item.name} (R$ {item.unit_price.toFixed(2)})
                                 </span>
                               ))}
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3">{financialTypeLabel(log.attendance_type)}</td>
-                        <td className="px-4 py-3">{financialOriginLabel(log.origin)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-5 py-3.5 text-slate-600 dark:text-[#d4d4d8]">{financialTypeLabel(log.attendance_type)}</td>
+                        <td className="px-5 py-3.5 text-slate-600 dark:text-[#d4d4d8]">{financialOriginLabel(log.origin)}</td>
+                        <td className="px-5 py-3.5 text-slate-600 dark:text-[#d4d4d8]">
                           {(log.payment_methods || [])
                             .map((method) => `${paymentMethodLabel(method.payment_method)} (R$ ${Number(method.amount).toFixed(2)})`)
                             .join(' + ')}
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className="font-bold">R$ {log.amount.toFixed(2)}</span>
+                        <td className="px-5 py-3.5 text-right">
+                          <span className="font-semibold text-slate-800 dark:text-[#fafafa] tabular-nums">R$ {log.amount.toFixed(2)}</span>
                           {(log.discount_amount ?? 0) > 0 && (
                             <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 rounded-full px-1.5 py-0.5">
                               <Tag className="w-2.5 h-2.5" />
@@ -714,11 +760,11 @@ export default function FinancialDashboardPage() {
                           )}
                         </td>
                         {profile?.role === 'admin' && (
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-5 py-3.5 text-center">
                             <button
                               type="button"
                               onClick={() => openEditModal(log)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/10"
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-[#3d3d48] px-2.5 py-1.5 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors duration-200 cursor-pointer"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                               Editar
@@ -884,11 +930,3 @@ function KpiCard({
   );
 }
 
-function SummaryValue({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl border border-slate-100 dark:border-[#2a2a35] bg-slate-50 dark:bg-[#1c1c21] p-3">
-      <p className="text-[11px] uppercase font-bold text-slate-500 dark:text-[#a1a1aa]">{label}</p>
-      <p className="text-lg font-black text-slate-800 dark:text-[#fafafa]">R$ {value.toFixed(2)}</p>
-    </div>
-  );
-}

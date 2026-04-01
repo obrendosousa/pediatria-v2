@@ -13,9 +13,9 @@ type FinancialTransaction = {
   occurred_at: string;
   sale_id: number | null;
   appointment_id: number | null;
-  appointments?: Array<{
+  appointments?: {
     appointment_type: 'consulta' | 'retorno' | null;
-  }> | null;
+  } | null;
   financial_transaction_payments: Array<{
     payment_method: PaymentMethod;
     amount: number;
@@ -30,16 +30,16 @@ type SaleRow = {
   patient_id: number | null;
   origin: string | null;
   appointment_id: number | null;
-  appointments?: Array<{
+  appointments?: {
     appointment_type: 'consulta' | 'retorno' | null;
-  }> | null;
+  } | null;
 };
 
 type SaleItemRow = {
   sale_id: number;
   quantity: number;
   unit_price: number;
-  products?: Array<{ price_cost: number | null }> | null;
+  products?: { price_cost: number | null } | null;
 };
 
 function dateKeyFromISO(dateISO: string): string {
@@ -54,8 +54,8 @@ function round2(value: number): number {
   return Number(value.toFixed(2));
 }
 
-function firstAppointmentType(row: { appointments?: Array<{ appointment_type: 'consulta' | 'retorno' | null }> | null }) {
-  return row.appointments?.[0]?.appointment_type ?? null;
+function firstAppointmentType(row: { appointments?: { appointment_type: 'consulta' | 'retorno' | null } | null }) {
+  return row.appointments?.appointment_type ?? null;
 }
 
 export async function GET(request: Request) {
@@ -156,7 +156,7 @@ export async function GET(request: Request) {
     const salesInPeriodSet = new Set(salesRows.map((sale) => sale.id));
     const saleItemsInRange = saleItemsRows.filter((item) => salesInPeriodSet.has(item.sale_id));
     const storeCost = saleItemsInRange.reduce((acc, item) => {
-      const unitCost = Number(item.products?.[0]?.price_cost || 0);
+      const unitCost = Number(item.products?.price_cost || 0);
       return acc + unitCost * Number(item.quantity || 0);
     }, 0);
 
@@ -219,6 +219,23 @@ export async function GET(request: Request) {
     const txTotalRevenue = round2(txRevenueTotal);
     const grossProfit = round2(txConsultationRevenue + (txStoreRevenue - storeCost));
 
+    // Reconciliação: comparar apenas transações que vieram do checkout (com sale_id)
+    // Pagamentos diretos de consulta (sem sale_id) são um fluxo legítimo diferente
+    const txWithSale = txRows.filter((tx) => tx.sale_id != null);
+    let txWithSaleTotal = 0;
+    const txWithSaleByType = { consulta: 0, retorno: 0, loja: 0 };
+    for (const tx of txWithSale) {
+      const amount = Number(tx.amount || 0);
+      const financialType = resolveFinancialType({
+        origin: tx.origin,
+        appointmentType: firstAppointmentType(tx)
+      });
+      txWithSaleTotal += amount;
+      txWithSaleByType[financialType] += amount;
+    }
+    const txWithSaleConsultation = round2(txWithSaleByType.consulta + txWithSaleByType.retorno);
+    const txWithSaleStore = round2(txWithSaleByType.loja);
+
     const reconciliation = {
       txTotalRevenue,
       salesTotalRevenue: round2(salesRevenueTotal),
@@ -228,15 +245,53 @@ export async function GET(request: Request) {
       salesStoreRevenue: round2(salesRevenueByType.loja)
     };
     const divergence = {
-      totalRevenue: round2(reconciliation.txTotalRevenue - reconciliation.salesTotalRevenue),
+      totalRevenue: round2(round2(txWithSaleTotal) - reconciliation.salesTotalRevenue),
       consultationRevenue: round2(
-        reconciliation.txConsultationRevenue - reconciliation.salesConsultationRevenue
+        txWithSaleConsultation - reconciliation.salesConsultationRevenue
       ),
-      storeRevenue: round2(reconciliation.txStoreRevenue - reconciliation.salesStoreRevenue)
+      storeRevenue: round2(txWithSaleStore - reconciliation.salesStoreRevenue)
     };
     const hasDivergence = Object.values(divergence).some((value) => Math.abs(value) > 0.01);
 
+    // Top pacientes: usar financial_transactions + appointments para incluir pagamentos diretos
+    const txPatientIds = [
+      ...new Set(
+        txRows
+          .map((tx) => tx.appointment_id)
+          .filter((id): id is number => Number.isInteger(id))
+      )
+    ];
+
+    let txAppointments: Array<{ id: number; patient_id: number | null }> = [];
+    if (txPatientIds.length > 0) {
+      const { data: aptData } = await supabase
+        .from('appointments')
+        .select('id, patient_id')
+        .in('id', txPatientIds);
+      txAppointments = (aptData || []) as Array<{ id: number; patient_id: number | null }>;
+    }
+    const aptPatientMap = new Map(txAppointments.map((a) => [a.id, a.patient_id]));
+
+    // Buscar nomes de pacientes extras (dos appointments, não apenas das sales)
+    const allPatientIds = [
+      ...new Set([
+        ...patientIds,
+        ...txAppointments.map((a) => a.patient_id).filter((id): id is number => Number.isInteger(id))
+      ])
+    ];
+    if (allPatientIds.length > patientIds.length) {
+      const extraIds = allPatientIds.filter((id) => !patientMap.has(id));
+      if (extraIds.length > 0) {
+        const { data: extraPatients } = await supabase.from('patients').select('id, name').in('id', extraIds);
+        for (const p of extraPatients || []) {
+          patientMap.set(p.id, p.name || 'Paciente');
+        }
+      }
+    }
+
     const clientSpend: Record<string, { name: string; total: number; visits: number }> = {};
+
+    // Incluir dados das sales
     for (const sale of salesRows) {
       const key = String(sale.patient_id || sale.chat_id || sale.id);
       const name =
@@ -247,6 +302,20 @@ export async function GET(request: Request) {
         clientSpend[key] = { name, total: 0, visits: 0 };
       }
       clientSpend[key].total += Number(sale.total || 0);
+      clientSpend[key].visits += 1;
+    }
+
+    // Incluir pagamentos diretos (transações sem sale_id) via appointment
+    for (const tx of txRows) {
+      if (tx.sale_id != null) continue; // já contabilizado via sales
+      const patientId = tx.appointment_id ? aptPatientMap.get(tx.appointment_id) : null;
+      if (!patientId) continue;
+      const key = String(patientId);
+      const name = patientMap.get(patientId) || 'Paciente';
+      if (!clientSpend[key]) {
+        clientSpend[key] = { name, total: 0, visits: 0 };
+      }
+      clientSpend[key].total += Number(tx.amount || 0);
       clientSpend[key].visits += 1;
     }
 

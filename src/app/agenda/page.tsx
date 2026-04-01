@@ -205,6 +205,7 @@ export default function AgendaPage() {
   };
 
   const getAppointmentsAt = (time: string) => {
+    const [slotH, slotM] = time.split(':').map(Number);
     return appointments.filter(app => {
       const dateStr = app.start_time;
       if (!dateStr) return false;
@@ -214,8 +215,10 @@ export default function AgendaPage() {
       const [year, month, day] = datePart.split('-').map(Number);
       const [hours, minutes] = timePart.split(':').map(Number);
       const d = new Date(year, month - 1, day, hours, minutes || 0, 0);
-      const appTime = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
-      return appTime === time;
+      const appH = d.getHours();
+      const appM = d.getMinutes();
+      const flooredM = appM < 30 ? 0 : 30;
+      return appH === slotH && flooredM === slotM;
     });
   };
 
@@ -249,6 +252,7 @@ export default function AgendaPage() {
               isCurrentTimeSlot={isCurrentTimeSlot}
               setSelectedAppointment={setSelectedAppointment}
               openNewSlotModal={openNewSlotModal}
+              appointments={appointments}
             />
           ) : (
             <WeekView

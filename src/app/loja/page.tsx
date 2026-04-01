@@ -434,14 +434,14 @@ export default function StorePage() {
 
   // --- LÓGICA DO CARRINHO ---
   const addToCart = (product: Product) => {
+    const existing = cart.find(p => p.id === product.id);
+    const currentQty = existing ? existing.quantity : 0;
+    if (currentQty + 1 > (product.stock || 0)) {
+      return;
+    }
     setCart(prev => {
-      const existing = prev.find(p => p.id === product.id);
-      const currentQty = existing ? existing.quantity : 0;
-      if (currentQty + 1 > (product.stock || 0)) {
-        toast.error(`Estoque insuficiente para "${product.name}". Disponível: ${product.stock || 0}`);
-        return prev;
-      }
-      if (existing) {
+      const ex = prev.find(p => p.id === product.id);
+      if (ex) {
         return prev.map(p => p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p);
       }
       return [...prev, { ...product, quantity: 1 }];
@@ -746,7 +746,7 @@ export default function StorePage() {
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
                      <div className="grid grid-cols-3 xl:grid-cols-4 gap-4">
                         {products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
-                           <div key={product.id} onClick={() => addToCart(product)} className="bg-white dark:bg-[#08080b] p-4 rounded-2xl border border-slate-100 dark:border-[#3d3d48] shadow-sm hover:border-rose-300 dark:hover:border-rose-700 hover:shadow-md cursor-pointer transition-all group relative overflow-hidden flex flex-col h-[200px]">
+                           <div key={product.id} onClick={() => (product.stock || 0) > 0 && addToCart(product)} className={`bg-white dark:bg-[#08080b] p-4 rounded-2xl border border-slate-100 dark:border-[#3d3d48] shadow-sm transition-all group relative overflow-hidden flex flex-col h-[200px] ${(product.stock || 0) > 0 ? 'hover:border-rose-300 dark:hover:border-rose-700 hover:shadow-md cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}>
                               <div className="flex-1 bg-slate-50 dark:bg-[#1c1c21] rounded-xl mb-3 flex items-center justify-center relative overflow-hidden">
                                  {product.image_url ? (
                                     <img src={product.image_url} className="w-full h-full object-cover" />
@@ -1096,12 +1096,14 @@ export default function StorePage() {
                                     </button>
                                     <button
                                       onClick={() => {
+                                        if ((product.stock || 0) <= 0) return;
                                         addToCart(product);
                                         handleTabChange('pos');
                                         toast.success('Produto enviado para o checkout.');
                                       }}
-                                      className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg text-slate-400 dark:text-[#71717a] hover:text-emerald-600 dark:hover:text-emerald-400"
-                                      title="Enviar ao checkout"
+                                      disabled={(product.stock || 0) <= 0}
+                                      className={`p-2 rounded-lg ${(product.stock || 0) > 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-slate-400 dark:text-[#71717a] hover:text-emerald-600 dark:hover:text-emerald-400' : 'text-slate-200 dark:text-[#3d3d48] cursor-not-allowed'}`}
+                                      title={(product.stock || 0) > 0 ? 'Enviar ao checkout' : 'Sem estoque'}
                                     >
                                       <ShoppingCart className="w-4 h-4" />
                                     </button>
