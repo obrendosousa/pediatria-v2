@@ -93,6 +93,27 @@ export default function StorePage() {
   const [storeCashData, setStoreCashData] = useState<StoreCashData | null>(null);
   const [loadingStoreCash, setLoadingStoreCash] = useState(false);
   const [closingStoreCash, setClosingStoreCash] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState(false);
+
+  async function handleDeleteProduct(productId: number) {
+    setDeletingProduct(true);
+    try {
+      const res = await fetch(`/api/store/products?id=${productId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Erro ao excluir produto');
+      }
+      toast.success('Produto excluido com sucesso.');
+      setConfirmDeleteId(null);
+      fetchData();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao excluir produto.';
+      toast.error(message);
+    } finally {
+      setDeletingProduct(false);
+    }
+  }
 
   // Estados do Dashboard
   const [metrics, setMetrics] = useState({
@@ -1072,7 +1093,7 @@ export default function StorePage() {
                                     {product.stock || 0} un
                                  </span>
                               </td>
-                              <td className="p-4 text-center">
+                              <td className="p-4 text-center relative">
                                  <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                        onClick={() => {
@@ -1107,7 +1128,7 @@ export default function StorePage() {
                                     >
                                       <ShoppingCart className="w-4 h-4" />
                                     </button>
-                                    <button 
+                                    <button
                                        onClick={() => {
                                           if (profile?.role !== 'admin') {
                                              toast.error('Somente administradores podem editar produtos.');
@@ -1116,12 +1137,45 @@ export default function StorePage() {
                                           setEditingProduct(product);
                                           setShowProductModal(true);
                                        }}
-                                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-[#71717a] hover:text-slate-600 dark:hover:text-gray-300" 
+                                       className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 dark:text-[#71717a] hover:text-slate-600 dark:hover:text-gray-300"
                                        title="Editar"
                                     >
                                        <MoreHorizontal className="w-4 h-4"/>
                                     </button>
+                                    <button
+                                       onClick={() => {
+                                          if (profile?.role !== 'admin') {
+                                             toast.error('Somente administradores podem excluir produtos.');
+                                             return;
+                                          }
+                                          setConfirmDeleteId(product.id);
+                                       }}
+                                       className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-slate-400 dark:text-[#71717a] hover:text-red-500 dark:hover:text-red-400"
+                                       title="Excluir"
+                                    >
+                                       <Trash2 className="w-4 h-4"/>
+                                    </button>
                                  </div>
+                                 {confirmDeleteId === product.id && (
+                                    <div className="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-[#1c1c21] rounded-xl shadow-xl border border-slate-200 dark:border-[#3d3d48] p-3 w-56">
+                                       <p className="text-xs text-slate-600 dark:text-[#d4d4d8] mb-2">Excluir <strong>{product.name}</strong>?</p>
+                                       <div className="flex gap-2">
+                                          <button
+                                             onClick={() => setConfirmDeleteId(null)}
+                                             className="flex-1 px-3 py-1.5 text-xs font-semibold bg-slate-100 dark:bg-[#2d2d36] text-slate-600 dark:text-[#d4d4d8] rounded-lg hover:bg-slate-200 dark:hover:bg-[#3d3d48] transition-colors"
+                                          >
+                                             Cancelar
+                                          </button>
+                                          <button
+                                             onClick={() => handleDeleteProduct(product.id)}
+                                             disabled={deletingProduct}
+                                             className="flex-1 px-3 py-1.5 text-xs font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                                          >
+                                             {deletingProduct ? 'Excluindo...' : 'Excluir'}
+                                          </button>
+                                       </div>
+                                    </div>
+                                 )}
                               </td>
                            </tr>
                         ))}

@@ -30,7 +30,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { financialOriginLabel, financialTypeLabel, paymentMethodLabel } from '@/lib/finance';
+import { paymentMethodLabel } from '@/lib/finance';
 import { useAuth } from '@/contexts/AuthContext';
 import { getLetterheadDataUrl } from '@/lib/letterhead';
 
@@ -299,26 +299,37 @@ export default function FinancialDashboardPage() {
           <div class="detail-card"><div class="lbl">Loja</div><div class="val">R$ ${closure.totals.totalsByOrigin.loja.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div></div>
         </div>
 
-        <p class="section-title">Lançamentos (${closure.logs.length})</p>
-        <table>
-          <thead><tr>
-            <th>Hora</th><th>Paciente</th><th>Tipo</th><th>Origem</th><th>Forma(s)</th><th class="text-right">Valor</th>
-          </tr></thead>
-          <tbody>
-            ${closure.logs.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:20px;color:#999;">Nenhum lançamento no período.</td></tr>' : ''}
-            ${closure.logs.map(log => `<tr>
-              <td>${new Date(log.occurred_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
-              <td><span class="patient-name">${log.patient_name}</span>${(log.items && log.items.length > 0) ? log.items.map(it => `<span class="sub-item">${it.qty}x ${it.name} (R$${it.unit_price.toFixed(2)})</span>`).join('') : ''}</td>
-              <td>${financialTypeLabel(log.attendance_type)}</td>
-              <td>${financialOriginLabel(log.origin)}</td>
-              <td>${(log.payment_methods || []).map(p => `${methodLabel[p.payment_method] || p.payment_method} R$${Number(p.amount).toFixed(2)}`).join(' + ')}</td>
-              <td class="text-right val-cell">R$ ${log.amount.toFixed(2)}${(log.discount_amount && log.discount_amount > 0) ? `<span class="discount-tag">-R$${log.discount_amount.toFixed(2)}</span>` : ''}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-        <div class="table-total">
-          <span>Total: R$ ${totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-        </div>
+        ${(() => {
+          const cLogs = closure.logs.filter(l => l.origin === 'atendimento');
+          const lLogs = closure.logs.filter(l => l.origin === 'loja');
+          const renderPdfTable = (title: string, logs: typeof closure.logs, nameCol: string) => {
+            const sub = logs.reduce((s, l) => s + l.amount, 0);
+            return `
+            <div style="margin-bottom:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                <span class="section-title" style="margin:0">${title} (${logs.length})</span>
+                <span style="font-size:10px;font-weight:800;color:#000">R$ ${sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+              </div>
+              <table>
+                <thead><tr>
+                  <th>Hora</th><th>${nameCol}</th><th>Forma(s)</th><th class="text-right">Valor</th>
+                </tr></thead>
+                <tbody>
+                  ${logs.length === 0 ? `<tr><td colspan="4" style="text-align:center;padding:16px;color:#999;">Nenhum lançamento.</td></tr>` : ''}
+                  ${logs.map(log => `<tr>
+                    <td>${new Date(log.occurred_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td><span class="patient-name">${log.patient_name}</span>${(log.items && log.items.length > 0) ? log.items.map(it => `<span class="sub-item">${it.qty}x ${it.name} (R$${it.unit_price.toFixed(2)})</span>`).join('') : ''}</td>
+                    <td>${(log.payment_methods || []).map(p => `${methodLabel[p.payment_method] || p.payment_method} R$${Number(p.amount).toFixed(2)}`).join(' + ')}</td>
+                    <td class="text-right val-cell">R$ ${log.amount.toFixed(2)}${(log.discount_amount && log.discount_amount > 0) ? `<span class="discount-tag">-R$${log.discount_amount.toFixed(2)}</span>` : ''}</td>
+                  </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>`;
+          };
+          return renderPdfTable('Consultas', cLogs, 'Paciente') +
+            (lLogs.length > 0 ? renderPdfTable('Loja', lLogs, 'Cliente') : '') +
+            `<div class="table-total"><span>Total Geral: R$ ${totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>`;
+        })()}
 
         <div class="footer">
           Gerado em ${new Date().toLocaleString('pt-BR')} &mdash; Centro Médico Aliança &mdash; Pediatria Integrada
@@ -698,85 +709,109 @@ export default function FinancialDashboardPage() {
               </div>
             </div>
 
-            {/* Tabela de lançamentos */}
-            <div className="bg-white dark:bg-[#18181b] rounded-2xl border border-slate-100 dark:border-[#27272a] overflow-hidden shadow-sm">
-              <div className="px-5 py-3.5 border-b border-slate-100 dark:border-[#27272a]">
-                <p className="text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
-                  Lançamentos ({closure.logs.length})
-                </p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-slate-50/80 dark:bg-[#0f0f12]">
-                      <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Data/Hora</th>
-                      <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Paciente</th>
-                      <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Tipo</th>
-                      <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Origem</th>
-                      <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Forma(s)</th>
-                      <th className="text-right px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Valor</th>
-                      {profile?.role === 'admin' && (
-                        <th className="text-center px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]">Ação</th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 dark:divide-[#1f1f23]">
-                    {closure.logs.length === 0 && (
-                      <tr>
-                        <td className="px-5 py-10 text-center text-sm text-slate-400 dark:text-[#71717a]" colSpan={profile?.role === 'admin' ? 7 : 6}>
-                          Nenhuma entrada no período selecionado.
-                        </td>
-                      </tr>
+            {/* Tabelas de lançamentos separadas por origem */}
+            {(() => {
+              const consultaLogs = closure.logs.filter((l) => l.origin === 'atendimento');
+              const lojaLogs = closure.logs.filter((l) => l.origin === 'loja');
+              const thCls = "text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#71717a]";
+              const adminColSpan = profile?.role === 'admin' ? 5 : 4;
+
+              const renderRow = (log: ClosureLog) => (
+                <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors duration-150">
+                  <td className="px-5 py-3.5 text-slate-600 dark:text-[#d4d4d8] tabular-nums">{new Date(log.occurred_at).toLocaleString('pt-BR')}</td>
+                  <td className="px-5 py-3.5">
+                    <div className="font-medium text-slate-800 dark:text-[#fafafa]">{log.patient_name}</div>
+                    {log.items && log.items.length > 0 && (
+                      <div className="mt-1 space-y-0.5">
+                        {log.items.map((item, i) => (
+                          <span key={i} className="block text-[10px] text-slate-400 dark:text-[#71717a]">
+                            {item.qty}x {item.name} (R$ {item.unit_price.toFixed(2)})
+                          </span>
+                        ))}
+                      </div>
                     )}
-                    {closure.logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors duration-150">
-                        <td className="px-5 py-3.5 text-slate-600 dark:text-[#d4d4d8] tabular-nums">{new Date(log.occurred_at).toLocaleString('pt-BR')}</td>
-                        <td className="px-5 py-3.5">
-                          <div className="font-medium text-slate-800 dark:text-[#fafafa]">{log.patient_name}</div>
-                          {log.items && log.items.length > 0 && (
-                            <div className="mt-1 space-y-0.5">
-                              {log.items.map((item, i) => (
-                                <span key={i} className="block text-[10px] text-slate-400 dark:text-[#71717a]">
-                                  {item.qty}x {item.name} (R$ {item.unit_price.toFixed(2)})
-                                </span>
-                              ))}
-                            </div>
+                  </td>
+                  <td className="px-5 py-3.5 text-slate-600 dark:text-[#d4d4d8]">
+                    {(log.payment_methods || [])
+                      .map((method) => `${paymentMethodLabel(method.payment_method)} (R$ ${Number(method.amount).toFixed(2)})`)
+                      .join(' + ')}
+                  </td>
+                  <td className="px-5 py-3.5 text-right">
+                    <span className="font-semibold text-slate-800 dark:text-[#fafafa] tabular-nums">R$ {log.amount.toFixed(2)}</span>
+                    {(log.discount_amount ?? 0) > 0 && (
+                      <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 rounded-full px-1.5 py-0.5">
+                        <Tag className="w-2.5 h-2.5" />
+                        -R$ {log.discount_amount!.toFixed(2)}
+                      </span>
+                    )}
+                  </td>
+                  {profile?.role === 'admin' && (
+                    <td className="px-5 py-3.5 text-center">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(log)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-[#3d3d48] px-2.5 py-1.5 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors duration-200 cursor-pointer"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              );
+
+              const renderTable = (icon: ComponentType<{ className?: string }>, title: string, logs: ClosureLog[], accentCls: string) => {
+                const Icon = icon;
+                const subtotal = logs.reduce((s, l) => s + l.amount, 0);
+                return (
+                  <div className="bg-white dark:bg-[#18181b] rounded-2xl border border-slate-100 dark:border-[#27272a] overflow-hidden shadow-sm">
+                    <div className={`px-5 py-3.5 border-b border-slate-100 dark:border-[#27272a] flex items-center justify-between`}>
+                      <div className="flex items-center gap-2">
+                        <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${accentCls}`}>
+                          <Icon className="h-3.5 w-3.5 text-white" />
+                        </div>
+                        <p className="text-xs font-semibold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide">
+                          {title} ({logs.length})
+                        </p>
+                      </div>
+                      <p className="text-sm font-bold text-slate-800 dark:text-[#fafafa] tabular-nums">
+                        R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-slate-50/80 dark:bg-[#0f0f12]">
+                            <th className={thCls}>Data/Hora</th>
+                            <th className={thCls}>{title === 'Loja' ? 'Cliente' : 'Paciente'}</th>
+                            <th className={thCls}>Forma(s)</th>
+                            <th className={`${thCls} !text-right`}>Valor</th>
+                            {profile?.role === 'admin' && <th className={`${thCls} !text-center`}>Ação</th>}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50 dark:divide-[#1f1f23]">
+                          {logs.length === 0 && (
+                            <tr>
+                              <td className="px-5 py-8 text-center text-sm text-slate-400 dark:text-[#71717a]" colSpan={adminColSpan}>
+                                Nenhum lançamento.
+                              </td>
+                            </tr>
                           )}
-                        </td>
-                        <td className="px-5 py-3.5 text-slate-600 dark:text-[#d4d4d8]">{financialTypeLabel(log.attendance_type)}</td>
-                        <td className="px-5 py-3.5 text-slate-600 dark:text-[#d4d4d8]">{financialOriginLabel(log.origin)}</td>
-                        <td className="px-5 py-3.5 text-slate-600 dark:text-[#d4d4d8]">
-                          {(log.payment_methods || [])
-                            .map((method) => `${paymentMethodLabel(method.payment_method)} (R$ ${Number(method.amount).toFixed(2)})`)
-                            .join(' + ')}
-                        </td>
-                        <td className="px-5 py-3.5 text-right">
-                          <span className="font-semibold text-slate-800 dark:text-[#fafafa] tabular-nums">R$ {log.amount.toFixed(2)}</span>
-                          {(log.discount_amount ?? 0) > 0 && (
-                            <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 rounded-full px-1.5 py-0.5">
-                              <Tag className="w-2.5 h-2.5" />
-                              -R$ {log.discount_amount!.toFixed(2)}
-                            </span>
-                          )}
-                        </td>
-                        {profile?.role === 'admin' && (
-                          <td className="px-5 py-3.5 text-center">
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(log)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-[#3d3d48] px-2.5 py-1.5 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors duration-200 cursor-pointer"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              Editar
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                          {logs.map(renderRow)}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              };
+
+              return (
+                <>
+                  {renderTable(Stethoscope, 'Consultas', consultaLogs, 'bg-emerald-500')}
+                  {lojaLogs.length > 0 && renderTable(ShoppingBag, 'Loja', lojaLogs, 'bg-violet-500')}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
