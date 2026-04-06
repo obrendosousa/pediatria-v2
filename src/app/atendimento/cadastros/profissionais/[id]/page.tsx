@@ -86,7 +86,6 @@ export default function EditarProfissionalPage() {
       registration_state: form.registration_state,
       registration_type: form.registration_type,
       registration_number: form.registration_number,
-      schedule_access: form.schedule_access as 'view_appointment' | 'open_record',
       is_admin: form.is_admin,
       restrict_prices: form.restrict_prices,
       has_schedule: form.has_schedule,

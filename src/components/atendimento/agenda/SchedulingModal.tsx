@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 import {
   X, Search, Calendar, Clock, Stethoscope, Loader2,
-  ChevronDown, ClipboardList, CalendarClock, Save, Ticket
+  ChevronDown, ClipboardList, Save, Ticket
 } from 'lucide-react';
 
 const supabaseAtendimento = createSchemaClient('atendimento');
@@ -100,7 +100,7 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
   const [dateDisplay, setDateDisplay] = useState('');
   const [timeStart, setTimeStart] = useState('');
   const [timeEnd, setTimeEnd] = useState('');
-  const [appointmentSubtype, setAppointmentSubtype] = useState<'simples' | 'orcamento'>('simples');
+  const appointmentSubtype = 'simples';
   const [selectedProcedures, setSelectedProcedures] = useState<ProcedureOption[]>([]);
   const [generateTicket, setGenerateTicket] = useState(true);
 
@@ -108,6 +108,7 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
   const [selectedProfessionalUuid, setSelectedProfessionalUuid] = useState<string | null>(null);
   const [profProcedures, setProfProcedures] = useState<ProcedureOption[]>([]);
+  const [globalProcedures, setGlobalProcedures] = useState<ProcedureOption[]>([]);
   const [procFilter, setProcFilter] = useState('');
   const [procLoading, setProcLoading] = useState(false);
   const [protocols, setProtocols] = useState<ProtocolOption[]>([]);
@@ -145,7 +146,6 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
     setProcFilter('');
     setSelectedProfessionalUuid(null);
     setDoctorId(null);
-    setAppointmentSubtype('simples');
     setTimeEnd('');
 
     const today = new Date().toISOString().split('T')[0];
@@ -154,12 +154,13 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
     setDateDisplay(formatDateDisplay(d));
     setTimeStart(initialTime || '09:00');
 
-    // Carregar doctors + protocols
+    // Carregar doctors + protocols + procedimentos globais
     (async () => {
-      const [doctorsRes, profsRes, protocolsRes] = await Promise.all([
+      const [doctorsRes, profsRes, protocolsRes, proceduresRes] = await Promise.all([
         pubSupabase.from('doctors').select('id, name, professional_id').eq('active', true).order('name'),
         supabaseAtendimento.from('professionals').select('id, name').eq('has_schedule', true).eq('status', 'active').order('name'),
         supabaseAtendimento.from('clinical_protocols').select('id, name, total_value').eq('status', 'active').order('name'),
+        supabaseAtendimento.from('procedures').select('id, name, procedure_type, duration_minutes, fee_value, total_value').eq('status', 'active').order('name'),
       ]);
       const doctorsData = (doctorsRes.data || []) as { id: number; name: string; professional_id: string | null }[];
       const list: DoctorOption[] = doctorsData.map(d => ({
@@ -175,6 +176,10 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
       }
       setDoctors(list);
       if (protocolsRes.data) setProtocols(protocolsRes.data);
+      setGlobalProcedures((proceduresRes.data || []).map((p: { id: string; name: string; procedure_type: string; duration_minutes: number; fee_value: number; total_value: number }) => ({
+        id: p.id, name: p.name, procedure_type: p.procedure_type,
+        duration_minutes: p.duration_minutes, fee_value: p.fee_value, total_value: p.total_value,
+      })));
     })();
   }, [isOpen, initialDate, initialTime]);
 
@@ -227,14 +232,17 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
     })();
   }, [selectedProfessionalUuid]);
 
-  // Procedimentos filtrados
+  // Procedimentos filtrados: profissional primeiro, depois globais (sem duplicatas)
   const filteredProcedures = useMemo(() => {
     const selectedIds = new Set(selectedProcedures.map(p => p.id));
-    let list = profProcedures.filter(p => !selectedIds.has(p.id));
+    const profIds = new Set(profProcedures.map(p => p.id));
+    const merged = [
+      ...profProcedures,
+      ...globalProcedures.filter(p => !profIds.has(p.id)),
+    ].filter(p => !selectedIds.has(p.id));
     const q = procFilter.trim().toLowerCase();
-    if (q) list = list.filter(p => p.name.toLowerCase().includes(q));
-    return list;
-  }, [profProcedures, selectedProcedures, procFilter]);
+    return q ? merged.filter(p => p.name.toLowerCase().includes(q)) : merged;
+  }, [profProcedures, globalProcedures, selectedProcedures, procFilter]);
 
   const proceduresTotal = useMemo(() =>
     selectedProcedures.reduce((s, p) => s + (p.total_value || p.fee_value || 0), 0),
@@ -631,30 +639,6 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
                 </div>
               </div>
 
-              {/* Tipo de agendamento */}
-              <div>
-                <label className={labelCls}>Tipo de Agendamento</label>
-                <div className="flex gap-3">
-                  {([
-                    { value: 'simples' as const, label: 'Simples', icon: CalendarClock },
-                    { value: 'orcamento' as const, label: 'Orcamento', icon: ClipboardList },
-                  ]).map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setAppointmentSubtype(opt.value)}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border text-sm font-semibold transition-all ${
-                        appointmentSubtype === opt.value
-                          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 shadow-sm'
-                          : 'border-gray-200 dark:border-[#252530] text-slate-500 dark:text-[#a1a1aa] hover:border-slate-300'
-                      }`}
-                    >
-                      <opt.icon size={16} />
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Protocolo */}
               {protocols.length > 0 && (
@@ -679,97 +663,83 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
               )}
 
               {/* Procedimentos */}
-              <div>
+              <div className="space-y-3">
                 <label className={labelCls}>Procedimentos</label>
 
-                {/* Tabela selecionados */}
+                {/* Selecionados */}
                 {selectedProcedures.length > 0 && (
-                  <div className="mb-2 border border-slate-200 dark:border-[#252530] rounded-lg overflow-hidden">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="bg-slate-50 dark:bg-[#1a1a22] text-slate-500 dark:text-[#a1a1aa]">
-                          <th className="text-left px-3 py-1.5 font-semibold">Procedimento</th>
-                          <th className="text-right px-3 py-1.5 font-semibold w-24">Valor</th>
-                          <th className="w-8"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedProcedures.map(p => (
-                          <tr key={p.id} className="border-t border-slate-100 dark:border-[#1e1e28]">
-                            <td className="px-3 py-2 text-slate-700 dark:text-gray-200">{p.name}</td>
-                            <td className="px-3 py-2 text-right font-mono text-emerald-600 dark:text-emerald-400">
-                              {(p.total_value || p.fee_value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </td>
-                            <td className="px-2 py-2">
-                              <button type="button" onClick={() => setSelectedProcedures(prev => prev.filter(x => x.id !== p.id))} className="text-slate-400 hover:text-red-500 transition-colors">
-                                <X size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="border-t-2 border-slate-200 dark:border-[#252530] bg-slate-50 dark:bg-[#1a1a22]">
-                          <td className="px-3 py-2 font-bold text-slate-700 dark:text-[#fafafa]">Total</td>
-                          <td className="px-3 py-2 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                            {proceduresTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </td>
-                          <td></td>
-                        </tr>
-                      </tfoot>
-                    </table>
+                  <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30 rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 border-b border-emerald-200 dark:border-emerald-800/30">
+                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Selecionados</span>
+                    </div>
+                    <div className="divide-y divide-emerald-100 dark:divide-emerald-900/20">
+                      {selectedProcedures.map(p => (
+                        <div key={p.id} className="flex items-center px-3 py-2">
+                          <span className="text-sm text-slate-800 dark:text-gray-200 flex-1 min-w-0 truncate">{p.name}</span>
+                          <span className="text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400 ml-3 shrink-0">
+                            {(p.total_value || p.fee_value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </span>
+                          <button type="button" onClick={() => setSelectedProcedures(prev => prev.filter(x => x.id !== p.id))} className="ml-2 p-0.5 rounded-full text-emerald-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="px-3 py-2 border-t border-emerald-300 dark:border-emerald-800/40 bg-emerald-100/50 dark:bg-emerald-900/20 flex justify-between items-center">
+                      <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Total</span>
+                      <span className="text-sm font-mono font-bold text-emerald-700 dark:text-emerald-300">
+                        {proceduresTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </div>
                   </div>
                 )}
 
                 {/* Lista disponível */}
-                {!selectedProfessionalUuid ? (
-                  <div className="p-4 text-center text-sm text-slate-400 dark:text-[#71717a] border border-dashed border-slate-200 dark:border-[#252530] rounded-lg">
-                    Selecione um profissional para ver os procedimentos
-                  </div>
-                ) : procLoading ? (
+                {procLoading ? (
                   <div className="p-4 flex items-center justify-center gap-2 text-sm text-slate-500 border border-slate-200 dark:border-[#252530] rounded-lg">
                     <Loader2 size={16} className="animate-spin" /> Carregando...
                   </div>
-                ) : profProcedures.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-slate-400 border border-dashed border-slate-200 dark:border-[#252530] rounded-lg">
-                    Nenhum procedimento cadastrado
-                  </div>
                 ) : (
                   <div className="border border-slate-200 dark:border-[#252530] rounded-lg overflow-hidden">
-                    {profProcedures.length > 5 && (
-                      <div className="relative border-b border-slate-200 dark:border-[#252530]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                        <input
-                          type="text"
-                          value={procFilter}
-                          onChange={e => setProcFilter(e.target.value)}
-                          placeholder="Filtrar procedimentos..."
-                          className="w-full pl-8 pr-3 py-2 text-sm bg-slate-50 dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none placeholder:text-slate-400"
-                        />
-                      </div>
-                    )}
-                    <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                    <div className="relative border-b border-slate-200 dark:border-[#252530]">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={procFilter}
+                        onChange={e => setProcFilter(e.target.value)}
+                        placeholder="Buscar procedimento..."
+                        className="w-full pl-8 pr-3 py-2 text-sm bg-slate-50 dark:bg-[#1a1a22] text-gray-700 dark:text-gray-200 focus:outline-none placeholder:text-slate-400"
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto scrollbar-visible">
                       {filteredProcedures.length === 0 ? (
                         <div className="p-3 text-center text-xs text-slate-400">
                           {procFilter ? 'Nenhum resultado' : 'Todos adicionados'}
                         </div>
                       ) : (
-                        filteredProcedures.map(proc => (
-                          <button
-                            key={proc.id}
-                            type="button"
-                            onClick={() => setSelectedProcedures(prev => [...prev, proc])}
-                            className="w-full text-left px-4 py-2.5 border-b border-slate-100 dark:border-[#1e1e28] last:border-0 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm text-slate-800 dark:text-gray-200">{proc.name}</p>
-                              <p className="text-[10px] text-slate-400">{proc.procedure_type} {proc.duration_minutes ? `· ${proc.duration_minutes}min` : ''}</p>
-                            </div>
-                            <span className="text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
-                              {(proc.total_value || proc.fee_value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </span>
-                          </button>
-                        ))
+                        filteredProcedures.map(proc => {
+                          const isFromProfessional = profProcedures.some(p => p.id === proc.id);
+                          return (
+                            <button
+                              key={proc.id}
+                              type="button"
+                              onClick={() => setSelectedProcedures(prev => [...prev, proc])}
+                              className="w-full text-left px-4 py-2.5 border-b border-slate-100 dark:border-[#1e1e28] last:border-0 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors group"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm text-slate-800 dark:text-gray-200">{proc.name}</p>
+                                <p className="text-[10px] text-slate-400">
+                                  {isFromProfessional && <span className="text-blue-500 font-medium">Do profissional · </span>}
+                                  {proc.procedure_type} {proc.duration_minutes ? `· ${proc.duration_minutes}min` : ''}
+                                </p>
+                              </div>
+                              <span className="text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                                {(proc.total_value || proc.fee_value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </span>
+                              <span className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity text-lg leading-none">+</span>
+                            </button>
+                          );
+                        })
                       )}
                     </div>
                   </div>

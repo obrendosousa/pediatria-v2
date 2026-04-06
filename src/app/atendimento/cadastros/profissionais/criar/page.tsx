@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/contexts/ToastContext';
 import { useProfessionals } from '@/hooks/useProfessionals';
+import { useProfessionalProcedures } from '@/hooks/useProfessionalProcedures';
 import { createClient } from '@/lib/supabase/client';
 import ProfessionalForm from '@/components/cadastros/profissionais/ProfessionalForm';
 import type { ProfessionalFormData } from '@/components/cadastros/profissionais/ProfessionalForm';
@@ -145,6 +146,7 @@ export default function CriarProfissionalPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { createProfessional } = useProfessionals();
+  const { createProcedure } = useProfessionalProcedures();
   const [credentials, setCredentials] = useState<Credentials | null>(null);
 
   const handleSubmit = async (form: ProfessionalFormData) => {
@@ -174,7 +176,6 @@ export default function CriarProfissionalPage() {
       registration_state: form.registration_state,
       registration_type: form.registration_type,
       registration_number: form.registration_number,
-      schedule_access: form.schedule_access as 'view_appointment' | 'open_record',
       is_admin: form.is_admin,
       restrict_prices: form.restrict_prices,
       has_schedule: form.has_schedule,
@@ -184,7 +185,30 @@ export default function CriarProfissionalPage() {
       status: 'active',
     });
 
-    // 2. If "create login" is enabled, create auth user + doctor + profile
+    // 2. Save procedures linked to the professional
+    if (form.procedures.length > 0) {
+      const results = await Promise.allSettled(
+        form.procedures.map(proc =>
+          createProcedure({
+            professional_id: professional.id,
+            name: proc.name,
+            procedure_type: proc.procedure_type,
+            custom_type: proc.procedure_type === 'other' ? proc.custom_type : null,
+            duration_minutes: proc.duration_minutes,
+            value: proc.value,
+            split_type: proc.split_type,
+            split_value: proc.split_value,
+            status: 'active',
+          })
+        )
+      );
+      const failed = results.filter(r => r.status === 'rejected').length;
+      if (failed > 0) {
+        toast.error(`Profissional criado, mas ${failed} procedimento(s) falharam ao salvar.`);
+      }
+    }
+
+    // 3. If "create login" is enabled, create auth user + doctor + profile
     if (form.create_login) {
       try {
         const res = await fetch('/api/auth/create-professional-user', {
@@ -234,6 +258,7 @@ export default function CriarProfissionalPage() {
         subtitle="Preencha os dados do profissional"
         onSubmit={handleSubmit}
         showCreateLogin
+        showProcedures
       />
 
       {credentials && (

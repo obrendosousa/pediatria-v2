@@ -33,6 +33,7 @@ const SECTIONS: SidebarSection[] = [
     title: 'Clínico',
     icon: <Stethoscope className="w-4 h-4" />,
     items: [
+      { label: 'Procedimentos', href: '/atendimento/cadastros/procedimentos', icon: <Stethoscope className="w-3.5 h-3.5" /> },
       { label: 'Protocolos', href: '/atendimento/cadastros/protocolos', icon: <ClipboardList className="w-3.5 h-3.5" /> },
       { label: 'Parceiros', href: '/atendimento/cadastros/parceiros', icon: <Handshake className="w-3.5 h-3.5" /> },
     ],

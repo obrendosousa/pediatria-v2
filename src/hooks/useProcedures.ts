@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
-import type { Procedure, ProcedureComposition } from '@/types/cadastros';
+import type { Procedure, ProcedureProductComposition } from '@/types/cadastros';
+import type { CompositionProduct, ProductCompositionItem } from '@/components/cadastros/procedimentos/types';
 
 const supabase = createSchemaClient('atendimento');
 
@@ -72,7 +73,7 @@ export function useProcedures() {
     return data as Procedure;
   }, []);
 
-  const createProcedure = useCallback(async (input: ProcedureInput) => {
+  const createProcedure = useCallback(async (input: Partial<ProcedureInput>) => {
     setSaving(true);
     try {
       const { data, error } = await supabase
@@ -119,7 +120,7 @@ export function useProcedures() {
     try {
       const { data: all, error: fetchError } = await supabase
         .from('procedures')
-        .select('id, fee_value, total_value')
+        .select('id, fee_value, total_value, honorarium_value')
         .eq('status', 'active');
 
       if (fetchError) throw fetchError;
@@ -133,6 +134,7 @@ export function useProcedures() {
           .update({
             fee_value: Math.round(p.fee_value * multiplier * 100) / 100,
             total_value: Math.round(p.total_value * multiplier * 100) / 100,
+            honorarium_value: Math.round((p.honorarium_value || 0) * multiplier * 100) / 100,
           })
           .eq('id', p.id)
       );
@@ -144,22 +146,25 @@ export function useProcedures() {
     }
   }, []);
 
-  // --- Composição ---
+  // --- Composicao com Produtos ---
 
-  const getCompositions = useCallback(async (procedureId: string): Promise<ProcedureComposition[]> => {
+  const getProductCompositions = useCallback(async (procedureId: string): Promise<ProcedureProductComposition[]> => {
     const { data, error } = await supabase
-      .from('procedure_compositions')
+      .from('procedure_product_compositions')
       .select('*')
       .eq('procedure_id', procedureId)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return (data as ProcedureComposition[]) || [];
+    return (data as ProcedureProductComposition[]) || [];
   }, []);
 
-  const setCompositions = useCallback(async (procedureId: string, items: { sub_procedure_id: string; quantity: number }[]) => {
+  const setProductCompositions = useCallback(async (
+    procedureId: string,
+    items: ProductCompositionItem[]
+  ) => {
     const { error: delError } = await supabase
-      .from('procedure_compositions')
+      .from('procedure_product_compositions')
       .delete()
       .eq('procedure_id', procedureId);
 
@@ -168,16 +173,36 @@ export function useProcedures() {
     if (items.length > 0) {
       const rows = items.map(item => ({
         procedure_id: procedureId,
-        sub_procedure_id: item.sub_procedure_id,
+        product_id: item.product_id,
         quantity: item.quantity,
+        purchase_price: item.purchase_price,
+        cost_price: item.cost_price,
       }));
 
       const { error: insError } = await supabase
-        .from('procedure_compositions')
+        .from('procedure_product_compositions')
         .insert(rows);
 
       if (insError) throw insError;
     }
+  }, []);
+
+  // --- Buscar produtos do estoque (via API route) ---
+
+  const fetchProducts = useCallback(async (
+    search: string = '',
+    page: number = 0,
+    pageSize: number = 10
+  ): Promise<{ data: CompositionProduct[]; total: number }> => {
+    const params = new URLSearchParams({
+      search,
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+
+    const res = await fetch(`/api/atendimento/products?${params}`);
+    if (!res.ok) throw new Error('Erro ao buscar produtos');
+    return res.json();
   }, []);
 
   return {
@@ -191,7 +216,8 @@ export function useProcedures() {
     updateProcedure,
     deleteProcedure,
     adjustPrices,
-    getCompositions,
-    setCompositions,
+    getProductCompositions,
+    setProductCompositions,
+    fetchProducts,
   };
 }

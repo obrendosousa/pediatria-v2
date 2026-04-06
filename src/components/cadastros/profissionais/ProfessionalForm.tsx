@@ -3,14 +3,15 @@
 import { useState, useCallback, useRef } from 'react';
 import {
   ArrowLeft, Save, Loader2, User, Phone, Briefcase,
-  FileText, Upload, X, ChevronDown,
+  FileText, Upload, X, ChevronDown, Plus, Trash2,
+  Stethoscope, DollarSign, Clock, Percent,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/contexts/ToastContext';
 import AddressCepLookup, { EMPTY_ADDRESS } from '@/components/cadastros/shared/AddressCepLookup';
 import type { AddressData } from '@/components/cadastros/shared/AddressCepLookup';
 import MaskedInput from '@/components/cadastros/shared/MaskedInput';
-import type { Professional } from '@/types/cadastros';
+import type { Professional, ProcedureType, SplitType } from '@/types/cadastros';
 
 // --- Constantes ---
 
@@ -39,17 +40,44 @@ const MARITAL_STATUS_OPTIONS = [
   { value: 'other', label: 'Outro' },
 ] as const;
 
-const SCHEDULE_ACCESS_OPTIONS = [
-  { value: 'view_appointment', label: 'Visualizar agendamento' },
-  { value: 'open_record', label: 'Abrir prontuário' },
-] as const;
-
 const UF_OPTIONS = [
   'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
   'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
 ] as const;
 
+const PROCEDURE_TYPE_OPTIONS: { value: ProcedureType; label: string }[] = [
+  { value: 'consultation', label: 'Consultas' },
+  { value: 'exam', label: 'Exames' },
+  { value: 'injectable', label: 'Injetáveis' },
+  { value: 'other', label: 'Outros' },
+];
+
+const PROCEDURE_TYPE_COLORS: Record<string, string> = {
+  consultation: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  exam: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  injectable: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  other: 'bg-slate-100 text-slate-600 dark:bg-slate-700/40 dark:text-slate-300',
+};
+
+const PROCEDURE_TYPE_LABELS: Record<string, string> = {
+  consultation: 'Consultas',
+  exam: 'Exames',
+  injectable: 'Injetáveis',
+  other: 'Outros',
+};
+
 // --- Tipos ---
+
+export interface ProcedureItem {
+  id: string;
+  name: string;
+  procedure_type: ProcedureType;
+  custom_type: string;
+  duration_minutes: number;
+  value: number;
+  split_type: SplitType;
+  split_value: number;
+}
 
 export interface ProfessionalFormData {
   name: string;
@@ -68,7 +96,6 @@ export interface ProfessionalFormData {
   registration_state: string;
   registration_type: string;
   registration_number: string;
-  schedule_access: string;
   is_admin: boolean;
   restrict_prices: boolean;
   has_schedule: boolean;
@@ -76,6 +103,7 @@ export interface ProfessionalFormData {
   attachments: File[];
   notes: string;
   create_login: boolean;
+  procedures: ProcedureItem[];
 }
 
 const EMPTY_FORM: ProfessionalFormData = {
@@ -85,11 +113,11 @@ const EMPTY_FORM: ProfessionalFormData = {
   email: '', phone: '', mobile: '', whatsapp: '',
   professional_type: '', specialty: '',
   registration_state: '', registration_type: '', registration_number: '',
-  schedule_access: 'view_appointment',
   is_admin: false, restrict_prices: false, has_schedule: false, restrict_schedule: false,
   attachments: [],
   notes: '',
   create_login: false,
+  procedures: [],
 };
 
 interface ProfessionalFormProps {
@@ -98,6 +126,7 @@ interface ProfessionalFormProps {
   title: string;
   subtitle: string;
   showCreateLogin?: boolean;
+  showProcedures?: boolean;
   hideHeader?: boolean;
 }
 
@@ -113,6 +142,18 @@ function RequiredBadge() {
       Obrigatório
     </span>
   );
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+function calcSplit(value: number, splitType: SplitType, splitValue: number) {
+  const profissionalRecebe = splitType === 'percentage'
+    ? Math.round(value * splitValue / 100 * 100) / 100
+    : splitValue;
+  const clinicaRetem = Math.round((value - profissionalRecebe) * 100) / 100;
+  return { profissionalRecebe, clinicaRetem };
 }
 
 function professionalToForm(p: Professional): ProfessionalFormData {
@@ -141,7 +182,6 @@ function professionalToForm(p: Professional): ProfessionalFormData {
     registration_state: p.registration_state,
     registration_type: p.registration_type,
     registration_number: p.registration_number,
-    schedule_access: p.schedule_access,
     is_admin: p.is_admin,
     restrict_prices: p.restrict_prices,
     has_schedule: p.has_schedule,
@@ -149,12 +189,35 @@ function professionalToForm(p: Professional): ProfessionalFormData {
     attachments: [],
     notes: p.notes || '',
     create_login: false,
+    procedures: [],
   };
 }
 
+// --- Formulário inline de procedimento ---
+
+interface ProcedureInlineFormState {
+  name: string;
+  procedure_type: ProcedureType;
+  custom_type: string;
+  duration_minutes: number;
+  value: number;
+  split_type: SplitType;
+  split_value: number;
+}
+
+const EMPTY_PROCEDURE_FORM: ProcedureInlineFormState = {
+  name: '',
+  procedure_type: 'consultation',
+  custom_type: '',
+  duration_minutes: 30,
+  value: 0,
+  split_type: 'percentage',
+  split_value: 0,
+};
+
 // --- Componente ---
 
-export default function ProfessionalForm({ initialData, onSubmit, title, subtitle, showCreateLogin, hideHeader }: ProfessionalFormProps) {
+export default function ProfessionalForm({ initialData, onSubmit, title, subtitle, showCreateLogin, showProcedures, hideHeader }: ProfessionalFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
@@ -164,6 +227,11 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Procedure inline form state
+  const [showProcedureForm, setShowProcedureForm] = useState(false);
+  const [procForm, setProcForm] = useState<ProcedureInlineFormState>({ ...EMPTY_PROCEDURE_FORM });
+  const [procErrors, setProcErrors] = useState<Record<string, string>>({});
 
   const update = useCallback(<K extends keyof ProfessionalFormData>(key: K, value: ProfessionalFormData[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -181,13 +249,15 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = 'Nome é obrigatório.';
     if (!form.cpf.trim()) errs.cpf = 'CPF é obrigatório.';
-    if (!form.email.trim()) errs.email = 'E-mail é obrigatório.';
+    if (!form.email.trim()) {
+      errs.email = 'E-mail é obrigatório.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errs.email = 'E-mail inválido.';
+    }
     if (!form.professional_type) errs.professional_type = 'Tipo profissional é obrigatório.';
     if (!form.registration_state) errs.registration_state = 'Estado de registro é obrigatório.';
     if (!form.registration_type) errs.registration_type = 'Tipo de registro é obrigatório.';
     if (!form.registration_number.trim()) errs.registration_number = 'Registro profissional é obrigatório.';
-    if (!form.schedule_access) errs.schedule_access = 'Listagem dos agendamentos é obrigatório.';
-    if (form.create_login && !form.email.trim()) errs.email = 'E-mail é obrigatório para criar login.';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -226,6 +296,50 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
   const removeFile = useCallback((index: number) => {
     update('attachments', form.attachments.filter((_, i) => i !== index));
   }, [form.attachments, update]);
+
+  // --- Procedure inline form handlers ---
+
+  const validateProcedure = (): boolean => {
+    const errs: Record<string, string> = {};
+    if (!procForm.name.trim()) errs.name = 'Nome é obrigatório.';
+    if (procForm.duration_minutes <= 0) errs.duration_minutes = 'Duração deve ser maior que 0.';
+    if (procForm.value < 0) errs.value = 'Valor não pode ser negativo.';
+    if (procForm.split_type === 'percentage' && (procForm.split_value < 0 || procForm.split_value > 100)) {
+      errs.split_value = 'Porcentagem deve ser entre 0 e 100.';
+    }
+    if (procForm.split_type === 'fixed' && procForm.split_value < 0) {
+      errs.split_value = 'Valor não pode ser negativo.';
+    }
+    if (procForm.split_type === 'fixed' && procForm.split_value > procForm.value) {
+      errs.split_value = 'Repasse não pode ser maior que o valor cobrado.';
+    }
+    setProcErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const addProcedure = () => {
+    if (!validateProcedure()) return;
+    const newProc: ProcedureItem = {
+      id: `temp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      name: procForm.name,
+      procedure_type: procForm.procedure_type,
+      custom_type: procForm.procedure_type === 'other' ? procForm.custom_type : '',
+      duration_minutes: procForm.duration_minutes,
+      value: procForm.value,
+      split_type: procForm.split_type,
+      split_value: procForm.split_value,
+    };
+    update('procedures', [...form.procedures, newProc]);
+    setProcForm({ ...EMPTY_PROCEDURE_FORM });
+    setProcErrors({});
+    setShowProcedureForm(false);
+  };
+
+  const removeProcedure = (id: string) => {
+    update('procedures', form.procedures.filter(p => p.id !== id));
+  };
+
+  const procPreview = calcSplit(procForm.value, procForm.split_type, procForm.split_value);
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#15171e]">
@@ -497,22 +611,6 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
                 {errors.registration_number && <p className="mt-1 text-xs text-red-500">{errors.registration_number}</p>}
               </div>
 
-              {/* Listagem agendamentos */}
-              <div className="col-span-12 md:col-span-6">
-                <label className={labelClass}>Listagem dos agendamentos <RequiredBadge /></label>
-                <div className="relative">
-                  <select
-                    value={form.schedule_access}
-                    onChange={e => update('schedule_access', e.target.value)}
-                    className={`${selectClass} ${errors.schedule_access ? 'border-red-300 dark:border-red-700' : ''}`}
-                  >
-                    {SCHEDULE_ACCESS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-                {errors.schedule_access && <p className="mt-1 text-xs text-red-500">{errors.schedule_access}</p>}
-              </div>
-
               {/* Admin */}
               <div className="col-span-12 md:col-span-6">
                 <label className={labelClass}>Acesso de administrador <RequiredBadge /></label>
@@ -623,7 +721,270 @@ export default function ProfessionalForm({ initialData, onSubmit, title, subtitl
             </section>
           )}
 
-          {/* ─── Seção 6: Informações Complementares ─── */}
+          {/* ─── Seção 6: Procedimentos do Profissional ─── */}
+          {showProcedures && (
+            <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4 text-teal-500" />
+                  Procedimentos do Profissional
+                  <span className="text-xs font-normal text-slate-400 dark:text-[#71717a] normal-case ml-1">
+                    {form.procedures.length} cadastrado{form.procedures.length !== 1 ? 's' : ''}
+                  </span>
+                </h2>
+                {!showProcedureForm && (
+                  <button
+                    type="button"
+                    onClick={() => { setProcForm({ ...EMPTY_PROCEDURE_FORM }); setProcErrors({}); setShowProcedureForm(true); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-md transition-all active:scale-95"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    ADICIONAR
+                  </button>
+                )}
+              </div>
+
+              {/* Lista de procedimentos adicionados */}
+              {form.procedures.length > 0 && (
+                <div className="space-y-2">
+                  {form.procedures.map(proc => {
+                    const split = calcSplit(proc.value, proc.split_type, proc.split_value);
+                    return (
+                      <div
+                        key={proc.id}
+                        className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#15171e] rounded-xl border border-slate-200 dark:border-[#252530]"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-semibold text-slate-800 dark:text-[#fafafa] truncate">{proc.name}</span>
+                            <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold ${PROCEDURE_TYPE_COLORS[proc.procedure_type] || PROCEDURE_TYPE_COLORS.other}`}>
+                              {proc.procedure_type === 'other' && proc.custom_type ? proc.custom_type : (PROCEDURE_TYPE_LABELS[proc.procedure_type] || proc.procedure_type)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-[#a1a1aa]">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {proc.duration_minutes} min
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              {formatCurrency(proc.value)}
+                            </span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                              Profissional: {formatCurrency(split.profissionalRecebe)}
+                              {proc.split_type === 'percentage' ? ` (${proc.split_value}%)` : ' (fixo)'}
+                            </span>
+                            <span>
+                              Clinica: {formatCurrency(split.clinicaRetem)}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeProcedure(proc.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+                          title="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Formulário inline para adicionar procedimento */}
+              {showProcedureForm && (
+                <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800/40 p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Plus className="w-3.5 h-3.5" />
+                      Novo Procedimento
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowProcedureForm(false)}
+                      className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                    >
+                      <X className="w-4 h-4 text-blue-400" />
+                    </button>
+                  </div>
+
+                  {/* Nome */}
+                  <div>
+                    <label className={labelClass}>Nome do procedimento</label>
+                    <input
+                      type="text"
+                      value={procForm.name}
+                      onChange={e => { setProcForm(prev => ({ ...prev, name: e.target.value })); setProcErrors(prev => { const n = { ...prev }; delete n.name; return n; }); }}
+                      placeholder="Ex: Consulta, Ultrassom, Vacina..."
+                      className={`${inputClass} ${procErrors.name ? 'border-red-300 dark:border-red-700' : ''}`}
+                    />
+                    {procErrors.name && <p className="mt-1 text-xs text-red-500">{procErrors.name}</p>}
+                  </div>
+
+                  {/* Tipo + Duração */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Tipo</label>
+                      <div className="relative">
+                        <select
+                          value={procForm.procedure_type}
+                          onChange={e => setProcForm(prev => ({ ...prev, procedure_type: e.target.value as ProcedureType, custom_type: '' }))}
+                          className={selectClass}
+                        >
+                          {PROCEDURE_TYPE_OPTIONS.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Duração (minutos)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={procForm.duration_minutes}
+                        onChange={e => { setProcForm(prev => ({ ...prev, duration_minutes: Math.max(0, parseInt(e.target.value) || 0) })); setProcErrors(prev => { const n = { ...prev }; delete n.duration_minutes; return n; }); }}
+                        className={`${inputClass} ${procErrors.duration_minutes ? 'border-red-300 dark:border-red-700' : ''}`}
+                      />
+                      {procErrors.duration_minutes && <p className="mt-1 text-xs text-red-500">{procErrors.duration_minutes}</p>}
+                    </div>
+                  </div>
+
+                  {/* Tipo personalizado */}
+                  {procForm.procedure_type === 'other' && (
+                    <div>
+                      <label className={labelClass}>Especifique o tipo</label>
+                      <input
+                        type="text"
+                        value={procForm.custom_type}
+                        onChange={e => setProcForm(prev => ({ ...prev, custom_type: e.target.value }))}
+                        placeholder="Ex: Laser, Peeling, Drenagem..."
+                        className={inputClass}
+                      />
+                    </div>
+                  )}
+
+                  {/* Valor cobrado */}
+                  <div>
+                    <label className={labelClass}>Valor cobrado do paciente (R$)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={procForm.value || ''}
+                      onChange={e => { setProcForm(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 })); setProcErrors(prev => { const n = { ...prev }; delete n.value; return n; }); }}
+                      placeholder="0,00"
+                      className={`${inputClass} ${procErrors.value ? 'border-red-300 dark:border-red-700' : ''}`}
+                    />
+                    {procErrors.value && <p className="mt-1 text-xs text-red-500">{procErrors.value}</p>}
+                  </div>
+
+                  {/* Tipo de repasse */}
+                  <div>
+                    <label className={labelClass}>Tipo de repasse</label>
+                    <div className="flex gap-3 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => setProcForm(prev => ({ ...prev, split_type: 'percentage', split_value: 0 }))}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${
+                          procForm.split_type === 'percentage'
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                            : 'bg-white dark:bg-[#1a1a22] text-slate-500 dark:text-[#a1a1aa] border-slate-200 dark:border-[#3d3d48] hover:border-blue-300'
+                        }`}
+                      >
+                        <Percent className="w-4 h-4" />
+                        Porcentagem
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProcForm(prev => ({ ...prev, split_type: 'fixed', split_value: 0 }))}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${
+                          procForm.split_type === 'fixed'
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                            : 'bg-white dark:bg-[#1a1a22] text-slate-500 dark:text-[#a1a1aa] border-slate-200 dark:border-[#3d3d48] hover:border-blue-300'
+                        }`}
+                      >
+                        <DollarSign className="w-4 h-4" />
+                        Valor Fixo
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Valor da divisão */}
+                  <div>
+                    <label className={labelClass}>
+                      {procForm.split_type === 'percentage' ? 'Porcentagem do profissional (%)' : 'Valor fixo do profissional (R$)'}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={procForm.split_type === 'percentage' ? 100 : undefined}
+                      step={procForm.split_type === 'percentage' ? '1' : '0.01'}
+                      value={procForm.split_value || ''}
+                      onChange={e => { setProcForm(prev => ({ ...prev, split_value: parseFloat(e.target.value) || 0 })); setProcErrors(prev => { const n = { ...prev }; delete n.split_value; return n; }); }}
+                      placeholder={procForm.split_type === 'percentage' ? 'Ex: 50' : 'Ex: 200,00'}
+                      className={`${inputClass} ${procErrors.split_value ? 'border-red-300 dark:border-red-700' : ''}`}
+                    />
+                    {procErrors.split_value && <p className="mt-1 text-xs text-red-500">{procErrors.split_value}</p>}
+                  </div>
+
+                  {/* Preview da divisão */}
+                  {procForm.value > 0 && (
+                    <div className="bg-white dark:bg-[#0e0e14] rounded-xl border border-slate-200 dark:border-[#252530] p-4">
+                      <p className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wider mb-3">Resumo da divisão</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="text-center">
+                          <p className="text-[10px] text-slate-400 dark:text-[#71717a] uppercase mb-1">Paciente paga</p>
+                          <p className="text-sm font-bold text-slate-800 dark:text-[#fafafa]">{formatCurrency(procForm.value)}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] text-slate-400 dark:text-[#71717a] uppercase mb-1">Profissional</p>
+                          <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(procPreview.profissionalRecebe)}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] text-slate-400 dark:text-[#71717a] uppercase mb-1">Clinica</p>
+                          <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{formatCurrency(procPreview.clinicaRetem)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Botões */}
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowProcedureForm(false)}
+                      className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-[#d4d4d8] hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addProcedure}
+                      className="flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                    >
+                      <Plus className="w-4 h-4" />
+                      ADICIONAR PROCEDIMENTO
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {form.procedures.length === 0 && !showProcedureForm && (
+                <div className="flex flex-col items-center justify-center py-8 text-slate-400 dark:text-[#71717a]">
+                  <Stethoscope className="w-10 h-10 mb-2 opacity-30" />
+                  <p className="text-sm">Nenhum procedimento adicionado ainda.</p>
+                  <p className="text-xs mt-1 text-slate-300 dark:text-[#52525b]">Opcional - você pode adicionar depois na edição do profissional.</p>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ─── Seção 7: Informações Complementares ─── */}
           <section className="bg-white dark:bg-[#08080b] rounded-xl border border-slate-200 dark:border-[#3d3d48] p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700 dark:text-[#d4d4d8] uppercase tracking-wide flex items-center gap-2">
               <FileText className="w-4 h-4 text-teal-500" />

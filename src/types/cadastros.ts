@@ -43,7 +43,7 @@ export interface Collaborator {
   is_admin: boolean;
 
   // Complementares
-  attachments: Record<string, unknown>[];
+  attachments: { name: string; url: string }[];
   notes: string | null;
 
   status: RecordStatus;
@@ -83,14 +83,13 @@ export interface Professional {
   registration_type: string;
   registration_number: string;
 
-  schedule_access: ScheduleAccess;
   is_admin: boolean;
   restrict_prices: boolean;
   has_schedule: boolean;
   restrict_schedule: boolean;
 
   // Complementares
-  attachments: Record<string, unknown>[];
+  attachments: { name: string; url: string }[];
   notes: string | null;
 
   status: RecordStatus;
@@ -113,13 +112,50 @@ export interface Procedure {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  // Novos campos — composicao com produtos
+  way_id: string | null;
+  note: string | null;
+  composition_value: number;
+  honorarium_value: number;
+  formula_id: string | null;
+  // Custos variaveis
+  treatment_composition: number;
+  other_costs: number;
+  // Despesas variaveis
+  card_tax: number;
+  commission: number;
+  discount: number;
+  // Impostos
+  inss: number;
+  irrf: number;
+  irpj: number;
+  csll: number;
+  pis: number;
+  cofins: number;
+  cpp: number;
+  iss: number;
+  other_tax: number;
+  // Margem de contribuicao
+  contribution_margin: number;
+  contribution_margin_type: string;
 }
 
+/** @deprecated Use ProcedureProductComposition instead */
 export interface ProcedureComposition {
   id: string;
   procedure_id: string;
   sub_procedure_id: string;
   quantity: number;
+  created_at: string;
+}
+
+export interface ProcedureProductComposition {
+  id: string;
+  procedure_id: string;
+  product_id: string;
+  quantity: number;
+  purchase_price: number;
+  cost_price: number;
   created_at: string;
 }
 

@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     const status = appointment.auto_confirm ? 'confirmed' : 'scheduled';
     const appointmentPayload = {
       patient_id: patientId,
-      doctor_id: appointment.doctor_id,
+      doctor_id: appointment.doctor_id || null,
       date: appointment.date,
       time: appointment.time || null,
       end_time: appointment.end_time || null,
@@ -108,9 +108,6 @@ export async function POST(req: NextRequest) {
       auto_confirm: appointment.auto_confirm || false,
       description: appointment.description || null,
       notes: appointment.description || null,
-      patient_name: patient.full_name,
-      patient_phone: patient.phone || null,
-      patient_sex: patient.sex || null,
     };
 
     const { data: apt, error: aptError } = await supabase
