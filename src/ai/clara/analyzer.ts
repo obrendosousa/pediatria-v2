@@ -170,7 +170,7 @@ Siga rigorosamente o schema de JSON de saída.`;
 
         // 3. Call Gemini using Structured Outputs
         const response = await ai.models.generateContent({
-            model: "gemini-3.1-flash-preview",
+            model: "gemini-3-flash-preview",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",

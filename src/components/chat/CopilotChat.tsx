@@ -150,7 +150,7 @@ const MEMORY_LIMIT = 30;
 interface CopilotChatProps {
   chatId: number;
   patientName: string;
-  module?: "pediatria" | "atendimento";
+  module?: "pediatria" | "atendimento" | "ceo";
 }
 
 // Supabase untyped table helper — avoids `as any` on .from()

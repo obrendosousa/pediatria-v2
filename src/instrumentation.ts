@@ -143,7 +143,52 @@ export async function register() {
     }
   }, 5_000);
 
+  // --- Clara v2: Analise diaria (6h BRT) + Dream check (2h BRT) ---
+  const V2_CHECK_INTERVAL = 5 * 60 * 1000;
+  let analysisDailyRunning = false;
+  let dreamCheckRunning = false;
+  let lastAnalysisDate = '';
+  let lastDreamDate = '';
+
+  setInterval(async () => {
+    const now = new Date();
+    const hourBRT = (now.getUTCHours() - 3 + 24) % 24;
+    const todayStr = now.toISOString().split('T')[0];
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const secret = process.env.CRON_SECRET || "";
+
+    // Daily analysis at 6h BRT (once per day, secret via header)
+    if (hourBRT === 6 && lastAnalysisDate !== todayStr && !analysisDailyRunning) {
+      analysisDailyRunning = true;
+      lastAnalysisDate = todayStr;
+      markCronStart("analysis_daily");
+      try {
+        await fetch(`${baseUrl}/api/cron/analysis-daily?secret=${secret}`);
+        markCronSuccess("analysis_daily");
+      } catch (err) {
+        markCronError("analysis_daily", err);
+      } finally {
+        analysisDailyRunning = false;
+      }
+    }
+
+    // Dream check at 2h BRT (once per day)
+    if (hourBRT === 2 && lastDreamDate !== todayStr && !dreamCheckRunning) {
+      dreamCheckRunning = true;
+      lastDreamDate = todayStr;
+      markCronStart("dream_check");
+      try {
+        await fetch(`${baseUrl}/api/cron/dream-check?secret=${secret}`);
+        markCronSuccess("dream_check");
+      } catch (err) {
+        markCronError("dream_check", err);
+      } finally {
+        dreamCheckRunning = false;
+      }
+    }
+  }, V2_CHECK_INTERVAL);
+
   console.log(
-    `[Instrumentation] Crons ativos — Scheduler: ${SCHEDULER_INTERVAL / 1000}s | Dispatch: ${DISPATCH_INTERVAL / 1000}s | Autonomous: ${AUTONOMOUS_INTERVAL / 60_000}min`
+    `[Instrumentation] Crons ativos — Scheduler: ${SCHEDULER_INTERVAL / 1000}s | Dispatch: ${DISPATCH_INTERVAL / 1000}s | Autonomous: ${AUTONOMOUS_INTERVAL / 60_000}min | AnalysisDaily: 6h BRT | DreamCheck: 2h BRT`
   );
 }

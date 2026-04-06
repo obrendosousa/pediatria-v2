@@ -35,7 +35,7 @@ const autonomousWorkflow = new StateGraph<AutonomousAgentState>({
 autonomousWorkflow.addNode("agent", async (state: AutonomousAgentState) => {
   // Inicializamos o modelo dentro do nó para garantir a leitura do .env
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-3-flash-preview",
     apiKey: process.env.GOOGLE_API_KEY,
     temperature: 0.2, // Temperatura baixa para respostas mais objetivas e focadas
   });

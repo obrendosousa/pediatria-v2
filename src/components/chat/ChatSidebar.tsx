@@ -58,7 +58,7 @@ interface ChatSidebarProps {
   claraSuggestionCount?: number;
   onClaraBadgeClick?: () => void;
   // Módulo ativo (para o copiloto usar o agente correto)
-  module?: "pediatria" | "atendimento";
+  module?: "pediatria" | "atendimento" | "ceo";
 }
 
 export default function ChatSidebar({

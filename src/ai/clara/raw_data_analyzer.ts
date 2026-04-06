@@ -249,7 +249,7 @@ async function fanOutAnalyze(
   chatNames: Record<number, string>
 ): Promise<{ classifications: ChatClassification[]; errors: number }> {
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-3.1-flash-preview",
+    model: "gemini-3-flash-preview",
     apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
     temperature: 0.1,
   });
@@ -532,7 +532,7 @@ IMPORTANTE: per_chat_classification=true ativa fan-out paralelo por conversa (me
     // ESTRATÉGIA B: SINGLE PASS (análise agregada em uma chamada)
     // ═══════════════════════════════════════════════════════════════════════
     const model = new ChatGoogleGenerativeAI({
-      model: "gemini-3.1-flash-preview",
+      model: "gemini-3-flash-preview",
       apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
       temperature: 0.1,
     });

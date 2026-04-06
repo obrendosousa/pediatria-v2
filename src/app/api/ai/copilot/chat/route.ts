@@ -77,12 +77,121 @@ export async function POST(request: Request) {
     }
 
     // ── Module-aware: detecta módulo do request ────────────────────────────
-    const moduleId = typeof body.module === "string" ? body.module : "pediatria";
+    // Chat 1495 = Clara interna → redireciona para CEO Agent automaticamente
+    const CLARA_INTERNAL_CHAT_ID = 1495;
+    const moduleId = typeof body.module === "string"
+      ? body.module
+      : (chatId === CLARA_INTERNAL_CHAT_ID ? "ceo" : "pediatria");
     const isAtendimento = moduleId === "atendimento";
+    const isCeo = moduleId === "ceo";
 
     const adminSupabase = isAtendimento
       ? createSchemaAdminClient("atendimento")
       : getSupabaseAdminClient();
+
+    // ── Comando /new: limpa histórico (funciona para todos os módulos) ──
+    if (message === "/new" || message === "/New" || message === "/NEW") {
+      if (isCeo) {
+        const res = await fetch(new URL("/api/ai/ceo/new-session", request.url).toString(), { method: "POST" });
+        const data = await res.json() as { success?: boolean; message?: string };
+        return NextResponse.json({ reply: data.message ?? "Nova sessão do CEO Agent iniciada.", tool_calls: [] });
+      }
+      // Fallthrough para Clara v1 / atendimento /new handler abaixo
+    }
+
+    // CEO Agent (Clara v2 Neural Network) — rota direta para o coordinator
+    if (isCeo) {
+      const { ceoGraph } = await import("@/ai/neural-network/ceo-graph");
+      const ceoInputs = {
+        messages: [new HumanMessage(message)],
+        current_user_role: "admin",
+        temporal_anchor: null,
+        db_stats: null,
+        loaded_context: null,
+        classification: "simple" as const,
+        planned_tasks: [],
+        worker_results: {},
+        failed_agents: [],
+        aggregated_data: null,
+        verification_needed: false,
+        verification_result: null,
+        tool_call_count: 0,
+        iteration: 0,
+      };
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          const enqueue = (payload: object) =>
+            controller.enqueue(encoder.encode(JSON.stringify(payload) + "\n"));
+
+          try {
+            enqueue({ type: "ui_log", subtype: "classify", content: "🧠 CEO Agent ativado..." });
+
+            const events = ceoGraph.streamEvents(ceoInputs, {
+              version: "v2",
+              configurable: { thread_id: "ceo_chat_global" },
+              streamMode: "values",
+            });
+
+            for await (const event of events) {
+              if (event.event === "on_chain_start") {
+                const node: string = event.name ?? "";
+                if (node === "load_context") enqueue({ type: "ui_log", subtype: "memory", content: "🔄 Carregando contexto e memória..." });
+                else if (node === "classify") enqueue({ type: "ui_log", subtype: "classify", content: "🧠 Classificando pergunta..." });
+                else if (node === "plan_tasks") enqueue({ type: "ui_log", subtype: "plan", content: "📋 Planejando consulta aos setores..." });
+                else if (node === "dispatch_workers") enqueue({ type: "ui_log", subtype: "dispatch", content: "🚀 Despachando agentes setoriais..." });
+                else if (node === "synthesize") enqueue({ type: "ui_log", subtype: "synthesis", content: "🔗 Agregando resultados..." });
+                else if (node === "verify") enqueue({ type: "ui_log", subtype: "verify", content: "🔍 Verificando dados..." });
+                else if (node === "final_report") enqueue({ type: "ui_log", subtype: "report", content: "✍️ Gerando resposta final..." });
+              }
+
+              if (event.event === "on_chain_end") {
+                const node: string = event.name ?? "";
+                const output = event.data?.output as Record<string, unknown> | undefined;
+                if (node === "load_context" && output?.temporal_anchor) {
+                  const anchor = output.temporal_anchor as { period_label?: string };
+                  if (anchor.period_label) enqueue({ type: "ui_log", subtype: "temporal", content: `📅 ${anchor.period_label}` });
+                }
+                if (node === "classify" && output?.classification) {
+                  const cls = output.classification as string;
+                  const label = cls === "simple" ? "Consulta simples" : cls === "single_sector" ? "Análise setorial" : "Análise cross-setor";
+                  enqueue({ type: "ui_log", subtype: "classify", content: `🎯 ${label}` });
+                }
+                if (node === "plan_tasks" && output?.planned_tasks) {
+                  const tasks = output.planned_tasks as Array<{ agent_id: string }>;
+                  for (const t of tasks) enqueue({ type: "ui_log", subtype: "dispatch", content: `⚡ ${t.agent_id} analisando...` });
+                }
+              }
+
+              if (event.event === "on_tool_start") {
+                const toolName: string = event.name ?? "";
+                enqueue({ type: "ui_log", subtype: "query_start", content: `⚙️ ${toolName}...` });
+              }
+
+              if (event.event === "on_chat_model_stream") {
+                const chunk = event.data?.chunk;
+                if (chunk?.content) {
+                  const text = typeof chunk.content === "string" ? chunk.content : "";
+                  if (text) enqueue({ type: "token", content: text });
+                }
+              }
+            }
+
+            enqueue({ type: "done" });
+          } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : "Erro interno";
+            enqueue({ type: "error", content: msg });
+          } finally {
+            controller.close();
+          }
+        },
+      });
+
+      return new NextResponse(stream, {
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
+      });
+    }
 
     const graph = isAtendimento
       ? (await import("@/ai/clinica-geral/graph")).clinicaGeralGraph

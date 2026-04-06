@@ -4,12 +4,14 @@ import { NextResponse } from 'next/server';
 import { fetchAndUpdateProfilePicture } from '@/ai/ingestion/services';
 import { evolutionRequest, getEvolutionConfig } from '@/lib/evolution';
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
-import { claraGraph } from '@/ai/clara/graph';
+// Clara v2: CEO Agent substitui Clara v1 no chat interno (id 1495)
+import { ceoGraph } from '@/ai/neural-network/ceo-graph';
+import type { CeoState } from '@/ai/neural-network/ceo-graph';
 import { parseVoiceSegments, generateAndUploadVoice } from '@/ai/voice/client';
 import { generateReportPdf } from '@/lib/reportPdf';
 
-// Ignorar erro de self-signed certificate no node-fetch (usado pela LangChain/PostgresSaver)
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// TLS: Configurado por conexao no checkpointer (ssl: { rejectUnauthorized: false })
+// NAO desabilitar globalmente — vulnerabilidade MITM em producao
 // v4: ToolNode wrapper for researcher_messages
 
 // Cliente Admin (Service Role) para bypassar RLS se necessário
@@ -88,25 +90,41 @@ export async function POST(req: Request) {
             .eq('chat_id', chatId)
             .maybeSingle();
 
-          let userText = message || 'Mídia enviada.';
-          if (chatNotesRow?.notes) {
-            userText = `[NOTAS INTERNAS RESTABELECIDAS DA TELA DO CHAT:\n${chatNotesRow.notes}\n-- FIM NOTAS]\n\nMensagem do usuário: ` + userText;
-          }
+          // CEO Agent recebe apenas a mensagem pura (sem notas internas de paciente)
+          const userText = message || 'Mídia enviada.';
 
           const langChainMessages = [new HumanMessage(userText)];
 
-          console.log("\n🧠 [Clara] Iniciando motor LangGraph (com PostgresSaver)...");
+          console.log("\n🧠 [CEO Agent] Iniciando motor LangGraph v2...");
           broadcastStatus('thinking');
 
           let finalMessages: BaseMessage[] = [];
           let typingSignaled = false;
           let savedReportId: number | null = null;
 
-          const stream = claraGraph.streamEvents(
-            { messages: langChainMessages, chat_id: chatId },
+          // Clara v2: CEO Agent graph com estado completo
+          const ceoInputs: Partial<CeoState> = {
+            messages: langChainMessages,
+            current_user_role: "admin",
+            temporal_anchor: null,
+            db_stats: null,
+            loaded_context: null,
+            classification: "simple" as const,
+            planned_tasks: [],
+            worker_results: {},
+            failed_agents: [],
+            aggregated_data: null,
+            verification_needed: false,
+            verification_result: null,
+            tool_call_count: 0,
+            iteration: 0,
+          };
+
+          const stream = ceoGraph.streamEvents(
+            ceoInputs,
             {
               version: 'v2',
-              configurable: { thread_id: String(chatId) },
+              configurable: { thread_id: `ceo_chat_${chatId}` },
               streamMode: "values"
             }
           );
@@ -128,7 +146,7 @@ export async function POST(req: Request) {
 
               case 'on_tool_start':
                 typingSignaled = false;
-                console.log(`🔧 [Clara] Acionou ferramenta: ${event.name}`);
+                console.log(`🔧 [CEO] Acionou ferramenta: ${event.name}`);
 
                 // Traduz nomes técnicos para o frontend (se o frontend suportar)
                 let statusLabel = `tool:${event.name}`;
@@ -157,24 +175,50 @@ export async function POST(req: Request) {
                   const idMatch = toolOutput.match(/ID:\s*(\d+)/);
                   if (idMatch) {
                     savedReportId = parseInt(idMatch[1]);
-                    console.log(`📄 [Clara] Relatório #${savedReportId} salvo — PDF será gerado.`);
+                    console.log(`📄 [CEO] Relatório #${savedReportId} salvo — PDF será gerado.`);
                   }
                 }
                 break;
 
               case 'on_chain_start':
-                // Nós da nova arquitetura open_deep_research
-                if (event.name === 'classify_node') {
-                  console.log("🔀 [Clara] Classificando intenção...");
+                // CEO Agent v2 nodes
+                if (event.name === 'load_context') {
+                  console.log("🔄 [CEO] Carregando contexto...");
+                  broadcastStatus('thinking');
+                } else if (event.name === 'classify') {
+                  console.log("🧠 [CEO] Classificando pergunta...");
+                  broadcastStatus('thinking');
+                } else if (event.name === 'simple_answer') {
+                  console.log("💬 [CEO] Respondendo diretamente...");
+                  broadcastStatus('typing');
+                } else if (event.name === 'plan_tasks') {
+                  console.log("📋 [CEO] Planejando consulta aos setores...");
+                  broadcastStatus('planning');
+                } else if (event.name === 'dispatch_workers') {
+                  console.log("🚀 [CEO] Despachando agentes setoriais...");
+                  broadcastStatus('executing_step');
+                } else if (event.name === 'synthesize') {
+                  console.log("🔗 [CEO] Agregando resultados...");
+                  broadcastStatus('thinking');
+                } else if (event.name === 'verify') {
+                  console.log("🔍 [CEO] Verificando dados...");
+                  broadcastStatus('thinking');
+                } else if (event.name === 'final_report') {
+                  console.log("✍️ [CEO] Gerando resposta final...");
+                  broadcastStatus('writing_report');
+                }
+                // Clara v1 legacy nodes (kept for compatibility)
+                else if (event.name === 'classify_node') {
+                  console.log("🔀 [CEO] Classificando intenção...");
                   broadcastStatus('thinking');
                 } else if (event.name === 'write_research_brief_node') {
-                  console.log("🗺️ [Clara] Elaborando brief de pesquisa...");
+                  console.log("🗺️ [CEO] Elaborando brief de pesquisa...");
                   broadcastStatus('planning');
                 } else if (event.name === 'research_supervisor_node') {
-                  console.log("⚙️ [Clara] Supervisor orquestrando researchers paralelos...");
+                  console.log("⚙️ [CEO] Supervisor orquestrando researchers paralelos...");
                   broadcastStatus('executing_step');
                 } else if (event.name === 'final_report_node') {
-                  console.log("✍️ [Clara] Sintetizando relatório final...");
+                  console.log("✍️ [CEO] Sintetizando relatório final...");
                   broadcastStatus('writing_report');
                 } else if (event.name === 'researcher') {
                   broadcastStatus('tool:Pesquisador coletando dados...');
@@ -193,19 +237,20 @@ export async function POST(req: Request) {
 
               case 'on_chain_end':
                 if (event.name === 'research_supervisor_node') {
-                  console.log("✅ [Clara] Rodada de researchers concluída.");
+                  console.log("✅ [CEO] Rodada de researchers concluída.");
                   broadcastStatus('step_done');
                 }
                 // Captura a resposta final diretamente dos nós produtores de mensagem.
                 // Mais robusto do que depender do evento 'LangGraph' que pode não disparar
                 // corretamente quando há subgrafos compilados (researcher_graph) aninhados.
-                if (event.name === 'simple_agent' || event.name === 'final_report_node' || event.name === 'write_research_brief_node') {
+                if (event.name === 'simple_agent' || event.name === 'final_report_node' || event.name === 'write_research_brief_node'
+                    || event.name === 'simple_answer' || event.name === 'final_report') {
                   const nodeMessages = (event.data?.output as { messages?: BaseMessage[] })?.messages;
                   if (nodeMessages && nodeMessages.length > 0) {
                     // Sempre sobrescreve — se o nó rodou múltiplas vezes (ReAct loop),
                     // queremos sempre a última mensagem gerada.
                     finalMessages = nodeMessages;
-                    console.log(`📨 [Clara] Resposta capturada de '${event.name}' (${nodeMessages.length} msg(s))`);
+                    console.log(`📨 [CEO] Resposta capturada de '${event.name}' (${nodeMessages.length} msg(s))`);
 
                     // Detecta auto-save do finalReportNode (não passa pela tool save_report)
                     if (event.name === 'final_report_node' && !savedReportId) {
@@ -214,7 +259,7 @@ export async function POST(req: Request) {
                       const reportMatch = txt.match(/\/relatorios\/(\d+)/);
                       if (reportMatch) {
                         savedReportId = parseInt(reportMatch[1]);
-                        console.log(`📄 [Clara] Relatório #${savedReportId} (auto-save) — PDF será gerado.`);
+                        console.log(`📄 [CEO] Relatório #${savedReportId} (auto-save) — PDF será gerado.`);
                       }
                     }
                   }
@@ -224,7 +269,7 @@ export async function POST(req: Request) {
                   const graphMessages = (event.data?.output as { messages?: BaseMessage[] })?.messages ?? [];
                   if (finalMessages.length === 0 && graphMessages.length > 0) {
                     finalMessages = graphMessages;
-                    console.log(`📨 [Clara] Resposta capturada via fallback 'LangGraph' (${graphMessages.length} msg(s))`);
+                    console.log(`📨 [CEO] Resposta capturada via fallback 'LangGraph' (${graphMessages.length} msg(s))`);
                   }
                 }
                 break;
@@ -251,7 +296,7 @@ export async function POST(req: Request) {
             ? aiResponseText
             : '⚠️ Minha resposta ficou vazia — provavelmente um erro temporário do modelo. Tente novamente!';
 
-          console.log(`💾 [Clara] Salvando resposta final no banco... (finalMessages: ${finalMessages.length}, chars: ${safeFinalText.length})`);
+          console.log(`💾 [CEO] Salvando resposta final no banco... (finalMessages: ${finalMessages.length}, chars: ${safeFinalText.length})`);
 
           // Parse síncrono — identifica segmentos <voice> e <text>
           // TEMP: força tudo como texto (ElevenLabs sem créditos)
@@ -302,7 +347,7 @@ export async function POST(req: Request) {
           // ── PDF do Relatório: gera e envia como documento no chat ─────────
           if (savedReportId) {
             try {
-              console.log(`📄 [Clara] Gerando PDF do relatório #${savedReportId}...`);
+              console.log(`📄 [CEO] Gerando PDF do relatório #${savedReportId}...`);
               broadcastStatus('tool:Gerando PDF do relatório...');
 
               const { data: reportData } = await supabase
@@ -326,7 +371,7 @@ export async function POST(req: Request) {
                   .upload(pdfFileName, pdfBuffer, { contentType: 'application/pdf', upsert: false });
 
                 if (uploadError) {
-                  console.error('📄 [Clara] Erro no upload do PDF:', uploadError);
+                  console.error('📄 [CEO] Erro no upload do PDF:', uploadError);
                 } else {
                   const { data: urlData } = supabase.storage
                     .from('midia')
@@ -346,11 +391,11 @@ export async function POST(req: Request) {
                     wpp_id: `ai_report_pdf_${report.id}_${Date.now()}`
                   });
 
-                  console.log(`📄 [Clara] PDF do relatório #${report.id} enviado no chat.`);
+                  console.log(`📄 [CEO] PDF do relatório #${report.id} enviado no chat.`);
                 }
               }
             } catch (pdfError) {
-              console.error('📄 [Clara] Erro ao gerar/enviar PDF:', pdfError);
+              console.error('📄 [CEO] Erro ao gerar/enviar PDF:', pdfError);
             }
           }
           // ──────────────────────────────────────────────────────────────────
@@ -366,7 +411,7 @@ export async function POST(req: Request) {
           }).eq('id', chatId);
 
           broadcastStatus('done');
-          console.log("✨ [Clara] Fluxo autônomo concluído com sucesso.\n");
+          console.log("✨ [CEO] Fluxo autônomo concluído com sucesso.\n");
 
         } catch (error) {
           console.error("❌ Erro fatal no Grafo da Clara:", error);
