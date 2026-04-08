@@ -33,7 +33,14 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch {
+    // Token inválido/expirado — tratado como usuário não autenticado
+  }
+
   const { pathname } = request.nextUrl;
 
   const publicPaths = ['/login', '/signup', '/recuperar-senha', '/aguardando-aprovacao'];
