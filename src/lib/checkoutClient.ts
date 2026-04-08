@@ -11,6 +11,19 @@ export type PaymentSplitPayload = {
   amount: number;
 };
 
+export type CommissionPayload = {
+  professional_id: string;
+  doctor_id: number;
+  total_commission: number;
+  details: Array<{
+    procedure_name: string;
+    doctor_commission: number;
+    clinic_amount: number;
+    split_type: string;
+    split_value: number;
+  }>;
+};
+
 export type SubmitCheckoutParams = {
   appointment_id?: number | null;
   medical_checkout_id?: number | null;
@@ -20,6 +33,7 @@ export type SubmitCheckoutParams = {
   payment_method?: string;
   payments?: PaymentSplitPayload[];
   client_total: number;
+  commission_data?: CommissionPayload | null;
 };
 
 export type CheckoutResult = {
@@ -29,6 +43,7 @@ export type CheckoutResult = {
   store_amount: number;
   tx_atendimento_id: number | null;
   tx_loja_id: number | null;
+  commission_recorded: boolean;
   idempotent: boolean;
 };
 

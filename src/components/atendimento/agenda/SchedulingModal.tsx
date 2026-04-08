@@ -22,6 +22,9 @@ type ProcedureOption = {
   duration_minutes: number | null;
   fee_value: number | null;
   total_value: number | null;
+  source_type: 'global' | 'professional';
+  split_type?: 'percentage' | 'fixed' | null;
+  split_value?: number | null;
 };
 
 type ProtocolOption = {
@@ -179,6 +182,7 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
       setGlobalProcedures((proceduresRes.data || []).map((p: { id: string; name: string; procedure_type: string; duration_minutes: number; fee_value: number; total_value: number }) => ({
         id: p.id, name: p.name, procedure_type: p.procedure_type,
         duration_minutes: p.duration_minutes, fee_value: p.fee_value, total_value: p.total_value,
+        source_type: 'global' as const,
       })));
     })();
   }, [isOpen, initialDate, initialTime]);
@@ -219,13 +223,16 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
     (async () => {
       const { data } = await supabaseAtendimento
         .from('professional_procedures')
-        .select('id, name, procedure_type, duration_minutes, value')
+        .select('id, name, procedure_type, duration_minutes, value, split_type, split_value')
         .eq('professional_id', selectedProfessionalUuid)
         .eq('status', 'active')
         .order('name');
-      const mapped: ProcedureOption[] = (data || []).map((p: { id: string; name: string; procedure_type: string; duration_minutes: number; value: number }) => ({
+      const mapped: ProcedureOption[] = (data || []).map((p: { id: string; name: string; procedure_type: string; duration_minutes: number; value: number; split_type: string; split_value: number }) => ({
         id: p.id, name: p.name, procedure_type: p.procedure_type,
         duration_minutes: p.duration_minutes, fee_value: p.value, total_value: p.value,
+        source_type: 'professional' as const,
+        split_type: p.split_type as 'percentage' | 'fixed',
+        split_value: p.split_value,
       }));
       setProfProcedures(mapped);
       setProcLoading(false);
@@ -358,6 +365,17 @@ export default function SchedulingModal({ isOpen, onClose, onSuccess, initialDat
             procedures: selectedProcedures.map(p => p.name),
             appointment_subtype: appointmentSubtype,
           },
+          procedure_details: selectedProcedures.map(p => ({
+            procedure_id: p.source_type === 'global' ? p.id : null,
+            professional_procedure_id: p.source_type === 'professional' ? p.id : null,
+            source_type: p.source_type,
+            procedure_name: p.name,
+            procedure_type: p.procedure_type,
+            duration_minutes: p.duration_minutes,
+            unit_value: p.total_value || p.fee_value || 0,
+            split_type: p.split_type || null,
+            split_value: p.split_value || null,
+          })),
           generate_ticket: generateTicket,
         }),
       });

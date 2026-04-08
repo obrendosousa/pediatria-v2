@@ -1,4 +1,7 @@
+'use client';
+
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, Tooltip, XAxis, YAxis, Legend } from 'recharts';
+import { motion } from 'framer-motion';
 import type { CRMMetricsViewModel } from '@/utils/crmMetricsPresentation';
 import InfoHelpButton from '@/components/crm/metrics/InfoHelpButton';
 
@@ -8,7 +11,12 @@ type ServiceEfficiencyPanelProps = {
 
 export default function ServiceEfficiencyPanel({ metrics }: ServiceEfficiencyPanelProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#2d2d36] dark:bg-[#08080b]">
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.1 }}
+      className="rounded-2xl border border-white/20 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-white/[0.06] dark:bg-[#08080b]/80"
+    >
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-bold text-slate-800 dark:text-[#fafafa]">Eficiência operacional</h3>
@@ -38,12 +46,12 @@ export default function ServiceEfficiencyPanel({ metrics }: ServiceEfficiencyPan
             <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
             <Tooltip />
             <Legend />
-            <Area yAxisId="left" type="monotone" dataKey="queueTime" name="Fila (min)" stroke="#3b82f6" fill="url(#queueArea)" strokeWidth={2.5} />
-            <Area yAxisId="left" type="monotone" dataKey="serviceTime" name="Atendimento (min)" stroke="#10b981" fill="url(#serviceArea)" strokeWidth={2.5} />
-            <Area yAxisId="right" type="monotone" dataKey="conversionRate" name="Conversão (%)" stroke="#a855f7" fillOpacity={0} strokeWidth={2.5} />
+            <Area yAxisId="left" type="monotone" dataKey="queueTime" name="Fila (min)" stroke="#3b82f6" fill="url(#queueArea)" strokeWidth={2.5} animationDuration={1000} />
+            <Area yAxisId="left" type="monotone" dataKey="serviceTime" name="Atendimento (min)" stroke="#10b981" fill="url(#serviceArea)" strokeWidth={2.5} animationDuration={1000} />
+            <Area yAxisId="right" type="monotone" dataKey="conversionRate" name="Conversão (%)" stroke="#a855f7" fillOpacity={0} strokeWidth={2.5} animationDuration={1000} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
-    </section>
+    </motion.section>
   );
 }

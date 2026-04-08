@@ -21,9 +21,19 @@ const config: Config = {
           '0%': { width: '100%' },
           '100%': { width: '0%' },
         },
+        'shimmer': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        'glow-pulse': {
+          '0%, 100%': { boxShadow: '0 0 8px 0 rgba(var(--glow-color, 59 130 246), 0.3)' },
+          '50%': { boxShadow: '0 0 20px 4px rgba(var(--glow-color, 59 130 246), 0.5)' },
+        },
       },
       animation: {
         'shrink-width': 'shrink-width 5s linear forwards',
+        'shimmer': 'shimmer 1.5s ease-in-out infinite',
+        'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
       },
     },
   },

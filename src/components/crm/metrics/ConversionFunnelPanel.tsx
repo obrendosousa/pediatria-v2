@@ -1,4 +1,7 @@
+'use client';
+
 import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { motion } from 'framer-motion';
 import type { CRMMetricsViewModel } from '@/utils/crmMetricsPresentation';
 import InfoHelpButton from '@/components/crm/metrics/InfoHelpButton';
 
@@ -8,7 +11,12 @@ type ConversionFunnelPanelProps = {
 
 export default function ConversionFunnelPanel({ metrics }: ConversionFunnelPanelProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#2d2d36] dark:bg-[#08080b]">
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.15 }}
+      className="rounded-2xl border border-white/20 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-white/[0.06] dark:bg-[#08080b]/80"
+    >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold text-slate-800 dark:text-[#fafafa]">Funil de conversão</h3>
@@ -26,7 +34,7 @@ export default function ConversionFunnelPanel({ metrics }: ConversionFunnelPanel
             <XAxis type="number" hide />
             <YAxis dataKey="name" type="category" width={130} tickLine={false} axisLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
             <Tooltip />
-            <Bar dataKey="value" barSize={28} radius={[0, 8, 8, 0]}>
+            <Bar dataKey="value" barSize={28} radius={[0, 8, 8, 0]} animationDuration={800} animationEasing="ease-out">
               {metrics.funnelData.map((item, index) => (
                 <Cell key={`${item.name}-${index}`} fill={item.fill} />
               ))}
@@ -34,6 +42,6 @@ export default function ConversionFunnelPanel({ metrics }: ConversionFunnelPanel
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </section>
+    </motion.section>
   );
 }

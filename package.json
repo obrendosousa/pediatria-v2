@@ -39,6 +39,7 @@
     "@langchain/langgraph-checkpoint-postgres": "^1.0.0",
     "@langchain/openai": "^1.2.10",
     "@modelcontextprotocol/sdk": "^1.27.1",
+    "@number-flow/react": "^0.6.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
     "@tiptap/extension-color": "^3.20.1",

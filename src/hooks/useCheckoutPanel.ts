@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Appointment } from '@/types/medical';
 import { Product } from '@/types';
 import { effectiveAmount } from '@/utils/discountUtils';
-import { submitCheckout } from '@/lib/checkoutClient';
+import { submitCheckout, type CommissionPayload } from '@/lib/checkoutClient';
 
 const supabase = createClient();
 
@@ -83,6 +83,7 @@ export function useCheckoutPanel(appointmentId: number | null) {
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [medicalCheckoutId, setMedicalCheckoutId] = useState<number | null>(null);
+  const [commissionData, setCommissionData] = useState<CommissionPayload | null>(null);
   const [consultationDocs, setConsultationDocs] = useState<ConsultationDocs>({
     prescriptions: [], examRequests: [], documents: [], patientData: null
   });
@@ -117,6 +118,22 @@ export function useCheckoutPanel(appointmentId: number | null) {
           name: 'Saldo Restante (Agendamento)',
           price: restanteAgendamento
         });
+      }
+
+      // Load commission data from appointment_procedures (atendimento flow)
+      if (apt.doctor_id) {
+        try {
+          const res = await fetch(`/api/atendimento/commission/${appointmentId}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.commission) setCommissionData(data.commission);
+            else setCommissionData(null);
+          }
+        } catch {
+          setCommissionData(null);
+        }
+      } else {
+        setCommissionData(null);
       }
 
       const { data: mcData } = await supabase
@@ -208,6 +225,7 @@ export function useCheckoutPanel(appointmentId: number | null) {
       setAppointment(null);
       setMedicalCheckout(null);
       setSelectedItems([]);
+      setCommissionData(null);
       setConsultationDocs({ prescriptions: [], examRequests: [], documents: [], patientData: null });
     } finally {
       setLoading(false);
@@ -238,6 +256,7 @@ export function useCheckoutPanel(appointmentId: number | null) {
       setMedicalCheckout(null);
       setMedicalCheckoutId(null);
       setSelectedItems([]);
+      setCommissionData(null);
     }
   }, [appointmentId, loadCheckoutData, fetchCatalog]);
 
@@ -356,7 +375,8 @@ export function useCheckoutPanel(appointmentId: number | null) {
           chat_id: chatId,
           items,
           payment_method: paymentMethod,
-          client_total: total
+          client_total: total,
+          commission_data: commissionData,
         });
       }
 
@@ -367,7 +387,7 @@ export function useCheckoutPanel(appointmentId: number | null) {
     } finally {
       setLoading(false);
     }
-  }, [appointment, appointmentId, total, selectedItems, paymentMethod, medicalCheckoutId]);
+  }, [appointment, appointmentId, total, selectedItems, paymentMethod, medicalCheckoutId, commissionData]);
 
   return {
     loading,

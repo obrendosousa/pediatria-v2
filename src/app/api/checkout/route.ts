@@ -33,7 +33,8 @@ export async function POST(request: Request) {
       items,
       payment_method,
       payments,
-      client_total
+      client_total,
+      commission_data,
     } = body as {
       appointment_id?: number | null;
       medical_checkout_id?: number | null;
@@ -43,6 +44,12 @@ export async function POST(request: Request) {
       payment_method?: string;
       payments?: PaymentSplitPayload[];
       client_total?: number;
+      commission_data?: {
+        professional_id: string;
+        doctor_id: number;
+        total_commission: number;
+        details: unknown[];
+      } | null;
     };
 
     if (!items || items.length === 0) {
@@ -71,7 +78,8 @@ export async function POST(request: Request) {
         name: item.name,
         price: item.price
       })),
-      client_total: client_total ?? 0
+      client_total: client_total ?? 0,
+      commission_data: commission_data ?? null,
     };
 
     const { data, error } = await supabase.rpc('process_secretary_checkout', {

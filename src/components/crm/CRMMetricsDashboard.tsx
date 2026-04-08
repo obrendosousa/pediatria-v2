@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { CRMMetricsPayload } from '@/lib/crm/metrics';
 import { buildCRMMetricsViewModel } from '@/utils/crmMetricsPresentation';
 import KPIHeroGrid from '@/components/crm/metrics/KPIHeroGrid';
@@ -27,20 +28,34 @@ type CRMMetricsDashboardProps = {
   onRefresh: () => void;
 };
 
+function ShimmerBlock({ className }: { className?: string }) {
+  return (
+    <div className={`relative overflow-hidden rounded-2xl bg-slate-200/70 dark:bg-[#1c1c21] ${className || ''}`}>
+      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/30 dark:via-white/5 to-transparent" />
+    </div>
+  );
+}
+
 function MetricsSkeleton() {
   return (
-    <div className="space-y-4">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-4"
+    >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 8 }).map((_, idx) => (
-          <div key={idx} className="h-28 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#1c1c21]" />
+          <ShimmerBlock key={idx} className="h-28" />
         ))}
       </div>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="h-80 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#1c1c21]" />
-        <div className="h-80 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#1c1c21]" />
+        <ShimmerBlock className="h-80" />
+        <ShimmerBlock className="h-80" />
       </div>
-      <div className="h-72 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-[#1c1c21]" />
-    </div>
+      <ShimmerBlock className="h-72" />
+    </motion.div>
   );
 }
 
@@ -63,20 +78,23 @@ export default function CRMMetricsDashboard(props: CRMMetricsDashboardProps) {
 
   return (
     <div className="h-full overflow-y-auto p-6 custom-scrollbar lg:p-8">
-      <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#2d2d36] dark:bg-[#08080b]">
+      <div className="mb-5 rounded-2xl border border-white/20 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-white/[0.06] dark:bg-[#08080b]/80">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-black text-slate-800 dark:text-[#fafafa]">Gestão & Métricas de Atendimento</h2>
             <p className="text-xs text-slate-500 dark:text-[#a1a1aa]">Painel priorizado para leitura rápida, diagnóstico e conclusão.</p>
           </div>
-          <button
+          <motion.button
             type="button"
             onClick={onRefresh}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97, rotate: 180 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-[#3d3d48] dark:text-[#d4d4d8] dark:hover:bg-white/5"
           >
             <RefreshCw className="h-4 w-4" />
             Atualizar
-          </button>
+          </motion.button>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div>
@@ -115,19 +133,28 @@ export default function CRMMetricsDashboard(props: CRMMetricsDashboardProps) {
         </div>
       ) : null}
 
-      {loading ? (
-        <MetricsSkeleton />
-      ) : (
-        <div className="space-y-5">
-          <KPIHeroGrid metrics={view} />
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <ServiceEfficiencyPanel metrics={view} />
-            <ConversionFunnelPanel metrics={view} />
-          </div>
-          <OperationalCapacityPanel metrics={view} />
-          <DataCoveragePanel metrics={view} />
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <MetricsSkeleton key="skeleton" />
+        ) : (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-5"
+          >
+            <KPIHeroGrid metrics={view} />
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              <ServiceEfficiencyPanel metrics={view} />
+              <ConversionFunnelPanel metrics={view} />
+            </div>
+            <OperationalCapacityPanel metrics={view} />
+            <DataCoveragePanel metrics={view} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

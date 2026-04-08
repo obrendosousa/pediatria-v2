@@ -7,6 +7,18 @@ const supabase = createClient(
   { db: { schema: 'atendimento' } }
 );
 
+interface ProcedureDetail {
+  procedure_id: string | null;
+  professional_procedure_id: string | null;
+  source_type: 'global' | 'professional';
+  procedure_name: string;
+  procedure_type: string | null;
+  duration_minutes: number | null;
+  unit_value: number;
+  split_type: 'percentage' | 'fixed' | null;
+  split_value: number | null;
+}
+
 interface SchedulingBody {
   patient: {
     id?: number | null;
@@ -36,13 +48,14 @@ interface SchedulingBody {
     auto_confirm?: boolean;
     description?: string | null;
   };
+  procedure_details?: ProcedureDetail[];
   generate_ticket?: boolean;
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as SchedulingBody;
-    const { patient, appointment, generate_ticket } = body;
+    const { patient, appointment, procedure_details, generate_ticket } = body;
 
     if (!patient?.full_name) {
       return NextResponse.json({ error: 'Nome do paciente é obrigatório' }, { status: 400 });
@@ -116,6 +129,57 @@ export async function POST(req: NextRequest) {
       .select('id')
       .single();
     if (aptError) throw aptError;
+
+    // 2b. Inserir procedimentos na bridge table
+    if (procedure_details && procedure_details.length > 0) {
+      const rows = procedure_details.map(p => {
+        const unitValue = p.unit_value || 0;
+        const lineTotal = unitValue; // quantity = 1
+
+        let doctorCommission: number | null = null;
+        let clinicAmount: number | null = null;
+        if (p.split_type && p.split_value != null) {
+          doctorCommission = p.split_type === 'percentage'
+            ? Math.round(lineTotal * p.split_value / 100 * 100) / 100
+            : Math.min(p.split_value, lineTotal);
+          clinicAmount = Math.round((lineTotal - doctorCommission) * 100) / 100;
+        }
+
+        return {
+          appointment_id: apt.id,
+          source_type: p.source_type,
+          procedure_id: p.procedure_id,
+          professional_procedure_id: p.professional_procedure_id,
+          procedure_name: p.procedure_name,
+          procedure_type: p.procedure_type,
+          duration_minutes: p.duration_minutes,
+          unit_value: unitValue,
+          quantity: 1,
+          line_total: lineTotal,
+          split_type: p.split_type,
+          split_value: p.split_value,
+          doctor_commission: doctorCommission,
+          clinic_amount: clinicAmount,
+        };
+      });
+
+      const { error: procError } = await supabase
+        .from('appointment_procedures')
+        .insert(rows);
+
+      if (procError) {
+        console.error('[Scheduling API] Error inserting appointment_procedures:', procError);
+      }
+
+      // Auto-calcular total_amount
+      const totalAmount = rows.reduce((sum, r) => sum + r.line_total, 0);
+      if (totalAmount > 0) {
+        await supabase
+          .from('appointments')
+          .update({ total_amount: totalAmount })
+          .eq('id', apt.id);
+      }
+    }
 
     // 3. Gerar ticket vinculado (opcional)
     let ticketId: number | null = null;

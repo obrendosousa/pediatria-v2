@@ -33,6 +33,10 @@ DECLARE
   v_tx_atendimento_id BIGINT;
   v_tx_loja_id       BIGINT;
 
+  -- Commission (professional payment)
+  v_commission_data    JSONB   := p_params->'commission_data';
+  v_commission_total   NUMERIC;
+
   -- Appointment
   v_apt_total_amount   NUMERIC;
   v_apt_discount_amount NUMERIC;
@@ -411,6 +415,27 @@ BEGIN
     END IF;
   END IF;
 
+  -- 7b. PROFESSIONAL PAYMENT (commission tracking)
+  IF v_commission_data IS NOT NULL
+     AND v_commission_data->>'professional_id' IS NOT NULL
+     AND v_tx_atendimento_id IS NOT NULL THEN
+
+    v_commission_total := COALESCE((v_commission_data->>'total_commission')::NUMERIC, 0);
+
+    IF v_commission_total > 0 THEN
+      INSERT INTO public.professional_payments (
+        financial_transaction_id, appointment_id, professional_id,
+        doctor_id, total_commission, status, commission_details
+      ) VALUES (
+        v_tx_atendimento_id, v_appointment_id,
+        (v_commission_data->>'professional_id')::UUID,
+        (v_commission_data->>'doctor_id')::BIGINT,
+        v_commission_total, 'pending',
+        v_commission_data->'details'
+      );
+    END IF;
+  END IF;
+
   IF v_store_amount > 0 THEN
     INSERT INTO public.financial_transactions (
       amount, origin, created_by, occurred_at,
@@ -501,6 +526,7 @@ BEGIN
     'store_amount', v_store_amount,
     'tx_atendimento_id', v_tx_atendimento_id,
     'tx_loja_id', v_tx_loja_id,
+    'commission_recorded', (v_commission_data IS NOT NULL AND COALESCE(v_commission_total, 0) > 0),
     'idempotent', false
   );
 END;
