@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, ToggleLeft, ToggleRight, ClipboardList } from 'lucide-react';
 import DataTable from '@/components/cadastros/DataTable';
 import type { SortDirection } from '@/components/cadastros/DataTable';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { usePrescriptionProtocols } from '@/hooks/usePrescriptionProtocols';
 import type { PrescriptionProtocol } from '@/types/cadastros';
@@ -25,6 +26,8 @@ export default function ProtocolosReceituarioPage() {
   const [pageSize, setPageSize] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | undefined>();
+  const [deleteTarget, setDeleteTarget] = useState<PrescriptionProtocol | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = useCallback(() => {
     listProtocols(searchTerm, page, pageSize, sort).catch(() => {
@@ -48,16 +51,20 @@ export default function ProtocolosReceituarioPage() {
     }
   }, [updateProtocol, toast, fetch]);
 
-  const handleDelete = useCallback(async (row: PrescriptionProtocol) => {
-    if (!confirm(`Deseja excluir "${row.name}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteProtocol(row.id);
+      await deleteProtocol(deleteTarget.id);
       toast.success('Protocolo excluído.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir protocolo.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deleteProtocol, toast, fetch]);
+  }, [deleteTarget, deleteProtocol, toast, fetch]);
 
   return (
     <div className="h-full flex flex-col">
@@ -109,11 +116,23 @@ export default function ProtocolosReceituarioPage() {
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row),
+            onClick: () => setDeleteTarget(row),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
         emptyMessage="Nenhum protocolo cadastrado."
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir protocolo"
+        message={`Deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
       />
     </div>
   );

@@ -132,8 +132,8 @@ export function useProcedures() {
         supabase
           .from('procedures')
           .update({
-            fee_value: Math.round(p.fee_value * multiplier * 100) / 100,
-            total_value: Math.round(p.total_value * multiplier * 100) / 100,
+            fee_value: Math.round((p.fee_value || 0) * multiplier * 100) / 100,
+            total_value: Math.round((p.total_value || 0) * multiplier * 100) / 100,
             honorarium_value: Math.round((p.honorarium_value || 0) * multiplier * 100) / 100,
           })
           .eq('id', p.id)
@@ -173,10 +173,13 @@ export function useProcedures() {
     if (items.length > 0) {
       const rows = items.map(item => ({
         procedure_id: procedureId,
-        product_id: item.product_id,
+        product_id: item.is_manual ? null : parseInt(item.product_id, 10),
         quantity: item.quantity,
         purchase_price: item.purchase_price,
         cost_price: item.cost_price,
+        is_manual: item.is_manual || false,
+        manual_name: item.is_manual ? item.product_name : null,
+        product_name: item.product_name,
       }));
 
       const { error: insError } = await supabase

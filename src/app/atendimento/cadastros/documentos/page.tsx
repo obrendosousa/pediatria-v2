@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, FileSignature, Star } from 'lucide-react';
 import DataTable from '@/components/cadastros/DataTable';
 import type { SortDirection } from '@/components/cadastros/DataTable';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useDocumentTemplates } from '@/hooks/useDocumentTemplates';
 import type { DocumentTemplate } from '@/types/cadastros';
@@ -24,6 +25,8 @@ export default function DocumentosPage() {
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | undefined>();
+  const [deleteTarget, setDeleteTarget] = useState<DocumentTemplate | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = useCallback(() => {
     listTemplates(searchTerm, page, pageSize, sort).catch(() => {
@@ -35,16 +38,20 @@ export default function DocumentosPage() {
     fetch();
   }, [fetch]);
 
-  const handleDelete = useCallback(async (row: DocumentTemplate) => {
-    if (!confirm(`Deseja excluir "${row.title}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteTemplate(row.id);
+      await deleteTemplate(deleteTarget.id);
       toast.success('Documento excluído.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir documento.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deleteTemplate, toast, fetch]);
+  }, [deleteTarget, deleteTemplate, toast, fetch]);
 
   return (
     <div className="h-full flex flex-col">
@@ -111,11 +118,23 @@ export default function DocumentosPage() {
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row),
+            onClick: () => setDeleteTarget(row as DocumentTemplate),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
         emptyMessage="Nenhum documento cadastrado."
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir documento"
+        message={`Deseja excluir "${deleteTarget?.title}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
       />
     </div>
   );

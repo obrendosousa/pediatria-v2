@@ -13,10 +13,11 @@ import type { Professional } from '@/types/cadastros';
 
 type TabKey = 'dados' | 'procedimentos';
 
-async function uploadAttachments(files: File[]): Promise<{ name: string; url: string }[]> {
-  if (files.length === 0) return [];
+async function uploadAttachments(files: File[]): Promise<{ uploaded: { name: string; url: string }[]; failed: string[] }> {
+  if (files.length === 0) return { uploaded: [], failed: [] };
   const supabase = createClient();
-  const results: { name: string; url: string }[] = [];
+  const uploaded: { name: string; url: string }[] = [];
+  const failed: string[] = [];
 
   for (const file of files) {
     const ext = file.name.split('.').pop() || 'bin';
@@ -24,12 +25,13 @@ async function uploadAttachments(files: File[]): Promise<{ name: string; url: st
     const { error } = await supabase.storage.from('professional-attachments').upload(path, file);
     if (error) {
       console.error('Erro ao enviar anexo:', error);
+      failed.push(file.name);
       continue;
     }
     const { data: urlData } = supabase.storage.from('professional-attachments').getPublicUrl(path);
-    results.push({ name: file.name, url: urlData.publicUrl });
+    uploaded.push({ name: file.name, url: urlData.publicUrl });
   }
-  return results;
+  return { uploaded, failed };
 }
 
 export default function EditarProfissionalPage() {
@@ -59,8 +61,11 @@ export default function EditarProfissionalPage() {
   }, [id, getProfessional, toast, router]);
 
   const handleSubmit = async (form: ProfessionalFormData) => {
-    const newUploaded = await uploadAttachments(form.attachments);
-    const existingAttachments = (professional?.attachments as { name: string; url: string }[]) || [];
+    const { uploaded: newUploaded, failed: failedUploads } = await uploadAttachments(form.attachments);
+    if (failedUploads.length > 0) {
+      toast.error(`Falha ao enviar ${failedUploads.length} anexo(s): ${failedUploads.join(', ')}`);
+    }
+    const existingAttachments = Array.isArray(professional?.attachments) ? professional.attachments : [];
     const allAttachments = [...existingAttachments, ...newUploaded];
 
     await updateProfessional(id, {

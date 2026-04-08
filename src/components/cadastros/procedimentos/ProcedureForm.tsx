@@ -67,23 +67,20 @@ export default function ProcedureForm({
     if (!form.procedure_type) errs.procedure_type = 'Tipo é obrigatório.';
     if (!form.duration_minutes || form.duration_minutes <= 0) errs.duration_minutes = 'Duração é obrigatória.';
     if (form.procedure_type === 'injectable' && !form.way_id) errs.way_id = 'Via de aplicação é obrigatória.';
-    if (form.honorarium_value < 0) errs.honorarium_value = 'Valor de honorários inválido.';
+    if (form.honorarium_value < 0) errs.honorarium_value = 'Valor do procedimento inválido.';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = async () => {
+    if (saving) return;
+
     if (!validate()) {
       toast.error('Preencha todos os campos obrigatórios.');
       return;
     }
 
-    // Calcular total
-    const totalValue = form.composition_enabled
-      ? form.composition_value + form.honorarium_value
-      : form.honorarium_value;
-
-    const finalForm = { ...form, total_value: totalValue };
+    const finalForm = { ...form, total_value: form.honorarium_value };
 
     setSaving(true);
     try {
@@ -132,7 +129,10 @@ export default function ProcedureForm({
           <ProcedureComposition
             compositionEnabled={form.composition_enabled}
             compositions={compositions}
-            onToggle={(enabled) => update('composition_enabled', enabled)}
+            onToggle={(enabled) => {
+              update('composition_enabled', enabled);
+              if (!enabled) setCompositions([]);
+            }}
             onCompositionsChange={setCompositions}
             onCompositionValueChange={handleCompositionValueChange}
           />

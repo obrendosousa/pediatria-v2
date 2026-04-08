@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import DataTable from '@/components/cadastros/DataTable';
 import type { SortDirection } from '@/components/cadastros/DataTable';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import RichTextEditor from '@/components/cadastros/RichTextEditor';
 import type { TemplateVariable } from '@/components/cadastros/RichTextEditor';
 import { useToast } from '@/contexts/ToastContext';
@@ -99,6 +100,8 @@ export function TemplateListPage<T extends TemplateRecord>({
   const [searchTerm, setSearchTerm] = useState('');
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | undefined>();
   const [onlyMine, setOnlyMine] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<T | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = useCallback(() => {
     listTemplates(
@@ -116,16 +119,20 @@ export function TemplateListPage<T extends TemplateRecord>({
     fetch();
   }, [fetch]);
 
-  const handleDelete = useCallback(async (row: T) => {
-    if (!confirm(`Deseja excluir "${row.name}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteTemplate(row.id);
+      await deleteTemplate(deleteTarget.id);
       toast.success('Modelo excluído.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir modelo.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deleteTemplate, toast, fetch]);
+  }, [deleteTarget, deleteTemplate, toast, fetch]);
 
   return (
     <div className="h-full flex flex-col">
@@ -199,11 +206,23 @@ export function TemplateListPage<T extends TemplateRecord>({
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row),
+            onClick: () => setDeleteTarget(row as T),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
         emptyMessage={`Nenhum modelo de ${entityName} cadastrado.`}
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir modelo"
+        message={`Deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
       />
     </div>
   );

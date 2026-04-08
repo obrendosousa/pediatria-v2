@@ -6,6 +6,7 @@ import DataTable from '@/components/cadastros/DataTable';
 import type { SortDirection } from '@/components/cadastros/DataTable';
 import ModalForm from '@/components/cadastros/shared/ModalForm';
 import MaskedInput from '@/components/cadastros/shared/MaskedInput';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { usePartners } from '@/hooks/usePartners';
 import type { Partner } from '@/types/cadastros';
@@ -58,6 +59,10 @@ export default function ParceirosPage() {
   const [editingItem, setEditingItem] = useState<Partner | null>(null);
   const [form, setForm] = useState<PartnerForm>(emptyForm());
   const [errors, setErrors] = useState<Partial<PartnerForm>>({});
+
+  // Delete confirm state
+  const [deleteTarget, setDeleteTarget] = useState<Partner | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = useCallback(() => {
     listPartners(searchTerm, page, pageSize, sort).catch(() => {
@@ -146,16 +151,20 @@ export default function ParceirosPage() {
     }
   }, [updatePartner, toast, fetch]);
 
-  const handleDelete = useCallback(async (row: Partner) => {
-    if (!confirm(`Deseja excluir "${row.name}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deletePartner(row.id);
+      await deletePartner(deleteTarget.id);
       toast.success('Parceiro excluído.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir parceiro.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deletePartner, toast, fetch]);
+  }, [deleteTarget, deletePartner, toast, fetch]);
 
   const setField = <K extends keyof PartnerForm>(key: K, value: PartnerForm[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -220,7 +229,7 @@ export default function ParceirosPage() {
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row),
+            onClick: () => setDeleteTarget(row),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
@@ -301,6 +310,18 @@ export default function ParceirosPage() {
           />
         </div>
       </ModalForm>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir parceiro"
+        message={`Deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
+      />
     </div>
   );
 }

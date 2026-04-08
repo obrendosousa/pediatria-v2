@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Plus, Trash2, Pill, ChevronDown } from 'lucide-react';
 import DataTable from '@/components/cadastros/DataTable';
 import ModalForm from '@/components/cadastros/shared/ModalForm';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useMedications } from '@/hooks/useMedications';
 import type { Medication } from '@/types/cadastros';
@@ -82,6 +83,8 @@ export default function MedicamentosPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Medication | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -172,16 +175,20 @@ export default function MedicamentosPage() {
     }
   }, [validate, form, editingItem, createMedication, updateMedication, toast, fetch]);
 
-  const handleDelete = useCallback(async (row: Medication) => {
-    if (!confirm(`Deseja excluir "${row.description}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteMedication(row.id);
+      await deleteMedication(deleteTarget.id);
       toast.success('Medicamento excluído.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir medicamento.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deleteMedication, toast, fetch]);
+  }, [deleteTarget, deleteMedication, toast, fetch]);
 
   return (
     <div className="h-full flex flex-col">
@@ -219,7 +226,7 @@ export default function MedicamentosPage() {
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row as Medication),
+            onClick: () => setDeleteTarget(row as Medication),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
@@ -341,6 +348,18 @@ export default function MedicamentosPage() {
           </div>
         </div>
       </ModalForm>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir medicamento"
+        message={`Deseja excluir "${deleteTarget?.description}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
+      />
     </div>
   );
 }

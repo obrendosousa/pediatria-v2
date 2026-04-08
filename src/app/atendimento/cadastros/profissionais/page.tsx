@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, ToggleLeft, ToggleRight, UserCog } from 'lucide-react';
 import DataTable from '@/components/cadastros/DataTable';
 import type { SortDirection } from '@/components/cadastros/DataTable';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useProfessionals } from '@/hooks/useProfessionals';
 import type { Professional } from '@/types/cadastros';
@@ -25,6 +26,8 @@ export default function ProfissionaisPage() {
   const [pageSize, setPageSize] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | undefined>();
+  const [deleteTarget, setDeleteTarget] = useState<Professional | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = useCallback(() => {
     listProfessionals(searchTerm, page, pageSize, sort).catch(() => {
@@ -48,16 +51,20 @@ export default function ProfissionaisPage() {
     }
   }, [updateProfessional, toast, fetch]);
 
-  const handleDelete = useCallback(async (row: Professional) => {
-    if (!confirm(`Deseja excluir "${row.name}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteProfessional(row.id);
+      await deleteProfessional(deleteTarget.id);
       toast.success('Profissional excluído.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir profissional.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deleteProfessional, toast, fetch]);
+  }, [deleteTarget, deleteProfessional, toast, fetch]);
 
   return (
     <div className="h-full flex flex-col">
@@ -103,11 +110,23 @@ export default function ProfissionaisPage() {
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row),
+            onClick: () => setDeleteTarget(row),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
         emptyMessage="Nenhum profissional cadastrado."
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir profissional"
+        message={`Deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
       />
     </div>
   );

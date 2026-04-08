@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import DataTable from '@/components/cadastros/DataTable';
 import type { SortDirection } from '@/components/cadastros/DataTable';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useProcedures } from '@/hooks/useProcedures';
 import type { Procedure } from '@/types/cadastros';
@@ -52,6 +53,8 @@ export default function ProcedimentosPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustPercentage, setAdjustPercentage] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Procedure | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = useCallback(() => {
     listProcedures({
@@ -89,16 +92,20 @@ export default function ProcedimentosPage() {
     }
   }, [updateProcedure, toast, fetch]);
 
-  const handleDelete = useCallback(async (row: Procedure) => {
-    if (!confirm(`Deseja excluir "${row.name}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteProcedure(row.id);
+      await deleteProcedure(deleteTarget.id);
       toast.success('Procedimento excluído.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir procedimento.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deleteProcedure, toast, fetch]);
+  }, [deleteTarget, deleteProcedure, toast, fetch]);
 
   const handleAdjustPrices = useCallback(async () => {
     const pct = parseFloat(adjustPercentage);
@@ -145,7 +152,6 @@ export default function ProcedimentosPage() {
 
       {/* Filtros */}
       <div className="px-6 py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-[#1e1e28] bg-white dark:bg-[#111118]">
-        {/* Tipo multi-select */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase">Tipo:</span>
           {TYPE_FILTERS.map(tf => (
@@ -163,7 +169,6 @@ export default function ProcedimentosPage() {
           ))}
         </div>
 
-        {/* Status */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-500 dark:text-[#a1a1aa] uppercase">Status:</span>
           <div className="relative">
@@ -201,11 +206,11 @@ export default function ProcedimentosPage() {
             render: (value) => TYPE_LABELS[value as string] || String(value),
           },
           {
-            key: 'total_value',
+            key: 'honorarium_value',
             label: 'Valor',
             sortable: true,
             render: (value) => (
-              <span className="font-mono text-xs">{formatCurrency(value as number)}</span>
+              <span className="font-mono text-xs">{formatCurrency((value as number) || 0)}</span>
             ),
           },
           { key: 'status', label: 'Status' },
@@ -231,7 +236,7 @@ export default function ProcedimentosPage() {
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row),
+            onClick: () => setDeleteTarget(row),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
@@ -295,6 +300,18 @@ export default function ProcedimentosPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir procedimento"
+        message={`Deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
+      />
     </div>
   );
 }

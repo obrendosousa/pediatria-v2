@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, ClipboardList } from 'lucide-react';
 import DataTable from '@/components/cadastros/DataTable';
 import type { SortDirection } from '@/components/cadastros/DataTable';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnamnesisTemplates } from '@/hooks/useAnamnesisTemplates';
@@ -27,6 +28,8 @@ export default function AnamnesesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | undefined>();
   const [onlyMine, setOnlyMine] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AnamnesisTemplate | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = useCallback(() => {
     listTemplates(
@@ -44,16 +47,20 @@ export default function AnamnesesPage() {
     fetch();
   }, [fetch]);
 
-  const handleDelete = useCallback(async (row: AnamnesisTemplate) => {
-    if (!confirm(`Deseja excluir "${row.title}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteTemplate(row.id);
+      await deleteTemplate(deleteTarget.id);
       toast.success('Modelo excluído.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir modelo.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deleteTemplate, toast, fetch]);
+  }, [deleteTarget, deleteTemplate, toast, fetch]);
 
   return (
     <div className="h-full flex flex-col">
@@ -64,7 +71,6 @@ export default function AnamnesesPage() {
           <h1 className="text-lg font-bold text-slate-800 dark:text-[#fafafa]">Modelos de Anamnese</h1>
         </div>
         <div className="flex items-center gap-3">
-          {/* Toggle Meus Modelos */}
           <button
             type="button"
             onClick={() => { setOnlyMine(prev => !prev); setPage(0); }}
@@ -127,11 +133,23 @@ export default function AnamnesesPage() {
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row),
+            onClick: () => setDeleteTarget(row as AnamnesisTemplate),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
         emptyMessage="Nenhum modelo de anamnese cadastrado."
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir modelo"
+        message={`Deseja excluir "${deleteTarget?.title}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
       />
     </div>
   );

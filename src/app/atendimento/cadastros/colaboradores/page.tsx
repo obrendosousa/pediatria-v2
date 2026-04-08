@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, ToggleLeft, ToggleRight, Users } from 'lucide-react';
 import DataTable from '@/components/cadastros/DataTable';
 import type { SortDirection } from '@/components/cadastros/DataTable';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useCollaborators } from '@/hooks/useCollaborators';
 import type { Collaborator } from '@/types/cadastros';
@@ -25,6 +26,8 @@ export default function ColaboradoresPage() {
   const [pageSize, setPageSize] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | undefined>();
+  const [deleteTarget, setDeleteTarget] = useState<Collaborator | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = useCallback(() => {
     listCollaborators(searchTerm, page, pageSize, sort).catch(() => {
@@ -48,16 +51,20 @@ export default function ColaboradoresPage() {
     }
   }, [updateCollaborator, toast, fetch]);
 
-  const handleDelete = useCallback(async (row: Collaborator) => {
-    if (!confirm(`Deseja excluir "${row.name}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteCollaborator(row.id);
+      await deleteCollaborator(deleteTarget.id);
       toast.success('Colaborador excluído.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir colaborador.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deleteCollaborator, toast, fetch]);
+  }, [deleteTarget, deleteCollaborator, toast, fetch]);
 
   return (
     <div className="h-full flex flex-col">
@@ -103,11 +110,23 @@ export default function ColaboradoresPage() {
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row),
+            onClick: () => setDeleteTarget(row),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
         emptyMessage="Nenhum colaborador cadastrado."
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir colaborador"
+        message={`Deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
       />
     </div>
   );

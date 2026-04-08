@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, ToggleLeft, ToggleRight, Copy, FlaskConical } from 'lucide-react';
 import DataTable from '@/components/cadastros/DataTable';
 import type { SortDirection } from '@/components/cadastros/DataTable';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useFormulas } from '@/hooks/useFormulas';
 import type { Formula } from '@/types/cadastros';
@@ -26,6 +27,8 @@ export default function FormulasPage() {
   const [pageSize, setPageSize] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | undefined>();
+  const [deleteTarget, setDeleteTarget] = useState<Formula | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = useCallback(() => {
     listFormulas(searchTerm, page, pageSize, sort).catch(() => {
@@ -59,16 +62,20 @@ export default function FormulasPage() {
     }
   }, [duplicateFormula, toast, fetch]);
 
-  const handleDelete = useCallback(async (row: Formula) => {
-    if (!confirm(`Deseja excluir "${row.name}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteFormula(row.id);
+      await deleteFormula(deleteTarget.id);
       toast.success('Fórmula excluída.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir fórmula.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deleteFormula, toast, fetch]);
+  }, [deleteTarget, deleteFormula, toast, fetch]);
 
   return (
     <div className="h-full flex flex-col">
@@ -119,11 +126,23 @@ export default function FormulasPage() {
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row),
+            onClick: () => setDeleteTarget(row),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
         emptyMessage="Nenhuma fórmula cadastrada."
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir fórmula"
+        message={`Deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import {
   Plus, Trash2, Pencil, Loader2, X, ChevronDown,
   Stethoscope, DollarSign, Clock, Percent, ToggleLeft, ToggleRight,
 } from 'lucide-react';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useProfessionalProcedures } from '@/hooks/useProfessionalProcedures';
 import type { ProfessionalProcedure, ProcedureType, SplitType } from '@/types/cadastros';
@@ -94,6 +95,8 @@ export default function ProfessionalProceduresTab({ professionalId }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProcedureFormState>({ ...EMPTY_FORM });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [deleteTarget, setDeleteTarget] = useState<ProfessionalProcedure | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = useCallback(() => {
     listProcedures(professionalId).catch(() => {
@@ -180,7 +183,6 @@ export default function ProfessionalProceduresTab({ professionalId }: Props) {
   const handleToggleStatus = async (proc: ProfessionalProcedure) => {
     try {
       await updateProcedure(proc.id, {
-        ...proc,
         status: proc.status === 'active' ? 'inactive' : 'active',
       });
       toast.success(`Procedimento ${proc.status === 'active' ? 'inativado' : 'ativado'}.`);
@@ -190,16 +192,20 @@ export default function ProfessionalProceduresTab({ professionalId }: Props) {
     }
   };
 
-  const handleDelete = async (proc: ProfessionalProcedure) => {
-    if (!confirm(`Deseja excluir "${proc.name}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteProcedure(proc.id);
+      await deleteProcedure(deleteTarget.id);
       toast.success('Procedimento excluído.');
+      setDeleteTarget(null);
       fetchData();
     } catch {
       toast.error('Erro ao excluir procedimento.');
+    } finally {
+      setDeleting(false);
     }
-  };
+  }, [deleteTarget, deleteProcedure, toast, fetchData]);
 
   // --- Cálculos do preview ---
   const preview = calcSplit(form.value, form.split_type, form.split_value);
@@ -320,7 +326,7 @@ export default function ProfessionalProceduresTab({ professionalId }: Props) {
                           }
                         </button>
                         <button
-                          onClick={() => handleDelete(proc)}
+                          onClick={() => setDeleteTarget(proc)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           title="Excluir"
                         >
@@ -520,6 +526,18 @@ export default function ProfessionalProceduresTab({ professionalId }: Props) {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir procedimento"
+        message={`Deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
+      />
     </div>
   );
 }

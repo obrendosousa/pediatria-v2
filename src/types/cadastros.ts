@@ -152,10 +152,13 @@ export interface ProcedureComposition {
 export interface ProcedureProductComposition {
   id: string;
   procedure_id: string;
-  product_id: string;
+  product_id: number | null;
   quantity: number;
   purchase_price: number;
   cost_price: number;
+  is_manual: boolean;
+  manual_name: string | null;
+  product_name: string | null;
   created_at: string;
 }
 

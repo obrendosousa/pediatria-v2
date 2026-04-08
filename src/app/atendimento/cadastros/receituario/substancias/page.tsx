@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { Plus, Trash2, FlaskConical } from 'lucide-react';
 import DataTable from '@/components/cadastros/DataTable';
 import ModalForm from '@/components/cadastros/shared/ModalForm';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useToast } from '@/contexts/ToastContext';
 import { useSubstances } from '@/hooks/useSubstances';
 import type { Substance } from '@/types/cadastros';
@@ -33,6 +34,10 @@ export default function SubstanciasPage() {
   const [editingItem, setEditingItem] = useState<Substance | null>(null);
   const [formName, setFormName] = useState('');
   const [formError, setFormError] = useState('');
+
+  // Delete confirm state
+  const [deleteTarget, setDeleteTarget] = useState<Substance | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetch = useCallback(() => {
     listSubstances(searchTerm, page, pageSize).catch(() => {
@@ -93,16 +98,20 @@ export default function SubstanciasPage() {
     }
   }, [formName, editingItem, createSubstance, updateSubstance, toast, fetch]);
 
-  const handleDelete = useCallback(async (row: Substance) => {
-    if (!confirm(`Deseja excluir "${row.name}"?`)) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteSubstance(row.id);
+      await deleteSubstance(deleteTarget.id);
       toast.success('Substância excluída.');
+      setDeleteTarget(null);
       fetch();
     } catch {
       toast.error('Erro ao excluir substância.');
+    } finally {
+      setDeleting(false);
     }
-  }, [deleteSubstance, toast, fetch]);
+  }, [deleteTarget, deleteSubstance, toast, fetch]);
 
   return (
     <div className="h-full flex flex-col">
@@ -140,7 +149,7 @@ export default function SubstanciasPage() {
           {
             icon: <Trash2 className="w-4 h-4" />,
             label: 'Excluir',
-            onClick: () => handleDelete(row as Substance),
+            onClick: () => setDeleteTarget(row as Substance),
             className: 'text-red-500 dark:text-red-400',
           },
         ]}
@@ -170,6 +179,18 @@ export default function SubstanciasPage() {
           {formError && <p className="mt-1 text-xs text-red-500">{formError}</p>}
         </div>
       </ModalForm>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir substância"
+        message={`Deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        type="danger"
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isLoading={deleting}
+      />
     </div>
   );
 }

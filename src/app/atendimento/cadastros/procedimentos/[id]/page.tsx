@@ -13,7 +13,7 @@ export default function EditarProcedimentoPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { getProcedure, updateProcedure, getProductCompositions, setProductCompositions, fetchProducts } = useProcedures();
+  const { getProcedure, updateProcedure, getProductCompositions, setProductCompositions } = useProcedures();
 
   const [procedure, setProcedure] = useState<Procedure | null>(null);
   const [initialCompositions, setInitialCompositions] = useState<ProductCompositionItem[]>([]);
@@ -31,32 +31,20 @@ export default function EditarProcedimentoPage() {
         setProcedure(data);
 
         if (comps.length > 0) {
-          // Resolver nomes dos medicamentos via API
-          try {
-            const result = await fetchProducts('', 0, 50);
-            const resolved: ProductCompositionItem[] = comps.map(comp => {
-              const product = result.data.find(p => p.id === String(comp.product_id));
-              return {
-                product_id: String(comp.product_id),
-                product_name: product?.name || `Medicamento #${comp.product_id}`,
-                quantity: comp.quantity,
-                purchase_price: comp.purchase_price,
-                cost_price: comp.cost_price,
-                stock: 0,
-              };
-            });
-            setInitialCompositions(resolved);
-          } catch {
-            const resolved: ProductCompositionItem[] = comps.map(comp => ({
-              product_id: String(comp.product_id),
-              product_name: `Medicamento #${comp.product_id}`,
-              quantity: comp.quantity,
-              purchase_price: comp.purchase_price,
-              cost_price: comp.cost_price,
-              stock: 0,
-            }));
-            setInitialCompositions(resolved);
-          }
+          const resolved: ProductCompositionItem[] = comps.map(comp => ({
+            product_id: comp.is_manual
+              ? `manual_${comp.id}`
+              : String(comp.product_id),
+            product_name: comp.is_manual
+              ? (comp.manual_name || '')
+              : (comp.product_name || `Produto #${comp.product_id}`),
+            quantity: comp.quantity,
+            purchase_price: comp.purchase_price,
+            cost_price: comp.cost_price,
+            stock: 0,
+            is_manual: comp.is_manual,
+          }));
+          setInitialCompositions(resolved);
         }
       } catch {
         toast.error('Procedimento não encontrado.');

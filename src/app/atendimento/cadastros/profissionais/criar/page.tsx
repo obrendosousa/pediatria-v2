@@ -10,10 +10,11 @@ import ProfessionalForm from '@/components/cadastros/profissionais/ProfessionalF
 import type { ProfessionalFormData } from '@/components/cadastros/profissionais/ProfessionalForm';
 import { Copy, Check, X, Key, User, Mail } from 'lucide-react';
 
-async function uploadAttachments(files: File[]): Promise<{ name: string; url: string }[]> {
-  if (files.length === 0) return [];
+async function uploadAttachments(files: File[]): Promise<{ uploaded: { name: string; url: string }[]; failed: string[] }> {
+  if (files.length === 0) return { uploaded: [], failed: [] };
   const supabase = createClient();
-  const results: { name: string; url: string }[] = [];
+  const uploaded: { name: string; url: string }[] = [];
+  const failed: string[] = [];
 
   for (const file of files) {
     const ext = file.name.split('.').pop() || 'bin';
@@ -21,12 +22,13 @@ async function uploadAttachments(files: File[]): Promise<{ name: string; url: st
     const { error } = await supabase.storage.from('professional-attachments').upload(path, file);
     if (error) {
       console.error('Erro ao enviar anexo:', error);
+      failed.push(file.name);
       continue;
     }
     const { data: urlData } = supabase.storage.from('professional-attachments').getPublicUrl(path);
-    results.push({ name: file.name, url: urlData.publicUrl });
+    uploaded.push({ name: file.name, url: urlData.publicUrl });
   }
-  return results;
+  return { uploaded, failed };
 }
 
 interface Credentials {
@@ -150,7 +152,10 @@ export default function CriarProfissionalPage() {
   const [credentials, setCredentials] = useState<Credentials | null>(null);
 
   const handleSubmit = async (form: ProfessionalFormData) => {
-    const attachments = await uploadAttachments(form.attachments);
+    const { uploaded: attachments, failed: failedUploads } = await uploadAttachments(form.attachments);
+    if (failedUploads.length > 0) {
+      toast.error(`Falha ao enviar ${failedUploads.length} anexo(s): ${failedUploads.join(', ')}`);
+    }
 
     // 1. Create the professional record
     const professional = await createProfessional({
@@ -176,6 +181,7 @@ export default function CriarProfissionalPage() {
       registration_state: form.registration_state,
       registration_type: form.registration_type,
       registration_number: form.registration_number,
+      schedule_access: 'open_record',
       is_admin: form.is_admin,
       restrict_prices: form.restrict_prices,
       has_schedule: form.has_schedule,
@@ -225,8 +231,7 @@ export default function CriarProfissionalPage() {
         const result = await res.json();
 
         if (!res.ok) {
-          toast.error(result.error || 'Erro ao criar login');
-          toast.success('Profissional cadastrado, mas login não foi criado.');
+          toast.error(`Profissional cadastrado, mas o login não foi criado: ${result.error || 'erro desconhecido'}`);
           router.push('/atendimento/cadastros/profissionais');
           return;
         }

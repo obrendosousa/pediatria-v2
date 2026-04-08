@@ -101,6 +101,7 @@ export interface ProductCompositionItem {
   purchase_price: number;
   cost_price: number;
   stock: number;
+  is_manual?: boolean;
 }
 
 // --- Medicamento do catálogo (retorno da API) ---
