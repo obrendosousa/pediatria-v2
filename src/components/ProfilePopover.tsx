@@ -275,7 +275,7 @@ export default function ProfilePopover({ isOpen, onClose, anchorRef }: ProfilePo
               </div>
             ) : (
               /* ── Grid de variações do estilo selecionado ── */
-              <div className="grid grid-cols-4 gap-2 max-h-[50vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-4 gap-2 max-h-[50vh] overflow-y-auto p-1">
                 {Array.from({ length: 20 }, (_, i) => {
                   const variantSeed = i === 0 ? seed : `${seed}-v${i}`;
                   const url = getDiceBearUrl(selectedStyle, variantSeed);
@@ -284,13 +284,13 @@ export default function ProfilePopover({ isOpen, onClose, anchorRef }: ProfilePo
                       key={i}
                       onClick={() => handleSelectAvatar(url)}
                       disabled={savingAvatar}
-                      className="w-full aspect-square rounded-xl border-2 border-transparent hover:border-violet-400 dark:hover:border-violet-500 bg-slate-50 dark:bg-white/5 overflow-hidden transition-all cursor-pointer hover:scale-105 hover:shadow-md disabled:opacity-50 disabled:pointer-events-none"
+                      className="w-full aspect-square rounded-xl bg-slate-50 dark:bg-white/5 cursor-pointer disabled:opacity-50 disabled:pointer-events-none ring-2 ring-transparent hover:ring-violet-400 dark:hover:ring-violet-500 hover:brightness-105 hover:shadow-[0_0_12px_rgba(139,92,246,0.3)] transition-[box-shadow,filter] duration-200 ease-out"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={url}
                         alt={`${selectedStyle} ${i + 1}`}
-                        className="w-full h-full object-contain p-1.5"
+                        className="w-full h-full object-contain p-1.5 rounded-xl"
                         loading="lazy"
                       />
                     </button>
