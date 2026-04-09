@@ -284,14 +284,15 @@ export function useChatAutomation(activeChat: Chat | null) {
         ? { type: item.type, content: item.content } 
         : { steps: item.steps };
     
-    await supabase.from('scheduled_messages').insert({ 
-        chat_id: activeChat.id, 
-        item_type: type, 
-        item_id: item.id, 
-        title: item.title, 
-        content: contentPayload, 
-        scheduled_for: scheduledFor.toISOString(), 
-        status: 'pending' 
+    await supabase.from('scheduled_messages').insert({
+        chat_id: activeChat.id,
+        phone: activeChat.phone,
+        item_type: type,
+        item_id: item.id,
+        title: item.title,
+        content: contentPayload,
+        scheduled_for: scheduledFor.toISOString(),
+        status: 'pending'
     });
     fetchScheduledMessages();
     setActiveTab('schedule');
@@ -322,6 +323,7 @@ export function useChatAutomation(activeChat: Chat | null) {
 
       const { error } = await supabase.from('scheduled_messages').insert({
           chat_id: activeChat.id,
+          phone: activeChat.phone,
           item_type: 'adhoc',
           title:
             type === 'audio'

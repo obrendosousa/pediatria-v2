@@ -332,7 +332,7 @@ export default function Navigation() {
             </MenuGroup>
 
             <MenuGroup title="Operacional" moduleTheme={mt}>
-              <NavItem icon={Trello} label="CRM" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} />
+              <NavItem icon={Trello} label="Recepção" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} />
               <NavItem icon={CheckSquare} label="Tarefas" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} />
             </MenuGroup>
           </>
@@ -341,7 +341,7 @@ export default function Navigation() {
             <MenuGroup title="Operacional" moduleTheme={mt} isFirst>
               <NavItem icon={LayoutDashboard} label="Dashboard" path="/atendimento/dashboard" active={isActive('/atendimento/dashboard')} color="blue" moduleTheme={mt} />
               <NavItem icon={MessageSquare} label="Chat" path="/atendimento" active={pathname === '/atendimento'} badge={unreadCount > 0 ? unreadCount : undefined} color="teal" moduleTheme={mt} />
-              <NavItem icon={Trello} label="CRM" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} />
+              <NavItem icon={Trello} label="Recepção" path="/atendimento/crm" active={isActive('/atendimento/crm')} color="purple" moduleTheme={mt} />
               <NavItem icon={CheckSquare} label="Tarefas" path="/atendimento/tasks" active={isActive('/atendimento/tasks')} color="orange" moduleTheme={mt} />
             </MenuGroup>
 

@@ -10,6 +10,7 @@ function getAdmin(schema?: string): SupabaseClient {
 export interface ClaimedScheduledMessage {
   id: number;
   chat_id: number;
+  phone?: string | null;
   title?: string;
   status?: string;
   item_type: "macro" | "funnel" | "adhoc";
@@ -17,6 +18,7 @@ export interface ClaimedScheduledMessage {
   automation_rule_id?: number | null;
   run_id?: string | null;
   retry_count?: number | null;
+  source_schema?: string;
   chats?: { id: number; phone: string } | null;
 }
 
@@ -42,7 +44,7 @@ export async function claimScheduledMessages(batchSize: number, workerId: string
     if (ids.length === 0) return [];
     const joined = await supabase
       .from("scheduled_messages")
-      .select("id, chat_id, title, status, item_type, content, automation_rule_id, run_id, retry_count, chats(id, phone)")
+      .select("id, chat_id, phone, title, status, item_type, content, automation_rule_id, run_id, retry_count, source_schema, chats(id, phone)")
       .in("id", ids);
     if (joined.error) throw joined.error;
     return (joined.data || []) as unknown as ClaimedScheduledMessage[];

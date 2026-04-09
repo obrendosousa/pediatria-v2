@@ -1,6 +1,8 @@
 'use client';
 
-import { getDaysInMonth } from '@/app/agenda/utils/agendaUtils';
+import { Calendar } from '@/components/ui/calendar-rac';
+import { CalendarDate } from '@internationalized/date';
+import type { DateValue } from 'react-aria-components';
 
 type Props = {
   currentDate: Date;
@@ -8,34 +10,26 @@ type Props = {
 };
 
 export default function AtendimentoSidebar({ currentDate, setCurrentDate }: Props) {
-  const daysInMonth = getDaysInMonth(currentDate);
+  const calendarValue = new CalendarDate(
+    currentDate.getFullYear(),
+    currentDate.getMonth() + 1,
+    currentDate.getDate()
+  );
+
+  const handleDateChange = (date: DateValue) => {
+    const jsDate = new Date(date.year, date.month - 1, date.day);
+    setCurrentDate(jsDate);
+  };
 
   return (
     <div className="w-72 flex flex-col gap-4">
       <div className="bg-white dark:bg-[#111118] p-5 rounded-2xl border border-slate-100 dark:border-[#1e1e28] shadow-sm transition-colors">
-        <div className="flex justify-between items-center mb-4 px-1">
-          <h3 className="text-sm font-bold text-slate-700 dark:text-gray-200 capitalize">
-            {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-          </h3>
-        </div>
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 dark:text-[#71717a] mb-2">
-          <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {daysInMonth.map((d, i) => {
-            if (!d) return <div key={i}></div>;
-            const isSelected = d.toDateString() === currentDate.toDateString();
-            return (
-              <button
-                key={i}
-                onClick={() => setCurrentDate(new Date(d))}
-                className={`h-8 w-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${isSelected ? 'bg-blue-500 text-white shadow-md' : 'text-slate-600 dark:text-[#a1a1aa] hover:bg-slate-50 dark:hover:bg-white/10'}`}
-              >
-                {d.getDate()}
-              </button>
-            );
-          })}
-        </div>
+        <Calendar
+          aria-label="Selecionar data"
+          value={calendarValue}
+          onChange={handleDateChange}
+          className="w-full"
+        />
       </div>
     </div>
   );

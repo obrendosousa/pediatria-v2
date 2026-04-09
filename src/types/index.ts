@@ -296,6 +296,7 @@ export interface Funnel {
 export interface ScheduledMessage {
   id: number;
   chat_id: number;
+  phone?: string;
   item_type: 'macro' | 'funnel' | 'adhoc';
   item_id?: number;
   title?: string;     // Para exibir na lista
@@ -305,6 +306,7 @@ export interface ScheduledMessage {
   status: 'pending' | 'processing' | 'sent' | 'failed' | 'cancelled';
   created_at: string;
   automation_rule_id?: number; // Para rastrear automações
+  source_schema?: string; // 'public' | 'atendimento' — identifica origem para dispatch
 }
 
 // --- TIPOS DE AUTOMAÇÃO ---

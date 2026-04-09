@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { createSchemaClient } from '@/lib/supabase/schemaClient';
+import { createClient } from '@/lib/supabase/client';
 const supabase = createSchemaClient('atendimento');
+// scheduled_messages vive APENAS em public — usar client public para operações de agendamento
+const supabasePublic = createClient();
 import { Chat, Macro, Funnel, ScheduledMessage } from '@/types';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -40,12 +43,13 @@ export function useChatAutomation(activeChat: Chat | null) {
     fetchData();
   }, []);
 
-  // 2. Carregar Agendamentos
+  // 2. Carregar Agendamentos (scheduled_messages vive em public)
   const fetchScheduledMessages = async () => {
       if (!activeChat) return;
-      const { data } = await supabase.from('scheduled_messages')
+      const { data } = await supabasePublic.from('scheduled_messages')
         .select('*')
         .eq('chat_id', activeChat.id)
+        .eq('source_schema', 'atendimento')
         .eq('status', 'pending')
         .order('scheduled_for', { ascending: true });
       if (data) setScheduledMessages(data as ScheduledMessage[]);
@@ -280,15 +284,18 @@ export function useChatAutomation(activeChat: Chat | null) {
         ? { type: item.type, content: item.content }
         : { steps: item.steps };
 
-    await supabase.from('scheduled_messages').insert({
+    const { error } = await supabasePublic.from('scheduled_messages').insert({
         chat_id: activeChat.id,
+        phone: activeChat.phone,
         item_type: type,
         item_id: item.id,
         title: item.title,
         content: contentPayload,
         scheduled_for: scheduledFor.toISOString(),
-        status: 'pending'
+        status: 'pending',
+        source_schema: 'atendimento'
     });
+    if (error) { toast.toast.error("Erro ao agendar: " + error.message); return; }
     fetchScheduledMessages();
     setActiveTab('schedule');
   };
@@ -315,8 +322,9 @@ export function useChatAutomation(activeChat: Chat | null) {
       const payload: any = { type, content: finalContent };
       if (textCaption) payload.caption = textCaption;
 
-      const { error } = await supabase.from('scheduled_messages').insert({
+      const { error } = await supabasePublic.from('scheduled_messages').insert({
           chat_id: activeChat.id,
+          phone: activeChat.phone,
           item_type: 'adhoc',
           title:
             type === 'audio'
@@ -328,7 +336,8 @@ export function useChatAutomation(activeChat: Chat | null) {
               : (textCaption || 'Mensagem Rápida'),
           content: payload,
           scheduled_for: scheduledFor.toISOString(),
-          status: 'pending'
+          status: 'pending',
+          source_schema: 'atendimento'
       });
 
       if (error) {
@@ -345,7 +354,7 @@ export function useChatAutomation(activeChat: Chat | null) {
       const updatePayload: Record<string, unknown> = { scheduled_for: scheduledFor.toISOString() };
       if (title) updatePayload.title = title;
       if (content) updatePayload.content = content;
-      const { error } = await supabase.from('scheduled_messages').update(updatePayload).eq('id', id);
+      const { error } = await supabasePublic.from('scheduled_messages').update(updatePayload).eq('id', id);
       if (error) {
           toast.toast.error("Erro ao atualizar agendamento.");
       } else {
@@ -354,7 +363,7 @@ export function useChatAutomation(activeChat: Chat | null) {
   };
 
   const handleCancelSchedule = async (id: number) => {
-      await supabase.from('scheduled_messages').delete().eq('id', id);
+      await supabasePublic.from('scheduled_messages').delete().eq('id', id);
       fetchScheduledMessages();
   };
 

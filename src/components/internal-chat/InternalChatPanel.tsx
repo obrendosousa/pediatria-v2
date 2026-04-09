@@ -7,7 +7,7 @@ import ConversationList from './ConversationList';
 import ChatThread from './ChatThread';
 
 interface InternalChatPanelProps {
-  anchorRef: React.RefObject<HTMLButtonElement | null>;
+  anchorRef: React.RefObject<HTMLElement | null>;
 }
 
 export default function InternalChatPanel({ anchorRef }: InternalChatPanelProps) {

@@ -99,6 +99,7 @@ export default function ChatThread() {
   // Fallback: if participant profile isn't loaded yet, find from users list
   const userFromList = users.find((u) => u.id === otherId);
   const otherName = otherParticipant?.profile?.full_name || userFromList?.full_name || 'Usuario';
+  const otherPhoto = otherParticipant?.profile?.photo_url || userFromList?.photo_url || null;
   const otherOnline = isUserOnline(otherId);
 
   function getInitials(name: string): string {
@@ -172,8 +173,12 @@ export default function ChatThread() {
 
         {/* Avatar with online status */}
         <div className="relative shrink-0">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-rose-400 dark:from-sky-400 dark:to-blue-500 flex items-center justify-center text-white text-xs font-semibold">
-            {getInitials(otherName)}
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-rose-400 dark:from-sky-400 dark:to-blue-500 flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
+            {otherPhoto ? (
+              <img src={otherPhoto} alt="" className="w-full h-full object-cover" />
+            ) : (
+              getInitials(otherName)
+            )}
           </div>
           <div className={`
             absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-[#111114]

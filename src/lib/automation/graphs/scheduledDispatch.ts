@@ -89,7 +89,7 @@ async function getCompiledDispatchGraph() {
         let deadLetterCount = 0;
 
         for (const item of state.claimed) {
-          const phone = item.chats?.phone;
+          const phone = item.phone || item.chats?.phone;
           const chatId = item.chats?.id || item.chat_id;
           if (!phone || !chatId) {
             failedCount += 1;
@@ -126,6 +126,8 @@ async function getCompiledDispatchGraph() {
           }
 
           const payload = parsePayload(item.content);
+          const sourceSchema = item.source_schema || "public";
+          const instanceEnvKey = sourceSchema === "atendimento" ? "EVOLUTION_ATENDIMENTO_INSTANCE" : "EVOLUTION_INSTANCE";
 
           // Funis agendados: content contém { steps: [...] } — executa via chatFunnel
           if (item.item_type === "funnel" && Array.isArray(payload.steps)) {
@@ -143,6 +145,8 @@ async function getCompiledDispatchGraph() {
                 title: item.title || "Funil Agendado",
                 steps: payload.steps as Array<{ type: "text" | "audio" | "image" | "document" | "video" | "wait"; content?: string; delay?: number }>,
                 initiatedBy: "system",
+                instanceEnvKey,
+                schema: sourceSchema,
               });
               sentCount += 1;
               await markDispatchedSuccess(item.id, {
@@ -188,7 +192,7 @@ async function getCompiledDispatchGraph() {
             continue;
           }
 
-          const sendRes = await sendWithEvolution({ phone, type, content, caption });
+          const sendRes = await sendWithEvolution({ phone, type, content, caption, instanceEnvKey });
           if (sendRes.ok) {
             sentCount += 1;
             await markDispatchedSuccess(item.id, {
@@ -205,6 +209,7 @@ async function getCompiledDispatchGraph() {
               mediaUrl: type === "text" ? null : content,
               wppId: sendRes.wppId,
               automationRuleId: item.automation_rule_id || null,
+              schema: sourceSchema !== "public" ? sourceSchema : undefined,
             });
             await logRunEvent({
               runId: state.runId,

@@ -94,6 +94,13 @@ export default function ConversationList() {
     return fromList?.role || '';
   }
 
+  function resolveConvPhoto(conv: typeof conversations[0]): string | null {
+    const other = conv.participants?.find((p) => p.user_id !== user?.id);
+    if (other?.profile?.photo_url) return other.profile.photo_url;
+    const fromList = users.find((u) => u.id === other?.user_id);
+    return fromList?.photo_url || null;
+  }
+
   function getInitials(name: string): string {
     return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
   }
@@ -311,6 +318,7 @@ export default function ConversationList() {
                 const name = resolveConvName(conv);
                 const otherId = resolveConvUserId(conv);
                 const role = resolveConvRole(conv);
+                const photo = resolveConvPhoto(conv);
                 const badge = getRoleBadge(role);
                 const hasUnread = (conv.unread_count || 0) > 0;
                 const lastMsg = conv.last_message;
@@ -355,8 +363,12 @@ export default function ConversationList() {
 
                     {/* Avatar */}
                     <div className="relative shrink-0 z-[1] pointer-events-none">
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-pink-400 to-rose-400 dark:from-sky-400 dark:to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
-                        {getInitials(name)}
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-pink-400 to-rose-400 dark:from-sky-400 dark:to-blue-500 flex items-center justify-center text-white text-sm font-semibold overflow-hidden">
+                        {photo ? (
+                          <img src={photo} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          getInitials(name)
+                        )}
                       </div>
                       <div className={`
                         absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#111114]

@@ -7,7 +7,7 @@ const supabase = createClient();
 import { Chat, ChatPatient as Patient } from '@/types';
 import {
   LayoutList, Users, DollarSign,
-  BarChart3, Calendar,
+  BarChart3,
   ChevronLeft, ChevronRight, UserPlus, MessageSquare, X, Megaphone
 } from 'lucide-react';
 
@@ -27,6 +27,7 @@ import CallMessageModal from '@/components/crm/CallMessageModal';
 import NewSlotModal from '@/components/NewSlotModal';
 import { getLocalDateRange, getTodayDateString, addDaysToDate } from '@/utils/dateUtils';
 import { useToast } from '@/contexts/ToastContext';
+import CalendarDatePopover from '@/components/ui/CalendarDatePopover';
 import { useCheckoutNotifications } from '@/contexts/CheckoutNotificationContext';
 import type { CRMMetricsPayload } from '@/lib/crm/metrics';
 import CRMMetricsDashboard from '@/components/crm/CRMMetricsDashboard';
@@ -618,7 +619,7 @@ export default function CRMPage() {
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-4 bg-white dark:bg-[#0a0a10] px-2 py-1.5 rounded-full border border-slate-200 dark:border-[#1e1e28] shadow-sm transition-colors">
                         <motion.button whileTap={{ scale: 0.85 }} onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-[#a1a1aa]"><ChevronLeft className="w-5 h-5"/></motion.button>
-                        <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-rose-500" /><input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="text-sm font-bold text-slate-700 dark:text-gray-200 bg-transparent outline-none uppercase" /></div>
+                        <CalendarDatePopover value={selectedDate} onChange={setSelectedDate} label="" />
                         <motion.button whileTap={{ scale: 0.85 }} onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-[#a1a1aa]"><ChevronRight className="w-5 h-5"/></motion.button>
                     </div>
                     {receptionFlowTab !== 'checkout' && (

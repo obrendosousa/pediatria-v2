@@ -22,6 +22,7 @@ export interface InternalParticipant {
     full_name: string | null;
     email: string;
     role: string;
+    photo_url?: string | null;
   };
 }
 

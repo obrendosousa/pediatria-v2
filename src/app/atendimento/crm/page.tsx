@@ -8,7 +8,7 @@ import type { ServicePoint } from '@/types/queue';
 import type { TicketInfo } from '@/components/dashboard/ReceptionCard';
 import {
   LayoutList, Users, DollarSign,
-  ChevronLeft, ChevronRight, UserPlus, Calendar,
+  ChevronLeft, ChevronRight, UserPlus,
   Stethoscope, ChevronDown, X, MapPin, Megaphone, Loader2, Ticket
 } from 'lucide-react';
 
@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQueueTickets } from '@/hooks/useQueueTickets';
 import { useServicePoints } from '@/hooks/useServicePoints';
 import { useTVCall } from '@/hooks/useTVCall';
+import CalendarDatePopover from '@/components/ui/CalendarDatePopover';
 
 const supabase = createSchemaClient('atendimento');
 const supabasePublic = createClient();
@@ -867,15 +868,7 @@ export default function AtendimentoCRMPage() {
               <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-gray-400">
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-600" />
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="text-sm font-bold text-slate-700 dark:text-gray-200 bg-transparent outline-none uppercase"
-                />
-              </div>
+              <CalendarDatePopover value={selectedDate} onChange={setSelectedDate} label="" />
               <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-gray-400">
                 <ChevronRight className="w-5 h-5" />
               </button>
