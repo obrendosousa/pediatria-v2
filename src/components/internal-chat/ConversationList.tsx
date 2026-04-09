@@ -1,13 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, MessageCircle, UserCircle2, Loader2, Users, MessagesSquare, MoreVertical, Trash2 } from 'lucide-react';
 import { useInternalChat } from '@/contexts/InternalChatContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { useImageCache } from '@/hooks/useImageCache';
 
 type Tab = 'conversas' | 'equipe';
 
@@ -35,6 +36,10 @@ export default function ConversationList() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Pre-load all team user avatars into browser memory cache
+  const userPhotoUrls = useMemo(() => users.map(u => u.photo_url), [users]);
+  useImageCache(userPhotoUrls);
 
   // Close menu on click outside
   useEffect(() => {

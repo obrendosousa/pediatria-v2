@@ -737,7 +737,12 @@
       "Bash(npx -y pg-sql-cli \"postgresql://postgres.juctfolupehtaoehjkwl:SLZ%402015%40eli@aws-1-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require\" \"ALTER TABLE public.scheduled_messages ADD COLUMN IF NOT EXISTS source_schema TEXT NOT NULL DEFAULT 'public'\")",
       "Bash(node_modules/.bin/eslint src/components/ui/message-dock.tsx)",
       "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" npx next build)",
-      "Bash(node_modules/.bin/eslint src/components/internal-chat/ConversationList.tsx src/components/internal-chat/ChatThread.tsx)"
+      "Bash(node_modules/.bin/eslint src/components/internal-chat/ConversationList.tsx src/components/internal-chat/ChatThread.tsx)",
+      "Bash(curl -s 'https://juctfolupehtaoehjkwl.supabase.co/rest/v1/profiles?select=id,full_name,photo_url&status=eq.approved&limit=10' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0')",
+      "Bash(curl -s 'https://juctfolupehtaoehjkwl.supabase.co/rest/v1/profiles?select=id,full_name,email,photo_url,status&full_name=eq.Brendo' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1Y3Rmb2x1cGVodGFvZWhqa3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA5NjE4MiwiZXhwIjoyMDcwNjcyMTgyfQ.bPqIbTZOvkVLwVHtZRFaWSaXOBcq9YhzxhbZNUtjtl0')",
+      "Bash(curl -s \"https://api.dicebear.com/9.x/adventurer/svg?seed=test\" -o /dev/null -w \"%{http_code}\")",
+      "Bash(node_modules/.bin/eslint src/components/ProfilePopover.tsx)",
+      "Bash(node_modules/.bin/eslint src/components/TopBar.tsx src/components/internal-chat/ConversationList.tsx src/hooks/useImageCache.ts)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Brendo\\Documents\\pediatria-v2\\src\\app\\api\\atendimento\\commission",

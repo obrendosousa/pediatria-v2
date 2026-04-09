@@ -8,12 +8,13 @@ import ProfilePopover from './ProfilePopover';
 import NotificationBell from './NotificationBell';
 import InternalChatPanel from './internal-chat/InternalChatPanel';
 import { MessageDock, type Character } from './ui/message-dock';
+import { useImageCache } from '@/hooks/useImageCache';
 
 export default function TopBar() {
   const { signOut, profile } = useAuth();
   const {
     totalUnread, isOpen, toggleOpen, onlineUserIds,
-    users, startConversationWith, sendMessage,
+    users, conversations, startConversationWith, sendMessage,
   } = useInternalChat();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileBtnRef = useRef<HTMLButtonElement>(null);
@@ -45,14 +46,58 @@ export default function TopBar() {
     ? profile.full_name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : '?';
 
-  // Build characters from team users (excluding self), max 4
+  // Build characters: 4 most recent chats first, then online fallback, then offline
   const characters = useMemo<Character[]>(() => {
     const selfId = profile?.id;
-    const teamUsers = users
-      .filter(u => u.id !== selfId && u.full_name)
-      .slice(0, 4);
+    const teamUsers = users.filter(u => u.id !== selfId && u.full_name);
 
-    return teamUsers.map(u => ({
+    // Get partner user IDs from conversations sorted by most recent activity
+    const recentPartnerIds: string[] = [];
+    const sortedConvs = [...conversations].sort((a, b) => {
+      const aTime = a.last_message?.created_at || a.updated_at || a.created_at;
+      const bTime = b.last_message?.created_at || b.updated_at || b.created_at;
+      return new Date(bTime).getTime() - new Date(aTime).getTime();
+    });
+
+    for (const conv of sortedConvs) {
+      const other = conv.participants?.find(p => p.user_id !== selfId);
+      if (other?.user_id && !recentPartnerIds.includes(other.user_id)) {
+        recentPartnerIds.push(other.user_id);
+      }
+      if (recentPartnerIds.length >= 4) break;
+    }
+
+    // Build ordered list: recent chats first
+    const picked = new Set<string>();
+    const ordered: typeof teamUsers = [];
+
+    // 1. Recent conversations
+    for (const id of recentPartnerIds) {
+      const u = teamUsers.find(t => t.id === id);
+      if (u) { ordered.push(u); picked.add(id); }
+    }
+
+    // 2. Fallback: online users not yet picked
+    if (ordered.length < 4) {
+      const onlineUsers = teamUsers
+        .filter(u => !picked.has(u.id) && onlineUserIds.has(u.id));
+      for (const u of onlineUsers) {
+        if (ordered.length >= 4) break;
+        ordered.push(u); picked.add(u.id);
+      }
+    }
+
+    // 3. Fallback: offline users not yet picked
+    if (ordered.length < 4) {
+      const offlineUsers = teamUsers
+        .filter(u => !picked.has(u.id) && !onlineUserIds.has(u.id));
+      for (const u of offlineUsers) {
+        if (ordered.length >= 4) break;
+        ordered.push(u); picked.add(u.id);
+      }
+    }
+
+    return ordered.map(u => ({
       id: u.id,
       name: u.full_name || u.email,
       online: onlineUserIds.has(u.id),
@@ -61,7 +106,10 @@ export default function TopBar() {
       backgroundColor: 'bg-gradient-to-br from-pink-400 to-rose-400 dark:from-sky-400 dark:to-blue-500',
       gradientColors: '#fb7185, #fecdd3',
     }));
-  }, [users, profile?.id, onlineUserIds]);
+  }, [users, profile?.id, onlineUserIds, conversations]);
+
+  // Pre-load avatar images into browser cache
+  useImageCache(characters.map(c => c.avatar));
 
   const handleMessageSend = useCallback(async (message: string, character: Character) => {
     if (!character.id) return;
