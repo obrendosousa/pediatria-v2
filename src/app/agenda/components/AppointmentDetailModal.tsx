@@ -194,6 +194,12 @@ export default function AppointmentDetailModal({
     if (!selectedAppointment) return;
     setConfirmCancelOpen(false);
     try {
+      // Primeiro limpar referências em medical_checkouts que apontam para este appointment
+      await supabase
+        .from('medical_checkouts')
+        .update({ return_appointment_id: null, return_scheduled_date: null })
+        .eq('return_appointment_id', selectedAppointment.id);
+
       const { error } = await supabase.from('appointments').delete().eq('id', selectedAppointment.id);
       if (error) throw error;
       if (user?.id) await logAudit({ userId: user.id, action: 'delete', entityType: 'appointment', entityId: String(selectedAppointment.id), details: { patient_name: selectedAppointment.patient_name } });
@@ -202,9 +208,10 @@ export default function AppointmentDetailModal({
       setSelectedAppointment(null);
       toast.success('Agendamento cancelado com sucesso!');
       onSaveSuccess();
-    } catch (err) {
-      console.error(err);
-      toast.error('Erro ao cancelar agendamento.');
+    } catch (err: unknown) {
+      console.error('Erro ao cancelar agendamento:', err);
+      const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: string }).message) : '');
+      toast.error('Erro ao cancelar: ' + (msg || 'Verifique se não há vínculos pendentes.'));
     }
   };
 

@@ -13,7 +13,10 @@ import CheckoutFinalizeFooter from './checkout/CheckoutFinalizeFooter';
 interface CheckoutDetailPanelProps {
   appointmentId: number | null;
   onSuccess?: () => void;
-  onScheduleReturn?: (data: { suggestedDate: string; patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string }) => void;
+  onScheduleReturn?: (data: { suggestedDate: string; patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string; birthDate?: string; guardians?: Array<{ name: string; relationship: string; phone?: string }>; checkoutId?: number }) => void;
+  onEditReturn?: (appointmentId: number) => void;
+  onViewReturn?: (date: string) => void;
+  refreshKey?: number;
 }
 
 function calculateAge(birthDate: string): string {
@@ -32,7 +35,10 @@ function calculateAge(birthDate: string): string {
 export default function CheckoutDetailPanel({
   appointmentId,
   onSuccess,
-  onScheduleReturn
+  onScheduleReturn,
+  onEditReturn,
+  onViewReturn,
+  refreshKey
 }: CheckoutDetailPanelProps) {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -52,7 +58,7 @@ export default function CheckoutDetailPanel({
     hasNewSaleItems,
     filteredCatalog,
     handleSubmit
-  } = useCheckoutPanel(appointmentId);
+  } = useCheckoutPanel(appointmentId, refreshKey);
 
   const handleFinalize = async () => {
     setSubmitting(true);
@@ -163,6 +169,7 @@ export default function CheckoutDetailPanel({
           <CheckoutReturnSection
             returnDate={returnDate}
             returnObs={returnObs}
+            returnScheduledDate={medicalCheckout?.return_scheduled_date}
             doctorName={doctorName}
             onScheduleReturn={onScheduleReturn ? () => onScheduleReturn({
               suggestedDate: returnDate,
@@ -173,7 +180,16 @@ export default function CheckoutDetailPanel({
               patientSex: appointment.patient_sex || undefined,
               doctorId: appointment.doctor_id || undefined,
               appointmentType: 'retorno',
+              birthDate: appointment.patient_birth_date || undefined,
+              guardians: appointment.guardians || undefined,
+              checkoutId: medicalCheckout?.id || undefined,
             }) : undefined}
+            onEditReturn={onEditReturn && medicalCheckout?.return_appointment_id
+              ? () => onEditReturn(medicalCheckout.return_appointment_id as number)
+              : undefined}
+            onViewReturn={onViewReturn && medicalCheckout?.return_scheduled_date
+              ? () => onViewReturn(medicalCheckout.return_scheduled_date as string)
+              : undefined}
           />
         )}
 

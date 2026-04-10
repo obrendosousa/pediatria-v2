@@ -103,8 +103,8 @@ export default function TopBar() {
       online: onlineUserIds.has(u.id),
       avatar: u.photo_url || undefined,
       emoji: u.full_name ? u.full_name[0].toUpperCase() : '?',
-      backgroundColor: 'bg-gradient-to-br from-pink-400 to-rose-400 dark:from-sky-400 dark:to-blue-500',
-      gradientColors: '#fb7185, #fecdd3',
+      backgroundColor: 'bg-gradient-to-br from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600',
+      gradientColors: '#e2e8f0, #f1f5f9',
     }));
   }, [users, profile?.id, onlineUserIds, conversations]);
 

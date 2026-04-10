@@ -97,8 +97,9 @@ export default function CRMPage() {
   /** Hub checkout: paciente selecionado no painel de fechamento (lista 30% + painel 70%) */
   const [selectedCheckoutAppointmentId, setSelectedCheckoutAppointmentId] = useState<number | null>(null);
   /** Data sugerida ao abrir "Agendar agora" a partir do painel de checkout */
+  const [checkoutRefreshKey, setCheckoutRefreshKey] = useState(0);
   const [newSlotInitialDate, setNewSlotInitialDate] = useState<string | null>(null);
-  const [newSlotInitialPatient, setNewSlotInitialPatient] = useState<{ patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string } | null>(null);
+  const [newSlotInitialPatient, setNewSlotInitialPatient] = useState<{ patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string; birthDate?: string; guardians?: Array<{ name: string; relationship: string; phone?: string }>; checkoutId?: number } | null>(null);
 
   // TV — chamada de pacientes
   const { callPatientOnTV } = useTVCall();
@@ -641,7 +642,13 @@ export default function CRMPage() {
                   selectedCheckoutAppointmentId={receptionFlowTab === 'checkout' ? selectedCheckoutAppointmentId : null}
                   onSelectCheckoutAppointment={receptionFlowTab === 'checkout' ? (apt) => setSelectedCheckoutAppointmentId(apt.id) : undefined}
                   onCheckoutSuccess={receptionFlowTab === 'checkout' ? () => { fetchData(); setSelectedCheckoutAppointmentId(null); } : undefined}
-                  onScheduleReturn={receptionFlowTab === 'checkout' ? (data) => { setNewSlotInitialDate(data.suggestedDate); setNewSlotInitialPatient({ patientId: data.patientId, patientName: data.patientName, parentName: data.parentName, phone: data.phone, patientSex: data.patientSex, doctorId: data.doctorId, appointmentType: data.appointmentType }); setIsNewSlotModalOpen(true); } : undefined}
+                  onScheduleReturn={receptionFlowTab === 'checkout' ? (data) => { setNewSlotInitialDate(data.suggestedDate); setNewSlotInitialPatient({ patientId: data.patientId, patientName: data.patientName, parentName: data.parentName, phone: data.phone, patientSex: data.patientSex, doctorId: data.doctorId, appointmentType: data.appointmentType, birthDate: data.birthDate, guardians: data.guardians, checkoutId: data.checkoutId }); setIsNewSlotModalOpen(true); } : undefined}
+                  checkoutRefreshKey={checkoutRefreshKey}
+                  onEditReturn={async (returnAptId) => {
+                    const { data } = await supabase.from('appointments').select('*').eq('id', returnAptId).single();
+                    if (data) setSelectedAppointmentForEdit(data as Appointment);
+                  }}
+                  onViewReturn={(date) => { window.open(`/agenda?date=${date}`, '_blank'); }}
                   onEditAppointment={(apt) => setSelectedAppointmentForEdit(apt)}
                   onCallOnTV={handleCallOnTV}
                   onCallAppointment={(apt) => {
@@ -825,10 +832,11 @@ export default function CRMPage() {
                     }
                   }}
                   onRevert={async (apt, newStatus) => {
+                    const statusLabel = newStatus === 'scheduled' ? 'Agendado' : newStatus === 'in_service' ? 'Em Atendimento' : 'Na Fila';
                     setConfirmModal({
                       isOpen: true,
                       title: 'Reverter Status',
-                      message: `Deseja reverter este paciente para "${newStatus === 'scheduled' ? 'Agendado' : 'Na Fila'}"?`,
+                      message: `Deseja reverter este paciente para "${statusLabel}"?`,
                       type: 'warning',
                       onConfirm: async () => {
                         setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -845,6 +853,10 @@ export default function CRMPage() {
                             updatePayload.in_service_at = null;
                             updatePayload.finished_at = null;
                           }
+                          if (newStatus === 'in_service') {
+                            updatePayload.in_service_at = new Date().toISOString();
+                            updatePayload.finished_at = null;
+                          }
 
                           const { error } = await supabase
                             .from('appointments')
@@ -853,6 +865,16 @@ export default function CRMPage() {
                             .select();
 
                           if (error) throw error;
+
+                          // Reverter medical_checkouts para 'pending' quando voltando para atendimento
+                          // Isso garante que dados do checkout (data retorno, produtos) fiquem visíveis novamente
+                          if (newStatus === 'in_service' || newStatus === 'waiting') {
+                            await supabase
+                              .from('medical_checkouts')
+                              .update({ status: 'pending', completed_at: null })
+                              .eq('appointment_id', apt.id)
+                              .eq('status', 'completed');
+                          }
 
                           if (newStatus === 'scheduled' && apt.id === calledAppointmentId) {
                             setCalledAppointmentId(null);
@@ -935,7 +957,7 @@ export default function CRMPage() {
       <NewSlotModal
         isOpen={isNewSlotModalOpen}
         onClose={() => { setIsNewSlotModalOpen(false); setNewSlotInitialDate(null); setNewSlotInitialPatient(null); }}
-        onSuccess={fetchData}
+        onSuccess={() => { fetchData(); setCheckoutRefreshKey(k => k + 1); }}
         initialDate={newSlotInitialDate || selectedDate}
         initialTime={new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })}
         initialPatient={newSlotInitialPatient}

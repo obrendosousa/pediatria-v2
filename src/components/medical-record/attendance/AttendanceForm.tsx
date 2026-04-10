@@ -80,21 +80,22 @@ export function AttendanceForm({
       setValue('conducts', record.conducts || '');
       
       if (record.vitals) {
-        setValue('weight', record.vitals.weight || null);
+        // Peso armazenado em kg no banco → converte para gramas na UI
+        const weightKg = record.vitals.weight || null;
+        setValue('weight', weightKg ? weightKg * 1000 : null);
         setValue('height', record.vitals.height || null);
         setValue('imc', record.vitals.imc || null);
         setValue('pe', record.vitals.pe || null);
-        
-        // Atualizar dígitos da altura para o estado
       }
     }
   }, [record, setValue]);
 
-  // Calcular IMC automaticamente
+  // Calcular IMC automaticamente (peso em gramas → converte para kg)
   useEffect(() => {
     if (weight && height && height > 0) {
-      const heightInMeters = height / 100; // height está em cm
-      const imcValue = weight / (heightInMeters * heightInMeters);
+      const weightInKg = weight / 1000;
+      const heightInMeters = height / 100;
+      const imcValue = weightInKg / (heightInMeters * heightInMeters);
       setValue('imc', parseFloat(imcValue.toFixed(2)));
     } else {
       setValue('imc', null);
@@ -155,9 +156,11 @@ export function AttendanceForm({
     for (const [k, v] of Object.entries(existing)) {
       sanitized[k] = typeof v === 'number' && Number.isFinite(v) ? v : undefined;
     }
+    // Peso na UI está em gramas → converte para kg ao salvar
+    const weightInKg = Number.isFinite(data.weight) ? (data.weight as number) / 1000 : undefined;
     const vitals = {
       ...sanitized,
-      weight: Number.isFinite(data.weight) ? (data.weight as number) : undefined,
+      weight: weightInKg,
       height: Number.isFinite(data.height) ? (data.height as number) : undefined,
       imc: Number.isFinite(data.imc) ? (data.imc as number) : undefined,
       pe: Number.isFinite(data.pe) ? (data.pe as number) : undefined,
@@ -302,7 +305,7 @@ export function AttendanceForm({
             Cálculo IMC
           </label>
           <div className="flex items-end gap-3">
-            <div className="w-20">
+            <div className="w-24">
               <label className="block text-xs text-slate-600 dark:text-[#a1a1aa] mb-1">Peso</label>
               <div className="flex items-center gap-1">
                 <input
@@ -312,7 +315,7 @@ export function AttendanceForm({
                   className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-[#3d3d48] rounded-md bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center"
                   placeholder="0"
                 />
-                <span className="text-xs text-slate-500">kg</span>
+                <span className="text-xs text-slate-500">g</span>
               </div>
             </div>
             <div className="w-20">

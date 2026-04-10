@@ -97,10 +97,15 @@ export function MessageDock({
     return (
       <div ref={dockRef} className={cn("relative z-50", className)}>
         <div
-          className="rounded-full px-2.5 py-1.5 shadow-sm border border-gray-200/60 dark:border-white/10 flex items-center gap-1.5 h-[34px]"
+          className={cn(
+            "rounded-full px-2.5 py-1.5 shadow-sm border flex items-center gap-1.5 h-[34px]",
+            isDark
+              ? "border-white/10 bg-[#1e1e24]"
+              : "border-gray-200/60"
+          )}
           style={{
             width: expandedWidth,
-            background: `linear-gradient(to right, ${getGradientColors(selectedCharacter)})`,
+            ...(!isDark && { background: `linear-gradient(to right, ${getGradientColors(selectedCharacter)})` }),
           }}
         >
           {/* Selected avatar */}
@@ -170,7 +175,7 @@ export function MessageDock({
             <div key={charKey} className="relative shrink-0" style={{ overflow: "visible" }}>
               <button
                 className={cn(
-                  "relative w-7 h-7 rounded-full flex items-center justify-center cursor-pointer overflow-hidden",
+                  "relative w-7 h-7 rounded-full flex items-center justify-center cursor-pointer overflow-hidden transition-transform duration-200 hover:scale-125",
                   !character.avatar && (character.backgroundColor || "bg-gray-200 dark:bg-gray-700"),
                 )}
                 onClick={() => handleCharacterClick(character, index)}

@@ -193,33 +193,43 @@ export default function InternalMessageBubble({ message, isMe, showTimestamp }: 
         `}
       >
         {message.message_type === 'text' && (
-          <p className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+          <p className="whitespace-pre-wrap break-words leading-relaxed">
+            {message.content}
+            <span className={`inline-block text-[9px] ml-2 translate-y-[1px] align-bottom ${isMe ? 'text-white/40' : 'text-slate-400 dark:text-[#52525b]'}`}>
+              {formatTime(message.created_at)}
+            </span>
+          </p>
         )}
 
         {message.message_type === 'image' && message.file_url && (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <ImageContent url={message.file_url} name={message.file_name} />
             {message.content && (
               <p className="whitespace-pre-wrap break-words text-xs leading-relaxed">{message.content}</p>
             )}
+            <span className={`block text-[9px] text-right ${isMe ? 'text-white/40' : 'text-slate-400 dark:text-[#52525b]'}`}>{formatTime(message.created_at)}</span>
           </div>
         )}
 
         {message.message_type === 'video' && message.file_url && (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <VideoContent url={message.file_url} />
             {message.content && (
               <p className="whitespace-pre-wrap break-words text-xs leading-relaxed">{message.content}</p>
             )}
+            <span className={`block text-[9px] text-right ${isMe ? 'text-white/40' : 'text-slate-400 dark:text-[#52525b]'}`}>{formatTime(message.created_at)}</span>
           </div>
         )}
 
         {message.message_type === 'audio' && message.file_url && (
-          <AudioContent url={message.file_url} />
+          <div>
+            <AudioContent url={message.file_url} />
+            <span className={`block text-[9px] text-right mt-0.5 ${isMe ? 'text-white/40' : 'text-slate-400 dark:text-[#52525b]'}`}>{formatTime(message.created_at)}</span>
+          </div>
         )}
 
         {message.message_type === 'document' && message.file_url && (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <DocumentContent
               url={message.file_url}
               name={message.file_name}
@@ -228,13 +238,9 @@ export default function InternalMessageBubble({ message, isMe, showTimestamp }: 
             {message.content && message.content !== message.file_name && (
               <p className="whitespace-pre-wrap break-words text-xs leading-relaxed">{message.content}</p>
             )}
+            <span className={`block text-[9px] text-right ${isMe ? 'text-white/40' : 'text-slate-400 dark:text-[#52525b]'}`}>{formatTime(message.created_at)}</span>
           </div>
         )}
-
-        {/* Time inside bubble */}
-        <div className={`flex justify-end mt-0.5 ${isMe ? 'text-white/50' : 'text-slate-400 dark:text-[#52525b]'}`}>
-          <span className="text-[10px]">{formatTime(message.created_at)}</span>
-        </div>
       </div>
     </div>
   );

@@ -120,12 +120,12 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
   const [isPremature, setIsPremature] = useState(false);
   const [gestationalAgeWeeks, setGestationalAgeWeeks] = useState<number | ''>('');
   const [measurementDate, setMeasurementDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [weightKg, setWeightKg] = useState<number | ''>('');
+  const [weightGrams, setWeightGrams] = useState<number | ''>('');
   const [heightCm, setHeightCm] = useState<number | ''>('');
   const [headCircumferenceCm, setHeadCircumferenceCm] = useState<number | ''>('');
 
   const handleAddMeasurement = async () => {
-    if (!weightKg && !heightCm && !headCircumferenceCm) {
+    if (!weightGrams && !heightCm && !headCircumferenceCm) {
       toast.toast.error('Preencha pelo menos um dado da medição.');
       return;
     }
@@ -133,8 +133,9 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
       toast.toast.error('Selecione uma data.');
       return;
     }
+    const weightKgValue = weightGrams ? Number(weightGrams) / 1000 : null;
     const validation = validateAnthropometryInputs(
-      weightKg ? Number(weightKg) : null,
+      weightKgValue,
       heightCm ? Number(heightCm) : null,
       headCircumferenceCm ? Number(headCircumferenceCm) : null
     );
@@ -144,21 +145,21 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
     }
     try {
       const bmi = calculateBMI(
-        weightKg ? Number(weightKg) : null,
+        weightKgValue,
         heightCm ? Number(heightCm) : null
       );
       await addEntry({
         patient_id: patientId,
         medical_record_id: medicalRecordId ?? null,
         measurement_date: measurementDate,
-        weight_kg: weightKg ? Number(weightKg) : null,
+        weight_kg: weightKgValue,
         height_cm: heightCm ? Number(heightCm) : null,
         head_circumference_cm: headCircumferenceCm ? Number(headCircumferenceCm) : null,
         bmi,
         is_premature: isPremature,
         gestational_age_weeks: isPremature && gestationalAgeWeeks ? Number(gestationalAgeWeeks) : null,
       });
-      setWeightKg('');
+      setWeightGrams('');
       setHeightCm('');
       setHeadCircumferenceCm('');
       toast.toast.success('Medição adicionada!');
@@ -322,14 +323,14 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide mb-1.5">
-              Peso (kg)
+              Peso (g)
             </label>
             <input
-              type="number" step="0.01" min="0"
-              value={weightKg}
-              onChange={e => setWeightKg(e.target.value ? Number(e.target.value) : '')}
+              type="number" step="0.1" min="0"
+              value={weightGrams}
+              onChange={e => setWeightGrams(e.target.value ? Number(e.target.value) : '')}
               className="w-full px-3 py-2.5 border border-slate-200 dark:border-[#3d3d48] rounded-lg text-sm bg-white dark:bg-[#1c1c21] text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              placeholder="0.00"
+              placeholder="0.0"
             />
           </div>
           <div>
@@ -412,7 +413,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
                     Data
                   </th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
-                    Peso (kg)
+                    Peso (g)
                   </th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-[#a1a1aa] uppercase tracking-wide">
                     Estatura (cm)
@@ -447,7 +448,7 @@ export function VitalsChart({ patientId, patientData, medicalRecordId }: Attenda
                           {formatDateBR(entry.measurement_date)}
                         </td>
                         <td className="px-4 py-3 text-right text-slate-600 dark:text-[#d4d4d8] tabular-nums">
-                          {entry.weight_kg != null ? entry.weight_kg.toFixed(2) : '—'}
+                          {entry.weight_kg != null ? (entry.weight_kg * 1000).toFixed(1) : '—'}
                         </td>
                         <td className="px-4 py-3 text-right text-slate-600 dark:text-[#d4d4d8] tabular-nums">
                           {entry.height_cm != null ? entry.height_cm.toFixed(1) : '—'}

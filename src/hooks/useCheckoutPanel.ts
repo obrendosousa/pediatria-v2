@@ -23,6 +23,8 @@ export interface MedicalCheckoutData {
   consultation_value?: number;
   return_date?: string | null;
   return_obs?: string | null;
+  return_scheduled_date?: string | null;
+  return_appointment_id?: number | null;
   secretary_notes?: string | null;
   checkout_items?: Array<{
     id: number;
@@ -74,7 +76,7 @@ export interface ConsultationDocs {
   patientData: PatientData | null;
 }
 
-export function useCheckoutPanel(appointmentId: number | null) {
+export function useCheckoutPanel(appointmentId: number | null, refreshKey?: number) {
   const [loading, setLoading] = useState(false);
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [medicalCheckout, setMedicalCheckout] = useState<MedicalCheckoutData | null>(null);
@@ -143,6 +145,8 @@ export function useCheckoutPanel(appointmentId: number | null) {
           consultation_value,
           return_date,
           return_obs,
+          return_scheduled_date,
+          return_appointment_id,
           secretary_notes,
           checkout_items (
             id, product_id, quantity,
@@ -258,7 +262,7 @@ export function useCheckoutPanel(appointmentId: number | null) {
       setSelectedItems([]);
       setCommissionData(null);
     }
-  }, [appointmentId, loadCheckoutData, fetchCatalog]);
+  }, [appointmentId, loadCheckoutData, fetchCatalog, refreshKey]);
 
   const addItem = useCallback((product: Product, type: 'product' | 'service') => {
     setSelectedItems(prev => {

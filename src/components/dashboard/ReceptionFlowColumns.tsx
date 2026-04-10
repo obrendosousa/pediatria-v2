@@ -43,7 +43,10 @@ interface ReceptionFlowColumnsProps {
   selectedCheckoutAppointmentId?: number | null;
   onSelectCheckoutAppointment?: (appointment: Appointment) => void;
   onCheckoutSuccess?: () => void;
-  onScheduleReturn?: (data: { suggestedDate: string; patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string }) => void;
+  onScheduleReturn?: (data: { suggestedDate: string; patientId?: number; patientName?: string; parentName?: string; phone?: string; patientSex?: 'M' | 'F'; doctorId?: number; appointmentType?: string; birthDate?: string; guardians?: Array<{ name: string; relationship: string; phone?: string }>; checkoutId?: number }) => void;
+  checkoutRefreshKey?: number;
+  onEditReturn?: (appointmentId: number) => void;
+  onViewReturn?: (date: string) => void;
   /** Callbacks do sistema de fila */
   onGenerateTicket?: (appointment: Appointment, isPriority: boolean) => void;
   onCallWithDestination?: (appointment: Appointment) => void;
@@ -75,6 +78,9 @@ export default function ReceptionFlowColumns({
   onSelectCheckoutAppointment,
   onCheckoutSuccess,
   onScheduleReturn,
+  checkoutRefreshKey,
+  onEditReturn,
+  onViewReturn,
   onGenerateTicket,
   onCallWithDestination,
   onFinishGuiche,
@@ -587,6 +593,9 @@ export default function ReceptionFlowColumns({
                 appointmentId={selectedCheckoutAppointmentId ?? null}
                 onSuccess={onCheckoutSuccess}
                 onScheduleReturn={onScheduleReturn}
+                onEditReturn={onEditReturn}
+                onViewReturn={onViewReturn}
+                refreshKey={checkoutRefreshKey}
               />
             </div>
           </div>

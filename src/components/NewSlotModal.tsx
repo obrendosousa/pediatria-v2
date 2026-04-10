@@ -21,6 +21,9 @@ interface InitialPatientData {
   patientSex?: 'M' | 'F';
   doctorId?: number;
   appointmentType?: string;
+  birthDate?: string;
+  guardians?: Array<{ name: string; relationship: string; phone?: string }>;
+  checkoutId?: number;
 }
 
 interface NewSlotModalProps {
@@ -126,20 +129,38 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
 
   useEffect(() => {
     if (isOpen) {
-      fetchDoctors().then(() => {
-        if (initialPatient?.doctorId) {
-          setSelectedDoctorId(initialPatient.doctorId);
-        }
-      });
+      // Buscar médicos e setar doctor selecionado
+      supabase
+        .from('doctors')
+        .select('id, name')
+        .eq('active', true)
+        .order('name')
+        .then(({ data, error }) => {
+          if (error) { console.error('Erro ao carregar médicos:', error); return; }
+          if (data && data.length > 0) {
+            setDoctors(data);
+            // Priorizar doctorId do initialPatient SOMENTE se estiver na lista de médicos ativos
+            const doctorIdFromPatient = initialPatient?.doctorId;
+            const isActiveDoctor = doctorIdFromPatient && data.some(d => d.id === doctorIdFromPatient);
+            setSelectedDoctorId(isActiveDoctor ? doctorIdFromPatient : data[0].id);
+          }
+        });
+
       const today = new Date().toISOString().split('T')[0];
       const defaultTime = '09:00';
       const initialDateValue = initialDate || today;
 
-      // Inicializar guardians a partir do parentName legado
-      const initialGuardians = initialPatient?.parentName
-        ? flatFieldsToFamilyMembers({ mother_name: initialPatient.parentName })
-        : [];
+      // Inicializar guardians: priorizar array estruturado, fallback para parentName legado
+      const initialGuardians = initialPatient?.guardians?.length
+        ? initialPatient.guardians.map(g => ({ name: g.name, relationship: g.relationship, phone: g.phone || '' }))
+        : initialPatient?.parentName
+          ? flatFieldsToFamilyMembers({ mother_name: initialPatient.parentName })
+          : [];
       setGuardians(initialGuardians);
+
+      // Pré-preencher data de nascimento se disponível
+      const birthDateISO = initialPatient?.birthDate || '';
+      const birthDateDisplay = birthDateISO ? formatDateToDisplay(birthDateISO) : '';
 
       setFormData(prev => ({
         ...prev,
@@ -149,8 +170,8 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         patient_name: initialPatient?.patientName || '',
         patient_phone: initialPatient?.phone || '',
         patient_sex: initialPatient?.patientSex || '',
-        birthDateDisplay: '',
-        birthDate: '',
+        birthDateDisplay,
+        birthDate: birthDateISO,
         appointment_type: (initialPatient?.appointmentType as 'consulta' | 'retorno' | '') || '',
         notes: '',
         totalAmount: '',
@@ -163,25 +184,6 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
       setSlotType('booked');
     }
   }, [isOpen, initialDate, initialTime, initialPatient]);
-
-  async function fetchDoctors() {
-    try {
-      const { data, error } = await supabase
-        .from('doctors')
-        .select('id, name')
-        .eq('active', true)
-        .order('name');
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setDoctors(data);
-        setSelectedDoctorId(data[0].id);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar médicos:', err);
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -308,11 +310,23 @@ export default function NewSlotModal({ isOpen, onClose, onSuccess, initialDate, 
         }
       }
 
-      const { error } = await supabase
+      const { data: insertedRows, error } = await supabase
         .from('appointments')
-        .insert(insertData);
+        .insert(insertData)
+        .select('id');
 
       if (error) throw error;
+
+      // Se veio de um checkout com retorno sugerido, marcar retorno como agendado
+      if (initialPatient?.checkoutId && insertedRows?.[0]?.id) {
+        await supabase
+          .from('medical_checkouts')
+          .update({
+            return_scheduled_date: formData.date,
+            return_appointment_id: insertedRows[0].id
+          })
+          .eq('id', initialPatient.checkoutId);
+      }
 
       onSuccess();
       onClose();

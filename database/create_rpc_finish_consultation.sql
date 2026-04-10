@@ -29,6 +29,16 @@ BEGIN
   v_has_return := v_return_date IS NOT NULL AND v_return_date <> '';
   v_has_notes := v_notes IS NOT NULL AND v_notes <> '';
 
+  -- 0. Limpar medical_checkouts pendentes anteriores (ex: re-finalização após reverter)
+  --    Preserva os 'completed' para auditoria, remove apenas 'pending' duplicados
+  DELETE FROM public.checkout_items
+  WHERE checkout_id IN (
+    SELECT id FROM public.medical_checkouts
+    WHERE appointment_id = v_appointment_id AND status = 'pending'
+  );
+  DELETE FROM public.medical_checkouts
+  WHERE appointment_id = v_appointment_id AND status = 'pending';
+
   -- 1. Criar medical_checkout se necessário
   IF v_has_products OR v_has_return OR v_has_notes THEN
     v_secretary_notes := NULLIF(
@@ -69,7 +79,13 @@ BEGIN
     FROM public.appointments
     WHERE id = v_appointment_id;
 
+    -- Se o doctor_id original não está ativo, usar o primeiro médico ativo
     IF v_current_apt.doctor_id IS NOT NULL THEN
+      IF NOT EXISTS (SELECT 1 FROM public.doctors WHERE id = v_current_apt.doctor_id AND active = true) THEN
+        SELECT id, name INTO v_current_apt.doctor_id, v_current_apt.doctor_name
+        FROM public.doctors WHERE active = true ORDER BY name LIMIT 1;
+      END IF;
+
       INSERT INTO public.appointments (
         doctor_id, doctor_name, patient_name, patient_phone,
         patient_id, start_time, status, appointment_type, notes
